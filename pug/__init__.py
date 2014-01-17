@@ -27,12 +27,12 @@ More information is available at https://github.com/hobsonlane/pug/
 """
 
 # the Canonical (Ubuntu) way is to define a version_info attribute
-version_info = (0, 0, 4, 'alpha', 0)
-
+version_info = (0, 0, 6, 'alpha', 0)
 __version__ = '.'.join(str(i) for i in version_info[0:3])
+version_string = __version__
+
 _github_url_ = "https://github.com/hobsonlane/%s" % (__name__)
 
-version_string = __version__
 
 
 #def test():
