@@ -3,6 +3,15 @@ from distutils.core import setup
 import os
 from pug import __version__, __name__, __doc__, _github_url_
 
+# try:
+#     from pip.req import parse_requirements
+#     requirements = list(parse_requirements('requirements.txt'))
+# except:
+#     requirements = []
+# install_requires=[req.name for req in requirements if req.req and not req.url]
+# dependency_links=[line.url for line in requirements if line.url]
+
+
 setup(
     name = __name__,
     # packages = ["pug"],
