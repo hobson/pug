@@ -1,0 +1,5 @@
+pyzmq
+ipython
+django
+numpy
+south

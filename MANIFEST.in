@@ -1,0 +1,6 @@
+include *.txt
+recursive-include *.txt
+include *.md
+recursive-include *.md
+include *.rst
+recursive-include *.rst

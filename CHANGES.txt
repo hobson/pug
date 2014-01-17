@@ -1,0 +1,23 @@
+CHANGES
+========
+
+0.0.2
+------
+
+* pypi-compliant setup.py
+
+
+0.0.1
+------
+
+* edits to LICENSE, README, MANIFEST, CHANGES
+
+0.0.0
+------
+
+* Initial release 
+* AGPL license in LICENSE.txt
+* Do-nothing posix-compliant service
+* API keys served in file outside source and production stacks
+* BitFloor API interraction works (but not with bitfloor test url)
+
