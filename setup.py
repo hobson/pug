@@ -1,7 +1,11 @@
 # setup.py for PUG
 from distutils.core import setup
 import os
-from pug import __version__, __name__, __doc__, _github_url_
+import sys
+
+sys.path.insert(0, os.path.join(os.getcwd()))
+from pug import __version__
+from pug import __name__, __doc__, _github_url_
 
 # try:
 #     from pip.req import parse_requirements
