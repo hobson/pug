@@ -26,8 +26,11 @@
 More information is available at https://github.com/hobsonlane/pug/
 """
 
+# in case someone does execfile('__init__.py') so it won't make __name__ = '__main__'
+__name__ = 'pug'
+
 # the Canonical (Ubuntu) way is to define a version_info attribute
-version_info = (0, 0, 6, 'alpha', 0)
+version_info = (0, 0, 7, 'alpha', 0)
 __version__ = '.'.join(str(i) for i in version_info[0:3])
 version_string = __version__
 

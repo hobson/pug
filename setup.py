@@ -3,16 +3,16 @@ from distutils.core import setup
 import os
 import sys
 
-name = __name__
 sys.path.insert(0, os.path.join(os.getcwd()))
 execfile('pug/__init__.py')
-__name__ = name
 
 print '-'*10
 print __name__
 print __version__
-print _github_version_
+print _github_url_
 print version_string
+print '-'*10
+
 
 
 # from pug.__init__ import __version__, __name__, __doc__, _github_url_
