@@ -21,7 +21,7 @@ setup(
     author = "Hobson Lane",
     author_email = "hobson@totalgood.com",
     url = _github_url_,
-    # download_url = "%s/archive/v%s.tar.gz" % (_github_url_, __version__),
+    download_url = "%s/archive/%s-%s.tar.gz" % (_github_url_, __name__, __version__),
     # download_url = _github_url_,
     keywords = ["agent", "bot", "ai", "crawl", "data", "science", "data science", "math", "machine-learning", "statistics", "database"],
     classifiers = [

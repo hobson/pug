@@ -3,4 +3,6 @@ CHANGES.txt
 INSTALL.txt
 LICENSE.txt
 README.md
+requirements.txt
+setup.cfg
 setup.py
