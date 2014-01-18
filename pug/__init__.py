@@ -25,14 +25,14 @@
 
 More information is available at https://github.com/hobsonlane/pug/
 """
-
+__version__ = "0.0.1"
 # in case someone does execfile('__init__.py') so it won't make __name__ = '__main__'
-__name__ = 'pug'
+#__name__ = 'pug'
 
-# the Canonical (Ubuntu) way is to define a version_info attribute
-version_info = (0, 0, 7, 'alpha', 0)
-__version__ = '.'.join(str(i) for i in version_info[0:3])
-version_string = __version__
+# # the Canonical (Ubuntu) way is to define a version_info attribute
+# version_info = (0, 0, 7, 'alpha', 0)
+# __version__ = '.'.join(str(i) for i in version_info[0:3])
+# version_string = __version__
 
 _github_url_ = "https://github.com/hobsonlane/%s" % (__name__)
 

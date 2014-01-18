@@ -1,17 +1,19 @@
 # setup.py for PUG
-from distutils.core import setup
+try:
+    from setuptools import setup, Extension
+except ImportError:
+    from distutils.core import setup
+    from distutils.extension import Extension
+
+from pug import __version__ as _version_
+from pug import _github_url_, __name__ as _name_
 import os
 import sys
+import time
 
 sys.path.insert(0, os.path.join(os.getcwd()))
-execfile('pug/__init__.py')
 
-print '-'*10
-print __name__
-print __version__
-print _github_url_
-print version_string
-print '-'*10
+
 
 
 
@@ -27,15 +29,15 @@ print '-'*10
 
 
 setup(
-    name = __name__,
+    name = _name_,
     # packages = ["pug"],
-    version = __version__,
+    version = _version_,
     description = __doc__,
     long_description = open(os.path.join(os.path.dirname(__file__), 'README.md')).read(),
     author = "Hobson Lane",
     author_email = "hobson@totalgood.com",
     url = _github_url_,
-    download_url = "%s/archive/%s-%s.tar.gz" % (_github_url_, __name__, __version__),
+    download_url = "%s/archive/%s-%s.tar.gz" % (_github_url_, _name_, _version_),
     # download_url = _github_url_,
     keywords = ["agent", "bot", "ai", "crawl", "data", "science", "data science", "math", "machine-learning", "statistics", "database"],
     classifiers = [
