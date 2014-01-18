@@ -21,9 +21,3 @@
 
 __version__ = '0.0.1'
 _github_url_ = "https://github.com/hobsonlane/%s" % (__name__)
-
-
-#def test():
-#    import doctest
-#    return doctest.testmod(pug)
-
