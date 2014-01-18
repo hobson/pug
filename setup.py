@@ -9,15 +9,10 @@ from pug import __version__ as _version_
 from pug import _github_url_, __name__ as _name_
 import os
 import sys
-import time
 
 sys.path.insert(0, os.path.join(os.getcwd()))
 
 
-
-
-
-# from pug.__init__ import __version__, __name__, __doc__, _github_url_
 
 # try:
 #     from pip.req import parse_requirements
@@ -30,7 +25,7 @@ sys.path.insert(0, os.path.join(os.getcwd()))
 
 setup(
     name = _name_,
-    # packages = ["pug"],
+    packages = ["pug"],
     version = _version_,
     description = __doc__,
     long_description = open(os.path.join(os.path.dirname(__file__), 'README.md')).read(),
