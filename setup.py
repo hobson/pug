@@ -1,9 +1,5 @@
 # setup.py for PUG
-try:
-    from setuptools import setup, Extension
-except ImportError:
-    from distutils.core import setup
-    from distutils.extension import Extension
+from distutils.core import setup
 
 from pug import __version__ as _version_
 from pug import _github_url_, __name__ as _name_
@@ -25,7 +21,7 @@ sys.path.insert(0, os.path.join(os.getcwd()))
 
 setup(
     name = _name_,
-    packages = ["pug"],
+    packages = ["pug"],  # without this: Downloading/unpacking pug ... ImportError: No module named pug ... from pug import __version__, __name__, __doc__, _github_url_
     version = _version_,
     description = __doc__,
     long_description = open(os.path.join(os.path.dirname(__file__), 'README.md')).read(),
@@ -33,7 +29,6 @@ setup(
     author_email = "hobson@totalgood.com",
     url = _github_url_,
     download_url = "%s/archive/%s-%s.tar.gz" % (_github_url_, _name_, _version_),
-    # download_url = _github_url_,
     keywords = ["agent", "bot", "ai", "crawl", "data", "science", "data science", "math", "machine-learning", "statistics", "database"],
     classifiers = [
         "Programming Language :: Python",
