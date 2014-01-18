@@ -1,6 +1,3 @@
-#!/usr/bin/env python
-# pug packages utilities written by and for the PDX Python User's Group
-#
 # Copyright (C) 2013-2014  Hobson Lane <hobson@totalgood.com>
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -20,22 +17,10 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
+"""pug -- Package of Utilities written by and for the PDX Python User's Group"""
 
-"""pug packages utilities written by and for the PDX Python User's Group
-
-More information is available at https://github.com/hobsonlane/pug/
-"""
-__version__ = "0.0.1"
-# in case someone does execfile('__init__.py') so it won't make __name__ = '__main__'
-#__name__ = 'pug'
-
-# # the Canonical (Ubuntu) way is to define a version_info attribute
-# version_info = (0, 0, 7, 'alpha', 0)
-# __version__ = '.'.join(str(i) for i in version_info[0:3])
-# version_string = __version__
-
+__version__ = '0.0.1'
 _github_url_ = "https://github.com/hobsonlane/%s" % (__name__)
-
 
 
 #def test():
