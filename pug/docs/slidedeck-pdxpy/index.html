@@ -21,7 +21,7 @@ URL: https://code.google.com/p/io-2012-slides
   <!--This one seems to work all the time, but really small on ipad-->
   <!--<meta name="viewport" content="initial-scale=0.4">-->
   <meta name="apple-mobile-web-app-capable" content="yes">
-   <link rel="shortcut icon" href=" http://www.stanford.edu/favicon.ico"/> 
+   <link rel="shortcut icon" href=" http://python.org/favicon.ico"/> 
   <link rel="stylesheet" media="all" href="theme/css/default.css">
   <link rel="stylesheet" media="all" href="theme/css/custom.css">
   <link rel="stylesheet" media="only screen and (max-device-width: 480px)" href="theme/css/phone.css">
@@ -54,7 +54,7 @@ URL: https://code.google.com/p/io-2012-slides
 
     <h1> Data Science with `pug`</h1>
     <h2> PDX-Python January 2014</h2>
-    <p> Hobson Lane</p>
+    <p> <a href="https://github.com/hobsonlane">Hobson Lane</a></p>
   </hgroup>
 </slide>
 
@@ -76,11 +76,10 @@ URL: https://code.google.com/p/io-2012-slides
 <slide  >
   
     <hgroup>
-      <h2></h2>
+      <h2>Tips</h2>
       <h3></h3>
     </hgroup>
-    <article ><h3>Data</h3>
-<ol>
+    <article ><ol class="build">
 <li>Import or munge your data manually the first time</li>
 </ol>
 <p>a. Remind yourself, "This is productive EDA" not repetitive, mind-numbing, Microsoft-wrestling</p>
@@ -99,8 +98,7 @@ URL: https://code.google.com/p/io-2012-slides
 <ol>
 <li>Dump scripts from ipython history command before exiting each session</li>
 </ol>
-<pre class="prettyprint" data-lang="shell">
-    #/usr/bin/env python
+<pre class="prettyprint" data-lang="python">
     #~/src/pug/bin/save_hist
     ip = get_ipython()
     this_line = list(ip.history_manager.get_tail())[-1][1]
@@ -145,12 +143,13 @@ URL: https://code.google.com/p/io-2012-slides
       <h2></h2>
       <h3></h3>
     </hgroup>
-    <article ><pre><code>$ tail ~/.bash_history_forever
-# cd /home/Hobson
- 7810  2014-01-17 17:42:22 workon dev
-# cd /home/Hobson/src/dev
- 7811  2014-01-17 17:45:51 $ tail ~/.bash_history_forever
-</code></pre></article>
+    <article ><pre class="prettyprint" data-lang="bash">
+    $ tail ~/.bash_history_forever
+    # cd /home/Hobson
+     7810  2014-01-17 17:42:22 workon dev
+    # cd /home/Hobson/src/dev
+     7811  2014-01-17 17:45:51 $ tail ~/.bash_history_forever
+</pre></article>
  
 </slide>
 
@@ -160,32 +159,33 @@ URL: https://code.google.com/p/io-2012-slides
       <h2></h2>
       <h3></h3>
     </hgroup>
-    <article ><pre><code>if [ -n "$force_color_prompt" ]; then
-    if [ -x /usr/bin/tput ] &amp;&amp; tput setaf 1 &gt;&amp;/dev/null; then
-    color_prompt=yes
-    else
-    color_prompt=
+    <article ><pre class="prettyprint" data-lang="bash">
+    if [ -n "$force_color_prompt" ]; then
+        if [ -x /usr/bin/tput ] && tput setaf 1 >&/dev/null; then
+        color_prompt=yes
+        else
+        color_prompt=
+        fi
     fi
-fi
 
-if [ "$color_prompt" = yes ]; then
-    PS1='${debian_chroot:+($debian_chroot)}\[\033[01;32m\]\u@\h\[\033[00m\]:\[\033[01;34m\]\w\[\033[00m\]\$ '
-else
-    PS1='${debian_chroot:+($debian_chroot)}\u@\h:\w\$ '
-fi
-unset color_prompt force_color_prompt
+    if [ "$color_prompt" = yes ]; then
+        PS1='${debian_chroot:+($debian_chroot)}\[\033[01;32m\]\u@\h\[\033[00m\]:\[\033[01;34m\]\w\[\033[00m\]\$ '
+    else
+        PS1='${debian_chroot:+($debian_chroot)}\u@\h:\w\$ '
+    fi
+    unset color_prompt force_color_prompt
 
-case "$TERM" in
-xterm*|rxvt*)
-    PS1="\[\e]0;${debian_chroot:+($debian_chroot)}\u@\h: \w\a\]$PS1"
-    ;;
-*)
-    ;;
-esac
+    case "$TERM" in
+    xterm*|rxvt*)
+        PS1="\[\e]0;${debian_chroot:+($debian_chroot)}\u@\h: \w\a\]$PS1"
+        ;;
+    *)
+        ;;
+    esac
 
-PS1="$PS1\[\033[00;32m\]\$(parse_git_branch)\[\033[00m\]
-\$ "
-</code></pre></article>
+    PS1="$PS1\[\033[00;32m\]\$(parse_git_branch)\[\033[00m\]
+    \$ "
+</pre></article>
  
 </slide>
 
@@ -201,77 +201,8 @@ PS1="$PS1\[\033[00;32m\]\$(parse_git_branch)\[\033[00m\]
 <li>nlp/db -- interracting with databases and migrating data</li>
 <li>nlp/util -- format numbers &amp; dates, importing of "pivots" in spreadsheets</li>
 <li>nlp/strutil -- reformatting of strings</li>
-</ul></article>
- 
-</slide>
-
-<slide  >
-  
-    <hgroup>
-      <h2></h2>
-      <h3></h3>
-    </hgroup>
-    <article ><p>Here is a list that should build:</p>
-<ul>
-<li>I like formulas, like this one $e=mc^2$</li>
-<li>It's rendered using MathJax. You can change the settings by editing base.html if you like</li>
-<li>pressing 'f' toggle fullscreen</li>
-<li>pressing 'w' toggles widescreen</li>
-<li>'o' toggles overview mode</li>
-</ul></article>
- 
-</slide>
-
-<slide class="img-top-center" >
-  
-    <hgroup>
-      <h2>Slide with a figure</h2>
-      <h3>Subtitles are cool too</h3>
-    </hgroup>
-    <article ><p><img height=150 src=figures/200px-6n-graf.svg.png /></p>
-<ul>
-<li>Some point to make about about this figure from wikipedia</li>
-<li>This slide has a class that was defined in theme/css/custom.css</li>
 </ul>
-<footer class="source"> Always cite your sources! </footer></article>
- 
-</slide>
-
-<slide class="segue dark nobackground" >
-  
-    <!-- <aside class="gdbar"><img src="images/google_developers_icon_128.png"></aside> -->
-    <hgroup class="auto-fadein">
-      <h2>Segue slide</h2>
-      <h3>I can haz subtitlz?</h3>
-    </hgroup>
-  
-</slide>
-
-<slide  >
-  
-    <hgroup>
-      <h2>Maybe some code?</h2>
-      <h3></h3>
-    </hgroup>
-    <article ><p>press 'h' to highlight an important section (that is highlighted
-with &lt;b&gt;...&lt;/b&gt; tags)</p>
-<pre class="prettyprint" data-lang="javascript">
-function isSmall() {
-  return window.matchMedia("(min-device-width: ???)").matches;
-}
-
-<b>function hasTouch() {
-  return Modernizr.touch;
-}</b>
-
-function detectFormFactor() {
-  var device = DESKTOP;
-  if (hasTouch()) {
-    device = isSmall() ? PHONE : TABLET;
-  }
-  return device;
-}
-</pre></article>
+<hr /></article>
  
 </slide>
 
@@ -279,10 +210,10 @@ function detectFormFactor() {
 <slide class="thank-you-slide segue nobackground">
   <!-- <aside class="gdbar right"><img src="images/google_developers_icon_128.png"></aside> -->
   <article class="flexbox vleft auto-fadein">
-    <h2> Thanks PDX-Python and all the open source contributors here!</h2>
-    <p> Especially these projects:</p>
+    <h2> Thanks PDX-Python!</h2>
+    <p> And all these open source contributors...</p>
   </article>
-  <p data-config-contact class="auto-fadein"> <span>Django</span> <a href="http://www.djangoproject.com/">website</a><br/> <span>github</span> <a href="http://github.com">hobsonlane</a></p>
+  <p data-config-contact class="auto-fadein"> <a href="http://djangoproject.org">Django</a><br/> <a href="http://python.org">Python</a><br/> <a href="http://pypi.python.org/pypi/pyodbc">pyODBC</a></p>
   </p>
 </slide>
 

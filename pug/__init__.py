@@ -19,5 +19,8 @@
 # THE SOFTWARE.
 """pug -- Package of Utilities written by and for the PDX Python User's Group"""
 
-__version__ = '0.0.1'
+__version__ = '0.0.2'
+__authors__ = [
+    'Hobson Lane <hobsonlane@totalgood.com>'
+    ]
 _github_url_ = "https://github.com/hobsonlane/%s" % (__name__)

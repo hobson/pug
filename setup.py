@@ -1,8 +1,8 @@
 # setup.py for PUG
 from distutils.core import setup
 
-from pug import __version__ as _version_
-from pug import _github_url_, __name__ as _name_
+from pug import __version__, __authors__, __github_url__
+from pug import __name__ as package_name
 import os
 import sys
 
@@ -20,15 +20,15 @@ sys.path.insert(0, os.path.join(os.getcwd()))
 
 
 setup(
-    name = _name_,
-    packages = ["pug"],  # without this: Downloading/unpacking pug ... ImportError: No module named pug ... from pug import __version__, __name__, __doc__, _github_url_
-    version = _version_,
+    name = package_name,
+    packages = ["pug", "crawler"],  # without this: Downloading/unpacking pug ... ImportError: No module named pug ... from pug import __version__, __name__, __doc__, _github_url_
+    version = __version__,
     description = __doc__,
     long_description = open(os.path.join(os.path.dirname(__file__), 'README.md')).read(),
-    author = "Hobson Lane",
-    author_email = "hobson@totalgood.com",
-    url = _github_url_,
-    download_url = "%s/archive/%s-%s.tar.gz" % (_github_url_, _name_, _version_),
+    author = ', '.join(__authors__),
+    author_email = "pugauthors@totalgood.com",
+    url = __github_url__,
+    download_url = "%s/archive/%s-%s.tar.gz" % (__github_url__, package_name, __version__),
     keywords = ["agent", "bot", "ai", "crawl", "data", "science", "data science", "math", "machine-learning", "statistics", "database"],
     classifiers = [
         "Programming Language :: Python",

@@ -25,7 +25,7 @@
 <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
     <meta http-equiv="X-UA-Compatible" content="chrome=1">
-    <title>Datascience with <code>pug</code></title>
+    <title>None</title>
     <!-- Styles -->
     
     <link rel="stylesheet" media="print" href="file:///home/Hobson/.virtualenvs/pug/lib/python2.7/site-packages/landslide/themes/default/css/print.css">
@@ -48,16 +48,21 @@
     </div>
     <div class="slides">
       
-      <!-- slide source: PDX Python User Group January 2014.md -->
+      <!-- slide source: slides.md -->
       <div class="slide-wrapper">
         <div class="slide">
           <div class="inner">
             
-            <header><h1>Datascience with <code>pug</code></h1></header>
             
-            
-            <section><h2>PDX-Python January 2014</h2>
-<h3>Hobson Lane</h3></section>
+            <section><p>% title: Connecting Django to a MS SQL Server
+% subtitle: PDX-Python January 2014
+% author: <a href="http://github.com/hobsonlane">Hobson Lane</a>
+% thankyou: Thanks PDX-Python!
+% thankyou_details: And all these open source contributors:
+% contact: <a href="python.org">python</a>
+% contact: <a href="djangoproject.org">django</a>
+% contact: <a href="pypi.python.org/pypi/pyodbc">pyodbc</a>
+% favicon: http://python.org/favicon.ico</p></section>
             
           </div>
           <div class="presenter_notes">
@@ -69,36 +74,23 @@
           <footer>
             
             <aside class="source">
-              Source: <a href="PDX Python User Group January 2014.md">PDX Python User Group January 2014.md</a>
+              Source: <a href="slides.md">slides.md</a>
             </aside>
             
             <aside class="page_number">
-              1/8
+              1/7
             </aside>
           </footer>
         </div>
       </div>
       
-      <!-- slide source: PDX Python User Group January 2014.md -->
+      <!-- slide source: slides.md -->
       <div class="slide-wrapper">
         <div class="slide">
           <div class="inner">
             
-            <header><h2>Tips</h2></header>
             
-            
-            <section><h3>General</h3>
-<ol>
-<li>sublime rules</li>
-<li>linters make sublime more sublime</li>
-</ol>
-<h3>Data</h3>
-<ol>
-<li>Import or munge your data manually the first time</li>
-</ol>
-<p>a. Remind yourself, "This is productive EDA" not repetitive, mind-numbing, Microsoft-wrestling</p>
-<p>b. You'll know your data and databases better when your done</p>
-<p>c. You may discover things you didn't expect</p></section>
+            <section><p>title: Download and install <a href="http://www.microsoft.com/en-us/download/details.aspx?id=29062">"Microsoft SQL Server 2012 Express"</a></p></section>
             
           </div>
           <div class="presenter_notes">
@@ -110,33 +102,191 @@
           <footer>
             
             <aside class="source">
-              Source: <a href="PDX Python User Group January 2014.md">PDX Python User Group January 2014.md</a>
+              Source: <a href="slides.md">slides.md</a>
             </aside>
             
             <aside class="page_number">
-              2/8
+              2/7
             </aside>
           </footer>
         </div>
       </div>
       
-      <!-- slide source: PDX Python User Group January 2014.md -->
+      <!-- slide source: slides.md -->
       <div class="slide-wrapper">
         <div class="slide">
           <div class="inner">
             
-            <header><h3>Data</h3></header>
+            
+            <section><p>title: If your python world isn't in order, pip and virtualenv can help</p>
+<pre><code>#!/usr/bin/env bash
+deactivate 2&gt;/dev/null
+sudo yum remove python-pip python-virtualenv
+sudo yum install --updated -y python python-setuptools python-devel libxml2 libxml2-devel zlib-devel openssl-devel curl
+mkdir -P ~/src/pip
+cd ~/src/pip
+curl -O https://raw.github.com/pypa/pip/master/contrib/get-pip.py
+sudo python get-pip.py
+sudo pip install virtualenvwrapper
+</code></pre></section>
+            
+          </div>
+          <div class="presenter_notes">
+            <header><h1>Presenter Notes</h1></header>
+            <section>
+            
+            </section>
+          </div>
+          <footer>
+            
+            <aside class="source">
+              Source: <a href="slides.md">slides.md</a>
+            </aside>
+            
+            <aside class="page_number">
+              3/7
+            </aside>
+          </footer>
+        </div>
+      </div>
+      
+      <!-- slide source: slides.md -->
+      <div class="slide-wrapper">
+        <div class="slide">
+          <div class="inner">
             
             
-            <section><ol>
+            <section><p>title: Install TDS and ODBC for linux </p>
+<pre><code>#!/usr/bin/env bash
+sudo yum install --updated -y pcre pcre-devel gcc make autoconf automake unixODBC* freetds*
+</code></pre></section>
+            
+          </div>
+          <div class="presenter_notes">
+            <header><h1>Presenter Notes</h1></header>
+            <section>
+            
+            </section>
+          </div>
+          <footer>
+            
+            <aside class="source">
+              Source: <a href="slides.md">slides.md</a>
+            </aside>
+            
+            <aside class="page_number">
+              4/7
+            </aside>
+          </footer>
+        </div>
+      </div>
+      
+      <!-- slide source: slides.md -->
+      <div class="slide-wrapper">
+        <div class="slide">
+          <div class="inner">
+            
+            
+            <section><p>title: Backup and edit <code>/etc/odbcinst.ini</code></p>
+<pre><code>#!/usr/bin/env bash
+sudo cp /etc/odbcinst.ini /etc/odbcinst.ini.bak
+echo '
+[FreeTDS]
+Description=TDS driver (Sybase / MS SQL)
+Driver=/usr/lib64/libtdsodbc.so
+Setup=/usr/lib64/libtdS.so
+FileUsage=1
+' &gt;&gt; /etc/odbcinst.ini
+</code></pre></section>
+            
+          </div>
+          <div class="presenter_notes">
+            <header><h1>Presenter Notes</h1></header>
+            <section>
+            
+            </section>
+          </div>
+          <footer>
+            
+            <aside class="source">
+              Source: <a href="slides.md">slides.md</a>
+            </aside>
+            
+            <aside class="page_number">
+              5/7
+            </aside>
+          </footer>
+        </div>
+      </div>
+      
+      <!-- slide source: slides.md -->
+      <div class="slide-wrapper">
+        <div class="slide">
+          <div class="inner">
+            
+            
+            <section><p>title: Add the DB to your Django settings.DATABASES</p>
+<pre><code>#!/usr/bin/env python
+DATABASES = {
+    'default': {
+       'ENGINE': 'sql_server.pyodbc'  
+        'NAME': 'mydatabasename',                 
+        'USER': 'yourusername',
+        'PASSWORD': 'yourpassword',
+        'HOST': '192.168.1.127',
+        # 'HOST': 'fully.qualified.domain.nm',
+        'PORT': '1433',  
+        'OPTIONS':{  'host_is_server': True,    }                
+    },
+}
+</code></pre></section>
+            
+          </div>
+          <div class="presenter_notes">
+            <header><h1>Presenter Notes</h1></header>
+            <section>
+            
+            </section>
+          </div>
+          <footer>
+            
+            <aside class="source">
+              Source: <a href="slides.md">slides.md</a>
+            </aside>
+            
+            <aside class="page_number">
+              6/7
+            </aside>
+          </footer>
+        </div>
+      </div>
+      
+      <!-- slide source: slides.md -->
+      <div class="slide-wrapper">
+        <div class="slide">
+          <div class="inner">
+            
+            <header><h1>!/usr/bin/env python</h1></header>
+            
+            
+            <section><p>from django.db import connections
+conn = connections['default']
+print conn.introspection.table_names(conn.cursor())
+~~~~~~~~~~~~~~~~~~~~~~~~~~~</p>
+</li>
 <li>
-<p>Dump scripts from ipython history command before exiting each session</p>
-<h1>/usr/bin/env python</h1>
-<h1>~/src/pug/bin/save_hist</h1>
-<p>ip = get_ipython()
-this_line = list(ip.history_manager.get_tail())[-1][1]
-ip.magic(u'save -r test.py 0-%d' % this_line - 1)
-ip.exit</p>
+<p>With pyodbc:</p>
+<h1>!/usr/bin/env python</h1>
+<p>from django.conf import settings
+import pyodbc
+connection_string = "Driver=FreeTDS;Server=%s;DATABASE=%s;UID=%s;PWD=%s;TDS_Version=7.2;PORT=%s" % (
+    settings.DATABASES['default']['HOST'], 
+    settings.DATABASES['default']['NAME'],
+    settings.DATABASES['default']['USER'],
+    settings.DATABASES['default']['PASSWORD'],
+    settings.DATABASES['default']['PORT'],
+    )
+print conn.introspection.table_names(conn.cursor())</p>
 </li>
 </ol></section>
             
@@ -150,203 +300,11 @@ ip.exit</p>
           <footer>
             
             <aside class="source">
-              Source: <a href="PDX Python User Group January 2014.md">PDX Python User Group January 2014.md</a>
+              Source: <a href="slides.md">slides.md</a>
             </aside>
             
             <aside class="page_number">
-              3/8
-            </aside>
-          </footer>
-        </div>
-      </div>
-      
-      <!-- slide source: PDX Python User Group January 2014.md -->
-      <div class="slide-wrapper">
-        <div class="slide">
-          <div class="inner">
-            
-            
-            <section><p>Dump bash commands using <code>history</code> or keep a running log of where you were and what you did with a <code>.bashrc</code> script like:</p>
-<pre><code>export USR_BIN=$(dirname $(which virtualenv))
-export PROMPT_COMMAND='echo "# cd $PWD" &gt;&gt; ~/.bash_history_forever;
-  '$PROMPT_COMMAND
-export PROMPT_COMMAND="
-  history -a; history -c; history -r;
-  history 1 &gt;&gt; ~/.bash_history_forever; $PROMPT_COMMAND"
-readonly PROMPT_COMMAND
-</code></pre></section>
-            
-          </div>
-          <div class="presenter_notes">
-            <header><h1>Presenter Notes</h1></header>
-            <section>
-            
-            </section>
-          </div>
-          <footer>
-            
-            <aside class="source">
-              Source: <a href="PDX Python User Group January 2014.md">PDX Python User Group January 2014.md</a>
-            </aside>
-            
-            <aside class="page_number">
-              4/8
-            </aside>
-          </footer>
-        </div>
-      </div>
-      
-      <!-- slide source: PDX Python User Group January 2014.md -->
-      <div class="slide-wrapper">
-        <div class="slide">
-          <div class="inner">
-            
-            
-            <section><p>and you'll end up with a colorized prompt:</p>
-<pre><code>Hobson@cstmatlablx01:~$ 
-$ workon dev
-(dev)Hobson@cstmatlablx01:~/src/dev$
-</code></pre></section>
-            
-          </div>
-          <div class="presenter_notes">
-            <header><h1>Presenter Notes</h1></header>
-            <section>
-            
-            </section>
-          </div>
-          <footer>
-            
-            <aside class="source">
-              Source: <a href="PDX Python User Group January 2014.md">PDX Python User Group January 2014.md</a>
-            </aside>
-            
-            <aside class="page_number">
-              5/8
-            </aside>
-          </footer>
-        </div>
-      </div>
-      
-      <!-- slide source: PDX Python User Group January 2014.md -->
-      <div class="slide-wrapper">
-        <div class="slide">
-          <div class="inner">
-            
-            
-            <section><p>and your every move will be recorded: </p>
-<pre><code>$ tail ~/.bash_history_forever
-# cd /home/Hobson
- 7810  2014-01-17 17:42:22 workon dev
-# cd /home/Hobson/src/dev
- 7811  2014-01-17 17:45:51 $ tail ~/.bash_history_forever
-</code></pre></section>
-            
-          </div>
-          <div class="presenter_notes">
-            <header><h1>Presenter Notes</h1></header>
-            <section>
-            
-            </section>
-          </div>
-          <footer>
-            
-            <aside class="source">
-              Source: <a href="PDX Python User Group January 2014.md">PDX Python User Group January 2014.md</a>
-            </aside>
-            
-            <aside class="page_number">
-              6/8
-            </aside>
-          </footer>
-        </div>
-      </div>
-      
-      <!-- slide source: PDX Python User Group January 2014.md -->
-      <div class="slide-wrapper">
-        <div class="slide">
-          <div class="inner">
-            
-            
-            <section><pre><code>If you like a lot of important info in your prompt (like the git branch you are on):
-
-if [ -n "$force_color_prompt" ]; then
-    if [ -x /usr/bin/tput ] &amp;&amp; tput setaf 1 &gt;&amp;/dev/null; then
-    color_prompt=yes
-    else
-    color_prompt=
-    fi
-fi
-
-if [ "$color_prompt" = yes ]; then
-    PS1='${debian_chroot:+($debian_chroot)}\[\033[01;32m\]\u@\h\[\033[00m\]:\[\033[01;34m\]\w\[\033[00m\]\$ '
-else
-    PS1='${debian_chroot:+($debian_chroot)}\u@\h:\w\$ '
-fi
-unset color_prompt force_color_prompt
-
-case "$TERM" in
-xterm*|rxvt*)
-    PS1="\[\e]0;${debian_chroot:+($debian_chroot)}\u@\h: \w\a\]$PS1"
-    ;;
-*)
-    ;;
-esac
-
-PS1="$PS1\[\033[00;32m\]\$(parse_git_branch)\[\033[00m\]
-\$ "
-</code></pre></section>
-            
-          </div>
-          <div class="presenter_notes">
-            <header><h1>Presenter Notes</h1></header>
-            <section>
-            
-            </section>
-          </div>
-          <footer>
-            
-            <aside class="source">
-              Source: <a href="PDX Python User Group January 2014.md">PDX Python User Group January 2014.md</a>
-            </aside>
-            
-            <aside class="page_number">
-              7/8
-            </aside>
-          </footer>
-        </div>
-      </div>
-      
-      <!-- slide source: PDX Python User Group January 2014.md -->
-      <div class="slide-wrapper">
-        <div class="slide">
-          <div class="inner">
-            
-            <header><h2>Files</h2></header>
-            
-            
-            <section><ul>
-<li>bin -- command-line tools, .bashrc, and other config files</li>
-<li>nlp/db -- interracting with databases and migrating data</li>
-<li>nlp/util -- format numbers &amp; dates, importing of "pivots" in spreadsheets</li>
-<li>nlp/strutil -- reformatting of strings</li>
-</ul></section>
-            
-          </div>
-          <div class="presenter_notes">
-            <header><h1>Presenter Notes</h1></header>
-            <section>
-            
-            </section>
-          </div>
-          <footer>
-            
-            <aside class="source">
-              Source: <a href="PDX Python User Group January 2014.md">PDX Python User Group January 2014.md</a>
-            </aside>
-            
-            <aside class="page_number">
-              8/8
+              7/7
             </aside>
           </footer>
         </div>
@@ -361,16 +319,15 @@ PS1="$PS1\[\033[00;32m\]\$(parse_git_branch)\[\033[00m\]
       <caption>Table of Contents</caption>
       
       <tr id="toc-row-1">
-        <th><a href="#slide1">Datascience with <code>pug</code></a></th>
+        <th><a href="#slide1">-</a></th>
         <td><a href="#slide1">1</a></td>
       </tr>
       
-        
-        <tr id="toc-row-2" class="sub">
-          <th><a href="#slide2">Tips</a></th>
-          <td><a href="#slide2">2</a></td>
-        </tr>
-        
+      
+      <tr id="toc-row-2">
+        <th><a href="#slide2">-</a></th>
+        <td><a href="#slide2">2</a></td>
+      </tr>
       
       
       <tr id="toc-row-3">
@@ -398,16 +355,9 @@ PS1="$PS1\[\033[00;32m\]\$(parse_git_branch)\[\033[00m\]
       
       
       <tr id="toc-row-7">
-        <th><a href="#slide7">-</a></th>
+        <th><a href="#slide7">!/usr/bin/env python</a></th>
         <td><a href="#slide7">7</a></td>
       </tr>
-      
-        
-        <tr id="toc-row-8" class="sub">
-          <th><a href="#slide8">Files</a></th>
-          <td><a href="#slide8">8</a></td>
-        </tr>
-        
       
       
     </table>

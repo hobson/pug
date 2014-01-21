@@ -1,11 +1,12 @@
 % title: Data Science with `pug`
 % subtitle: PDX-Python January 2014
-% author: Hobson Lane
-% thankyou: Thanks PDX-Python and all the open source contributors here!
-% thankyou_details: Especially these projects:
-% contact: <span>Django</span> <a href="http://www.djangoproject.com/">website</a>
-% contact: <span>github</span> <a href="http://github.com">hobsonlane</a>
-% favicon: http://www.stanford.edu/favicon.ico
+% author: <a href="https://github.com/hobsonlane">Hobson Lane</a>
+% thankyou: Thanks PDX-Python!
+% thankyou_details: And all these open source contributors...
+% contact: <a href="http://djangoproject.org">Django</a>
+% contact: <a href="http://python.org">Python</a>
+% contact: <a href="http://pypi.python.org/pypi/pyodbc">pyODBC</a>
+% favicon: <img src="https://www.python.org/favicon.ico"/>
 
 ---
 title: Tips
@@ -19,6 +20,9 @@ build_lists: true
 ---
 
 ### Data
+title: Tips
+build_lists: true
+
 
 1. Import or munge your data manually the first time
     
@@ -34,8 +38,7 @@ build_lists: true
 
 2. Dump scripts from ipython history command before exiting each session
 
-<pre class="prettyprint" data-lang="shell">
-    #/usr/bin/env python
+<pre class="prettyprint" data-lang="python">
     #~/src/pug/bin/save_hist
     ip = get_ipython()
     this_line = list(ip.history_manager.get_tail())[-1][1]
@@ -68,16 +71,19 @@ and you'll end up with a colorized prompt:
 
 and your every move will be recorded: 
 
+<pre class="prettyprint" data-lang="bash">
     $ tail ~/.bash_history_forever
     # cd /home/Hobson
      7810  2014-01-17 17:42:22 workon dev
     # cd /home/Hobson/src/dev
      7811  2014-01-17 17:45:51 $ tail ~/.bash_history_forever
+</pre>
 
 ---
 
-    If you like a lot of important info in your prompt (like the git branch you are on):
+If you like a lot of important info in your prompt (like the git branch you are on):
 
+<pre class="prettyprint" data-lang="bash">
     if [ -n "$force_color_prompt" ]; then
         if [ -x /usr/bin/tput ] && tput setaf 1 >&/dev/null; then
         color_prompt=yes
@@ -103,6 +109,7 @@ and your every move will be recorded:
 
     PS1="$PS1\[\033[00;32m\]\$(parse_git_branch)\[\033[00m\]
     \$ "
+</pre>
 
 ---
 
@@ -115,53 +122,4 @@ and your every move will be recorded:
 
 ---
 
-
-Here is a list that should build:
-
-- I like formulas, like this one $e=mc^2$
-- It's rendered using MathJax. You can change the settings by editing base.html if you like
-- pressing 'f' toggle fullscreen
-- pressing 'w' toggles widescreen
-- 'o' toggles overview mode
-
----
-title: Slide with a figure
-subtitle: Subtitles are cool too
-class: img-top-center
-
-<img height=150 src=figures/200px-6n-graf.svg.png />
-
-- Some point to make about about this figure from wikipedia
-- This slide has a class that was defined in theme/css/custom.css
-
-<footer class="source"> Always cite your sources! </footer>
-
----
-title: Segue slide
-subtitle: I can haz subtitlz?
-class: segue dark nobackground
-
----
-title: Maybe some code?
-
-press 'h' to highlight an important section (that is highlighted
-with &lt;b&gt;...&lt;/b&gt; tags)
-
-<pre class="prettyprint" data-lang="javascript">
-function isSmall() {
-  return window.matchMedia("(min-device-width: ???)").matches;
-}
-
-<b>function hasTouch() {
-  return Modernizr.touch;
-}</b>
-
-function detectFormFactor() {
-  var device = DESKTOP;
-  if (hasTouch()) {
-    device = isSmall() ? PHONE : TABLET;
-  }
-  return device;
-}
-</pre>
 
