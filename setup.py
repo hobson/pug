@@ -21,7 +21,7 @@ sys.path.insert(0, os.path.join(os.getcwd()))
 
 setup(
     name = package_name,
-    packages = ["pug", "crawler"],  # without this: Downloading/unpacking pug ... ImportError: No module named pug ... from pug import __version__, __name__, __doc__, _github_url_
+    packages = ["pug"],  # without this: Downloading/unpacking pug ... ImportError: No module named pug ... from pug import __version__, __name__, __doc__, _github_url_
     version = __version__,
     description = __doc__,
     long_description = open(os.path.join(os.path.dirname(__file__), 'README.md')).read(),
