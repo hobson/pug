@@ -55,11 +55,9 @@ def representation(model, field_names=None):
     """
     if field_names is None:
         all_names = model._meta.get_all_field_names()
-        print(repr(all_names))
         field_names = getattr(model, 'IMPORTANT_FIELDS', None) or \
             getattr(model, '_important_fields', None) or \
             ['pk'] + all_names[:min(representation.default_fields, len(all_names))]
-    print(repr(field_names))
     retval = model.__class__.__name__ + u'('
     retval += ', '.join("%s" % (repr(getattr(model, s, '') or '')) for s in field_names[:min(len(field_names), representation.max_fields)])
     return retval + u')'
