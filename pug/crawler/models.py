@@ -2,7 +2,7 @@ from __future__ import print_function
 from django.db import models
 import json
 
-from nlp import db, util
+from pug.nlp import db, util
 
 def datetime_parser(s, default=None):
     if s:

@@ -1,14 +1,25 @@
 from traceback import print_exc
-
-from nlp import db
-from django.db import models, connection, connections
-
-from nlp import sqlserver as sql
-
-from collections import OrderedDict
+from collections import OrderedDict, Mapping
+from decimal import Decimal
 
 import re
 import json
+from dateutil import parser
+
+from pug.nlp import db
+from pug.nlp.db import YES_VALUES, TRUE_VALUES, NO_VALUES, FALSE_VALUES, NULL_VALUES
+from pug.nlp import sqlserver as sql
+
+from django.core.exceptions import ImproperlyConfigured
+try:
+    from django.db import models, connection, connections
+except ImproperlyConfigured:
+    import traceback
+    print traceback.format_exc()
+    print 'WARNING: The module named %r from file %r' % (__name__, __file__)
+    print '         can only be used within a Django project!'
+    print '         Though the module was imported, some of its functions may raise exceptions.'
+
 
 types_not_countable = ('text',)
 types_not_aggregatable = ('text', 'bit',)
@@ -38,13 +49,6 @@ def clean_utf8(utf8_string):
 
 
 def get_cursor_table_names(cursor):
-    # connection_string = "Driver=FreeTDS;Server=%s;DATABASE=%s;UID=%s;PWD=%s;TDS_Version=7.2;PORT=%s" % (
-    #     settings.DATABASES['ssg']['HOST'],settings.DATABASES['ssg']['NAME'], settings.DATABASES['ssg']['USER'],
-    #     settings.DATABASES['ssg']['PASSWORD'],  settings.DATABASES['ssg']['PORT'],
-    #     )
-    # connection = pyodbc.connect(connection_string, autocommit=True)
-    # connection = connections[db_alias]
-    # cursor = connection.cursor()
     return [row[-2] for row in cursor.execute("""SELECT * FROM information_schema.tables""").fetchall()]
 
 
@@ -178,43 +182,164 @@ def inspect_db(app='refurb', db_alias='refurb', table=None, verbosity=2, column=
 
 
 def get_indexes(meta, table_name=None, model_name=None):
-    # return a single field_name: infodict pair for the requested table or model
-    # format of infodict should be: 
-    # { field_name: { 
-    #       'primary_key': boolean representing whether it's the primary key,
-    #       'unique': boolean representing whether it's a unique index }
-    # ... }
+    """Find all the indexes (primary keys) based on the meta data 
+    """
     indexes, pk_field = {}, None
+
+    indexes = []
     for meta_model_name, model_meta in meta.iteritems():
-        if not (table_name == model_meta['Meta']['db_name'] or model_name == meta_model_name):
+        if (table_name or model_name) and not (table_name == model_meta['Meta'].get('db_table', '') or model_name == meta_model_name):
             continue
-        table_name, model_name = model_meta['Meta']['db_name'], meta_model_name
-        N = model_meta['Meta'].get('count', 0)
-        for field_name, field_meta in model_meta.iteritems():
-            if field_name == 'Meta':
-                continue
-            if field_meta.get('primary_key'):
-                # TODO: Allow more than one index per model/table
-                return {field_name: {
+        field_name, field_infodict, score = get_index(model_meta)
+        indexes.append(('%s.%s' % (meta_model_name, field_name), field_infodict, score))
+    return indexes
+
+
+def try_convert(value, datetime_to_ms=False, precise=False):
+    """Convert a str into more useful python type (datetime, float, int, bool), if possible
+
+    Some precision may be lost (e.g. Decimal converted to a float)
+
+    >>> try_convert('false')
+    False
+    >>> try_convert('123456789.123456789')
+    123456789.123456
+    >>> try_convert('1234')
+    1234
+    >>> try_convert(1234)
+    1234
+    >>> try_convert(['1234'])
+    ['1234']
+    >>> try_convert('12345678901234567890123456789012345678901234567890', precise=True)
+    12345678901234567890123456789012345678901234567890L
+    >>> try_convert('12345678901234567890123456789012345678901234567890.1', precise=True)
+    Decimal('12345678901234567890123456789012345678901234567890.1')
+    """
+    if not isinstance(value, basestring):
+        return value
+    try:
+        dt = parser.parse(value)
+        if datetime_to_ms:
+            return db.datetime_in_milliseconds(dt)
+        return dt
+    except:
+        if not precise:
+            try:
+                return int(value)
+            except:
+                try:
+                    return float(value)
+                except:
+                    pass
+        else:
+            dec, i, f = None, None, None
+            try:
+                dec = Decimal(value)
+            except:
+                return try_convert(value, precise=False)
+            try:
+                i = int(value)
+            except:
+                try:
+                    f = float(value)
+                except:
+                    pass
+            if dec is not None:
+                if dec == i:
+                    return i
+                elif dec == f:
+                    return f
+                return dec
+
+    if value in YES_VALUES or value in TRUE_VALUES:
+        return True
+    elif value in NO_VALUES or value in FALSE_VALUES:
+        return False
+    elif value in NULL_VALUES:
+        return None
+    return value
+
+
+def convert_loaded_json(js):
+    """Convert strings loaded as part of a json file/string to native python types
+
+    convert_loaded_json({'x': '123'})
+    {'x': 123}
+    convert_loaded_json([{'x': '123.'}, {'x': 'Jan 28, 2014'}])
+    [{'x': 123}, datetime.datetime(2014, 1, 18)]
+    """
+    if not isinstance(js, (Mapping, tuple, list)):
+        return try_convert(js)
+    try:
+        return type(js)(convert_loaded_json(item) for item in js.iteritems())
+    except:
+        try:
+            return type(js)(convert_loaded_json(item) for item in iter(js))
+        except:
+            return try_convert(js)
+
+
+def get_index(model_meta, weights=None):
+    """Return a single (field_name, infodict pair) for the model metadata dict provided
+
+    return value format is: 
+        ( 
+            field_name, {
+                'primary_key': boolean representing whether it's the primary key,
+                'unique': boolean representing whether it's a unique index 
+            }
+        )
+    """
+    weights = weights or get_index.default_weights
+    N = model_meta['Meta'].get('count', 0)
+    for field_name, field_meta in model_meta.iteritems():
+        if field_name == 'Meta':
+            continue
+        pkfield = field_meta.get('primary_key')
+        if pkfield:
+            print pkfield
+            # TODO: Allow more than one index per model/table
+            return {
+                field_name: {
                     'primary_key': True,
                     'unique': field_meta.get('unique') or (
-                        N >= 3 and field_meta.get('num_null') <= 1 and field_meta.get('num_distinct') == N),
+                        N >= 3 and field_meta.get('num_null') <= 1
+                        and field_meta.get('num_distinct') == N),
                     }}
-        score_names = []
-        for field_name, field_meta in model_meta.iteritems():
-            score = .5 * float(field_meta.get('unique') or (N >= 3 and field_meta.get('num_null') <= 1 and field_meta.get('num_distinct') == N))
-            score += .2 * float(field_meta.get('type') == 'numeric')
-            score += .1 * float(field_meta.get('type') == 'char')
-            score -= .3 * float(field_meta.get('type') == 'text')
-            score_names += [(score, field_name)]
-        # FIXME
-        max_name = max(score_names)
-        field_meta = model_meta[max_name[1]]
-        return {max_name[1]: {
-                'primary_key': True,
-                'unique': field_meta.get('unique') or (
-                    N >= 3 and field_meta.get('num_null') <= 1 and field_meta.get('num_distinct') == N),
-                }}
+    score_names = []
+    for field_name, field_meta in model_meta.iteritems():
+        score = 0
+        for feature, weight in weights:
+            # for categorical features (strings), need to look for a particular value
+            value = field_meta.get(feature)
+            if isinstance(weight, tuple):
+                if value is not None and value in (float, int):
+                    score += weight * value
+                if callable(weight[1]):
+                    score += weight[0] * weight[1](field_meta.get(feature))
+                else:
+                    score += weight[0] * (field_meta.get(feature) == weight[1])
+            else:
+                feature_value = field_meta.get(feature)
+                if feature_value is not None:
+                    score += weight * field_meta.get(feature)
+        score_names += [(score, field_name)]
+    max_name = max(score_names)
+    field_meta = model_meta[max_name[1]]
+    return (
+        max_name[1],
+        {
+            'primary_key': True,
+            'unique': field_meta.get('unique') or (
+                N >= 3 
+                and field_meta.get('num_null') <= 1 
+                and field_meta.get('num_distinct') == N),
+        },
+        max_name[0],
+        )
+get_index.default_weights = (('num_distinct', (1e-3, 'normalize')), ('unique', 1.), ('num_null', (-1e-3, 'normalize')), ('fraction_null', -2.), 
+                             ('type', (.3, 'numeric')), ('type', (.2, 'char')), ('type',(-.3, 'text')),
+                            )
 
                     
 def models_with_unique_column(meta, exclude_single_pk=True, exclude_multi_pk=True):

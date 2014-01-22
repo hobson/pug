@@ -6,15 +6,12 @@ from optparse import make_option
 
 from django.core.management.base import NoArgsCommand, CommandError
 from django.db import DEFAULT_DB_ALIAS
-from call_center.find_primary_keys import inspect_db, clean_utf8
+from pug.db.find_primary_keys import inspect_db, clean_utf8
 import json
 
 datetime_format = '%Y-%m-%d %H:%M:%S'  # plus timezone name at the end
 
-#import calendar
 import datetime
-#from decimal import Decimal
-
 decode_datetime = lambda x: datetime.strptime(x, json.datetime_format)
 
 
@@ -64,13 +61,13 @@ class Command(NoArgsCommand):
 
     def handle_inspection(self, options):
         one_table = options.get('table')
-        verbosity = options.get('verbosity')
+        verbosity = int(options.get('verbosity'))
         app = options.get('app')
         meta = inspect_db(app=app, table=one_table, verbosity=verbosity)
-        # from StringIO import StringIO
-        # io = StringIO()
-        # FIXME:date loop and yield using streaming json
-        return json.dump(meta, indent=2, cls=RobustEncoder)
+
+        # meta is a dict of dicts of dicts, so doesn't iterate easily
+        for line in json.dumps(meta, indent=4, cls=RobustEncoder).split('\n'):
+            yield line
 
     def normalize_col_name(self, col_name, used_column_names, is_relation):
         """

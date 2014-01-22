@@ -4,20 +4,19 @@ import keyword
 import re
 from optparse import make_option
 import fnmatch
-
 import json
 
+import pyodbc
+
 from django.db import connections
+#from django.conf import settings
 #from django.utils import six
-#from django.db import DEFAULT_DB_ALIAS
+
 from django.core.management.commands.inspectdb import Command as InspectDBCommand
-
-
-from call_center.find_primary_keys import inspect_db, clean_utf8, get_indexes
+from pug.db.find_primary_keys import inspect_db, clean_utf8, get_indexes
 from nlp.sqlserver import get_meta_tuples
 
-import pyodbc
-from django.conf import settings
+
 
 
 connection = pyodbc.connect('Driver=FreeTDS;Server=SERVERNAME;DATABASE=DBNAME;UID=UNAME;PWD=CATCHMEIFYOUCAN;TDS_Version=7.2;PORT=1433')
