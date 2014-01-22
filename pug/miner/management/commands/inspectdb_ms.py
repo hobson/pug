@@ -13,7 +13,7 @@ from django.db import connections
 #from django.utils import six
 
 from django.core.management.commands.inspectdb import Command as InspectDBCommand
-from pug.db.find_primary_keys import inspect_db, clean_utf8, get_indexes
+from pug.db.explore import inspect_db, clean_utf8, get_indexes
 from nlp.sqlserver import get_meta_tuples
 
 

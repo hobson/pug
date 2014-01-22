@@ -6,9 +6,8 @@ import re
 import json
 from dateutil import parser
 
-from pug.nlp import db
-from pug.nlp.db import YES_VALUES, TRUE_VALUES, NO_VALUES, FALSE_VALUES, NULL_VALUES
-from pug.nlp import sqlserver as sql
+from ..nlp import db
+from ..nlp import sqlserver as sql
 
 from django.core.exceptions import ImproperlyConfigured
 try:
@@ -251,11 +250,11 @@ def try_convert(value, datetime_to_ms=False, precise=False):
                     return f
                 return dec
 
-    if value in YES_VALUES or value in TRUE_VALUES:
+    if value in db.YES_VALUES or value in db.TRUE_VALUES:
         return True
-    elif value in NO_VALUES or value in FALSE_VALUES:
+    elif value in db.NO_VALUES or value in db.FALSE_VALUES:
         return False
-    elif value in NULL_VALUES:
+    elif value in db.NULL_VALUES:
         return None
     return value
 

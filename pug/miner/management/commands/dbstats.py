@@ -6,7 +6,7 @@ from optparse import make_option
 
 from django.core.management.base import NoArgsCommand, CommandError
 from django.db import DEFAULT_DB_ALIAS
-from pug.db.find_primary_keys import inspect_db, clean_utf8
+from pug.db.explore import inspect_db, clean_utf8
 import json
 
 datetime_format = '%Y-%m-%d %H:%M:%S'  # plus timezone name at the end

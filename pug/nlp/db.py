@@ -46,9 +46,9 @@ TRUE_VALUES = (True, 'True', 'true', 'TRUE', 'T')
 NO_VALUES = ('No', 'no', 'N')
 YES_VALUES = ('Yes', 'yes', 'Y')
 
+DEFAULT_APP = None  # models.get_apps()[0]
+DEFAULT_MODEL = None  # models.get_models()[0]
 
-DEFAULT_APP = models.get_apps()[0]
-DEFAULT_MODEL = models.get_models()[0]
 
 
 def has_suffix(model, suffixes=('Orig',)):
