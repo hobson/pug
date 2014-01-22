@@ -7,11 +7,16 @@ import json
 from dateutil import parser
 
 from ..nlp import db
-from ..nlp import sqlserver as sql
+import sqlserver as sql
 
 from django.core.exceptions import ImproperlyConfigured
+DEFAULT_DB_ALIAS = 'default'
+DEFAULT_APP_NAME = None
 try:
     from django.db import models, connection, connections
+    from django.db import DEFAULT_DB_ALIAS
+    from django.conf import settings
+    DEFAULT_APP_NAME = settings.INSTALLED_APPS[-1].split('.')[-1]
 except ImproperlyConfigured:
     import traceback
     print traceback.format_exc()
@@ -24,54 +29,27 @@ types_not_countable = ('text',)
 types_not_aggregatable = ('text', 'bit',)
 
 
-def clean_utf8(utf8_string):
-    r"""Delete any invalid symbols in a UTF-8 encoded string
+def db_meta(app, db_alias=None, table=None, verbosity=2, column=None):
+    """Return a dict of dicts containing metadata about the database tables associated with an app
 
-    Returns the cleaned string.
-    
-    >>> clean_utf8('A\xffB\xffC ')
-    'ABC '
+    >>> db_meta('crawler', table='crawler_wikiitem')  # doctest: +ELLIPSIS
+    OrderedDict([('WikiItem', OrderedDict([('Meta', OrderedDict([('primary_key', None), ('count', 1332), ('db_table', u'crawler_wikiitem')])), ('id', OrderedDict([('name', 'id'), ('type', ...
     """
-    if isinstance(utf8_string, basestring):
-        while True:
-            try:
-                json.dumps(utf8_string)
-                break
-            except UnicodeDecodeError as e:
-                m = re.match(r".*can't[ ]decode[ ]byte[ ]0x[0-9a-fA-F]{2}[ ]in[ ]position[ ](\d+)[ :.].*", str(e))
-                if m and m.group(1):
-                    i = int(m.group(1))
-                    utf8_string = utf8_string[:i] + utf8_string[i+1:]
-                else:
-                    raise e
-    return utf8_string
 
-
-def get_cursor_table_names(cursor):
-    return [row[-2] for row in cursor.execute("""SELECT * FROM information_schema.tables""").fetchall()]
-
-
-def inspect_cursor(cursor=None):
-    if isinstance(cursor, basestring):
-        cursor = connections[cursor].cursor()
-    if not cursor:
-        cursor = connections['default']
-    for table_name in get_cursor_table_names(cursor):
-        print table_name
-
-# FIXME: break `inspect_db` into modules that make sense, like:
-#   inspect_column()
-#   inspect_table()
-#   count_values()
-#   count_unique()
-def inspect_db(app='refurb', db_alias='refurb', table=None, verbosity=2, column=None):
+    if db_alias is None:
+        if isinstance(app, basestring):
+            db_alias = str(app)
+        else:
+            db_alias = DEFAULT_DB_ALIAS  # app.__package__
     if app and isinstance(app, basestring):
         app = db.get_app(app)
+
     model_names = list(mc.__name__ for mc in models.get_models(app))
     meta = OrderedDict()
+    # inspectdb uses: for table_name in connection.introspection.table_names(cursor):
     for model_name in model_names:
         model = db.get_model(model_name, app=app)
-        if table is not None and isinstance(table, basestring):
+        if model and table is not None and isinstance(table, basestring):
             if model._meta.db_table != table:
                 if verbosity>1:
                     print 'skipped model named %s with db table names %s.' % (model_name, model._meta.db_table)
@@ -90,7 +68,7 @@ def inspect_db(app='refurb', db_alias='refurb', table=None, verbosity=2, column=
         if verbosity>1:
             print '%s.Meta = %r' % (model_name, meta[model_name]['Meta'])
         
-        # meta[model_name]['Meta']['db_name'] = db_alias
+        # inspectdb uses: connection.introspection.get_table_description(cursor, table_name)
         properties_of_fields = sql.get_meta_dicts(cursor=db_alias, table=meta[model_name]['Meta']['db_table'])
         field_properties_dict = OrderedDict((field['name'], field) for field in properties_of_fields)
         if verbosity > 1:
@@ -180,7 +158,73 @@ def inspect_db(app='refurb', db_alias='refurb', table=None, verbosity=2, column=
     return meta
 
 
-def get_indexes(meta, table_name=None, model_name=None):
+def get_index(model_meta, weights=None):
+    """Return a single tuple of index metadata for the model metadata dict provided
+
+    return value format is: 
+
+        ( 
+            field_name,
+            {
+                'primary_key': boolean representing whether it's the primary key,
+                'unique': boolean representing whether it's a unique index 
+            },
+            score,
+        )
+    """
+    weights = weights or get_index.default_weights
+    N = model_meta['Meta'].get('count', 0)
+    for field_name, field_meta in model_meta.iteritems():
+        if field_name == 'Meta':
+            continue
+        pkfield = field_meta.get('primary_key')
+        if pkfield:
+            print pkfield
+            # TODO: Allow more than one index per model/table
+            return {
+                field_name: {
+                    'primary_key': True,
+                    'unique': field_meta.get('unique') or (
+                        N >= 3 and field_meta.get('num_null') <= 1
+                        and field_meta.get('num_distinct') == N),
+                    }}
+    score_names = []
+    for field_name, field_meta in model_meta.iteritems():
+        score = 0
+        for feature, weight in weights:
+            # for categorical features (strings), need to look for a particular value
+            value = field_meta.get(feature)
+            if isinstance(weight, tuple):
+                if value is not None and value in (float, int):
+                    score += weight * value
+                if callable(weight[1]):
+                    score += weight[0] * weight[1](field_meta.get(feature))
+                else:
+                    score += weight[0] * (field_meta.get(feature) == weight[1])
+            else:
+                feature_value = field_meta.get(feature)
+                if feature_value is not None:
+                    score += weight * field_meta.get(feature)
+        score_names += [(score, field_name)]
+    max_name = max(score_names)
+    field_meta = model_meta[max_name[1]]
+    return (
+        max_name[1],
+        {
+            'primary_key': True,
+            'unique': field_meta.get('unique') or (
+                N >= 3 
+                and field_meta.get('num_null') <= 1 
+                and field_meta.get('num_distinct') == N),
+        },
+        max_name[0],
+        )
+get_index.default_weights = (('num_distinct', (1e-3, 'normalize')), ('unique', 1.), ('num_null', (-1e-3, 'normalize')), ('fraction_null', -2.), 
+                             ('type', (.3, 'numeric')), ('type', (.2, 'char')), ('type',(-.3, 'text')),
+                            )
+
+
+def meta_to_indexes(meta, table_name=None, model_name=None):
     """Find all the indexes (primary keys) based on the meta data 
     """
     indexes, pk_field = {}, None
@@ -193,6 +237,16 @@ def get_indexes(meta, table_name=None, model_name=None):
         indexes.append(('%s.%s' % (meta_model_name, field_name), field_infodict, score))
     return indexes
 
+
+def get_relations(cursor, table_name, app=DEFAULT_APP_NAME):
+    meta = db_meta(app=app, db_alias=None, table=table_name, verbosity=0)
+    print meta
+    return {}
+
+def get_indexes(cursor, table_name, app=DEFAULT_APP_NAME):
+    meta = db_meta(app=app, db_alias=None, table=table_name, verbosity=0)
+    print meta
+    return {}
 
 def try_convert(value, datetime_to_ms=False, precise=False):
     """Convert a str into more useful python type (datetime, float, int, bool), if possible
@@ -278,67 +332,7 @@ def convert_loaded_json(js):
             return try_convert(js)
 
 
-def get_index(model_meta, weights=None):
-    """Return a single (field_name, infodict pair) for the model metadata dict provided
 
-    return value format is: 
-        ( 
-            field_name, {
-                'primary_key': boolean representing whether it's the primary key,
-                'unique': boolean representing whether it's a unique index 
-            }
-        )
-    """
-    weights = weights or get_index.default_weights
-    N = model_meta['Meta'].get('count', 0)
-    for field_name, field_meta in model_meta.iteritems():
-        if field_name == 'Meta':
-            continue
-        pkfield = field_meta.get('primary_key')
-        if pkfield:
-            print pkfield
-            # TODO: Allow more than one index per model/table
-            return {
-                field_name: {
-                    'primary_key': True,
-                    'unique': field_meta.get('unique') or (
-                        N >= 3 and field_meta.get('num_null') <= 1
-                        and field_meta.get('num_distinct') == N),
-                    }}
-    score_names = []
-    for field_name, field_meta in model_meta.iteritems():
-        score = 0
-        for feature, weight in weights:
-            # for categorical features (strings), need to look for a particular value
-            value = field_meta.get(feature)
-            if isinstance(weight, tuple):
-                if value is not None and value in (float, int):
-                    score += weight * value
-                if callable(weight[1]):
-                    score += weight[0] * weight[1](field_meta.get(feature))
-                else:
-                    score += weight[0] * (field_meta.get(feature) == weight[1])
-            else:
-                feature_value = field_meta.get(feature)
-                if feature_value is not None:
-                    score += weight * field_meta.get(feature)
-        score_names += [(score, field_name)]
-    max_name = max(score_names)
-    field_meta = model_meta[max_name[1]]
-    return (
-        max_name[1],
-        {
-            'primary_key': True,
-            'unique': field_meta.get('unique') or (
-                N >= 3 
-                and field_meta.get('num_null') <= 1 
-                and field_meta.get('num_distinct') == N),
-        },
-        max_name[0],
-        )
-get_index.default_weights = (('num_distinct', (1e-3, 'normalize')), ('unique', 1.), ('num_null', (-1e-3, 'normalize')), ('fraction_null', -2.), 
-                             ('type', (.3, 'numeric')), ('type', (.2, 'char')), ('type',(-.3, 'text')),
-                            )
 
                     
 def models_with_unique_column(meta, exclude_single_pk=True, exclude_multi_pk=True):
@@ -355,3 +349,56 @@ def models_with_unique_column(meta, exclude_single_pk=True, exclude_multi_pk=Tru
             if any(field['num_distinct'] == 1 for field in model_fields if field is not 'Meta'):
                 models_with_potential_pk += model_name
     return models_with_potential_pk
+
+
+def clean_utf8(utf8_string):
+    r"""Delete any invalid symbols in a UTF-8 encoded string
+
+    Returns the cleaned string.
+    
+    >>> clean_utf8('A\xffB\xffC ')
+    'ABC '
+    """
+    if isinstance(utf8_string, basestring):
+        while True:
+            try:
+                json.dumps(utf8_string)
+                break
+            except UnicodeDecodeError as e:
+                m = re.match(r".*can't[ ]decode[ ]byte[ ]0x[0-9a-fA-F]{2}[ ]in[ ]position[ ](\d+)[ :.].*", str(e))
+                if m and m.group(1):
+                    i = int(m.group(1))
+                    utf8_string = utf8_string[:i] + utf8_string[i+1:]
+                else:
+                    raise e
+    return utf8_string
+
+
+def get_cursor_table_names(cursor):
+    return [row[-2] for row in cursor.execute("""SELECT * FROM information_schema.tables""").fetchall()]
+
+
+def inspect_cursor(cursor=None):
+    if isinstance(cursor, basestring):
+        cursor = connections[cursor].cursor()
+    if not cursor:
+        cursor = connections['default']
+    for table_name in get_cursor_table_names(cursor):
+        print table_name
+
+class RobustEncoder(json.JSONEncoder):
+    """A more robust JSON serializer (handles any object with a __str__ method).
+
+    from http://stackoverflow.com/a/15823348/623735
+    Fixes: "TypeError: datetime.datetime(..., tzinfo=<UTC>) is not JSON serializable"
+
+    >>> json.dumps(datetime.datetime(1,2,3), cls=RobustEncoder)
+    '"0001-02-03 00:00:00"'
+    """
+    def default(self, obj):
+        # if isinstance(obj, (datetime.datetime, Decimal)):
+        #     obj = str(obj)
+        if not isinstance(obj, (list, dict, tuple, int, float, basestring, bool, type(None))):
+            return str(obj)
+        return super(RobustEncoder, self).default(self, obj)
+

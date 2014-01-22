@@ -6,31 +6,13 @@ from optparse import make_option
 
 from django.core.management.base import NoArgsCommand, CommandError
 from django.db import DEFAULT_DB_ALIAS
-from pug.db.explore import inspect_db, clean_utf8
+from pug.db.explore import db_meta, clean_utf8, RobustEncoder
 import json
 
 datetime_format = '%Y-%m-%d %H:%M:%S'  # plus timezone name at the end
 
 import datetime
 decode_datetime = lambda x: datetime.strptime(x, json.datetime_format)
-
-
-class RobustEncoder(json.JSONEncoder):
-    """A JSON serializer.
-
-    from http://stackoverflow.com/a/15823348/623735
-    
-    Fix TypeError: datetime.datetime(..., tzinfo=<UTC>) is not JSON serializable
-
-    >>> json.dumps(datetime.datetime(1,2,3), cls=RobustEncoder)
-    '"0001-02-03 00:00:00"'
-    """
-    def default(self, obj):
-        # if isinstance(obj, (datetime.datetime, Decimal)):
-        #     obj = str(obj)
-        if not isinstance(obj, (list, dict, tuple, int, float, basestring, bool, type(None))):
-            return str(obj)
-        return super(RobustEncoder, self).default(self, obj)
 
 
 class Command(NoArgsCommand):
@@ -63,7 +45,7 @@ class Command(NoArgsCommand):
         one_table = options.get('table')
         verbosity = int(options.get('verbosity'))
         app = options.get('app')
-        meta = inspect_db(app=app, table=one_table, verbosity=verbosity)
+        meta = db_meta(app=app, db_alias=None, table=one_table, verbosity=verbosity)
 
         # meta is a dict of dicts of dicts, so doesn't iterate easily
         for line in json.dumps(meta, indent=4, cls=RobustEncoder).split('\n'):

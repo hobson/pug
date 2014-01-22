@@ -334,7 +334,7 @@ def get_model(model=DEFAULT_MODEL, app=DEFAULT_APP):
         return model_name
     app = get_app(app)
     model_names = [mc.__name__ for mc in models.get_models(app)]
-    return models.get_model(app.__package__, fuzzy.extractOne(str(model), model_names)[0])
+    return models.get_model(app.__package__.split('.')[-1], fuzzy.extractOne(str(model), model_names)[0])
 
 
 def queryset_from_model_number(model_number=None, model=DEFAULT_MODEL, app=DEFAULT_APP):

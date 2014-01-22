@@ -13,8 +13,8 @@ from django.db import connections
 #from django.utils import six
 
 from django.core.management.commands.inspectdb import Command as InspectDBCommand
-from pug.db.explore import inspect_db, clean_utf8, get_indexes
-from nlp.sqlserver import get_meta_tuples
+from pug.db.explore import db_meta, clean_utf8, get_indexes
+from pug.db.sqlserver import get_meta_tuples
 
 
 
@@ -77,7 +77,7 @@ class Command(InspectDBCommand):
             # because the parent method checks the stealth option
             options['table_name_filter'] = table_name_filter
 
-        meta = inspect_db(app=app, table=table_name_filter, verbosity=int(verbosity))
+        meta = db_meta(app=app, table=table_name_filter, verbosity=int(verbosity))
 
         if verbosity > 1:
             print meta
