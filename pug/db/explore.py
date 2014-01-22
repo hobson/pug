@@ -40,10 +40,12 @@ def db_meta(app, db_alias=None, table=None, verbosity=2, column=None):
         if isinstance(app, basestring):
             db_alias = str(app)
         else:
-            db_alias = DEFAULT_DB_ALIAS  # app.__package__
+            db_alias = app.__package__ # only works if you have a db_alias for every app and it's the same as the app name
+    db_alias = db_alias or DEFAULT_DB_ALIAS
     if app and isinstance(app, basestring):
         app = db.get_app(app)
 
+    print app, db_alias
     model_names = list(mc.__name__ for mc in models.get_models(app))
     meta = OrderedDict()
     # inspectdb uses: for table_name in connection.introspection.table_names(cursor):
@@ -68,95 +70,119 @@ def db_meta(app, db_alias=None, table=None, verbosity=2, column=None):
         if verbosity>1:
             print '%s.Meta = %r' % (model_name, meta[model_name]['Meta'])
         
-        # inspectdb uses: connection.introspection.get_table_description(cursor, table_name)
-        properties_of_fields = sql.get_meta_dicts(cursor=db_alias, table=meta[model_name]['Meta']['db_table'])
-        field_properties_dict = OrderedDict((field['name'], field) for field in properties_of_fields)
-        if verbosity > 1:
-            print '-' * 20 + model_name + '-' * 20
-        db_primary_keys = [field['name'] for field in properties_of_fields if field['primary_key']]
-        if len(db_primary_keys) == 1:
-            meta[model_name]['Meta']['primary_key'] = db_primary_keys[0]
-        for field in model._meta._fields():
-            db_column = field.db_column
-            if not db_column:
-                if field.name in field_properties_dict:
-                    db_column = field.name
-                elif field.name.lower() in field_properties_dict:
-                    db_column = field.name.lower()
-                elif field.name.upper() in field_properties_dict:
-                    db_column = field.name.upper()
-            if not db_column:
-                if verbosity > 1:
-                    print "WARNING: Skipped field named '%s'. No column found in the database.table '%s.%s'." % (field.name, db_alias, meta[model_name]['Meta']['db_table'])
-                continue
-            if column is not None and isinstance(column, basestring):
-                if db_column != column:
-                    if verbosity>1:
-                        print 'Skipped field named %s.%s with db column name %s.%s.' % (model_name, field.name, model._meta.db_table, db_column)
-                    continue
-            elif callable(column):
-                if not column(db_column):
-                    if verbosity>1:
-                        print 'Skipped field named %s.%s with db column name %s.%s.' % (model_name, field.name, model._meta.db_table, db_column)
-                    continue
-            if (field.name == 'id' and isinstance(field, models.fields.AutoField)
-                    and field.primary_key and (not field_properties_dict[db_column]['primary_key'])):
-                continue
-
-            # Calculate the fraction of values in a column that are distinct (unique).
-            #   For columns that aren't populated with 100% distinct values, the fraction may help identify columns that are part of a  "unique-together" compound key
-            #   Necessary constraint for col1 and col2 to be compound key: col1_uniqueness + col2_uniqueness >= 1.0 (100%)
-            # TODO: check for other clues about primary_keyness besides just uniqueness 
-            field_properties_dict[db_column]['num_distinct'] = None
-            field_properties_dict[db_column]['num_null'] = None
-            if field_properties_dict[db_column]['type'] not in types_not_countable:
-                field_properties_dict[db_column]['num_distinct'] = model.objects.using(db_alias).values(field.name).distinct().count()
-                field_properties_dict[db_column]['num_null'] = model.objects.using(db_alias).filter(**{'%s__isnull' % field.name: True}).count()
-
-            field_properties_dict[db_column]['max'] = None
-            field_properties_dict[db_column]['min'] = None
-            # check field_properties_dict[db_column]['num_null'] for all Null first?
-            if field_properties_dict[db_column]['type'] not in types_not_aggregatable:
-                connection.close()
-                try:
-                    field_properties_dict[db_column]['max'] = clean_utf8(model.objects.using(db_alias).aggregate(max_value=models.Max(field.name))['max_value'])
-                    field_properties_dict[db_column]['min'] = clean_utf8(model.objects.using(db_alias).aggregate(min_value=models.Min(field.name))['min_value'])
-                except ValueError, e:
-                    if verbosity > 1:
-                        print_exc()
-                        print "ValueError (UnicodeDecodeError?): Skipped max/min calculations for field named '%s' (%s) because of %s." % (field.name, repr(db_column), e)
-                    connection.close()
-                # validate values that might be invalid strings do to db encoding/decoding errors (make sure they are UTF-8
-                for k in ('min', 'max'):
-                    clean_utf8(field_properties_dict.get(db_column, {}).get(k))
-
-
-
-            # field_properties_dict[db_column]['count'] = N
-            if verbosity > 2:
-                print '%s (%s) has %s / %s (%3.1f%%) distinct values between %s and %s, excluding %s nulls.' % (field.name, db_column, 
-                                                             field_properties_dict[db_column]['num_distinct'], 
-                                                             meta[model_name]['Meta']['count'],
-                                                             100. * (field_properties_dict[db_column]['num_distinct'] or 0) / (meta[model_name]['Meta']['count'] or 1),
-                                                             repr(field_properties_dict[db_column]['min']),
-                                                             repr(field_properties_dict[db_column]['max']),
-                                                             field_properties_dict[db_column]['num_null'])
-            # TODO:
-            #   1. count the number of values that are strings that could be converted to
-            #      a. integers
-            #      b. floats
-            #      c. dates / datetimes
-            #      d. booleans / nullbooleans
-            #      e. other ordinal, categorical, or quantitative types
-            #   2. count the number of null values
-            #      a. null/None
-            #      b. blank
-            #      c. whitespace or other strings signifying null ('NULL', 'None', 'N/A', 'NaN', 'Not provided')
+        field_properties_dict = model_meta(model_name)
         if verbosity > 1:
             print field_properties_dict 
         meta[model_name].update(field_properties_dict)
     return meta
 
+
+def field_meta(field, verbosity=0):
+    """Return a dict of statistical properties (metadata) for a database column (model field)
+
+    Strings are UTF-8 encoded
+    Resulting dictionary is json-serializable using the pug.exploer.RobustEncoder class.
+
+    {
+        'num_distinct':   # count of distinct (different) discrete values within the column
+        'min':   # minimum value
+        'max':   # maximum value
+        'num_null':   # count of the Null or None values in the column
+        'type':  # database column type
+    }
+
+    TODO:
+      1. count the number of values that are strings that could be converted to
+         a. integers
+         b. floats
+         c. dates / datetimes
+         d. booleans / nullbooleans
+         e. other ordinal, categorical, or quantitative types
+      2. count the number of null values
+         a. null/None
+         b. blank
+         c. whitespace or other strings signifying null ('NULL', 'None', 'N/A', 'NaN', 'Not provided')
+    """
+    db_column = field.db_column
+    if not db_column:
+        if field.name in field_properties_dict:
+            db_column = field.name
+        elif field.name.lower() in field_properties_dict:
+            db_column = field.name.lower()
+        elif field.name.upper() in field_properties_dict:
+            db_column = field.name.upper()
+    if not db_column:
+        if verbosity > 1:
+            print "WARNING: Skipped field named '%s'. No column found in the database.table '%s.%s'." % (field.name, db_alias, meta[model_name]['Meta']['db_table'])
+        continue
+    if column is not None and isinstance(column, basestring):
+        if db_column != column:
+            if verbosity>1:
+                print 'Skipped field named %s.%s with db column name %s.%s.' % (model_name, field.name, model._meta.db_table, db_column)
+            continue
+    elif callable(column):
+        if not column(db_column):
+            if verbosity>1:
+                print 'Skipped field named %s.%s with db column name %s.%s.' % (model_name, field.name, model._meta.db_table, db_column)
+            continue
+    if (field.name == 'id' and isinstance(field, models.fields.AutoField)
+            and field.primary_key and (not field_properties['primary_key'])):
+        continue
+
+    # Calculate the fraction of values in a column that are distinct (unique).
+    #   For columns that aren't populated with 100% distinct values, the fraction may help identify columns that are part of a  "unique-together" compound key
+    #   Necessary constraint for col1 and col2 to be compound key: col1_uniqueness + col2_uniqueness >= 1.0 (100%)
+    # TODO: check for other clues about primary_keyness besides just uniqueness 
+    field_properties['num_distinct'] = None
+    field_properties['num_null'] = None
+    if field_properties['type'] not in types_not_countable:
+        field_properties['num_distinct'] = model.objects.using(db_alias).values(field.name).distinct().count()
+        field_properties['num_null'] = model.objects.using(db_alias).filter(**{'%s__isnull' % field.name: True}).count()
+    field_properties['fraction_distinct'] = float(field_properties['num_distinct']) / model.objects.using(db_alias).count() or 1
+
+    field_properties['max'] = None
+    field_properties['min'] = None
+    # check field_properties['num_null'] for all Null first?
+    if field_properties['type'] not in types_not_aggregatable:
+        connection.close()
+        try:
+            field_properties['max'] = clean_utf8(model.objects.using(db_alias).aggregate(max_value=models.Max(field.name))['max_value'])
+            field_properties['min'] = clean_utf8(model.objects.using(db_alias).aggregate(min_value=models.Min(field.name))['min_value'])
+        except ValueError, e:
+            if verbosity > 1:
+                print_exc()
+                print "ValueError (UnicodeDecodeError?): Skipped max/min calculations for field named '%s' (%s) because of %s." % (field.name, repr(db_column), e)
+            connection.close()
+        # validate values that might be invalid strings do to db encoding/decoding errors (make sure they are UTF-8
+        for k in ('min', 'max'):
+            clean_utf8(field_properties.get(k))
+
+    return field_properties
+
+
+def model_meta(model_name, verbosity=0):
+    # inspectdb uses: connection.introspection.get_table_description(cursor, table_name)
+    properties_of_fields = sql.get_meta_dicts(cursor=db_alias, table=meta[model_name]['Meta']['db_table'])
+    field_properties_dict = OrderedDict((field['name'], field) for field in properties_of_fields)
+    if verbosity > 1:
+        print '-' * 20 + model_name + '-' * 20
+    db_primary_keys = [field['name'] for field in properties_of_fields if field['primary_key']]
+    if len(db_primary_keys) == 1:
+        meta[model_name]['Meta']['primary_key'] = db_primary_keys[0]
+    for field in model._meta._fields():
+        fm = field_meta(field, verbosity=verbosity)
+        field_properties_dict[db_column] = fm
+                # field_properties['count'] = N
+        if verbosity > 2:
+            print '%s (%s) has %s / %s (%3.1f%%) distinct values between %s and %s, excluding %s nulls.' % (field.name, db_column, 
+                                                         fm['num_distinct'], 
+                                                         meta[model_name]['Meta']['count'],
+                                                         100. * (fm['num_distinct'] or 0) / (meta[model_name]['Meta']['count'] or 1),
+                                                         repr(fm['min']),
+                                                         repr(fm['max']),
+                                                         fm['num_null'])
+
+    return field_properties_dict
 
 def get_index(model_meta, weights=None):
     """Return a single tuple of index metadata for the model metadata dict provided
@@ -238,13 +264,14 @@ def meta_to_indexes(meta, table_name=None, model_name=None):
     return indexes
 
 
-def get_relations(cursor, table_name, app=DEFAULT_APP_NAME):
-    meta = db_meta(app=app, db_alias=None, table=table_name, verbosity=0)
-    print meta
+get_table_meta
+
+def get_relations(cursor, table_name, app=DEFAULT_APP_NAME, db_alias=DEFAULT_DB_ALIAS):
+    #meta = db_meta(app=app, db_alias=None, table=table_name, verbosity=0)
     return {}
 
-def get_indexes(cursor, table_name, app=DEFAULT_APP_NAME):
-    meta = db_meta(app=app, db_alias=None, table=table_name, verbosity=0)
+def get_indexes(cursor, table_name, app=DEFAULT_APP_NAME, db_alias=DEFAULT_DB_ALIAS):
+    meta = db_meta(app=app, db_alias=db_alias, table=table_name, verbosity=0)
     print meta
     return {}
 

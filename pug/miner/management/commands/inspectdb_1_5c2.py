@@ -4,6 +4,7 @@ import keyword
 import re
 from optparse import make_option
 
+from pug.nlp import db
 from django.core.management.base import NoArgsCommand, CommandError
 from django.db import connections, DEFAULT_DB_ALIAS
 from django.utils import six
@@ -17,6 +18,8 @@ class Command(NoArgsCommand):
         make_option('--database', action='store', dest='database',
             default=DEFAULT_DB_ALIAS, help='Nominates a database to '
                 'introspect.  Defaults to using the "default" database.'),
+        make_option('--app', action='store', dest='app',
+            default=None, help='App to inspect (required).'),
     )
 
     requires_model_validation = False
@@ -31,6 +34,8 @@ class Command(NoArgsCommand):
             raise CommandError("Database inspection isn't supported for the currently selected database backend.")
 
     def handle_inspection(self, options):
+        app = db.get_app(options.get('app'))
+        db_alias = options.get('database')
         connection = connections[options.get('database')]
         # 'table_name_filter' is a stealth option
         table_name_filter = options.get('table_name_filter')
@@ -63,9 +68,11 @@ class Command(NoArgsCommand):
             except NotImplementedError:
                 relations = {}
             try:
-                indexes = get_indexes(cursor, table_name)
+                indexes = get_indexes(cursor, table_name, app, db_alias)
             except NotImplementedError:
                 indexes = {}
+            if not indexes:
+                continue
             used_column_names = [] # Holds column names used in the table so far
             for i, row in enumerate(connection.introspection.get_table_description(cursor, table_name)):
                 comment_notes = [] # Holds Field notes, to be displayed in a Python comment.
