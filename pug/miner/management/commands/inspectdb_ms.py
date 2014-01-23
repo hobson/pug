@@ -4,20 +4,19 @@ import keyword
 import re
 from optparse import make_option
 import fnmatch
-
 import json
 
-from django.db import connections
-#from django.utils import six
-#from django.db import DEFAULT_DB_ALIAS
-from django.core.management.commands.inspectdb import Command as InspectDBCommand
-
-
-from call_center.find_primary_keys import inspect_db, clean_utf8, get_indexes
-from nlp.sqlserver import get_meta_tuples
-
 import pyodbc
-from django.conf import settings
+
+from django.db import connections
+#from django.conf import settings
+#from django.utils import six
+
+from django.core.management.commands.inspectdb import Command as InspectDBCommand
+from pug.db.explore import db_meta, clean_utf8, get_indexes
+from pug.db.sqlserver import get_meta_tuples
+
+
 
 
 connection = pyodbc.connect('Driver=FreeTDS;Server=SERVERNAME;DATABASE=DBNAME;UID=UNAME;PWD=CATCHMEIFYOUCAN;TDS_Version=7.2;PORT=1433')
@@ -78,7 +77,7 @@ class Command(InspectDBCommand):
             # because the parent method checks the stealth option
             options['table_name_filter'] = table_name_filter
 
-        meta = inspect_db(app=app, table=table_name_filter, verbosity=int(verbosity))
+        meta = db_meta(app=app, table=table_name_filter, verbosity=int(verbosity))
 
         if verbosity > 1:
             print meta

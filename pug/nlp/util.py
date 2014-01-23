@@ -1,4 +1,10 @@
-'''NLP utilities for use with django models and querysets and ORM (SQL)'''
+'''NLP utilities for use with django models and querysets and ORM (SQL)
+
+Intended only for use within a Django project (requires django.db, which itself requires settings)
+
+TODO: Move all functions that depend on a properly configured django.conf.settings to pug.db or pug.dj
+'''
+
 import types
 import sqlparse
 import re
@@ -16,7 +22,7 @@ from collections import Mapping
 from progressbar import ProgressBar
 
 import character_subset as chars
-import regex_patterns as rep
+from pug.nlp import regex_patterns as rep
 
 import numpy as np
 import scipy as sci
@@ -24,7 +30,15 @@ import scipy as sci
 import logging
 logger = logging.getLogger('bigdata.info')
 
-import django.db
+from django.core.exceptions import ImproperlyConfigured
+try:
+    import django.db
+except ImproperlyConfigured:
+    import traceback
+    print traceback.format_exc()
+    print 'WARNING: The module named %r from file %r' % (__name__, __file__)
+    print '         can only be used within a Django project!'
+    print '         Though the module was imported, some of its functions may raise exceptions.'
 
 
 

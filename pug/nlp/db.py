@@ -15,26 +15,41 @@ from types import ModuleType
 from math import log
 import pytz
 
-from django.db import models
 from fuzzywuzzy import process as fuzzy
 from dateutil import parser as dateutil_parser
 import numpy as np
 import logging
 logger = logging.getLogger('bigdata.info')
-
-import nlp.util  # import transposed_lists #, sod_transposed
-from nlp.words import synonyms
-import call_center
-
-from django.db import connection
 import sqlparse
+
+from django.core.exceptions import ImproperlyConfigured
+try:
+    from django.db import models, connection
+except ImproperlyConfigured:
+    import traceback
+    print traceback.format_exc()
+    print 'WARNING: The module named %r from file %r' % (__name__, __file__)
+    print '         can only be used within a Django project!'
+    print '         Though the module was imported, some of its functions may raise exceptions.'
+
+from pug.nlp import util  # import transposed_lists #, sod_transposed
+from pug.nlp.words import synonyms
+
 
 NULL_VALUES = (None, 'None', 'none', '<None>', 'NONE', 'Null', 'null', '<Null>', 'N/A', 'n/a', 'NULL')
 NAN_VALUES = (float('inf'), 'INF', 'inf', '+inf', '+INF', float('nan'), 'nan', 'NAN', float('-inf'), '-INF', '-inf')
 BLANK_VALUES = ('', ' ', '\t', '\n', '\r', ',')
 
-DEFAULT_APP = 'call_center'
-DEFAULT_MODEL = 'CaseMaster'
+FALSE_VALUES = (False, 'False', 'false', 'FALSE', 'F')
+TRUE_VALUES = (True, 'True', 'true', 'TRUE', 'T')
+
+NO_VALUES = ('No', 'no', 'N')
+YES_VALUES = ('Yes', 'yes', 'Y')
+
+DEFAULT_APP = None  # models.get_apps()[0]
+DEFAULT_MODEL = None  # models.get_models()[0]
+
+
 
 def has_suffix(model, suffixes=('Orig',)):
     for suffix in suffixes:
@@ -68,9 +83,9 @@ representation.default_fields = 3
 class QueryTimer(object):
     """Based on https://github.com/jfalkner/Efficient-Django-QuerySet-Use
 
-    >>> from call_center.models import CaseMaster
+    >>> from miner.models import TestModel
     >>> qt = QueryTimer()
-    >>> cm_list = list(CaseMaster.objects.values()[0:10])
+    >>> cm_list = list(TestModel.objects.values()[0:10])
     >>> qt.stop()  # doctest: +ELLIPSIS
     QueryTimer(time=0.0..., num_queries=1)
     """
@@ -107,7 +122,7 @@ class QueryTimer(object):
 
 def normalize_values_queryset(values_queryset, model=None, app=None):
     model = model or values_queryset.model
-    app = app or 'call_center'
+    app = app or DEFAULT_APP
     new_list = []
     for record in values_queryset:
         new_record = {}
@@ -275,7 +290,7 @@ def get_app(app=-1):
     """
     >>> get_app('call').__class__.__name__ == 'module'
     True
-    >>> get_app('cal cent').__name__ == 'call_center.models'
+    >>> get_app('cal cent').__name__ == 'miner.models'
     True
     >>> isinstance(get_app('whatever'), ModuleType)
     True
@@ -319,7 +334,7 @@ def get_model(model=DEFAULT_MODEL, app=DEFAULT_APP):
         return model_name
     app = get_app(app)
     model_names = [mc.__name__ for mc in models.get_models(app)]
-    return models.get_model(app.__package__, fuzzy.extractOne(str(model), model_names)[0])
+    return models.get_model(app.__package__.split('.')[-1], fuzzy.extractOne(str(model), model_names)[0])
 
 
 def queryset_from_model_number(model_number=None, model=DEFAULT_MODEL, app=DEFAULT_APP):
@@ -404,7 +419,7 @@ def values(fields=None, filter_dict=None, model=DEFAULT_MODEL, app=DEFAULT_APP, 
     qs = qs.objects.values(*listify(fields))
     qs = [[rec[k] for k in rec] for rec in qs]
     if transpose:
-        return nlp.util.transposed_lists(qs)
+        return util.transposed_lists(qs)
     return qs
 
 
@@ -443,7 +458,7 @@ def format_fields(x, y, filter_dict={'model__startswith': 'LC60'}, model=DEFAULT
         objects = objects.all()
         if limit:
             objects = objects[:limit]
-    return nlp.util.sod_transposed(objects)
+    return util.sod_transposed(objects)
 
 
 def sorted_dict_of_lists(dict_of_lists, field_names, reverse=False):
@@ -455,10 +470,10 @@ def sorted_dict_of_lists(dict_of_lists, field_names, reverse=False):
     [('k1', [2, 1, 3]), ('k2', [8, 7, 6]), ('k3', [5, 6, 4])]
     """
     lists = [dict_of_lists[k] for k in field_names]
-    return dict(zip(field_names, nlp.util.transposed_lists(sorted(nlp.util.transposed_lists(lists), reverse=reverse))))
+    return dict(zip(field_names, util.transposed_lists(sorted(util.transposed_lists(lists), reverse=reverse))))
 
 
-def consolidated_counts(dict_of_lists, field_name='call_type', count_name='count'):
+def consolidated_counts(dict_of_lists, field_name, count_name='count'):
     accumulated_counts = {}
     for i, db_value in enumerate(dict_of_lists[field_name]):
         if not accumulated_counts.get(db_value):
@@ -505,7 +520,7 @@ def count_in_category(x='call_type', filter_dict=None, model=DEFAULT_MODEL, app=
     objects = objects.all()
     if limit:
         objects = objects[:int(limit)]
-    objects = normalize_choices(nlp.util.sod_transposed(objects), field_name=x, human_readable=True)
+    objects = normalize_choices(util.sod_transposed(objects), app_module=app, field_name=x, human_readable=True)
     if not objects:
         return None
     objects = consolidated_counts(objects, field_name=x, count_name='y')
@@ -543,7 +558,7 @@ def count_in_date(x='date_time', filter_dict=None, model=DEFAULT_MODEL, app=DEFA
     objects = objects.all()
     if limit:
         objects = objects[:int(limit)]
-    objects = nlp.util.sod_transposed(objects)
+    objects = util.sod_transposed(objects)
     if sort is not None:
         objects = sorted_dict_of_lists(objects, field_names=['count_of_records_per_date_bin', 'date_bin_for_counting'], reverse=bool(sort))
     #logger.info(x)
@@ -578,7 +593,7 @@ def sum_in_date(x='date', y='net_sales', filter_dict=None, model='Sales', app=DE
     objects = objects.all()
     if limit:
         objects = objects[:int(limit)]
-    objects = nlp.util.sod_transposed(objects)
+    objects = util.sod_transposed(objects)
     if sort is not None:
         objects = sorted_dict_of_lists(objects, field_names=['y', x], reverse=bool(sort=='-'))
     if not x in objects or not 'y' in objects:
@@ -680,10 +695,12 @@ def datetime_in_milliseconds(x, epoch=None):
         result = datetime_in_seconds(x, epoch=epoch_in_seconds)
     except:
         result = x
-    try:
-        return type(x)([t * 1000 for t in result])
-    except:
-        return result * 1000
+    if not isinstance(x, (datetime.datetime, datetime.date, datetime.timediff)):
+        try:
+            return type(x)([t * 1000 for t in result])
+        except:
+            pass
+    return result * 1000
 unix_timestamp = datetime_in_milliseconds
 
 
@@ -778,26 +795,7 @@ def datetime_from_seconds(x, tz=pytz.utc):
     if isinstance(x, (list, tuple)):
         return type(x)([datetime_from_seconds(dt) for dt in x])
     return datetime.datetime.fromtimestamp(x, tz)
-#     if isinstance(x, (datetime.datetime, datetime.date)):
-#         try:
-#             return x + epoch
-#         except:
-#             return x
-#     if isinstance(x, datetime.timedelta):
-#         return x + epoch_as_datetime(epoch=epoch)
-#     if isinstance(x, float):
-#         # timedelta(days, seconds, microseconds, milliseconds, minutes, hours, weeks)
-#         return datetime_from_seconds(datetime.timedelta(0, x), epoch=epoch)
-#     if isinstance(x, (list, tuple)):
-#         return type(x)([datetime_from_seconds(dt, epoch=epoch) for dt in x])
-#     try:
-#         return datetime_from_seconds(float(x), epoch=epoch)
-#     except:
-#         try:
-#             return datetime_from_seconds(dateutil_parser.parse(x), epoch=epoch)
-#         except:
-#             pass
-#     return datetime_from_seconds(0, epoch=epoch)
+
 
 
 def guess_epochs(dt1, dt2):
@@ -989,7 +987,7 @@ def sequence_from_filter_spec(field_names, filter_dict=None, model=DEFAULT_MODEL
     objects = objects.all()
     if limit:
         objects = objects[:int(limit)]
-    objects = nlp.util.sod_transposed(objects)
+    objects = util.sod_transposed(objects)
     if sort is not None:
         if len(field_names) > 1:
             objects = sorted_dict_of_lists(objects, field_names=[field_names[-1]] + field_names[:-1], reverse=bool(sort_prefix))
@@ -1160,7 +1158,7 @@ def lagged_series(series, lags=1, pads=None):
 
 # TODO: use both get and set to avoid errors when different values chosen
 # TODO: modularize in separate function that finds CHOICES appropriate to a value key
-def normalize_choices(db_values, field_name='call_type', model_name='', human_readable=True, none_value='Null', blank_value='Unknown', missing_value='Unknown DB Code'):
+def normalize_choices(db_values, app_module, field_name, model_name='', human_readable=True, none_value='Null', blank_value='Unknown', missing_value='Unknown DB Code'):
     if not db_values:
         return
     try:
@@ -1177,7 +1175,7 @@ def normalize_choices(db_values, field_name='call_type', model_name='', human_re
                 continue
             if isinstance(db_value, basestring):
                 normalized_code = str(db_value).strip().upper()
-            choices = getattr(call_center.models, 'CHOICES_%s' % field_name.upper())
+            choices = getattr(app_module.models, 'CHOICES_%s' % field_name.upper())
             normalized_name = None
             if choices:
                 normalized_name = str(choices.get(normalized_code, missing_value)).strip()
@@ -1416,7 +1414,7 @@ class Columns(OrderedDict):
                     self[name][j] = blank_value
                 else:
                     try:
-                        self[name][j] = float(nlp.util.normalize_scientific_notation(str(val)))
+                        self[name][j] = float(util.normalize_scientific_notation(str(val)))
                     except:
                         self[name][j] = default_value
         return self
@@ -1435,7 +1433,7 @@ class Columns(OrderedDict):
         """Generator over the columns of lists"""
         # make this a generator of generators?
         #print self.as_column_wise_lists
-        return nlp.util.transposed_lists(self.as_column_wise_lists())
+        return util.transposed_lists(self.as_column_wise_lists())
 
     def as_matrix(self):
         """Alias for .as_column_wise_lists()"""
@@ -1510,7 +1508,7 @@ class Columns(OrderedDict):
 
 
 def field_cov(fields, models, apps):
-    columns = nlp.util.get_columns(fields, models, apps)
-    columns = nlp.util.make_real(columns)
+    columns = util.get_columns(fields, models, apps)
+    columns = util.make_real(columns)
     return np.cov(columns)
 
