@@ -126,10 +126,10 @@ def get_model_meta(model, db_alias, field_properties_dict, column_name_filter=No
                                                          repr(field_properties_dict[db_column]['max']),
                                                          field_properties_dict[db_column]['num_null'])
 
-        field_properties_dict[db_column] = get_field_meta(field, queryset)
+        field_properties_dict[db_column] = augment_field_meta(field, queryset, field_properties_dict)
 
 
-def get_field_meta(field, queryset, verbosity=0):
+def augment_field_meta(field, queryset, field_properties_dict, verbosity=0):
     """Return a dict of statistical properties (metadata) for a database column (model field)
 
     Strings are UTF-8 encoded
@@ -162,7 +162,8 @@ def get_field_meta(field, queryset, verbosity=0):
     # TODO: check for other clues about primary_keyness besides just uniqueness 
     field_properties['num_distinct'] = None
     field_properties['num_null'] = None
-    if field_properties['type'] not in types_not_countable:
+    typ = field_properties.get('type')
+    if typ and typ not in types_not_countable:
         field_properties['num_distinct'] = queryset.values(field.name).distinct().count()
         field_properties['num_null'] = queryset.filter(**{'%s__isnull' % field.name: True}).count()
     field_properties['fraction_distinct'] = float(field_properties['num_distinct']) / queryset.count() or 1
@@ -170,7 +171,7 @@ def get_field_meta(field, queryset, verbosity=0):
     field_properties['max'] = None
     field_properties['min'] = None
     # check field_properties['num_null'] for all Null first?
-    if field_properties['type'] not in types_not_aggregatable:
+    if typ and typ not in types_not_aggregatable:
         connection.close()
         try:
             field_properties['max'] = clean_utf8(queryset.aggregate(max_value=models.Max(field.name))['max_value'])
