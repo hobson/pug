@@ -30,7 +30,7 @@ types_not_countable = ('text',)
 types_not_aggregatable = ('text', 'bit',)
 
 
-def db_meta(app, db_alias=None, table=None, verbosity=2, column=None):
+def db_meta(app, db_alias=None, table=None, verbosity=0, column=None):
     """Return a dict of dicts containing metadata about the database tables associated with an app
 
     >>> db_meta('crawler', db_alias='default', table='crawler_wikiitem')  # doctest: +ELLIPSIS
@@ -72,15 +72,14 @@ def db_meta(app, db_alias=None, table=None, verbosity=2, column=None):
         
         # inspectdb uses: connection.introspection.get_table_description(cursor, table_name)
         properties_of_fields = sql.get_meta_dicts(cursor=db_alias, table=meta[model_name]['Meta']['db_table'])
-        field_properties_dict = OrderedDict((field['name'], field) for field in properties_of_fields)
+        model_meta = OrderedDict((field['name'], field) for field in properties_of_fields)
         if verbosity > 1:
             print '-' * 20 + model_name + '-' * 20
         db_primary_keys = [field['name'] for field in properties_of_fields if field['primary_key']]
         if len(db_primary_keys) == 1:
             meta[model_name]['Meta']['primary_key'] = db_primary_keys[0]
 
-        model_meta = get_model_meta(model, db_alias, field_properties_dict, column_name_filter=column, count=count, verbosity=verbosity)
-        
+        model_meta = get_model_meta(model, db_alias, model_meta, column_name_filter=column, count=count, verbosity=verbosity)
 
         if verbosity > 1:
             print model_meta
@@ -88,16 +87,16 @@ def db_meta(app, db_alias=None, table=None, verbosity=2, column=None):
     return meta
 
 
-def get_model_meta(model, db_alias, field_properties_dict, column_name_filter=None, count=0, verbosity=0):
+def get_model_meta(model, db_alias, model_meta, column_name_filter=None, count=0, verbosity=0):
     queryset = model.objects.using(db_alias)
     for field in model._meta._fields():
         db_column = field.db_column
         if not db_column:
-            if field.name in field_properties_dict:
+            if field.name in model_meta:
                 db_column = field.name
-            elif field.name.lower() in field_properties_dict:
+            elif field.name.lower() in model_meta:
                 db_column = field.name.lower()
-            elif field.name.upper() in field_properties_dict:
+            elif field.name.upper() in model_meta:
                 db_column = field.name.upper()
         # if not db_column:
         #     if verbosity > 1:
@@ -114,22 +113,23 @@ def get_model_meta(model, db_alias, field_properties_dict, column_name_filter=No
                 #     print 'Skipped field named %s.%s with db column name %s.%s.' % (model_name, field.name, model._meta.db_table, db_column)
                 continue
         if (field.name == 'id' and isinstance(field, models.fields.AutoField)
-                and field.primary_key and (not field_properties_dict[db_column]['primary_key'])):
+                and field.primary_key and (not model_meta[db_column]['primary_key'])):
             continue
 
         if verbosity > 2:
             print '%s (%s) has %s / %s (%3.1f%%) distinct values between %s and %s, excluding %s nulls.' % (field.name, db_column, 
-                                                         field_properties_dict[db_column]['num_distinct'], 
+                                                         model_meta[db_column]['num_distinct'], 
                                                          count,
-                                                         100. * (field_properties_dict[db_column]['num_distinct'] or 0) / (count or 1),
-                                                         repr(field_properties_dict[db_column]['min']),
-                                                         repr(field_properties_dict[db_column]['max']),
-                                                         field_properties_dict[db_column]['num_null'])
+                                                         100. * (model_meta[db_column]['num_distinct'] or 0) / (count or 1),
+                                                         repr(model_meta[db_column]['min']),
+                                                         repr(model_meta[db_column]['max']),
+                                                         model_meta[db_column]['num_null'])
 
-        field_properties_dict[db_column] = augment_field_meta(field, queryset, field_properties_dict)
+        model_meta[db_column] = augment_field_meta(field, queryset, model_meta)
+    return model_meta
 
 
-def augment_field_meta(field, queryset, field_properties_dict, verbosity=0):
+def augment_field_meta(field, queryset, field_properties, verbosity=0):
     """Return a dict of statistical properties (metadata) for a database column (model field)
 
     Strings are UTF-8 encoded
@@ -155,7 +155,6 @@ def augment_field_meta(field, queryset, field_properties_dict, verbosity=0):
          b. blank
          c. whitespace or other strings signifying null ('NULL', 'None', 'N/A', 'NaN', 'Not provided')
     """
-    field_properties = {}
     # Calculate the fraction of values in a column that are distinct (unique).
     #   For columns that aren't populated with 100% distinct values, the fraction may help identify columns that are part of a  "unique-together" compound key
     #   Necessary constraint for col1 and col2 to be compound key: col1_uniqueness + col2_uniqueness >= 1.0 (100%)
@@ -166,7 +165,7 @@ def augment_field_meta(field, queryset, field_properties_dict, verbosity=0):
     if typ and typ not in types_not_countable:
         field_properties['num_distinct'] = queryset.values(field.name).distinct().count()
         field_properties['num_null'] = queryset.filter(**{'%s__isnull' % field.name: True}).count()
-    field_properties['fraction_distinct'] = float(field_properties['num_distinct']) / queryset.count() or 1
+        field_properties['fraction_distinct'] = float(field_properties['num_distinct']) / queryset.count() or 1
 
     field_properties['max'] = None
     field_properties['min'] = None
