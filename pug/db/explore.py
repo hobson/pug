@@ -5,6 +5,7 @@ from decimal import Decimal
 import re
 import json
 from dateutil import parser
+import datetime
 
 from ..nlp import db
 import sqlserver as sql
@@ -32,7 +33,7 @@ types_not_aggregatable = ('text', 'bit',)
 def db_meta(app, db_alias=None, table=None, verbosity=2, column=None):
     """Return a dict of dicts containing metadata about the database tables associated with an app
 
-    >>> db_meta('crawler', table='crawler_wikiitem')  # doctest: +ELLIPSIS
+    >>> db_meta('crawler', db_alias='default', table='crawler_wikiitem')  # doctest: +ELLIPSIS
     OrderedDict([('WikiItem', OrderedDict([('Meta', OrderedDict([('primary_key', None), ('count', 1332), ('db_table', u'crawler_wikiitem')])), ('id', OrderedDict([('name', 'id'), ('type', ...
     """
 
@@ -40,12 +41,10 @@ def db_meta(app, db_alias=None, table=None, verbosity=2, column=None):
         if isinstance(app, basestring):
             db_alias = str(app)
         else:
-            db_alias = app.__package__ # only works if you have a db_alias for every app and it's the same as the app name
-    db_alias = db_alias or DEFAULT_DB_ALIAS
+            db_alias = DEFAULT_DB_ALIAS  # app.__package__
     if app and isinstance(app, basestring):
         app = db.get_app(app)
 
-    print app, db_alias
     model_names = list(mc.__name__ for mc in models.get_models(app))
     meta = OrderedDict()
     # inspectdb uses: for table_name in connection.introspection.table_names(cursor):
@@ -61,23 +60,76 @@ def db_meta(app, db_alias=None, table=None, verbosity=2, column=None):
                 if verbosity>1:
                     print 'skipped model named %s with db table names %s.' % (model_name, model._meta.db_table)
                 continue
+        count = model.objects.using(db_alias).count()
         meta[model_name] = OrderedDict()
         meta[model_name]['Meta'] = OrderedDict()
         meta[model_name]['Meta']['primary_key'] = None
-        meta[model_name]['Meta']['count'] = model.objects.using(db_alias).count()
+        meta[model_name]['Meta']['count'] = count
         meta[model_name]['Meta']['db_table'] = model._meta.db_table
         
         if verbosity>1:
             print '%s.Meta = %r' % (model_name, meta[model_name]['Meta'])
         
-        field_properties_dict = model_meta(model_name)
+        # inspectdb uses: connection.introspection.get_table_description(cursor, table_name)
+        properties_of_fields = sql.get_meta_dicts(cursor=db_alias, table=meta[model_name]['Meta']['db_table'])
+        field_properties_dict = OrderedDict((field['name'], field) for field in properties_of_fields)
         if verbosity > 1:
-            print field_properties_dict 
-        meta[model_name].update(field_properties_dict)
+            print '-' * 20 + model_name + '-' * 20
+        db_primary_keys = [field['name'] for field in properties_of_fields if field['primary_key']]
+        if len(db_primary_keys) == 1:
+            meta[model_name]['Meta']['primary_key'] = db_primary_keys[0]
+
+        model_meta = get_model_meta(model, db_alias, field_properties_dict, column_name_filter=column, count=count, verbosity=verbosity)
+        
+
+        if verbosity > 1:
+            print model_meta
+        meta[model_name].update(model_meta)
     return meta
 
 
-def field_meta(field, verbosity=0):
+def get_model_meta(model, db_alias, field_properties_dict, column_name_filter=None, count=0, verbosity=0):
+    queryset = model.objects.using(db_alias)
+    for field in model._meta._fields():
+        db_column = field.db_column
+        if not db_column:
+            if field.name in field_properties_dict:
+                db_column = field.name
+            elif field.name.lower() in field_properties_dict:
+                db_column = field.name.lower()
+            elif field.name.upper() in field_properties_dict:
+                db_column = field.name.upper()
+        # if not db_column:
+        #     if verbosity > 1:
+        #         print "WARNING: Skipped field named '%s'. No column found in the database.table '%s.%s'." % (field.name, db_alias, meta[model_name]['Meta']['db_table'])
+        #     continue
+        if column_name_filter is not None and isinstance(column_name_filter, basestring):
+            if db_column != column_name_filter:
+                # if verbosity>1:
+                #     print 'Skipped field named %s.%s with db column name %s.%s.' % (model_name, field.name, model._meta.db_table, db_column)
+                continue
+        elif callable(column_name_filter):
+            if not column_name_filter(db_column):
+                # if verbosity>1:
+                #     print 'Skipped field named %s.%s with db column name %s.%s.' % (model_name, field.name, model._meta.db_table, db_column)
+                continue
+        if (field.name == 'id' and isinstance(field, models.fields.AutoField)
+                and field.primary_key and (not field_properties_dict[db_column]['primary_key'])):
+            continue
+
+        if verbosity > 2:
+            print '%s (%s) has %s / %s (%3.1f%%) distinct values between %s and %s, excluding %s nulls.' % (field.name, db_column, 
+                                                         field_properties_dict[db_column]['num_distinct'], 
+                                                         count,
+                                                         100. * (field_properties_dict[db_column]['num_distinct'] or 0) / (count or 1),
+                                                         repr(field_properties_dict[db_column]['min']),
+                                                         repr(field_properties_dict[db_column]['max']),
+                                                         field_properties_dict[db_column]['num_null'])
+
+        field_properties_dict[db_column] = get_field_meta(field, queryset)
+
+
+def get_field_meta(field, queryset, verbosity=0):
     """Return a dict of statistical properties (metadata) for a database column (model field)
 
     Strings are UTF-8 encoded
@@ -103,32 +155,7 @@ def field_meta(field, verbosity=0):
          b. blank
          c. whitespace or other strings signifying null ('NULL', 'None', 'N/A', 'NaN', 'Not provided')
     """
-    db_column = field.db_column
-    if not db_column:
-        if field.name in field_properties_dict:
-            db_column = field.name
-        elif field.name.lower() in field_properties_dict:
-            db_column = field.name.lower()
-        elif field.name.upper() in field_properties_dict:
-            db_column = field.name.upper()
-    if not db_column:
-        if verbosity > 1:
-            print "WARNING: Skipped field named '%s'. No column found in the database.table '%s.%s'." % (field.name, db_alias, meta[model_name]['Meta']['db_table'])
-        continue
-    if column is not None and isinstance(column, basestring):
-        if db_column != column:
-            if verbosity>1:
-                print 'Skipped field named %s.%s with db column name %s.%s.' % (model_name, field.name, model._meta.db_table, db_column)
-            continue
-    elif callable(column):
-        if not column(db_column):
-            if verbosity>1:
-                print 'Skipped field named %s.%s with db column name %s.%s.' % (model_name, field.name, model._meta.db_table, db_column)
-            continue
-    if (field.name == 'id' and isinstance(field, models.fields.AutoField)
-            and field.primary_key and (not field_properties['primary_key'])):
-        continue
-
+    field_properties = {}
     # Calculate the fraction of values in a column that are distinct (unique).
     #   For columns that aren't populated with 100% distinct values, the fraction may help identify columns that are part of a  "unique-together" compound key
     #   Necessary constraint for col1 and col2 to be compound key: col1_uniqueness + col2_uniqueness >= 1.0 (100%)
@@ -136,9 +163,9 @@ def field_meta(field, verbosity=0):
     field_properties['num_distinct'] = None
     field_properties['num_null'] = None
     if field_properties['type'] not in types_not_countable:
-        field_properties['num_distinct'] = model.objects.using(db_alias).values(field.name).distinct().count()
-        field_properties['num_null'] = model.objects.using(db_alias).filter(**{'%s__isnull' % field.name: True}).count()
-    field_properties['fraction_distinct'] = float(field_properties['num_distinct']) / model.objects.using(db_alias).count() or 1
+        field_properties['num_distinct'] = queryset.values(field.name).distinct().count()
+        field_properties['num_null'] = queryset.filter(**{'%s__isnull' % field.name: True}).count()
+    field_properties['fraction_distinct'] = float(field_properties['num_distinct']) / queryset.count() or 1
 
     field_properties['max'] = None
     field_properties['min'] = None
@@ -146,43 +173,18 @@ def field_meta(field, verbosity=0):
     if field_properties['type'] not in types_not_aggregatable:
         connection.close()
         try:
-            field_properties['max'] = clean_utf8(model.objects.using(db_alias).aggregate(max_value=models.Max(field.name))['max_value'])
-            field_properties['min'] = clean_utf8(model.objects.using(db_alias).aggregate(min_value=models.Min(field.name))['min_value'])
+            field_properties['max'] = clean_utf8(queryset.aggregate(max_value=models.Max(field.name))['max_value'])
+            field_properties['min'] = clean_utf8(queryset.aggregate(min_value=models.Min(field.name))['min_value'])
         except ValueError, e:
             if verbosity > 1:
                 print_exc()
-                print "ValueError (UnicodeDecodeError?): Skipped max/min calculations for field named '%s' (%s) because of %s." % (field.name, repr(db_column), e)
+                print "ValueError (UnicodeDecodeError?): Skipped max/min calculations for field named '%s' (%s) because of %s." % (field.name, repr(field.db_column), e)
             connection.close()
         # validate values that might be invalid strings do to db encoding/decoding errors (make sure they are UTF-8
         for k in ('min', 'max'):
             clean_utf8(field_properties.get(k))
 
     return field_properties
-
-
-def model_meta(model_name, verbosity=0):
-    # inspectdb uses: connection.introspection.get_table_description(cursor, table_name)
-    properties_of_fields = sql.get_meta_dicts(cursor=db_alias, table=meta[model_name]['Meta']['db_table'])
-    field_properties_dict = OrderedDict((field['name'], field) for field in properties_of_fields)
-    if verbosity > 1:
-        print '-' * 20 + model_name + '-' * 20
-    db_primary_keys = [field['name'] for field in properties_of_fields if field['primary_key']]
-    if len(db_primary_keys) == 1:
-        meta[model_name]['Meta']['primary_key'] = db_primary_keys[0]
-    for field in model._meta._fields():
-        fm = field_meta(field, verbosity=verbosity)
-        field_properties_dict[db_column] = fm
-                # field_properties['count'] = N
-        if verbosity > 2:
-            print '%s (%s) has %s / %s (%3.1f%%) distinct values between %s and %s, excluding %s nulls.' % (field.name, db_column, 
-                                                         fm['num_distinct'], 
-                                                         meta[model_name]['Meta']['count'],
-                                                         100. * (fm['num_distinct'] or 0) / (meta[model_name]['Meta']['count'] or 1),
-                                                         repr(fm['min']),
-                                                         repr(fm['max']),
-                                                         fm['num_null'])
-
-    return field_properties_dict
 
 def get_index(model_meta, weights=None):
     """Return a single tuple of index metadata for the model metadata dict provided
@@ -264,8 +266,6 @@ def meta_to_indexes(meta, table_name=None, model_name=None):
     return indexes
 
 
-get_table_meta
-
 def get_relations(cursor, table_name, app=DEFAULT_APP_NAME, db_alias=DEFAULT_DB_ALIAS):
     #meta = db_meta(app=app, db_alias=None, table=table_name, verbosity=0)
     return {}
@@ -282,7 +282,7 @@ def try_convert(value, datetime_to_ms=False, precise=False):
 
     >>> try_convert('false')
     False
-    >>> try_convert('123456789.123456789')
+    >>> try_convert('123456789.123456')
     123456789.123456
     >>> try_convert('1234')
     1234
@@ -297,12 +297,13 @@ def try_convert(value, datetime_to_ms=False, precise=False):
     """
     if not isinstance(value, basestring):
         return value
+    if value in db.YES_VALUES or value in db.TRUE_VALUES:
+        return True
+    elif value in db.NO_VALUES or value in db.FALSE_VALUES:
+        return False
+    elif value in db.NULL_VALUES:
+        return None
     try:
-        dt = parser.parse(value)
-        if datetime_to_ms:
-            return db.datetime_in_milliseconds(dt)
-        return dt
-    except:
         if not precise:
             try:
                 return int(value)
@@ -330,13 +331,16 @@ def try_convert(value, datetime_to_ms=False, precise=False):
                 elif dec == f:
                     return f
                 return dec
-
-    if value in db.YES_VALUES or value in db.TRUE_VALUES:
-        return True
-    elif value in db.NO_VALUES or value in db.FALSE_VALUES:
-        return False
-    elif value in db.NULL_VALUES:
-        return None
+    except:
+        pass
+    try:
+        dt = parser.parse(value)
+        if dt and isinstance(dt, datetime.datetime) and (3000 >= dt.year >= 1900):
+            if datetime_to_ms:
+                return db.datetime_in_milliseconds(dt)
+            return dt
+    except:
+        pass
     return value
 
 
@@ -419,6 +423,7 @@ class RobustEncoder(json.JSONEncoder):
     from http://stackoverflow.com/a/15823348/623735
     Fixes: "TypeError: datetime.datetime(..., tzinfo=<UTC>) is not JSON serializable"
 
+    >>> import datetime
     >>> json.dumps(datetime.datetime(1,2,3), cls=RobustEncoder)
     '"0001-02-03 00:00:00"'
     """

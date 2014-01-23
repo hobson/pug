@@ -139,7 +139,6 @@ def get_meta_table(cursor='default', table=None):
     # # psycopg
     # else:
     meta_table = cursor.db.introspection.get_table_description(cursor, table)
-    print meta_table
     ans += [list(c) + [None] for c in meta_table]
     return ans
 
