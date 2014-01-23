@@ -51,7 +51,7 @@ class AppRouter(object):
 
 class OrigRouter(object):
     """
-    A router to direct ...Orig models to the BigData database.
+    A router to direct ...Orig models.
     """
     def db_for_read(self, model, **hints):
         if is_orig(model):
@@ -59,7 +59,7 @@ class OrigRouter(object):
         return None
 
     def db_for_write(self, model, **hints):
-        """Do not allow writes to BigData (Orig) database"""
+        """Do not allow writes to Orig database"""
         if is_orig(model):
             return 'orig'
         return None
@@ -87,7 +87,7 @@ class OrigRouter(object):
 
 class MSRouter(object):
     """
-    A router to direct ...Orig models to the BigData database.
+    A router to direct ...Orig models to MS SQL Server databases.
     """
     def db_for_read(self, model, **hints):
         if model._meta.app_label in MS_apps:
