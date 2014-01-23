@@ -1,0 +1,55 @@
+{% extends 'base.html' %}
+{% load staticfiles %}
+{% load url from future %}
+
+{% block extra_head %}
+    <script type="text/javascript" charset="utf-8" src="http://code.jquery.com/jquery-1.7.2.min.js"></script>
+    <script type="text/plain" src="https://raw.github.com/datagraph/jquery-jsonrpc/master/jquery.jsonrpc.js"></script>
+    <script type="text/javascript">
+        $(document).ready(function() {
+            var method = $("textarea#method").val()
+            if (typeof method == 'undefined') {
+                method = "crawler/engine/open_spiders"
+                }
+            console.log(method)
+            console.log(typeof method)
+            console.log([$("textarea#input").val()])
+            $("input#evaluate").click(function() {
+                $.jsonRPC.request(method, {
+                    params : [$("textarea#input").val()],
+                        success : function(data) {
+                            $("<p />").text(data.result).appendTo($("p#result"));
+                        },
+                        error : function(data) {
+                            $("<p />").text(data.error.message).appendTo($("p#result"));
+                        },
+                    endPoint : 'http://localhost:6080',
+                    namespace : '',
+                });
+            });
+        });
+    </script>
+    {% comment %}
+        <script type="text/javascript" src="{{ STATIC_URL }}call_center/js/json.js"></script>
+        <script type="text/javascript" src="{{ STATIC_URL }}call_center/js/json2.js"></script>
+        <script type="text/javascript" src="{{ STATIC_URL }}call_center/js/rpc.js"></script>
+    {% endcomment %}
+{% endblock %}
+
+{% block content %}
+    <ul>
+                <li><a href="http://bigdata.enet.sharplabs.com:6080/crawler/engine/open_spiders">Bigdata webcrawlers</a></li>
+    </ul>
+
+    <p id="result">Crawler Webservice RPC Call</p>
+    <p>
+        <textarea name="RPC Method" id="method">crawler/engine/open_spiders</textarea>
+    </p>
+    <p>
+        <textarea name="Arguments" id="input"></textarea>
+    </p>
+    <p>
+        <input name="evaluate" id="evaluate" value="evaluate" type="button" />
+    </p>
+
+{% endblock %}
