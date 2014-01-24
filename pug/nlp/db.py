@@ -22,6 +22,9 @@ import logging
 logger = logging.getLogger('bigdata.info')
 import sqlparse
 
+
+DEFAULT_APP = None  # models.get_apps()[-1]
+DEFAULT_MODEL = None  # DEFAULT_MODEL.get_models()[0]
 from django.core.exceptions import ImproperlyConfigured
 try:
     from django.db import models, connection
@@ -46,8 +49,6 @@ TRUE_VALUES = (True, 'True', 'true', 'TRUE', 'T')
 NO_VALUES = ('No', 'no', 'N')
 YES_VALUES = ('Yes', 'yes', 'Y')
 
-DEFAULT_APP = None  # models.get_apps()[0]
-DEFAULT_MODEL = None  # models.get_models()[0]
 
 
 
