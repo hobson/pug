@@ -1,23 +1,40 @@
 CHANGES
 ========
 
+0.0.3 Initial Alpha Release -- Jan 24, 2014
+---------------------------
+
+Done:
+
+* django app `crawler` displays a home page (but links broken)
+* django app `miner` has working management commands (dbstats)
+* django project `crawlnmine` has working settings and admin site (sqlite)
+* no admin site for crawler or miner yet
+* `miner/fixtures/initial_data.json` contains 1000+ wikipedia article texts plus a json string with word counts
+* nlp/db.py and pug/db/*.py have some overlap
+* nlp/parse.py functions named to continue the `parse` verb (parse_.. prefix removed)
+* miner/tests.py pass
+* some doctests pass
+* decision_tree untested
+
+ToDo:
+
+* StaticView
+* base.html
+* d3.js, bootstrap.js
+* connections.html:  static scikit ml decision tree, decision_tree.py run on miner db?
+* line.html: plot of a word frequency over time in wikipedia
+* forms to configure/control wikiscrapy using programatic calls of scrapy-ws.py from view/form
+
 0.0.2
-------
+-----
 
-* pypi-compliant setup.py
+* started adding django apps and database querying scripts
 
+---
 
 0.0.1
-------
 
-* edits to LICENSE, README, MANIFEST, CHANGES
-
-0.0.0
-------
-
-* Initial release 
-* AGPL license in LICENSE.txt
-* Do-nothing posix-compliant service
-* API keys served in file outside source and production stacks
-* BitFloor API interraction works (but not with bitfloor test url)
+* got setup.py working reasonably well
+* some coursera/nlp/*.py files moved in
 

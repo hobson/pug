@@ -2,3 +2,4 @@ dist/
 pug.egg-info/
 MANIFEST
 *.pyc
+*.sql*

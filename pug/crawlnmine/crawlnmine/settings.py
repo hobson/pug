@@ -37,7 +37,7 @@ INSTALLED_APPS = (
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'pug.crawler',
-    #'miner',
+    'pug.miner',
 )
 
 MIDDLEWARE_CLASSES = (

@@ -1,15 +1,19 @@
-{% extends 'base.html' %}
+{% comment %}
+    {% extends 'base.html' %}
+{% endcomment %}
 {% load staticfiles %}
 {% load url from future %}
 
 {% block content %}
     <h3>Welcome</h3>
     <p>This <a href="demo.html" >demo video</a> will help you get started.</p>
-    <p>The <a href="{% url "wiki:root" %}">documentation</a> has more detail.</p>
+    {% comment %}
+        <p>The <a href="{% url "wiki:root" %}">documentation</a> has more detail.</p>
+    {% endcomment %}
     <H3>Tools</H3>
     <ul>
         <li><a href="{% url "admin:index" %}">Admin Site</a></li>
-        <li><a href="{% url 'call_center:home' %}graph/{{ graph_uri }}">/chart/graph/</a> Show Connections </li>
+        <li><a href="{% url 'miner:home' %}graph/{{ graph_uri }}">/chart/graph/</a> Show Connections </li>
         <li><a href="web_crawlers.html">Web Crawlers</a></li>
     </ul>
 
