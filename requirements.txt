@@ -1,21 +1,28 @@
 Django==1.6.1
+# sudo yum install -y python-devel libxml2-devel libxslt-devel
+Scrapy==0.22.0
 South==0.8.4
+Twisted==13.2.0
+cssselect==0.9.1
 fuzzywuzzy==0.2
 ipython==1.1.0
+lxml==3.2.5
 # sudo yum install -y gcc-gfortran python-scikit-learn
 numpy==1.8.0
 progressbar==2.3
-#-e git+git@github.com:hobsonlane/pug.git@aa0aa922389aebdfef1b2ae24c0fea8015c2e008#egg=pug-master
+# sudo yum -y install postgresql postgresql-server postgresql-libs postgresql-devel
+psycopg2==2.5.2
+#-e git+git@github.com:hobsonlane/pug.git@c7d37cffc21f333fce24351571df86821c2387cf#egg=pug-master
+pyOpenSSL==0.13.1
 python-dateutil==2.2
 pytz==2013.9
 pyzmq==14.0.1
+queuelib==1.1.1
 scikit-learn==0.14.1
 scipy==0.13.2
+selenium==2.39.0
 six==1.5.2
 sqlparse==0.1.10
+w3lib==1.5
 wsgiref==0.1.2
-# sudo yum install -y python-devel libxml2-devel libxslt-devel
-Scrapy
-# sudo yum -y install postgresql postgresql-server postgresql-libs postgresql-devel
-psycopg2
-selenium
+zope.interface==4.0.5

@@ -29,7 +29,7 @@ setup(
     author = ', '.join(__authors__),
     author_email = "pugauthors@totalgood.com",
     url = __github_url__,
-    download_url = "%s/archive/%s-%s.tar.gz" % (__github_url__, package_name, __version__),
+    download_url = "%s/archive/v%s.tar.gz" % (__github_url__, __version__),
     keywords = ["agent", "bot", "ai", "crawl", "data", "science", "data science", "math", "machine-learning", "statistics", "database"],
     classifiers = [
         "Programming Language :: Python",
