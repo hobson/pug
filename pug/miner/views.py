@@ -1,22 +1,36 @@
+from django.shortcuts import render_to_response
+
+from pug.nlp import parse
+
+def home(request, graph_uri=None):
+    """home page"""
+    graph_uri = graph_uri or r'Origin,3,1_I,2,2_10~Origin_II,2~I_III~I_IV~II_IV~IV_V~V_I~VI_V,.5,3~VII,.2,4_V'
+    data = {
+        'graph_uri': graph_uri,
+        }
+    return render_to_response('miner/home.html', data)
+
 
 def url_graph(request, chart_type='lineWithFocusChart', values_list=('call_type'), filter_dict={'model__startswith': 'LC60'}, model='CaseMaster'):
     """
     Send data in the context variable "data" for a pie chart (x, y) and a line chart.
     """
 
-    # graph_uri = r'Origin,3,1_I,2,2_10~Origin_II,2~I_III~I_IV~II_IV~IV_V~V_I~VI_V,.5,3~VII,.2,4_V'
+    graph_uri = r'Origin,3,1_I,2,2_10~Origin_II,2~I_III~I_IV~II_IV~IV_V~V_I~VI_V,.5,3~VII,.2,4_V'
     data = {
-        'graph_uri': '~'.join(quote(source) + '_' + quote(target) for source, target in node_pairs),
-        }
+        'graph_uri': graph_uri,
+    }
     return render_to_response('miner/home.html', data)
+
 
 def connections(request, edges):
     """
     Plot a force-directed graph based on the edges provided
     """
-    edge_list, node_list = parse_graph_definition(edges)
+    edge_list, node_list = parse.graph_definition(edges)
     data = {'nodes': json.dumps(node_list), 'edges': json.dumps(edge_list)}
     return render_to_response('call_center/connections.html', data)
+
 
 def parse_node_name(name, use_defaults=False):
     """
