@@ -4,3 +4,6 @@ include *.md
 # recursive-include . *.md
 # include *.rst
 # recursive-include . *.rst
+recursive-include pug/miner/static *
+recursive-include pug/miner/templates *
+recursive-include pug/miner/tests *

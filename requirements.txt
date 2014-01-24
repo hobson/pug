@@ -18,3 +18,4 @@ wsgiref==0.1.2
 Scrapy
 # sudo yum -y install postgresql postgresql-server postgresql-libs postgresql-devel
 psycopg2
+selenium
