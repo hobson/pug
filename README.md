@@ -1,20 +1,20 @@
 # `pug`
 
-PDX-Python User Group Utility Glob
+## PDX-Python User Group Utility Glob
 
 ---
 
 ## Introduction
 
-`pug` is a collection of utilities by and for the PDX Python User Group.
+Collection of utilities by and for the PDX Python User Group.
 
 - nlp -- natural language processing
 - db -- database importing, etc
 - dj -- some Django management commands
-- wikiscrapy -- wikipedia crawler using [Scrapy](https://github.com/scrapy/scrapy "Excellent new crawler with a JSON-RPC API to the server")
+- wikiscrapy -- wikipedia crawler using [Scrapy](https://github.com/scrapy/scrapy "Excellent new crawler with a JSON-RPC API")
 - docs -- some tips, examples, and yes, documentation
 
-See https://github.com/hobsonlane/pug for the latest.
+See [the docs](https://github.com/hobsonlane/pug/tree/master/pug/docs "incomplete documentation") for the latest.
 
 ---
 
