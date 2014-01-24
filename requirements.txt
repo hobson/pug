@@ -1,8 +1,8 @@
-# sudo yum -y install postgresql-libs postgresql postgresql-server gcc-gfortran python-scikit-learn
 Django==1.6.1
 South==0.8.4
 fuzzywuzzy==0.2
 ipython==1.1.0
+# sudo yum install -y gcc-gfortran python-scikit-learn
 numpy==1.8.0
 progressbar==2.3
 #-e git+git@github.com:hobsonlane/pug.git@aa0aa922389aebdfef1b2ae24c0fea8015c2e008#egg=pug-master
@@ -14,3 +14,7 @@ scipy==0.13.2
 six==1.5.2
 sqlparse==0.1.10
 wsgiref==0.1.2
+# sudo yum install -y python-devel libxml2-devel libxslt-devel
+Scrapy
+# sudo yum -y install postgresql postgresql-server postgresql-libs postgresql-devel
+psycopg2
