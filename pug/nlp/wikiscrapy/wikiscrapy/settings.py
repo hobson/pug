@@ -30,7 +30,7 @@ AUTOTHROTTLE_MAX_DELAY = 10.3
 
 #Crawl responsibly by identifying yourself (and your website) on the user-agent
 # but this user agent results in en.m.wikipedia links (mobile)
-#USER_AGENT = 'SharpBot/1.0 (+http://www.sharplabs.com)'
-#USER_AGENT = 'Mozilla/5.0 (compatible; Sharpbot/1.0; +http://www.sharplabs.com)'
+#USER_AGENT = 'PUGBot/1.0 (+http://www.totalgood.com)'
+#USER_AGENT = 'Mozilla/5.0 (compatible; PUGBot/1.0; +http://www.totalgood.com)'
 # if you put a url (webpage) in the USER_AGENT string wikipedia redirects you the mobile site and the full text isn't available unless you browse to subsections
 USER_AGENT = 'Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:24.0) Gecko/20100101 Firefox/24.0'
