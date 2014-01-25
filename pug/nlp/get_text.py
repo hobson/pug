@@ -1,5 +1,5 @@
-from call_center.models import CaseExchange as Case
-import numpy as np
+#import numpy as np
+from pug.crawler.models import WikiItem
 
 
 def get_text(filter_dict=None, fields=None, exclude_dict=None, table='CaseExchange', max_num_records=10):
@@ -16,7 +16,7 @@ def get_text(filter_dict=None, fields=None, exclude_dict=None, table='CaseExchan
     #     filter_dict = (('serial_number__not', 'TRUNCATED'),)
     # filter_dict = OD(filter_dict)
 
-    qs = Case.objects
+    qs = WikiItem.objects
     if filter_dict:
         qs = qs.filter(**filter_dict)
     if exclude_dict:

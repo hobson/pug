@@ -25,7 +25,7 @@ class Command(NoArgsCommand):
         make_option('--table', action='store', dest='table',
             default=None, help='Table to compose model for (default = all).'),
         make_option('--app', action='store', dest='app',
-            default='call_center', help='App name to examine and compose data model for (default = all).'),
+            default='crawler', help='App name to examine and compose data model for (default = all).'),
         # make_option('--extra', action='store_true', dest='extra',
         #     default=None, help='Whether to to use custom MS SQL to get extra meta data about tables and fields.'),
     )

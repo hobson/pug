@@ -824,3 +824,22 @@ def clean_wiki_datetime(dt, squelch=False):
             print format_exc(e) +  '\n^^^ Exception caught ^^^\nWARN: Failed to parse datetime string %r\n      from list of strings %r' % (' '.join(dt), dt)
             return dt
         raise(e)
+
+
+def pluralize_field_name(names=None, retain_prefix=False):
+    if not names:
+        return ''
+    elif isinstance(names, basestring):
+        if retain_prefix:
+            split_name = names
+        else:
+            split_name = names.split('__')[-1]
+        if not split_name:
+            return names
+        elif 0 < len(split_name) < 4 or split_name.lower()[-4:] not in ('call', 'sale', 'turn'):
+            return split_name
+        else:
+            return split_name + 's'
+    else:
+        return [pluralize_field_name(name) for name in names]
+pluralize_field_names = pluralize_field_name

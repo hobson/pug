@@ -1,5 +1,6 @@
 # setup.py for PUG
 from distutils.core import setup
+#from setuptest import test
 
 from pug import __version__, __authors__, __github_url__
 from pug import __name__ as package_name
@@ -28,6 +29,9 @@ setup(
     long_description = open(os.path.join(os.path.dirname(__file__), 'README.md')).read(),
     author = ', '.join(__authors__),
     author_email = "pugauthors@totalgood.com",
+    #tests_require = ['django-setuptest', 'south'],
+    #test_suite = 'setuptest.setuptest.SetupTestSuite',
+    #cmdclass = {'test': test},
     url = __github_url__,
     download_url = "%s/archive/v%s.tar.gz" % (__github_url__, __version__),
     keywords = ["agent", "bot", "ai", "crawl", "data", "science", "data science", "math", "machine-learning", "statistics", "database"],

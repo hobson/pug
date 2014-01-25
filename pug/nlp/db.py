@@ -1,9 +1,9 @@
 """Abtstraction of an abstraction (the Django Database ORM)
 
-Intended to facilitate data processing:
+Makes data processing easier:
 
     * numerical processing with `numpy`
-    * text processing with `nltk`
+    * text processing with `nltk` and `pub.nlp`
     * visualization with d3, nvd3, and django-nvd3
 """
 
@@ -315,7 +315,7 @@ def get_model(model=DEFAULT_MODEL, app=DEFAULT_APP):
     """
     >>> from django.db import connection
     >>> connection.close() 
-    >>> get_model('CallMast').__name__.startswith('CallMaster')
+    >>> get_model('WikiI').__name__.startswith('WikiItem')
     True
     >>> connection.close() 
     >>> isinstance(get_model('master'), models.base.ModelBase)
@@ -344,7 +344,7 @@ def queryset_from_model_number(model_number=None, model=DEFAULT_MODEL, app=DEFAU
     if isinstance(model_number, basestring):
         if model_number.lower().endswith('sales'):
             filter_dict = {'model__startswith': model_number[:-5].rstrip('_')}
-            model = 'Sales'
+            model = 'WikiItem'
         else:
             model = model or DEFAULT_MODEL
     
@@ -381,7 +381,7 @@ def querysets_from_model_numbers(model_numbers=None, model=DEFAULT_MODEL, app=DE
                 if model_number.lower().endswith('sales'):
                     model_number = model_number[:-5].strip('_')
                     model_numbers += [model_number]
-                    model_list += ['Sales']
+                    model_list += ['WikiItem']
                 else:
                     model_list += [DEFAULT_MODEL]
             filter_dicts += [{'model__startswith': model_number}]
@@ -566,13 +566,13 @@ def count_in_date(x='date_time', filter_dict=None, model=DEFAULT_MODEL, app=DEFA
     return objects['date_bin_for_counting'], objects['count_of_records_per_date_bin']
 
 
-def sum_in_date(x='date', y='net_sales', filter_dict=None, model='Sales', app=DEFAULT_APP, sort=True, limit=100000):
+def sum_in_date(x='date', y='net_sales', filter_dict=None, model='WikiItem', app=DEFAULT_APP, sort=True, limit=100000):
     """
     Count the number of records for each discrete (categorical) value of a field and return a dict of two lists, the field values and the counts.
 
     >>> from django.db import connection
     >>> connection.close()
-    >>> x, y = sum_in_date(y='net_sales', filter_dict={'model__startswith': 'LC60'}, model='Sales', limit=5, sort=1)
+    >>> x, y = sum_in_date(y='net_sales', filter_dict={'model__startswith': 'LC60'}, model='WikiItem', limit=5, sort=1)
     >>> len(x) == len(y) == 5
     True
     >>> y[1] >= y[0]
@@ -999,7 +999,7 @@ def sequence_from_filter_spec(field_names, filter_dict=None, model=DEFAULT_MODEL
 
 def find_fields(fields, model=DEFAULT_MODEL, app=DEFAULT_APP, score_cutoff=50, pad_with_none=False):
     """
-    >>> find_fields(['date_time', 'model_number', 'sales'], model='Sales')
+    >>> find_fields(['date_time', 'model_number', 'sales'], model='WikiItem')
     ['date', 'model', 'net_sales']
     """
     fields = listify(fields)
@@ -1017,11 +1017,11 @@ def find_fields(fields, model=DEFAULT_MODEL, app=DEFAULT_APP, score_cutoff=50, p
 
 def find_synonymous_field(field, model=DEFAULT_MODEL, app=DEFAULT_APP, score_cutoff=50, root_preference=1.02):
     """
-    >>> find_synonymous_field('date', model='CallMaster')
+    >>> find_synonymous_field('date', model='WikiItem')
     'end_date_time'
-    >>> find_synonymous_field('date', model='CaseMaster')
+    >>> find_synonymous_field('date', model='WikiItem')
     'date_time'
-    >>> find_synonymous_field('time', model='CaseMaster')
+    >>> find_synonymous_field('time', model='WikiItem')
     'date_time'
     """
     fields = listify(field) + list(synonyms(field))
@@ -1039,20 +1039,20 @@ def find_synonymous_field(field, model=DEFAULT_MODEL, app=DEFAULT_APP, score_cut
 
 def find_field(field, model=DEFAULT_MODEL, app=DEFAULT_APP, score_cutoff=50):
     """
-    >>> find_field('date_time', model='Sales')
+    >>> find_field('date_time', model='WikiItem')
     'date'
-    >>> find_field('$#!@', model='Sales')
-    >>> find_field('date', model='CallMaster')
+    >>> find_field('$#!@', model='WikiItem')
+    >>> find_field('date', model='WikiItem')
     'end_date_time'
-    >>> find_field('date', model='CaseMaster')
+    >>> find_field('date', model='WikiItem')
     'date_in_svc'
-    >>> find_synonymous_field('date', model='CaseMaster')
+    >>> find_synonymous_field('date', model='WikiItem')
     'date_time'
     """
     return find_fields(field, model, app, score_cutoff, pad_with_none=True)[0]
 
 
-def lagged_in_date(x=None, y=None, filter_dict=None, model='Sales', app=DEFAULT_APP, sort=True, limit=5000, lag=1, pad=0, truncate=True):
+def lagged_in_date(x=None, y=None, filter_dict=None, model='WikiItem', app=DEFAULT_APP, sort=True, limit=5000, lag=1, pad=0, truncate=True):
     """
     Lag the y values by the specified number of samples.
 
@@ -1512,4 +1512,3 @@ def field_cov(fields, models, apps):
     columns = util.get_columns(fields, models, apps)
     columns = util.make_real(columns)
     return np.cov(columns)
-
