@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+from __future__ import division
 
 import os
 import nltk
@@ -7,9 +8,14 @@ import math
 
 DEFAULT_FILE_LIST = os.listdir('inaugural')
 
-def main(filenames=DEFAULT_FILE_LIST, entropy_threshold=0.9):
+def score_words_in_files(filenames=DEFAULT_FILE_LIST[:14], entropy_threshold=0.99):
+    """Calculate relevance score for words in a set of files
 
-    filenames = os.listdir('inaugural')
+    score_words_in_files(filenames=DEFAULT_FILE_LIST, entropy_threshold=0.9):
+        return scores, occurrence_matrix, filenames, most_relevant_words
+    """
+
+    filtered_filenames = []
 
     Text = []     # list of tokened texts
     Total = []    # all texts put together 
@@ -20,8 +26,9 @@ def main(filenames=DEFAULT_FILE_LIST, entropy_threshold=0.9):
     for fn in filenames:
         if fn.lower().split('/')[-1].startswith('readme'):
             continue
+        filtered_filenames += [fn]
         i += 1
-        f=open('inaugural/'+filenames[i])
+        f=open('inaugural/'+fn)
         print 'Reading ' + f.name
         raw = f.read()
         tokens=nltk.word_tokenize(raw)
@@ -69,9 +76,9 @@ def main(filenames=DEFAULT_FILE_LIST, entropy_threshold=0.9):
 
         alpha=0.6
         
-        Entropy = math.log(sum ([pow(Word_Dist[w]/totalcount, alpha) for w in keys]))/(1-alpha)
-                        
-        Entropy_Normalized= Entropy/Entropy_Unif
+        Entropy = math.log(sum ([pow(float(Word_Dist[w])/totalcount, alpha) for w in keys]))/(1-alpha)
+
+        Entropy_Normalized = float(Entropy) / (Entropy_Unif or 1e-15)
         if (Entropy_Normalized > entropy_threshold):  # 0.9 is an arbitrary threshold
             Word_Relevance[wordIndex]=1
         
@@ -146,12 +153,37 @@ def d3_graph(adjacency_matrix, row_names, col_names=None):
 
 
 def co_adjacency(adjacency_matrix, row_names, col_names=None, bypass_col_names=True):
-    for i, row in enumerate(adjacency_matrix):
-        for j, value in row:
-            pass
+    """Reduce a heterogenous adjacency matrix into a homogonous co-adjacency matrix
 
-            
-        
+    coadjacency_matrix, names = co_adjacency(adjacency_matrix, row_names, col_names, bypass_col_names=True)
+    """
+    bypass_indx = int(not (int(bypass_col_names) % 2))
+    names = (row_names, col_names or row_names)[bypass_indx]
+    N = len(names)
+    coadjacency = [[0 for i in range(N)] for j in range(N)]
+
+    if not bypass_indx:
+        for i, row in enumerate(adjacency_matrix):
+            print row
+            for j, value in enumerate(row):
+                if value:
+                    for k in range(len(adjacency_matrix)):
+                        if adjacency_matrix[k][i]:
+                            coadjacency[i][j] += value * adjacency_matrix[k][i]
+                #print coadjacency
+
+    # edges were double-counted (once in each direction) ... or more
+    for i in range(N):
+        for j in range(N):
+            coadjacency[i][j] /= 2.
+
+    return coadjacency, names
+
 
 if __name__ == '__main__':
-    print main()
+    """
+    # This will produce a 14 x 14 matrix, 
+    >>> scores, adjacency_matrix, files, words = score_words_in_files(DEFAULT_FILE_LIST[:14], entropy_threshold=0.99)
+    >>> coadjacency, names = co_adjacency(adjacency_matrix, row_names=files, col_names=words, bypass_col_names=True)
+    """
+    pass
