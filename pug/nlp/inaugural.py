@@ -94,5 +94,64 @@ def main(filenames=DEFAULT_FILE_LIST, entropy_threshold=0.9):
     return Scores, Reduced_Vectors, filenames, Key_words
 
 
+def d3_graph(adjacency_matrix, row_names, col_names=None):
+    """Convert an adjacency matrix to a dict of nodes and links for d3 graph rendering
+
+    row_names = [("name1", group_num), ("name2", group_num), ...]
+    col_names = [("name1", group_num), ("name2", group_num), ...]
+
+    Usually row_names and col_names are the same, but not necessarily.
+    Group numbers should be an integer between 1 and the number of groupings
+    of the nodes that you want to display.
+
+    adjacency_matrix = [
+        [edge00_value, edge01_value, edge02_value...],
+        [edge10_value, edge11_value, edge12_value...],
+        [edge20_value, edge21_value, edge22_value...],
+        ...
+        ]
+
+    The output is a dictionary of lists of vertexes (called "nodes" in d3)
+    and edges (called "links" in d3):
+
+    {
+        "nodes": [{"group": 1, "name": "Alpha"}, 
+                  {"group": 1, "name": "Beta"}, 
+                  {"group": 2, "name": "Gamma"}, ...
+                 ],
+        "links": [{"source": 1, "target": 0, "value": 1}, 
+                  {"source": 2, "target": 0, "value": 8}, 
+                  {"source": 3, "target": 0, "value": 10}, 
+                 ]
+    }
+    """
+    if col_names is None:
+        col_names = row_names
+
+    nodes, links = [], []
+
+    # get the nodes list first, from the row and column labels, even if not square
+    for names in (row_names, col_names):
+        for i, name in enumerate(names):
+            node = {"name": str(name[0]), "group": int(name[1]) or 1}
+            if node not in nodes:
+                nodes += [node]
+
+    # get the edges next
+    for i, row in enumerate(adjacency_matrix):
+        for j, value in enumerate(row):
+            links += [{"source": 0, "target": 1, "value": int(value)}]
+
+    return {'nodes': nodes, 'links': links}
+
+
+def co_adjacency(adjacency_matrix, row_names, col_names=None, bypass_col_names=True):
+    for i, row in enumerate(adjacency_matrix):
+        for j, value in row:
+            pass
+
+            
+        
+
 if __name__ == '__main__':
     print main()
