@@ -40,5 +40,6 @@ PDX Python
 AUTHORS
 -------
 
-Hobson Lane <hobson@totalgood.com>
-Your Name Here ;) <pughelp@totalgood.com>
+Hobson Lane <pugauthors@totalgood.com>
+LiZhong Zheng <lizhong@MIT.edu>
+Your Name Here ;) <pugauthors@totalgood.com>
