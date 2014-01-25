@@ -58,7 +58,7 @@ def has_suffix(model, suffixes=('Orig',)):
             return True
     return False
 
-def has_prefix(model, prefixes=('Sharp', 'Warranty', 'Npc')):
+def has_prefix(model, prefixes=('Wiki')):
     for prefix in prefixes:
         if model._meta.object_name.startswith(prefix) or model._meta.db_table.startswith(prefix):
             return True
@@ -338,12 +338,11 @@ def get_model(model=DEFAULT_MODEL, app=DEFAULT_APP):
     return models.get_model(app.__package__.split('.')[-1], fuzzy.extractOne(str(model), model_names)[0])
 
 
-def queryset_from_model_number(model_number=None, model=DEFAULT_MODEL, app=DEFAULT_APP):
-    # if an __sales model number is received then override the model
+def queryset_from_title_prefix(title_prefix=None, model=DEFAULT_MODEL, app=DEFAULT_APP):
     filter_dict = {}
-    if isinstance(model_number, basestring):
-        if model_number.lower().endswith('sales'):
-            filter_dict = {'model__startswith': model_number[:-5].rstrip('_')}
+    if isinstance(title_prefix, basestring):
+        if title_prefix.lower().endswith('quantity'):
+            filter_dict = {'title__startswith': title_prefix[:-5].rstrip('_')}
             model = 'WikiItem'
         else:
             model = model or DEFAULT_MODEL
@@ -362,33 +361,32 @@ def queryset_from_filter_dict(filter_dict=None, model=None, app=None):
     return model.objects
 
 
-def querysets_from_model_numbers(model_numbers=None, model=DEFAULT_MODEL, app=DEFAULT_APP):
+def querysets_from_title_prefix(title_prefix=None, model=DEFAULT_MODEL, app=DEFAULT_APP):
     """Return a list of Querysets from a list of model numbers"""
 
-    if model_numbers is None:
-        model_numbers = [None]
+    if title_prefix is None:
+        title_prefix = [None]
 
     filter_dicts = []
     model_list = []
-    if isinstance(model_numbers, basestring):
-        model_numbers = model_numbers.split(',')
-    elif not isinstance(model_numbers, dict):
-        model_numbers = model_numbers
-    if isinstance(model_numbers, (list, tuple)):
-        for i, model_number in enumerate(model_numbers):
-            # TODO: modularize this into queryset_from_model_number() function
-            if isinstance(model_number, basestring):
-                if model_number.lower().endswith('sales'):
-                    model_number = model_number[:-5].strip('_')
-                    model_numbers += [model_number]
+    if isinstance(title_prefix, basestring):
+        title_prefix = title_prefix.split(',')
+    elif not isinstance(title_prefix, dict):
+        title_prefix = title_prefix
+    if isinstance(title_prefix, (list, tuple)):
+        for i, title_prefix in enumerate(title_prefix):
+            if isinstance(title_prefix, basestring):
+                if title_prefix.lower().endswith('sales'):
+                    title_prefix = title_prefix[:-5].strip('_')
+                    title_prefix += [title_prefix]
                     model_list += ['WikiItem']
                 else:
                     model_list += [DEFAULT_MODEL]
-            filter_dicts += [{'model__startswith': model_number}]
-    elif isinstance(model_numbers, dict):
-        filter_dicts = [model_numbers]
-    elif isinstance(model_numbers, (list, tuple)):
-        filter_dicts = listify(model_numbers)
+            filter_dicts += [{'model__startswith': title_prefix}]
+    elif isinstance(title_prefix, dict):
+        filter_dicts = [title_prefix]
+    elif isinstance(title_prefix, (list, tuple)):
+        filter_dicts = listify(title_prefix)
     
     model = get_model(model, app)
 
@@ -584,8 +582,6 @@ def sum_in_date(x='date', y='net_sales', filter_dict=None, model='WikiItem', app
     objects = model.objects.filter(**filter_dict)
     # only the x values are now in the queryset (datetime information)
     objects = objects.values(x)
-    # sum the net_sales values for each date, 
-    # even though the net_sales field is not in the values list it's available to the Sum function
     objects = objects.annotate(y=models.Sum(y))
 
     if sort is not None:
@@ -999,7 +995,7 @@ def sequence_from_filter_spec(field_names, filter_dict=None, model=DEFAULT_MODEL
 
 def find_fields(fields, model=DEFAULT_MODEL, app=DEFAULT_APP, score_cutoff=50, pad_with_none=False):
     """
-    >>> find_fields(['date_time', 'model_number', 'sales'], model='WikiItem')
+    >>> find_fields(['date_time', 'title_prefix', 'sales'], model='WikiItem')
     ['date', 'model', 'net_sales']
     """
     fields = listify(fields)

@@ -6,9 +6,9 @@ Thank You for Your Code
 pyodbc
 psycopg2
 postgres
-PDX Python (Michelle and the snake wranglers)
 Flask
 SciKit
+fuzzywuzzy
 
 ---
 
@@ -19,8 +19,21 @@ Thank You for the Education
 [Building Energy](buildingenergy.com) -- Aleck, John, Steven
 [Squishy Media](squishymedia.com) -- Eric, Xian, Ben, Greg, Jesse
 
+Thank You for MOOC
+------------------
+
 [Coursera](coursera.org)
 [Udacity](udacity.com)
+
+Resources that Helped
+---------------------
+
+[Programming Collective Intelligence](http://shop.oreilly.com/product/9780596529321.do)
+[Python for Data Analysis](http://shop.oreilly.com/product/0636920023784.do)
+[Building Machine Learning in Python](http://shop.oreilly.com/product/9781782161400.do)
+[Doing Data Science](http://shop.oreilly.com/product/0636920028529.do)
+[Norvig](norvig.com)
+PDX Python
 
 ---
 
@@ -28,6 +41,4 @@ AUTHORS
 -------
 
 Hobson Lane <hobson@totalgood.com>
-Your Name Here ;)
-
----
+Your Name Here ;) <pughelp@totalgood.com>

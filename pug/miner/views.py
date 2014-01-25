@@ -44,7 +44,7 @@ def connections(request, edges):
     data = {'nodes': json.dumps(node_list), 'edges': json.dumps(edge_list)}
     return render_to_response('miner/connections.html', data)
 
-def stats(request, date_offset=0, fields=None, model_number=None, model='WikiItem'):
+def stats(request, date_offset=0, fields=None, title_prefix=None, model='WikiItem'):
     """
     In addition to chart data in data['chart'], send statistics data to view in data['stats']
     """
