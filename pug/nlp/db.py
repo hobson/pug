@@ -13,8 +13,9 @@ from collections import OrderedDict, Mapping
 import re
 from types import ModuleType
 from math import log
-import pytz
+import json
 
+import pytz
 from fuzzywuzzy import process as fuzzy
 from dateutil import parser as dateutil_parser
 import numpy as np
@@ -50,6 +51,22 @@ NO_VALUES = ('No', 'no', 'N')
 YES_VALUES = ('Yes', 'yes', 'Y')
 
 
+class RobustEncoder(json.JSONEncoder):
+    """A more robust JSON serializer (handles any object with a __str__ method).
+
+    from http://stackoverflow.com/a/15823348/623735
+    Fixes: "TypeError: datetime.datetime(..., tzinfo=<UTC>) is not JSON serializable"
+
+    >>> import datetime
+    >>> json.dumps(datetime.datetime(1,2,3), cls=RobustEncoder)
+    '"0001-02-03 00:00:00"'
+    """
+    def default(self, obj):
+        # if isinstance(obj, (datetime.datetime, Decimal)):
+        #     obj = str(obj)
+        if not isinstance(obj, (list, dict, tuple, int, float, basestring, bool, type(None))):
+            return str(obj)
+        return super(RobustEncoder, self).default(self, obj)
 
 
 def has_suffix(model, suffixes=('Orig',)):

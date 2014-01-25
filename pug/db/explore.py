@@ -10,6 +10,7 @@ import datetime
 from ..nlp import db
 import sqlserver as sql
 
+
 from django.core.exceptions import ImproperlyConfigured
 DEFAULT_DB_ALIAS = 'default'
 DEFAULT_APP_NAME = None
@@ -133,7 +134,7 @@ def augment_field_meta(field, queryset, field_properties, verbosity=0):
     """Return a dict of statistical properties (metadata) for a database column (model field)
 
     Strings are UTF-8 encoded
-    Resulting dictionary is json-serializable using the pug.exploer.RobustEncoder class.
+    Resulting dictionary is json-serializable using the pug.nlp.db.RobustEncoder class.
 
     {
         'num_distinct':   # count of distinct (different) discrete values within the column
@@ -417,20 +418,4 @@ def inspect_cursor(cursor=None):
     for table_name in get_cursor_table_names(cursor):
         print table_name
 
-class RobustEncoder(json.JSONEncoder):
-    """A more robust JSON serializer (handles any object with a __str__ method).
-
-    from http://stackoverflow.com/a/15823348/623735
-    Fixes: "TypeError: datetime.datetime(..., tzinfo=<UTC>) is not JSON serializable"
-
-    >>> import datetime
-    >>> json.dumps(datetime.datetime(1,2,3), cls=RobustEncoder)
-    '"0001-02-03 00:00:00"'
-    """
-    def default(self, obj):
-        # if isinstance(obj, (datetime.datetime, Decimal)):
-        #     obj = str(obj)
-        if not isinstance(obj, (list, dict, tuple, int, float, basestring, bool, type(None))):
-            return str(obj)
-        return super(RobustEncoder, self).default(self, obj)
 
