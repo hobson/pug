@@ -9,6 +9,8 @@ import json
 import nltk
 import numpy as np
 
+import character_subset as ascii
+
 DEFAULT_FILE_LIST = os.listdir('inaugural')
 
 
@@ -90,6 +92,18 @@ def score_words_in_files(filenames=DEFAULT_FILE_LIST[:14], entropy_threshold=0.9
         Scores[i]= np.inner(V[0], Reduced_Vectors[i])/Speech_Length[i]
         print Scores[i], ':', filenames[i]
     return Scores, Reduced_Vectors, filtered_filenames, Key_words
+
+
+def reverse_dict(d):
+    return dict((v, k) for (k, v) in dict(d).iteritems())
+
+
+def reverse_dict_of_lists(d):
+    ans = {}
+    for (k, v) in dict(d).iteritems():
+        for new_k in list(v):
+            ans[new_k] = k
+    return ans
 
 
 def shannon_entropy(discrete_distribution, base=e, normalized=True):
@@ -271,7 +285,11 @@ def matrix_scale_exp(A, out_min=0, out_max=1, exp=1):
     return scale_exp(A, np.min(A), np.max(A), out_min, out_max, exp=exp).tolist()
 
 
-def d3_graph(adjacency_matrix, row_names, col_names=None, str_to_group=len_str_to_group, str_to_name=str, str_to_value=float, num_groups=4.):
+def strip_path_ext_characters(s, strip_characters=ascii.ascii_nonword):
+    return str(s).split('/')[-1].split('.')[0].strip(strip_characters)
+
+
+def d3_graph(adjacency_matrix, row_names, col_names=None, str_to_group=len_str_to_group, str_to_name=strip_path_ext_characters, str_to_value=float, num_groups=4.):
     """Convert an adjacency matrix to a dict of nodes and links for d3 graph rendering
 
     row_names = [("name1", group_num), ("name2", group_num), ...]
@@ -313,7 +331,7 @@ def d3_graph(adjacency_matrix, row_names, col_names=None, str_to_group=len_str_t
         for i, name_group in enumerate(names):
             if isinstance(name_group, basestring):
                 name_group = (str_to_name(name_group), str_to_group(name_group))
-            node = {"name": str(name_group[0]), "group": int(name_group[1]) or 1}
+            node = {"name": name_group[0], "group": name_group[1] or 1}
             print node
             if node not in nodes:
                 nodes += [node]
@@ -330,9 +348,22 @@ def write_file_twice(js, fn, other_dir='../miner/static'):
     with open(fn, 'w') as f:
         json.dump(js, f, indent=2)
     other_path = os.path.join(other_dir, fn)
-    if os.path.isdir(other_path):
-        with open(fn, 'w') as f:
+    if os.path.isdir(other_dir):
+        with open(other_path, 'w') as f:
             json.dump(js, f, indent=2)
+
+
+def president_party(name):
+    surname = strip_path_ext_characters(name.split(' ')[-1], strip_characters=ascii.ascii_nonletter)
+    return president_party.surname_party.get(surname, '')
+president_party.party = reverse_dict_of_lists(json.load(open('data/president_political_parties.json','r')))
+president_party.surname_party = dict((name.split(' ')[-1], party) for (name, party) in president_party.party.iteritems())
+
+
+def party_to_group(s):
+    return party_to_group.parties.get(s)
+party_to_group.parties = dict((p, i + 1) for (i, p) in enumerate(json.load(open('data/president_political_parties.json','r'))))
+
 
 
 if __name__ == '__main__':
@@ -342,7 +373,7 @@ if __name__ == '__main__':
     >>> coadjacency, names = co_adjacency(adjacency_matrix, row_names=files, col_names=words, bypass_col_names=True)
     """
     num_groups = 3.
-    scores, adjacency_matrix, files, words = score_words_in_files(sorted(DEFAULT_FILE_LIST), entropy_threshold=0.90)
+    scores, adjacency_matrix, files, words = score_words_in_files(sorted(DEFAULT_FILE_LIST), entropy_threshold=0.92)
 
     O, names = co_adjacency(adjacency_matrix, row_names=files, col_names=words, bypass_col_names=False)
     O = matrix_scale_exp(O, out_min=1 ** 2, out_max=31 ** 2, exp=.5)
@@ -351,12 +382,15 @@ if __name__ == '__main__':
     graph = d3_graph(O, names, str_to_group=len_str_to_group)
     write_file_twice(graph, 'word_coocurrence.json')
    
+    print files
+    print words
+
 
     O, names = co_adjacency(adjacency_matrix, row_names=files, col_names=words, bypass_col_names=True)
-    O = matrix_scale_exp(O, out_min=1, out_max=31)
-    print O
+    print names, len(O), len(O[0])
+    O = matrix_scale_exp(O, out_min=1 ** .66, out_max=31 ** .66, exp=1.5)
     yr_str_to_group.digits = 4
     yr_str_to_group.min = min(float(s[:4]) for s in names)
     yr_str_to_group.width = (max(float(s[:4]) for s in names) - yr_str_to_group.min) / num_groups
-    graph = d3_graph(O, names, str_to_group=yr_str_to_group)
+    graph = d3_graph(O, [(strip_path_ext_characters(n), party_to_group(president_party(n))) for n in names], str_to_group=yr_str_to_group)
     write_file_twice(graph, 'doc_coocurrence.json')

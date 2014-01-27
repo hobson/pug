@@ -69,6 +69,18 @@ def qs_to_table(qs, excluded_fields=['id']):
     return rows
 
 
+def reverse_dict(d):
+    return dict((v, k) for (k, v) in dict(d).iteritems())
+
+
+def reverse_dict_of_lists(d):
+    ans = {}
+    for (k, v) in dict(d).iteritems():
+        for new_k in list(v):
+            ans[new_k] = k
+    return ans
+
+
 def clean_field_dict(field_dict, cleaner=unicode.strip, time_zone=None):
     r"""Normalize text field values by stripping leading and trailing whitespace
 
