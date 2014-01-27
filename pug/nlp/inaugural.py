@@ -2,9 +2,14 @@
 from __future__ import division
 
 import os
+from math import log, e
+from collections import Mapping
+import json
+
+
 import nltk
 import numpy
-import math
+from scipy.stats import entropy
 
 DEFAULT_FILE_LIST = os.listdir('inaugural')
 
@@ -65,21 +70,9 @@ def score_words_in_files(filenames=DEFAULT_FILE_LIST[:14], entropy_threshold=0.9
         #    Word_Relevance[wordIndex]=1            
          
         # entropy normalized by the support 
-    
-        keys=Word_Dist.keys()
-        Entropy_Unif= math.log(len(keys))  # log of the support, don't have to turn to float
-        totalcount= float(sum([Word_Dist[w] for w in keys]))
-        
-        #Entropy= -sum([ Word_Dist[w]/totalcount * math.log(Word_Dist[w]/totalcount) for w in keys])
-        
-        # Renyi entropy of order alpha
+        H_normalized = renyi_entropy(Word_Dist, alpha=.6, base=e, normalized=True)
 
-        alpha=0.6
-        
-        Entropy = math.log(sum ([pow(float(Word_Dist[w])/totalcount, alpha) for w in keys]))/(1-alpha)
-
-        Entropy_Normalized = float(Entropy) / (Entropy_Unif or 1e-15)
-        if (Entropy_Normalized > entropy_threshold):  # 0.9 is an arbitrary threshold
+        if (H_normalized > entropy_threshold):  # 0.9 is an arbitrary threshold
             Word_Relevance[wordIndex]=1
         
     Key_words= [Vocabulary[i] for i in range(Size) if Word_Relevance[i] !=0 ] 
@@ -92,16 +85,155 @@ def score_words_in_files(filenames=DEFAULT_FILE_LIST[:14], entropy_threshold=0.9
     
     U,s,V= numpy.linalg.svd(Reduced_Vectors)
 
-    Scores=range(len(filenames)-1)    
+    Scores=range(len(filenames)-1)
+    print 'SCORES', ':', 'FILENAME'    
     for i in range(len(filenames)-1):
         Scores[i]= numpy.inner(V[0], Reduced_Vectors[i])/Speech_Length[i]
-        print filenames[i]        
-        print Scores[i]
-        print '\n'
-    return Scores, Reduced_Vectors, filenames, Key_words
+        print Scores[i], ':', filenames[i]
+    return Scores, Reduced_Vectors, filtered_filenames, Key_words
 
 
-def d3_graph(adjacency_matrix, row_names, col_names=None):
+def shannon_entropy(discrete_distribution, base=e, normalized=True):
+    """Shannon entropy (information uncertainty) for the logarithm base (units of measure) indicated
+
+    The default logarithm base is 2, which provides entropy in units of bits. Shannon used
+    bases of 2, 10, and e (natural log), but scipy and most math packages assume e.
+
+    >>> from scipy.stats import entropy as scipy_entropy
+    >>> scipy_entropy([.5, .5]) / log(2) # doctest: +ELLIPSIS
+    1.0
+    >>> shannon_entropy([.5, .5], base=2)
+    0.69314718...
+    >>> scipy_entropy([.5, .5])  # doctest: +ELLIPSIS
+    0.69314718...
+    1.0
+    >>> shannon_entropy([.5, .5], base=2, normalized=False)  # doctest: +ELLIPSIS
+    0.69314718...
+    >>> scipy_entropy([c / 13. for c in [1, 2, 3, 4, 3]])  # doctest: +ELLIPSIS
+    1.5247073930...
+    >>> shannon_entropy([1, 2, 3, 4, 3], normalized=False)
+    1.5247073930...
+    """
+    if isinstance(discrete_distribution, Mapping):
+        discrete_distribution = discrete_distribution.values()
+    if base == None:
+        base = e
+
+    if not len(discrete_distribution):
+        raise RuntimeWarning("Empty discrete_distribution probability distribution, so Renyi entropy (information) is zero.")
+        return float('-0.')
+    if not any(discrete_distribution):
+        raise RuntimeWarning("Invalid value encountered in divison, 0/0 (zero divided by zero). Sum of discrete_distribution (discrete distribution integral) is zero.")
+        return float('nan')
+    if any(count < 0 for count in discrete_distribution):
+        raise RuntimeWarning("Some counts or frequencies (probabilities) in discrete_distribution were negative.")
+
+    total_count = float(sum(discrete_distribution))
+
+    if base == e:
+        H = sum(count * log(count / total_count) for count in discrete_distribution) / total_count
+    else:
+        H = sum(count * log(count / total_count, base) for count in discrete_distribution) / total_count
+    if normalized:
+        return -1 * H / log(len(discrete_distribution), base)
+    return -1 * H
+
+
+def renyi_entropy(word_counts, alpha=1, base=2, normalized=True):
+    """Renyi entropy of order alpha and the logarithm base (units of measure) indicated
+
+    The default logarithm base is 2, which provides entropy in units of bits, Renyi's 
+    preferred units. Shannon used bases of 2, 10, and e (natural log).
+
+    >>> from scipy.stats import entropy as scipy_entropy
+    >>> scipy_entropy([.4, .6])  # doctest: +ELLIPSIS
+    0.97...
+    >>> renyi_entropy([.4, .6])  # doctest: +ELLIPSIS
+    0.97...
+    >>> renyi_entropy([.4, .6], .6)
+    0.97...
+    >>> renyi_entropy([], .6)
+    -0.0
+    >>> renyi_entropy([0.] * 10, .6)
+    nan
+    """
+    if isinstance(word_counts, Mapping):
+        word_counts = word_counts.values()
+    if base == None:
+        base = e
+
+    N = len(word_counts)
+    if not N:
+        raise RuntimeWarning("Empty word_counts probability distribution, so Renyi entropy (information) is zero.")
+        return float('-0.')
+    if not any(word_counts):
+        raise RuntimeWarning("Invalid value encountered in divison, 0/0 (zero divided by zero). Sum of word_counts (discrete distribution integral) is zero.")
+        return float('nan')
+
+    if alpha == 1:
+        return shannon_entropy(word_counts, base=base, normalized=normalized)
+
+    total_count = float(sum(word_counts))    
+    entropy_unif = log(N, base)  # log of the support, don't have to turn to float
+    sum_pow = sum(pow(count / total_count, alpha) for count in word_counts)
+    
+    # log(x) is 75% faster as log(x, math.e), according to timeit on python 2.7.5
+    # so split into 2 cases, base e (None), and any other base
+    if base == e:
+        log_sum_pow = log(sum_pow)
+    else:
+        log_sum_pow = log(sum_pow, base)
+
+    H = log_sum_pow / (1 - alpha)
+
+    if normalized:
+        return H / (entropy_unif or 1.)
+    else:
+        return H
+
+
+def zheng_normalized_entropy(Word_Dist, alpha=.6):
+    """Renyi entropy of order alpha and the logarithm base (units of measure) indicated
+
+    The default logarithm base is 2, which provides entropy in units of bits, Renyi's 
+    preferred units. Shannon used bases of 2, 10, and e (natural log).
+
+    >>> from scipy.stats import entropy as scipy_entropy
+    >>> scipy_entropy([.4, .6])  # doctest: +ELLIPSIS
+    0.97...
+    >>> zheng_normalized_entropy([.4, .6], alpha=1)  # doctest: +ELLIPSIS
+    0.97...
+    >>> word_freq = [c / 13. for c in [1, 2, 3, 4, 3]]
+    >>> zheng_normalized_entropy(dict((k, v) for (k, v) in enumerate(word_freq)))  # doctest: +ELLIPSIS
+    0.966162932302...
+    """
+    keys=Word_Dist.keys()
+    Entropy_Unif= log(len(keys))  # log of the support, don't have to turn to float
+    totalcount= float(sum([Word_Dist[w] for w in keys]))
+    
+    Entropy= -sum([ Word_Dist[w]/totalcount * log(Word_Dist[w]/totalcount) for w in keys])
+    
+    # Renyi entropy of order alpha
+    #Entropy = log(sum ([pow(float(Word_Dist[w])/totalcount, alpha) for w in keys]))/(1-alpha)
+
+    return float(Entropy) / Entropy_Unif
+
+
+def co_adjacency(adjacency_matrix, row_names, col_names=None, bypass_col_names=True):
+    """Reduce a heterogenous adjacency matrix into a homogonous co-adjacency matrix
+
+    coadjacency_matrix, names = co_adjacency(adjacency_matrix, row_names, col_names, bypass_col_names=True)
+    """
+    bypass_indx = int(not (int(bypass_col_names) % 2))
+    names = (row_names, col_names or row_names)[bypass_indx]
+
+    A = numpy.matrix(adjacency_matrix)
+    if not bypass_indx:
+        return (A * A.transpose()).tolist(), names
+    return (A.transpose() * A).tolist(), names
+
+
+def d3_graph(adjacency_matrix, row_names, col_names=None, str_to_group=len, str_to_name=str, str_to_value=float):
     """Convert an adjacency matrix to a dict of nodes and links for d3 graph rendering
 
     row_names = [("name1", group_num), ("name2", group_num), ...]
@@ -139,45 +271,20 @@ def d3_graph(adjacency_matrix, row_names, col_names=None):
 
     # get the nodes list first, from the row and column labels, even if not square
     for names in (row_names, col_names):
-        for i, name in enumerate(names):
-            node = {"name": str(name[0]), "group": int(name[1]) or 1}
+        for i, name_group in enumerate(names):
+            if isinstance(name_group, basestring):
+                name_group = (str_to_name(name_group), str_to_group(name_group))
+            node = {"name": str(name_group[0]), "group": int(name_group[1]) or 1}
+            print node
             if node not in nodes:
                 nodes += [node]
 
     # get the edges next
     for i, row in enumerate(adjacency_matrix):
         for j, value in enumerate(row):
-            links += [{"source": 0, "target": 1, "value": int(value)}]
+            links += [{"source": i, "target": j, "value": str_to_value(value)}]
 
     return {'nodes': nodes, 'links': links}
-
-
-def co_adjacency(adjacency_matrix, row_names, col_names=None, bypass_col_names=True):
-    """Reduce a heterogenous adjacency matrix into a homogonous co-adjacency matrix
-
-    coadjacency_matrix, names = co_adjacency(adjacency_matrix, row_names, col_names, bypass_col_names=True)
-    """
-    bypass_indx = int(not (int(bypass_col_names) % 2))
-    names = (row_names, col_names or row_names)[bypass_indx]
-    N = len(names)
-    coadjacency = [[0 for i in range(N)] for j in range(N)]
-
-    if not bypass_indx:
-        for i, row in enumerate(adjacency_matrix):
-            print row
-            for j, value in enumerate(row):
-                if value:
-                    for k in range(len(adjacency_matrix)):
-                        if adjacency_matrix[k][i]:
-                            coadjacency[i][j] += value * adjacency_matrix[k][i]
-                #print coadjacency
-
-    # edges were double-counted (once in each direction) ... or more
-    for i in range(N):
-        for j in range(N):
-            coadjacency[i][j] /= 2.
-
-    return coadjacency, names
 
 
 if __name__ == '__main__':
@@ -186,4 +293,18 @@ if __name__ == '__main__':
     >>> scores, adjacency_matrix, files, words = score_words_in_files(DEFAULT_FILE_LIST[:14], entropy_threshold=0.99)
     >>> coadjacency, names = co_adjacency(adjacency_matrix, row_names=files, col_names=words, bypass_col_names=True)
     """
-    pass
+    scores, adjacency_matrix, files, words = score_words_in_files(DEFAULT_FILE_LIST, entropy_threshold=0.9)
+    coadjacency, names = co_adjacency(adjacency_matrix, row_names=files, col_names=words, bypass_col_names=False)
+    
+    graph = d3_graph(numpy.log(coadjacency), names)
+    print coadjacency
+    print json.dumps(graph, indent=4)
+    with open('coocurrence.json', 'w') as f:
+        json.dump(graph, f, indent=4)
+
+    docs_coadjacency, docs_names = co_adjacency(adjacency_matrix, row_names=files, col_names=words, bypass_col_names=True)
+    docs_graph = d3_graph(numpy.log(docs_coadjacency), docs_names)
+    print docs_coadjacency
+    print json.dumps(docs_graph, indent=4)
+    with open('docs_coocurrence.json', 'w') as f:
+        json.dump(docs_graph, f, indent=4)

@@ -16,7 +16,7 @@
 
 <p>This matrix shows word co-ocurrences in the mined text.</a></i>.
 
-<p>Each colored cell represents two words that appeared in the same document (usually a webpage). Darker cells indicate characters that co-occurred more frequently.
+<p>Each colored cell represents two words that appeared in the same document (usually a webpage). Darker cells indicate words that co-occurred more frequently.
 
 <p>You can sort the matrix rows and columns using the pull-down menu above.
 
@@ -53,7 +53,7 @@ d3.json("coocurrence.json", function(coocurrence) {
   });
   console.log(coocurrence.nodes.length)
 
-  // Convert links to matrix; count character occurrences.
+  // Convert links to matrix; count word occurrences.
   coocurrence.links.forEach(function(link) {
     matrix[link.source][link.target].z += link.value;
     matrix[link.target][link.source].z += link.value;
