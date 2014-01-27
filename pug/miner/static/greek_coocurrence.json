@@ -1,0 +1,74 @@
+{
+    "nodes": [
+        {
+            "group": 1, 
+            "name": "Alpha"
+        }, 
+        {
+            "group": 1, 
+            "name": "Beta"
+        }, 
+        {
+            "group": 1, 
+            "name": "Gamma"
+        }, 
+        {
+            "group": 1, 
+            "name": "Delta"
+        }, 
+        {
+            "group": 1, 
+            "name": "Epsilon"
+        },
+        {
+            "group": 2, 
+            "name": "Zeta"
+        }, 
+        {
+            "group": 2, 
+            "name": "Eta"
+        }
+    ], 
+    "links": [
+        {
+            "source": 1, 
+            "target": 0, 
+            "value": 1
+        }, 
+        {
+            "source": 0, 
+            "target": 0, 
+            "value": 100
+        }, 
+        {
+            "source": 2, 
+            "target": 0, 
+            "value": 1
+        }, 
+        {
+            "source": 3, 
+            "target": 0, 
+            "value": 1
+        }, 
+        {
+            "source": 3, 
+            "target": 2, 
+            "value": 1
+        }, 
+        {
+            "source": 4, 
+            "target": 0, 
+            "value": 1
+        }, 
+        {
+            "source": 5, 
+            "target": 0, 
+            "value": 1
+        }, 
+        {
+            "source": 6, 
+            "target": 0, 
+            "value": 0.5
+        }
+    ]
+}

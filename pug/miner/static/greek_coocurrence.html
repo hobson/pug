@@ -2,11 +2,11 @@
 <!DOCTYPE html>
 <html class="miner">
 <meta charset="utf-8">
-<title>Document Word Co-occurrence</title>
+<title>Word Co-occurrence</title>
 <style> @import url(coocurrence.css); </style>
 <script src="d3.v2.8.1.min.js"></script>
 
-<h1>Document Word Co-occurrence Matrix</h1>
+<h1>Word Co-occurrence Matrix</h1>
 <aside style="margin-top:80px;">
 <p>Sort by: <select id="order">
   <option value="name">Lexographic</option>
@@ -14,13 +14,13 @@
   <option value="group">Cluster</option>
 </select>
 
-<p>This matrix shows document co-ocurrences (frequent usage of the same word).</a></i>.
+<p>This matrix shows co-ocurrences of eventsin the mined text.</a></i>.
 
-<p>Each colored cell represents two documents that used the same word. Darker cells indicate documents that more frequently used the same words.
+<p>Each colored cell represents two words that appeared in the same document (usually a webpage). Darker cells indicate words that co-occurred more frequently.
 
 <p>You can sort the matrix rows and columns using the pull-down menu above.
 
-<p>This dynamic visualization uses <a href="http://d3js.org/">d3.js</a> by <a href="http://bost.ocks.org/mike/">Mike Bostock</a> and his <a href="http://bost.ocks.org/mike/miserables/">co-occurrence matrix example</a>.
+<p>This visualization uses <a href="http://d3js.org/">d3.js</a> by <a href="http://bost.ocks.org/mike/">Mike Bostock</a> and his <a href="http://bost.ocks.org/mike/miserables/">co-occurrence matrix example</a>.
 </aside>
 
 <script>
@@ -40,7 +40,7 @@ var svg = d3.select("body").append("svg")
   .append("g")
     .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
 
-d3.json("docs_coocurrence.json", function(coocurrence) {
+d3.json("greek_coocurrence.json", function(coocurrence) {
   var matrix = [],
       nodes = coocurrence.nodes,
       n = nodes.length;
@@ -53,7 +53,7 @@ d3.json("docs_coocurrence.json", function(coocurrence) {
   });
   console.log(coocurrence.nodes.length)
 
-  // Convert links to matrix; count character occurrences.
+  // Convert links to matrix; count word occurrences.
   coocurrence.links.forEach(function(link) {
     matrix[link.source][link.target].z += link.value;
     matrix[link.target][link.source].z += link.value;
@@ -164,10 +164,17 @@ d3.json("docs_coocurrence.json", function(coocurrence) {
 
 </script>
 
-<p>A typical NLP (natural language processing) data structure is an "Occurence Matrix". Each cell in the occurrence matrix represents the number of times (or  frequency or probability) that a word occurs in a given set of words (usually a document or webpage).
+<p>A typical machine-learning data structure is an "Occurence Matrix", or "Co-Occurrence Matrix". It's especially useful in natural language processing where the occurrences are word counts in documents. Each cell in the occurrence matrix represents the occurence of an event along with another event (e.g. word and document or passage or database record).
 
-<p>At a fundamental level, this occurence matrix is really a graph (network of connections) where each element of the matrix at row <i>i</i> and column <i>j</i> represents the value of a connection (edge) from vertex <i>i</i> to node (vertex) <i>j</i>.
+<p>If you think about it, this set of connections between events, is really a graph (network of connections), at its most fundamental level. Occurence matrices just take all the nodes of one type (say words) and put array them along the rows, and put the others along the columns (say documents). So in NLP you will often build a table of the number of times words occur in a document. But don't forget that each element/cell of the matrix, located at row <i>i</i> and column <i>j</i> represents the value of a connection (edge) from vertex <i>i</i> to node (vertex) <i>j</i>, an element of the column. If the nodes are the same sorts of things--say just words and the number of times they occur together in the same document or sentence--then the matrix becomes square rather than rectangular.
 
-<p>So if you start with a word in the Occurrence Graph and traverse through the it's document nodes and reach all the word nodes connected to each of those documents individually you can identify the words that "co-occur" in the same document. To form a new, smaller graph, with nodes of the same type you can delete all the document nodes and edges and replace them with the word-to-word nodes that are equivalent. 
+<p>So if you have an occurrence matrix want to simplify your graph by eliminating the nodes in the row (e.g., words) while retaining only the column nodes (e.g. documents), so you can see how documents connect to each other through their use of the same words. So you are looking at a graph diagram and want to eliminate one type of node:
+<ul>
+    <li>start with a column node in the Occurrence Graph -- a node of the type that the columnns represent</li>
+    <li>find all the row nodes that connect to that one column node and find all the column nodes that are reachable through those row nodes</li>
+    <li>create edges from all those column nodes to each other, multiplying the value of the 2 edges that were simplified to form it (that went through a row node)</li>
+    <li>repeat this for all of your column nodes</li>
+    <li>delete all the nodes you wanted to delete and delete all the edges that pass through them</li>
+</ul>
+You now have a new, smaller graph, with nodes of the same type. Fortunately, you don't have to do this by hand or write a complicated graph traversal algorithm to pull it off. Just make the graph a matrix, and multiply the matrix by its transpose, and voila -- it's square! Depending on the order of the multiplication, you've either simplified away the rows or columns.
 
-<p>This results in a Co-Occurrence graph, which itself can be viewed as a Matrix (just like the Occurence Matrix). Each element <i>ij</i> represents the value of an edge from vertex <i>i</i> to vertex <i>j</i>.

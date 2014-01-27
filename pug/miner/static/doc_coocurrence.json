@@ -1,0 +1,362 @@
+{
+    "nodes": [
+        {
+            "group": 1, 
+            "name": "1873-Grant.txt"
+        }, 
+        {
+            "group": 1, 
+            "name": "1801-Jefferson.txt"
+        }, 
+        {
+            "group": 2, 
+            "name": "1909-Taft.txt"
+        }, 
+        {
+            "group": 3, 
+            "name": "1973-Nixon.txt"
+        }, 
+        {
+            "group": 1, 
+            "name": "1793-Washington.txt"
+        }, 
+        {
+            "group": 1, 
+            "name": "1825-Adams.txt"
+        }, 
+        {
+            "group": 2, 
+            "name": "1897-McKinley.txt"
+        }, 
+        {
+            "group": 1, 
+            "name": "1853-Pierce.txt"
+        }, 
+        {
+            "group": 2, 
+            "name": "1893-Cleveland.txt"
+        }
+    ], 
+    "links": [
+        {
+            "source": 0, 
+            "target": 0, 
+            "value": 1.475762283005573
+        }, 
+        {
+            "source": 0, 
+            "target": 1, 
+            "value": 1.826356415348152
+        }, 
+        {
+            "source": 0, 
+            "target": 2, 
+            "value": 6.609402024213695
+        }, 
+        {
+            "source": 0, 
+            "target": 3, 
+            "value": 1.2851514957401833
+        }, 
+        {
+            "source": 0, 
+            "target": 4, 
+            "value": 0.15313721094100313
+        }, 
+        {
+            "source": 0, 
+            "target": 5, 
+            "value": 4.159086541541221
+        }, 
+        {
+            "source": 0, 
+            "target": 6, 
+            "value": 4.730798795720966
+        }, 
+        {
+            "source": 0, 
+            "target": 7, 
+            "value": 3.267888027672795
+        }, 
+        {
+            "source": 1, 
+            "target": 0, 
+            "value": 1.826356415348152
+        }, 
+        {
+            "source": 1, 
+            "target": 1, 
+            "value": 2.3443805649862277
+        }, 
+        {
+            "source": 1, 
+            "target": 2, 
+            "value": 8.268448529882775
+        }, 
+        {
+            "source": 1, 
+            "target": 3, 
+            "value": 1.6258968035359682
+        }, 
+        {
+            "source": 1, 
+            "target": 4, 
+            "value": 0.19397380052527063
+        }, 
+        {
+            "source": 1, 
+            "target": 5, 
+            "value": 5.210028185253988
+        }, 
+        {
+            "source": 1, 
+            "target": 6, 
+            "value": 5.931995067580552
+        }, 
+        {
+            "source": 1, 
+            "target": 7, 
+            "value": 4.148156748446608
+        }, 
+        {
+            "source": 2, 
+            "target": 0, 
+            "value": 6.609402024213695
+        }, 
+        {
+            "source": 2, 
+            "target": 1, 
+            "value": 8.268448529882775
+        }, 
+        {
+            "source": 2, 
+            "target": 2, 
+            "value": 30.0
+        }, 
+        {
+            "source": 2, 
+            "target": 3, 
+            "value": 5.670400679008392
+        }, 
+        {
+            "source": 2, 
+            "target": 4, 
+            "value": 0.7694093908141695
+        }, 
+        {
+            "source": 2, 
+            "target": 5, 
+            "value": 18.840200819934662
+        }, 
+        {
+            "source": 2, 
+            "target": 6, 
+            "value": 21.428760169111523
+        }, 
+        {
+            "source": 2, 
+            "target": 7, 
+            "value": 14.751617449234514
+        }, 
+        {
+            "source": 3, 
+            "target": 0, 
+            "value": 1.2851514957401833
+        }, 
+        {
+            "source": 3, 
+            "target": 1, 
+            "value": 1.6258968035359682
+        }, 
+        {
+            "source": 3, 
+            "target": 2, 
+            "value": 5.670400679008392
+        }, 
+        {
+            "source": 3, 
+            "target": 3, 
+            "value": 1.318060982640446
+        }, 
+        {
+            "source": 3, 
+            "target": 4, 
+            "value": 0.12419127538274294
+        }, 
+        {
+            "source": 3, 
+            "target": 5, 
+            "value": 3.5825699827045034
+        }, 
+        {
+            "source": 3, 
+            "target": 6, 
+            "value": 4.1501985779258215
+        }, 
+        {
+            "source": 3, 
+            "target": 7, 
+            "value": 2.957650054448786
+        }, 
+        {
+            "source": 4, 
+            "target": 0, 
+            "value": 0.15313721094100313
+        }, 
+        {
+            "source": 4, 
+            "target": 1, 
+            "value": 0.19397380052527063
+        }, 
+        {
+            "source": 4, 
+            "target": 2, 
+            "value": 0.7694093908141695
+        }, 
+        {
+            "source": 4, 
+            "target": 3, 
+            "value": 0.12419127538274294
+        }, 
+        {
+            "source": 4, 
+            "target": 4, 
+            "value": 0.0
+        }, 
+        {
+            "source": 4, 
+            "target": 5, 
+            "value": 0.4783886362180514
+        }, 
+        {
+            "source": 4, 
+            "target": 6, 
+            "value": 0.541685350073666
+        }, 
+        {
+            "source": 4, 
+            "target": 7, 
+            "value": 0.36080327973864584
+        }, 
+        {
+            "source": 5, 
+            "target": 0, 
+            "value": 4.159086541541221
+        }, 
+        {
+            "source": 5, 
+            "target": 1, 
+            "value": 5.210028185253988
+        }, 
+        {
+            "source": 5, 
+            "target": 2, 
+            "value": 18.840200819934662
+        }, 
+        {
+            "source": 5, 
+            "target": 3, 
+            "value": 3.5825699827045034
+        }, 
+        {
+            "source": 5, 
+            "target": 4, 
+            "value": 0.4783886362180514
+        }, 
+        {
+            "source": 5, 
+            "target": 5, 
+            "value": 11.943981807699698
+        }, 
+        {
+            "source": 5, 
+            "target": 6, 
+            "value": 13.52483825507655
+        }, 
+        {
+            "source": 5, 
+            "target": 7, 
+            "value": 9.269665620395875
+        }, 
+        {
+            "source": 6, 
+            "target": 0, 
+            "value": 4.730798795720966
+        }, 
+        {
+            "source": 6, 
+            "target": 1, 
+            "value": 5.931995067580552
+        }, 
+        {
+            "source": 6, 
+            "target": 2, 
+            "value": 21.428760169111523
+        }, 
+        {
+            "source": 6, 
+            "target": 3, 
+            "value": 4.1501985779258215
+        }, 
+        {
+            "source": 6, 
+            "target": 4, 
+            "value": 0.541685350073666
+        }, 
+        {
+            "source": 6, 
+            "target": 5, 
+            "value": 13.52483825507655
+        }, 
+        {
+            "source": 6, 
+            "target": 6, 
+            "value": 15.489438536929088
+        }, 
+        {
+            "source": 6, 
+            "target": 7, 
+            "value": 10.56574690923067
+        }, 
+        {
+            "source": 7, 
+            "target": 0, 
+            "value": 3.267888027672795
+        }, 
+        {
+            "source": 7, 
+            "target": 1, 
+            "value": 4.148156748446608
+        }, 
+        {
+            "source": 7, 
+            "target": 2, 
+            "value": 14.751617449234514
+        }, 
+        {
+            "source": 7, 
+            "target": 3, 
+            "value": 2.957650054448786
+        }, 
+        {
+            "source": 7, 
+            "target": 4, 
+            "value": 0.36080327973864584
+        }, 
+        {
+            "source": 7, 
+            "target": 5, 
+            "value": 9.269665620395875
+        }, 
+        {
+            "source": 7, 
+            "target": 6, 
+            "value": 10.56574690923067
+        }, 
+        {
+            "source": 7, 
+            "target": 7, 
+            "value": 7.463006854141311
+        }
+    ]
+}

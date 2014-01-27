@@ -6,12 +6,11 @@ from math import log, e
 from collections import Mapping
 import json
 
-
 import nltk
-import numpy
-from scipy.stats import entropy
+import numpy as np
 
 DEFAULT_FILE_LIST = os.listdir('inaugural')
+
 
 def score_words_in_files(filenames=DEFAULT_FILE_LIST[:14], entropy_threshold=0.99):
     """Calculate relevance score for words in a set of files
@@ -83,12 +82,12 @@ def score_words_in_files(filenames=DEFAULT_FILE_LIST[:14], entropy_threshold=0.9
     for i in range(len(filenames)-1):
         Reduced_Vectors.append([Vectors[i][j] for j in range(Size) if Word_Relevance[j]!=0])
     
-    U,s,V= numpy.linalg.svd(Reduced_Vectors)
+    U, s, V= np.linalg.svd(Reduced_Vectors)
 
     Scores=range(len(filenames)-1)
     print 'SCORES', ':', 'FILENAME'    
     for i in range(len(filenames)-1):
-        Scores[i]= numpy.inner(V[0], Reduced_Vectors[i])/Speech_Length[i]
+        Scores[i]= np.inner(V[0], Reduced_Vectors[i])/Speech_Length[i]
         print Scores[i], ':', filenames[i]
     return Scores, Reduced_Vectors, filtered_filenames, Key_words
 
@@ -227,13 +226,52 @@ def co_adjacency(adjacency_matrix, row_names, col_names=None, bypass_col_names=T
     bypass_indx = int(not (int(bypass_col_names) % 2))
     names = (row_names, col_names or row_names)[bypass_indx]
 
-    A = numpy.matrix(adjacency_matrix)
+    A = np.matrix(adjacency_matrix)
     if not bypass_indx:
         return (A * A.transpose()).tolist(), names
     return (A.transpose() * A).tolist(), names
 
 
-def d3_graph(adjacency_matrix, row_names, col_names=None, str_to_group=len, str_to_name=str, str_to_value=float):
+def len_str_to_group(s, bin_min=None, bin_width=None):
+    if bin_min is None:
+        bin_min = len_str_to_group.min
+    bin_width = bin_width or len_str_to_group.width or 1
+    return int(round((len(s) - bin_min) / float(bin_width)))
+len_str_to_group.min = 3
+len_str_to_group.width = 3
+
+
+def yr_str_to_group(s, bin_min=None, bin_width=None, digits=None):
+    if bin_min is None:
+        bin_min = yr_str_to_group.min
+    if digits is None:
+        digits = yr_str_to_group.digits
+    bin_width = bin_width or yr_str_to_group.width or 1
+    return int(round((float(s[:digits]) - bin_min) / float(bin_width)))
+yr_str_to_group.min = 1770
+yr_str_to_group.width = 3
+yr_str_to_group.digits = 4
+
+
+def scale_exp(value, in_min, in_max, out_min=1, out_max=10, exp=1):
+    """Rescale a scalar value to fit within out_min and out_max
+
+    >>> scale_exp(150, in_min=100, in_max=200, out_min=0, out_max=1)
+    .5
+    >>> scale_exp(150, in_min=100, in_max=200, out_min=0, out_max=1, exp=2)
+    .25
+    """
+    return np.power((out_max - out_min) * (value - in_min) / float(in_max - in_min), exp)
+
+
+def matrix_scale_exp(A, out_min=0, out_max=1, exp=1):
+    """Apply scape_exp to all elements of a matrix, auto-calculating in_min and in_max
+    """
+    A = np.matrix(A)
+    return scale_exp(A, np.min(A), np.max(A), out_min, out_max, exp=exp).tolist()
+
+
+def d3_graph(adjacency_matrix, row_names, col_names=None, str_to_group=len_str_to_group, str_to_name=str, str_to_value=float, num_groups=4.):
     """Convert an adjacency matrix to a dict of nodes and links for d3 graph rendering
 
     row_names = [("name1", group_num), ("name2", group_num), ...]
@@ -269,6 +307,7 @@ def d3_graph(adjacency_matrix, row_names, col_names=None, str_to_group=len, str_
 
     nodes, links = [], []
 
+    print '-' * 10
     # get the nodes list first, from the row and column labels, even if not square
     for names in (row_names, col_names):
         for i, name_group in enumerate(names):
@@ -287,24 +326,37 @@ def d3_graph(adjacency_matrix, row_names, col_names=None, str_to_group=len, str_
     return {'nodes': nodes, 'links': links}
 
 
+def write_file_twice(js, fn, other_dir='../miner/static'):
+    with open(fn, 'w') as f:
+        json.dump(js, f, indent=2)
+    other_path = os.path.join(other_dir, fn)
+    if os.path.isdir(other_path):
+        with open(fn, 'w') as f:
+            json.dump(js, f, indent=2)
+
+
 if __name__ == '__main__':
     """
     # This will produce a 14 x 14 matrix, 
     >>> scores, adjacency_matrix, files, words = score_words_in_files(DEFAULT_FILE_LIST[:14], entropy_threshold=0.99)
     >>> coadjacency, names = co_adjacency(adjacency_matrix, row_names=files, col_names=words, bypass_col_names=True)
     """
-    scores, adjacency_matrix, files, words = score_words_in_files(DEFAULT_FILE_LIST, entropy_threshold=0.9)
-    coadjacency, names = co_adjacency(adjacency_matrix, row_names=files, col_names=words, bypass_col_names=False)
-    
-    graph = d3_graph(numpy.log(coadjacency), names)
-    print coadjacency
-    print json.dumps(graph, indent=4)
-    with open('coocurrence.json', 'w') as f:
-        json.dump(graph, f, indent=4)
+    num_groups = 3.
+    scores, adjacency_matrix, files, words = score_words_in_files(sorted(DEFAULT_FILE_LIST), entropy_threshold=0.90)
 
-    docs_coadjacency, docs_names = co_adjacency(adjacency_matrix, row_names=files, col_names=words, bypass_col_names=True)
-    docs_graph = d3_graph(numpy.log(docs_coadjacency), docs_names)
-    print docs_coadjacency
-    print json.dumps(docs_graph, indent=4)
-    with open('docs_coocurrence.json', 'w') as f:
-        json.dump(docs_graph, f, indent=4)
+    O, names = co_adjacency(adjacency_matrix, row_names=files, col_names=words, bypass_col_names=False)
+    O = matrix_scale_exp(O, out_min=1 ** 2, out_max=31 ** 2, exp=.5)
+    len_str_to_group.min = min(len(s) for s in names)
+    len_str_to_group.width = (max(len(s) for s in names) - len_str_to_group.min) / num_groups
+    graph = d3_graph(O, names, str_to_group=len_str_to_group)
+    write_file_twice(graph, 'word_coocurrence.json')
+   
+
+    O, names = co_adjacency(adjacency_matrix, row_names=files, col_names=words, bypass_col_names=True)
+    O = matrix_scale_exp(O, out_min=1, out_max=31)
+    print O
+    yr_str_to_group.digits = 4
+    yr_str_to_group.min = min(float(s[:4]) for s in names)
+    yr_str_to_group.width = (max(float(s[:4]) for s in names) - yr_str_to_group.min) / num_groups
+    graph = d3_graph(O, names, str_to_group=yr_str_to_group)
+    write_file_twice(graph, 'doc_coocurrence.json')
