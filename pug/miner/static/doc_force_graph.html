@@ -36,23 +36,28 @@ d3.json("doc_cooccurrence.json", function(error, json) {
     if (error) return console.warn(error);
     graph = json; 
 
-    var width = 1000, height = 500, charge = 10;
-    var radius = width / 100.;
-    var length = radius * 5; 
+    var groups = ["", "Whig", "Democratic", "Republican", "Democratic-Republican", "Independent"];
+    var width = 1000, height = 500, radius = width / 100., length = width / 4.; 
+    var charge = -100;
+    var stiffness = 10;
+    var friction = .9;
 
-    for(var indx in graph.nodes) { graph.nodes[indx].r = radius; }
+    for(var indx in graph.nodes) { 
+        graph.nodes[indx].r = radius; }
 
     var color = d3.scale.ordinal().domain(d3.range(10)).range(['#17becf', '#8c564b', '#1f77b4', '#d62728', '#2ca02c', '#ff7f0e', '#9467bd',  '#e377c2', '#7f7f7f', '#bcbd22', ]);
 
     var force = d3.layout.force()
-        .charge(
-            function (d) {
-                 return -charge / Math.sqrt(d.charge)
-                 }
-            )
+        .friction(1 - friction)
+        .charge(charge)
         .linkDistance(
             function (d) {
-                return length / Math.sqrt(d.value)
+                return length * (1.0 - 1.0 / (stiffness * d.value + 1))
+                }
+            )
+        .linkStrength(
+            function (d) {
+                return 1.0 - 1.0 / (stiffness * d.value + 1)
                 }
             )
         .size([width, height]);
@@ -70,7 +75,7 @@ d3.json("doc_cooccurrence.json", function(error, json) {
         .data(graph.links)
         .enter().append("line")
             .attr("class", "link")
-            .style("stroke-width", function(d) { return Math.sqrt(d.value); });
+            .style("stroke-width", function(d) { return (0.5 * d.value) }); //return Math.sqrt(d.value); });
 
     var node = svg.selectAll(".node")
         .data(graph.nodes)
@@ -85,7 +90,7 @@ d3.json("doc_cooccurrence.json", function(error, json) {
         .call(force.drag);
 
     node.append("title")
-        .text(function(d) { return d.name; });
+        .text(function(d) { return d.name.substring(0,4) + "\n" + d.name.substring(5,30) + "\n" + groups[d.group]; });
 
     force.on("tick", function() {
         link.attr("x1", function(d) { return d.source.x; })

@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html class="miner">
 <meta charset="utf-8">
-<title>Word Co-occurrence Force Graph</title>
+<title>Word-Document Force Graph</title>
 <style> @import url(cooccurrence.css); </style>
 <script src="d3.v2.8.1.min.js"></script>
 
@@ -32,31 +32,32 @@
 
 var graph;
 
-d3.json("word_cooccurrence.json", function(error, json) {
+d3.json("occurrence.json", function(error, json) {
     if (error) return console.warn(error);
     graph = json; 
 
-    var width = 1000, height = 500, radius = width / 100., length = width / 4.; 
-    var charge = -50;
-    var stiffness = 5;
-    var friction = .99;
+    var groups = ["", "Document", "Word"];
+    var width = 1000, height = 600, radius = width / 100., length = width / 4; 
+    var charge = -2000;
+    var stiffness = .15;
+    var friction = .5;
 
     for(var indx in graph.nodes) { 
         graph.nodes[indx].r = radius; }
 
-    var color = d3.scale.ordinal().domain(d3.range(10)).range(['#17becf', '#8c564b','#1f77b4', '#ff7f0e', '#d62728', '#2ca02c', '#9467bd',  '#e377c2', '#7f7f7f', '#bcbd22', ]);
+    var color = d3.scale.ordinal().domain(d3.range(10)).range(['#17becf', '#8c564b', '#1f77b4', '#d62728', '#2ca02c', '#ff7f0e', '#9467bd',  '#e377c2', '#7f7f7f', '#bcbd22', ]);
 
     var force = d3.layout.force()
         .friction(1 - friction)
         .charge(charge)
         .linkDistance(
             function (d) {
-                return length * (1.0 - 1.0 / (stiffness * d.value + 1))
+                return length * (1.0 - 1.0 / (stiffness * Math.pow(d.value, .1) + 1))
                 }
             )
         .linkStrength(
             function (d) {
-                return 1.0 - 1.0 / (stiffness * d.value + 1)
+                return 1.0 - 1.0 / (stiffness * Math.pow(d.value, .1) + 1)
                 }
             )
         .size([width, height]);
@@ -74,7 +75,8 @@ d3.json("word_cooccurrence.json", function(error, json) {
         .data(graph.links)
         .enter().append("line")
             .attr("class", "link")
-            .style("stroke-width", function(d) { return (0.5 * d.value) }); 
+            .style("stroke-width", function(d) { 
+                return (0.5 * Math.pow(d.value, .75)) }); //return Math.sqrt(d.value); });
 
     var node = svg.selectAll(".node")
         .data(graph.nodes)
@@ -89,7 +91,9 @@ d3.json("word_cooccurrence.json", function(error, json) {
         .call(force.drag);
 
     node.append("title")
-        .text(function(d) { return d.name; });
+        .text(function(d) { 
+            if (d.group == 1) return d.name.substring(0,4) + "\n" + d.name.substring(5,30) + "\n" + groups[d.group];
+            else return d.name; });
 
     force.on("tick", function() {
         link.attr("x1", function(d) { return d.source.x; })
