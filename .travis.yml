@@ -1,9 +1,9 @@
 language: python
 python:
-  - "3.3"
   - "2.7"
-  - "2.6"
-# command to install dependencies, e.g. pip install -r requirements.txt --use-mirrors
+# install dependencies
+# FIXME: What about yum (rpm) or apt (deb) binaries and C code like BLAS and lapack?
 pip install -r requirements.txt
-# command to run tests, e.g. python setup.py test
-python setup.py test
+# run tests
+python pug/crawlnmine/manage.py test
+#python setup.py test
