@@ -1,12 +1,11 @@
-
 <!DOCTYPE html>
 <html class="miner">
 <meta charset="utf-8">
-<title>Word Co-occurrence</title>
-<style> @import url(coocurrence.css); </style>
+<title>Word Co-occurrence of Documents</title>
+<style> @import url(cooccurrence.css); </style>
 <script src="d3.v2.8.1.min.js"></script>
 
-<h1>Word Co-occurrence Matrix</h1>
+<h1>Word Co-occurrence of Documents</h1>
 <aside style="margin-top:80px;">
 <p>Sort by: <select id="order">
   <option value="name">Lexographic</option>
@@ -14,7 +13,7 @@
   <option value="group">Cluster</option>
 </select>
 
-<p>This matrix shows word co-ocurrences in the mined text.</a></i>.
+<p>This matrix shows word co-occurrences in the mined text.</a></i>.
 
 <p>Each colored cell represents two words that appeared in the same document (usually a webpage). Darker cells indicate words that co-occurred more frequently.
 
@@ -40,9 +39,9 @@ var svg = d3.select("body").append("svg")
   .append("g")
     .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
 
-d3.json("coocurrence.json", function(coocurrence) {
+d3.json("word_cooccurrence.json", function(cooccurrence) {
   var matrix = [],
-      nodes = coocurrence.nodes,
+      nodes = cooccurrence.nodes,
       n = nodes.length;
 
   // Compute index per node.
@@ -51,10 +50,10 @@ d3.json("coocurrence.json", function(coocurrence) {
     node.count = 0;
     matrix[i] = d3.range(n).map(function(j) { return {x: j, y: i, z: 0}; });
   });
-  console.log(coocurrence.nodes.length)
+  console.log(cooccurrence.nodes.length)
 
   // Convert links to matrix; count word occurrences.
-  coocurrence.links.forEach(function(link) {
+  cooccurrence.links.forEach(function(link) {
     matrix[link.source][link.target].z += link.value;
     matrix[link.target][link.source].z += link.value;
     matrix[link.source][link.source].z += link.value;

@@ -380,7 +380,7 @@ if __name__ == '__main__':
     len_str_to_group.min = min(len(s) for s in names)
     len_str_to_group.width = (max(len(s) for s in names) - len_str_to_group.min) / num_groups
     graph = d3_graph(O, names, str_to_group=len_str_to_group)
-    write_file_twice(graph, 'word_coocurrence.json')
+    write_file_twice(graph, 'word_cooccurrence.json')
    
     print files
     print words
@@ -393,4 +393,4 @@ if __name__ == '__main__':
     yr_str_to_group.min = min(float(s[:4]) for s in names)
     yr_str_to_group.width = (max(float(s[:4]) for s in names) - yr_str_to_group.min) / num_groups
     graph = d3_graph(O, [(strip_path_ext_characters(n), party_to_group(president_party(n))) for n in names], str_to_group=yr_str_to_group)
-    write_file_twice(graph, 'doc_coocurrence.json')
+    write_file_twice(graph, 'doc_cooccurrence.json')

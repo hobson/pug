@@ -161,7 +161,7 @@ def generate_batches(sequence, batch_len=1, allow_partial=True):
 
 COUNT_NAMES = ['count', 'cnt', 'number', 'num', '#', 'frequency', 'probability', 'prob', 'occurences']
 def find_count_label(d):
-    """Find the member of a set that means "count" or "frequency" or "probability" or "number of ocurrences".
+    """Find the member of a set that means "count" or "frequency" or "probability" or "number of occurrences".
 
     """
     for name in COUNT_NAMES:
