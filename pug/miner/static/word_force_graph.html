@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html class="miner">
 <meta charset="utf-8">
-<title>Document Co-occurrence Force Graph</title>
+<title>Word Co-occurrence Force Graph</title>
 <style> @import url(cooccurrence.css); </style>
 <script src="d3.v2.8.1.min.js"></script>
 
@@ -32,7 +32,7 @@
 
 var graph;
 
-d3.json("doc_cooccurrence.json", function(error, json) {
+d3.json("word_cooccurrence.json", function(error, json) {
     if (error) return console.warn(error);
     graph = json; 
 
