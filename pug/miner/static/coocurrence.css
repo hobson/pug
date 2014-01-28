@@ -1,0 +1,60 @@
+
+@import url(http://fonts.googleapis.com/css?family=Droid+Serif|Droid+Serif:b|Droid+Serif:i|Lato|Lato:b|Lato:i);
+
+html { min-width: 1000px; }
+
+a { color: #57A; } /*steelblue*/
+
+.miner body {
+  background: #f7fff0;
+  color: #430;
+  font-family: "Lato", sans-serif;
+  margin: 1em auto 4em auto;
+  position: relative;
+  width: 950px;
+}
+
+svg { font: 9px sans-serif; }
+
+.axis path, .axis line {
+  fill: none;
+  stroke: #000;
+  shape-rendering: crispEdges;
+}
+
+.background { fill: #eee; }
+
+line { stroke: #fff; }
+
+text.active { fill: red; font-size: 12px; font-weight: 900; letter-spacing: -50%;}
+
+.miner aside, .miner h1 { font-family: "Lato", sans-serif; }
+
+.miner h1 { color: #430; }
+
+h1 {
+  font-size: 48px;
+  letter-spacing: -1px;
+  margin: .3em 0 .1em 0;
+  text-rendering: optimizeLegibility;
+}
+
+.miner aside {
+  float: left;
+  margin-right: 1em;
+}
+
+.miner aside:after { padding-left: 1em; content: "/"; }
+
+h1 ~ aside {
+  font-size: small;
+  right: 0;
+  position: absolute;
+  width: 180px;
+}
+
+body > p, li > p { line-height: 1.4em; }
+
+body > p { width: 700px; }
+
+
