@@ -22,7 +22,11 @@ See [the docs](https://github.com/hobsonlane/pug/tree/master/pug/docs "incomplet
 
 ### Posix
 
-If you have an up-to-date posix OS with the postgres, xml2, and xlst development packages installed, then this is all you need 
+You really want to contribute, right?
+
+    git clone
+
+If your a user and not a developer, and have an up-to-date posix OS with the postgres, xml2, and xlst development packages installed, then use `pip`.
 
     pip install pug
 

@@ -12,7 +12,6 @@
 title: Download and install ["Microsoft SQL Server 2012 Express"](http://www.microsoft.com/en-us/download/details.aspx?id=29062)
 
 ---
-
 title: If your python world isn't in order, pip and virtualenv can help
 
     #!/usr/bin/env bash

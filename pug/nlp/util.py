@@ -6,7 +6,6 @@ TODO: Move all functions that depend on a properly configured django.conf.settin
 '''
 
 import types
-import sqlparse
 import re
 import string
 import os
@@ -30,15 +29,15 @@ import scipy as sci
 import logging
 logger = logging.getLogger('bigdata.info')
 
-from django.core.exceptions import ImproperlyConfigured
-try:
-    import django.db
-except ImproperlyConfigured:
-    import traceback
-    print traceback.format_exc()
-    print 'WARNING: The module named %r from file %r' % (__name__, __file__)
-    print '         can only be used within a Django project!'
-    print '         Though the module was imported, some of its functions may raise exceptions.'
+#from django.core.exceptions import ImproperlyConfigured
+# try:
+#     import django.db
+# except ImproperlyConfigured:
+#     import traceback
+#     print traceback.format_exc()
+#     print 'WARNING: The module named %r from file %r' % (__name__, __file__)
+#     print '         can only be used within a Django project!'
+#     print '         Though the module was imported, some of its functions may raise exceptions.'
 
 
 
@@ -737,47 +736,6 @@ def imported_modules():
             yield val
 
 
-class QueryTimer(object):
-    """Based on https://github.com/jfalkner/Efficient-Django-QuerySet-Use
-
-    >>> from example.models import Sample
-    >>> qt = QueryTimer()
-    >>> cm_list = list(Sample.objects.values()[:10])
-    >>> qt.stop()  # doctest: +ELLIPSIS
-    QueryTimer(time=0.0..., num_queries=1)
-    """
-
-    def __init__(self, time=None, num_queries=None, sql=None, connection=None):
-        if isinstance(connection, basestring):
-            connection = django.db.connections[connection]
-        self.connection = connection or django.db.connection
-        self.time, self.num_queries = time, num_queries
-        self.start_time, self.start_queries, self.queries = None, None, None
-        self.sql = sql or []
-        self.start()
-
-    def start(self):
-        self.queries = []
-        self.start_time = datetime.datetime.now()
-        self.start_queries = len(self.connection.queries)
-
-    def stop(self):
-        self.time = (datetime.datetime.now() - self.start_time).total_seconds()
-        self.queries = self.connection.queries[self.start_queries:]
-        self.num_queries = len(self.queries)
-        print self
-
-    def format_sql(self):
-        if self.time is None or self.queries is None:
-            self.stop()
-        if self.queries or not self.sql:
-            self.sql = []
-            for query in self.queries:
-                self.sql += [sqlparse.format(query['sql'], reindent=True, keyword_case='upper')]
-        return self.sql
-
-    def __repr__(self):
-        return '%s(time=%s, num_queries=%s)' % (self.__class__.__name__, self.time, self.num_queries)
 
 # MONTHS = ['january', 'february', 'march', 'april', 'may', 'june', 'july', 'august', 'september', 'october', 'november', 'december']
 # MONTH_PREFIXES = [m[:3] for m in MONTHS]
@@ -855,3 +813,11 @@ def pluralize_field_name(names=None, retain_prefix=False):
     else:
         return [pluralize_field_name(name) for name in names]
 pluralize_field_names = pluralize_field_name
+
+
+def tabulate(lol, headers, eol='\n'):
+    """Use the pypi tabulate package instead!"""
+    yield '| %s |' % ' | '.join(headers) + eol
+    yield '| %s:|' % ':| '.join(['-'*len(w) for w in headers]) + eol
+    for row in lol:
+        yield '| %s |' % '  |  '.join(str(c) for c in row) + eol

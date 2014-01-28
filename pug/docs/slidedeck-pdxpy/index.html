@@ -21,7 +21,7 @@ URL: https://code.google.com/p/io-2012-slides
   <!--This one seems to work all the time, but really small on ipad-->
   <!--<meta name="viewport" content="initial-scale=0.4">-->
   <meta name="apple-mobile-web-app-capable" content="yes">
-   <link rel="shortcut icon" href=" http://python.org/favicon.ico"/> 
+   <link rel="shortcut icon" href=" <img src="https://www.python.org/favicon.ico"/>"/> 
   <link rel="stylesheet" media="all" href="theme/css/default.css">
   <link rel="stylesheet" media="all" href="theme/css/custom.css">
   <link rel="stylesheet" media="only screen and (max-device-width: 480px)" href="theme/css/phone.css">
@@ -62,147 +62,345 @@ URL: https://code.google.com/p/io-2012-slides
 <slide  >
   
     <hgroup>
-      <h2>Tips</h2>
+      <h2>Audience Survey</h2>
       <h3></h3>
     </hgroup>
-    <article ><h3>General</h3>
-<ol class="build">
-<li>sublime rules</li>
-<li>linters make sublime more sublime</li>
-</ol></article>
- 
-</slide>
-
-<slide  >
-  
-    <hgroup>
-      <h2>Tips</h2>
-      <h3></h3>
-    </hgroup>
-    <article ><ol class="build">
-<li>Import or munge your data manually the first time</li>
-</ol>
-<p>a. Remind yourself, "This is productive EDA" not repetitive, mind-numbing, Microsoft-wrestling</p>
-<p>b. You'll know your data and databases better when your done</p>
-<p>c. You may discover things you didn't expect</p></article>
- 
-</slide>
-
-<slide  >
-  
-    <hgroup>
-      <h2></h2>
-      <h3></h3>
-    </hgroup>
-    <article ><h3>Data</h3>
-<ol>
-<li>Dump scripts from ipython history command before exiting each session</li>
-</ol>
-<pre class="prettyprint" data-lang="python">
-    #~/src/pug/bin/save_hist
-    ip = get_ipython()
-    this_line = list(ip.history_manager.get_tail())[-1][1]
-    ip.magic(u'save -r test.py 0-%d' % this_line - 1)
-    ip.exit</article>
- 
-</slide>
-
-<slide  >
-  
-    <hgroup>
-      <h2></h2>
-      <h3></h3>
-    </hgroup>
-    <article ><pre class="prettyprint" data-lang="shell">
-    export USR_BIN=$(dirname $(which virtualenv))
-    export PROMPT_COMMAND='echo "# cd $PWD" >> ~/.bash_history_forever;
-      '$PROMPT_COMMAND
-    export PROMPT_COMMAND="
-      history -a; history -c; history -r;
-      history 1 >> ~/.bash_history_forever; $PROMPT_COMMAND"
-    readonly PROMPT_COMMAND</article>
- 
-</slide>
-
-<slide  >
-  
-    <hgroup>
-      <h2></h2>
-      <h3></h3>
-    </hgroup>
-    <article ><pre class="prettyprint" data-lang="shell">
-    Hobson@cstmatlablx01:~$ 
-    $ workon dev
-    (dev)Hobson@cstmatlablx01:~/src/dev$</article>
- 
-</slide>
-
-<slide  >
-  
-    <hgroup>
-      <h2></h2>
-      <h3></h3>
-    </hgroup>
-    <article ><pre class="prettyprint" data-lang="bash">
-    $ tail ~/.bash_history_forever
-    # cd /home/Hobson
-     7810  2014-01-17 17:42:22 workon dev
-    # cd /home/Hobson/src/dev
-     7811  2014-01-17 17:45:51 $ tail ~/.bash_history_forever
-</pre></article>
- 
-</slide>
-
-<slide  >
-  
-    <hgroup>
-      <h2></h2>
-      <h3></h3>
-    </hgroup>
-    <article ><pre class="prettyprint" data-lang="bash">
-    if [ -n "$force_color_prompt" ]; then
-        if [ -x /usr/bin/tput ] && tput setaf 1 >&/dev/null; then
-        color_prompt=yes
-        else
-        color_prompt=
-        fi
-    fi
-
-    if [ "$color_prompt" = yes ]; then
-        PS1='${debian_chroot:+($debian_chroot)}\[\033[01;32m\]\u@\h\[\033[00m\]:\[\033[01;34m\]\w\[\033[00m\]\$ '
-    else
-        PS1='${debian_chroot:+($debian_chroot)}\u@\h:\w\$ '
-    fi
-    unset color_prompt force_color_prompt
-
-    case "$TERM" in
-    xterm*|rxvt*)
-        PS1="\[\e]0;${debian_chroot:+($debian_chroot)}\u@\h: \w\a\]$PS1"
-        ;;
-    *)
-        ;;
-    esac
-
-    PS1="$PS1\[\033[00;32m\]\$(parse_git_branch)\[\033[00m\]
-    \$ "
-</pre></article>
- 
-</slide>
-
-<slide  >
-  
-    <hgroup>
-      <h2></h2>
-      <h3></h3>
-    </hgroup>
-    <article ><h2>Files</h2>
-<ul>
-<li>bin -- command-line tools, .bashrc, and other config files</li>
-<li>nlp/db -- interracting with databases and migrating data</li>
-<li>nlp/util -- format numbers &amp; dates, importing of "pivots" in spreadsheets</li>
-<li>nlp/strutil -- reformatting of strings</li>
+    <article ><ul class="build">
+<li>Who has done Data Science?<ul class="build">
+<li>Stats, ML, NLP?<ul class="build">
+<li>optimization, controls, classification, prediction</li>
 </ul>
-<hr /></article>
+</li>
+<li>DBs or ORMs?<ul class="build">
+<li><code>postgres</code>, <code>mysql</code>, <code>neo4j</code>, <code>sqlite</code>, <code>django</code></li>
+</ul>
+</li>
+</ul>
+</li>
+<li>Data Science using Python?<ul class="build">
+<li>R, Matlab, Octave?</li>
+</ul>
+</li>
+<li>NLP (Natural Language Processing) using Python?<ul class="build">
+<li><code>nltk</code>, <code>scrapy</code>, <code>numpy</code>, <code>collections.Counter</code></li>
+</ul>
+</li>
+</ul></article>
+ 
+</slide>
+
+<slide  >
+  
+    <hgroup>
+      <h2>Data</h2>
+      <h3></h3>
+    </hgroup>
+    <article ><ul>
+<li>Acquisition (ETL)</li>
+<li>Exploration (EDA)</li>
+</ul></article>
+ 
+</slide>
+
+<slide  >
+  
+    <hgroup>
+      <h2>Data Acquisition</h2>
+      <h3></h3>
+    </hgroup>
+    <article ><ul>
+<li>ETL<ul>
+<li><strong>E</strong>xtract -- download, API, scrape<ul>
+<li>Scrapy</li>
+</ul>
+</li>
+<li><strong>T</strong>ransform -- shuffle columns, normalize<ul>
+<li><a href="https://github.com/hobsonlane">pug</a> -- <code>manage.py dbstats</code></li>
+<li><code>manage.py inspectdb</code></li>
+</ul>
+</li>
+<li><strong>L</strong>oad -- <code>manage.py loaddata</code><ul>
+<li>DBA (Database Administration)</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>Stanford Data Wrangler</li>
+</ul></article>
+ 
+</slide>
+
+<slide  >
+  
+    <hgroup>
+      <h2>Exploration: Ask</h2>
+      <h3></h3>
+    </hgroup>
+    <article ><ul>
+<li>EDA (Exploratory Data Analysis)</li>
+<li>Questions to Ask (most DBs will tell you)<ul>
+<li>Size (# of databases, tables, records)</li>
+<li>Dimensions: # columns, any natural language</li>
+<li>Connectedness: relationships, indexes, PKs</li>
+<li>Types: ordinal, continuous, discrete, <em>bulk</em> (NL)</li>
+</ul>
+</li>
+</ul></article>
+ 
+</slide>
+
+<slide  >
+  
+    <hgroup>
+      <h2>Exploration: Calculate</h2>
+      <h3></h3>
+    </hgroup>
+    <article ><ul>
+<li>Things to calculate<ul>
+<li>Standard deviation, entropy</li>
+<li>Min/Max</li>
+<li>Correlation coefficients (mutual information)</li>
+</ul>
+</li>
+</ul>
+<p><a href="http://scikit-learn.org">scikit-learn</a> has an excellent <a href="http://scikit-learn.org/stable/tutorial/machine_learning_map/index.html">flow chart</a></p></article>
+ 
+</slide>
+
+<slide  >
+  
+    <hgroup>
+      <h2>Science</h2>
+      <h3></h3>
+    </hgroup>
+    <article ><ul>
+<li>Model (hypothesis)<ul>
+<li><code>scikit</code> has a lot of excellent models</li>
+<li><code>pug</code> has very few</li>
+</ul>
+</li>
+<li>Test<ul>
+<li>Configure the model</li>
+<li>Tune</li>
+<li>Cross-sample validation</li>
+<li><strong>repeat</strong></li>
+</ul>
+</li>
+<li>Share -- Visualization</li>
+</ul></article>
+ 
+</slide>
+
+<slide  >
+  
+    <hgroup>
+      <h2>Let's Do NLP</h2>
+      <h3></h3>
+    </hgroup>
+    <article ><ul>
+<li>Count words (build an 'Occurrence Matrix</li>
+<li>Reduce dimensions (word vocabulary)</li>
+<li>Visualize the connections (graph)</li>
+<li>Visualize &amp; sort the matrices</li>
+<li><em>SVD on sparse matrix</em></li>
+</ul>
+<h1>LSI = Latent Semantic Indexing</h1></article>
+ 
+</slide>
+
+<slide  >
+  
+    <hgroup>
+      <h2>Count Word Occurrences</h2>
+      <h3></h3>
+    </hgroup>
+    <article ><pre class="prettyprint" data-lang="python">
+    from pug.nlp.classifier import get_words
+
+    docs = ['Explicit is better than implicit.',
+            'Simple is better than complex.',
+            'Flat is better than nested.',
+           ]
+    O_sparse = [Counter(get_words(d)) for d in docs]
+    print O_sparse
+</pre>
+
+<pre><code>[Counter({'better': 1, 'explicit': 1, 'than': 1, 'implicit': 1}), 
+ Counter({'simple': 1, 'better': 1, 'complex': 1, 'than': 1}), 
+ Counter({'better': 1, 'flat': 1, 'than': 1, 'nested': 1})]
+</code></pre></article>
+ 
+</slide>
+
+<slide  >
+  
+    <hgroup>
+      <h2>Total Counts</h2>
+      <h3></h3>
+    </hgroup>
+    <article ><pre class="prettyprint" data-lang="python">
+    from collections import Counter
+
+    total = Counter()
+    for c in O_sparse:
+        total += c
+    print total
+</pre>
+
+<pre><code>Counter({'than': 3, 'better': 3, 'flat': 1, 'simple': 1, 'explicit': 1,
+         'complex': 1, 'nested': 1, 'implicit': 1})
+</code></pre>
+<ul>
+<li>Not very interesting</li>
+</ul></article>
+ 
+</slide>
+
+<slide  >
+  
+    <hgroup>
+      <h2>Occurrence Matrix</h2>
+      <h3></h3>
+    </hgroup>
+    <article ><pre class="prettyprint" data-lang="python">
+    from tabulate import tabulate
+    words, O = list(total), []
+    for counts in O_sparse:
+        O += [[0] * len(words)]
+        for word, count in counts.iteritems():
+            j = words.index(word)
+            O[-1][j] += count
+    print tabulate(O)
+</pre>
+
+<pre><code>flat simple explicit than better complex nested implicit
+---- ------ -------- ---- ------ ------- ------ --------
+ 0     0     1        1    1      0       0      1
+ 0     1     0        1    1      1       0      0
+ 1     0     0        1    1      0       1      0
+</code></pre></article>
+ 
+</slide>
+
+<slide  >
+  
+    <hgroup>
+      <h2>Graph Visualization with D3</h2>
+      <h3></h3>
+    </hgroup>
+    <article ><ul>
+<li>Our word occurrence matrix shows connections<ul>
+<li>word1 &lt;--0--&gt; doc1</li>
+<li>word2 &lt;--3--&gt; doc1</li>
+<li>...</li>
+</ul>
+</li>
+<li>This is a directed graph<ul>
+<li>source: word</li>
+<li>target: document</li>
+<li>value: frequency (number of occurrences)</li>
+</ul>
+</li>
+</ul></article>
+ 
+</slide>
+
+<slide  >
+  
+    <hgroup>
+      <h2>Introducing `pug`</h2>
+      <h3></h3>
+    </hgroup>
+    <article ><pre class="prettyprint" data-lang="bash">
+    $ git clone git@github.com:hobsonlane/pug.git
+    $ cd pug/pug/miner/static
+    $ python server.py &
+    $ firefox http://localhost:8001/occurrence_force_graph.html
+</pre>
+
+<p>Do it yourself: <a href="http://hobsonlane.github.io/pug">hobsonlane.github.io/pug</a></a></p></article>
+ 
+</slide>
+
+<slide  >
+  
+    <hgroup>
+      <h2>What Patterns Do You See?</h2>
+      <h3></h3>
+    </hgroup>
+    <article ><ul>
+<li>Outliers?<ul>
+<li>Documents and Words</li>
+<li>George Washington... because of infrequent use of "the"</li>
+</ul>
+</li>
+</ul>
+<p><a href="http://hobsonlane.github.io/pug/pug/miner/static/occurrence_force_graph.html">hobsonlane.github.io/pug</a></p></article>
+ 
+</slide>
+
+<slide  >
+  
+    <hgroup>
+      <h2>Curse of Dimensionality</h2>
+      <h3></h3>
+    </hgroup>
+    <article ><ul>
+<li>Difficult to untangle<ul>
+<li>Additional pop ups and highlighting of edges would help</li>
+<li>Additional dimensions as size and shape of circles</li>
+<li>What about short-circuiting the documents to see word-word connections?</li>
+</ul>
+</li>
+<li><a href="view-source:http://hobsonlane.github.io/pug/pug/miner/static/occurrence_force_graph.html">view source</a>"</li>
+<li>Adjust charge, length, stiffness, friction -- balancing game...<ul>
+<li>Stability vs Structure</li>
+<li>Beauty vs Complexity</li>
+</ul>
+</li>
+</ul></article>
+ 
+</slide>
+
+<slide  >
+  
+    <hgroup>
+      <h2></h2>
+      <h3></h3>
+    </hgroup>
+    <article ></article>
+ 
+</slide>
+
+<slide  >
+  
+    <hgroup>
+      <h2>`pug` Files</h2>
+      <h3></h3>
+    </hgroup>
+    <article ><ul>
+<li>bin -- command-line tools, .bashrc, and other config files</li>
+<li>nlp/db -- interacting with databases and migrating data</li>
+<li>nlp/util -- , DBs</li>
+<li>nlp</li>
+</ul></article>
+ 
+</slide>
+
+<slide  >
+  
+    <hgroup>
+      <h2>`pug` Modules</h2>
+      <h3></h3>
+    </hgroup>
+    <article ><p>pug
+├── crawler -- django app for wikiscrapy
+├── crawlnmine -- django app for settings.py
+├── db -- db_routers, explore, sqlserver
+├── miner -- django app for db exploration
+└── nlp -- classifier, <code>db_decision_tree</code>, db, mvlr, parse, util, re
+           format numbers &amp; dates, importing of "pivots" in spreadsheets
+    ├── wikiscrapy</p></article>
  
 </slide>
 
