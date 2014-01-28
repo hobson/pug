@@ -3,7 +3,7 @@
 
 html { min-width: 1000px; }
 
-a { color: #57A; } /*steelblue*/
+a { color: #57A; }
 
 .miner body {
   background: #f7fff0;
@@ -26,7 +26,7 @@ svg { font: 9px sans-serif; }
 
 line { stroke: #fff; }
 
-text.active { fill: red; font-size: 12px; font-weight: 900; letter-spacing: -50%;}
+text.active { fill: red; font-size: 12px; font-weight: 900; letter-spacing: .5em;}
 
 .miner aside, .miner h1 { font-family: "Lato", sans-serif; }
 
@@ -37,20 +37,6 @@ h1 {
   letter-spacing: -1px;
   margin: .3em 0 .1em 0;
   text-rendering: optimizeLegibility;
-}
-
-.miner aside {
-  float: left;
-  margin-right: 1em;
-}
-
-.miner aside:after { padding-left: 1em; content: "/"; }
-
-h1 ~ aside {
-  font-size: small;
-  right: 0;
-  position: absolute;
-  width: 180px;
 }
 
 body > p, li > p { line-height: 1.4em; }
