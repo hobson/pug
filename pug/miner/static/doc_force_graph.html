@@ -40,7 +40,8 @@ d3.json("doc_cooccurrence.json", function(error, json) {
     var width = 1000, height = 500, radius = width / 100., length = width / 4.; 
     var charge = -100;
     var stiffness = 10;
-    var friction = .9;
+    var friction = .85;
+    var stroke_width = [.25, 1.25]
 
     for(var indx in graph.nodes) { 
         graph.nodes[indx].r = radius; }
@@ -75,7 +76,7 @@ d3.json("doc_cooccurrence.json", function(error, json) {
         .data(graph.links)
         .enter().append("line")
             .attr("class", "link")
-            .style("stroke-width", function(d) { return (0.5 * d.value) }); //return Math.sqrt(d.value); });
+            .style("stroke-width", function(d) { return (stroke_width[0] * Math.pow(d.value, stroke_width[1])) }); //return Math.sqrt(d.value); });
 
     var node = svg.selectAll(".node")
         .data(graph.nodes)
