@@ -1,6 +1,7 @@
 % title: Data Science with `pug`
-% subtitle: PDX-Python January 2014
-% author: <a href="https://github.com/hobsonlane">Hobson Lane</a>
+% subtitle: PDX-Python
+% date: January 28, 2014
+% author: <a href="https://hobsonlane.github.io/pug">hobsonlane.github.io/pug</a>
 % thankyou: Thanks PDX-Python!
 % thankyou_details: And the open source world...
 % contact: <a href="http://python.org">Python</a>
@@ -45,17 +46,17 @@ subtitle: ETL
 <footer>e.g. Stanford Data Wrangler</footer>
 
 ---
-title: Exploration: Ask
+title: Exploration
 
 * EDA (Exploratory Data Analysis)
-* Questions to Ask (most DBs will tell you)
+* Questions to Ask
     - Size (# of databases, tables, records)
     - Dimensions: # columns, any natural language
     - Connectedness: relationships, indexes, PKs
     - Types: ordinal, continuous, discrete, *bulk* (NL)
 
 ---
-title: Exploration: Calculate
+title: Exploration
 
 * Things to calculate
     - Standard deviation, entropy

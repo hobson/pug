@@ -1,0 +1,45 @@
+Thank You for Your Code
+-----------------------
+
+[Python](python.org)
+[Django](djangoproject.org)
+pyodbc
+psycopg2
+postgres
+Flask
+SciKit
+fuzzywuzzy
+
+---
+
+Thank You for the Education
+---------------------------
+
+[Sharp Laboratories](sharplaboratories.com) -- John, Jeff, Phil
+[Building Energy](buildingenergy.com) -- Aleck, John, Steven
+[Squishy Media](squishymedia.com) -- Eric, Xian, Ben, Greg, Jesse
+
+Thank You for MOOC
+------------------
+
+[Coursera](coursera.org)
+[Udacity](udacity.com)
+
+Resources that Helped
+---------------------
+
+[Programming Collective Intelligence](http://shop.oreilly.com/product/9780596529321.do)
+[Python for Data Analysis](http://shop.oreilly.com/product/0636920023784.do)
+[Building Machine Learning in Python](http://shop.oreilly.com/product/9781782161400.do)
+[Doing Data Science](http://shop.oreilly.com/product/0636920028529.do)
+[Norvig](norvig.com)
+PDX Python
+
+---
+
+AUTHORS
+-------
+
+Hobson Lane <pugauthors@totalgood.com>
+LiZhong Zheng <lizhong@MIT.edu>
+Your Name Here ;) <pugauthors@totalgood.com>
