@@ -1,0 +1,517 @@
+<!--
+slidedeck: A modification of the Google IO 2012 HTML5 slide template
+URL: https://github.com/rmcgibbo/slidedeck
+
+Based on https://github.com/francescolaffi/elastic-google-io-slides, and
+ultimately:
+
+Google IO 2012 HTML5 Slide Template
+Authors: Eric Bidelman <ebidel@gmail.com>
+         Luke Mahe <lukem@google.com>
+URL: https://code.google.com/p/io-2012-slides
+-->
+<!DOCTYPE html>
+<html>
+<head>
+  <title> Data Science with `pug`</title>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="chrome=1">
+  <!--<meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0">-->
+  <!--<meta name="viewport" content="width=device-width, initial-scale=1.0">-->
+  <!--This one seems to work all the time, but really small on ipad-->
+  <!--<meta name="viewport" content="initial-scale=0.4">-->
+  <meta name="apple-mobile-web-app-capable" content="yes">
+   <link rel="shortcut icon" href=" <img src="https://www.python.org/favicon.ico"/>"/> 
+  <link rel="stylesheet" media="all" href="theme/css/default.css">
+  <link rel="stylesheet" media="all" href="theme/css/custom.css">
+  <link rel="stylesheet" media="only screen and (max-device-width: 480px)" href="theme/css/phone.css">
+  <base target="_blank"> <!-- This amazingness opens all links in a new tab. -->
+  <script data-main="js/slides" src="js/require-1.0.8.min.js"></script>
+
+  <!-- MathJax support  -->
+  <script type="text/x-mathjax-config">
+  MathJax.Hub.Config({
+    extensions: ["tex2jax.js"],
+    jax: ["input/TeX", "output/HTML-CSS"],
+    showProcessingMessages: false,
+    tex2jax: {
+      inlineMath: [ ['$','$'], ["\\(","\\)"] ],
+      displayMath: [ ['$$','$$'], ["\\[","\\]"] ],
+      processEscapes: true
+    },
+    "HTML-CSS": { availableFonts: ["TeX"] }
+  });
+  </script>
+  <script type="text/javascript" src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+
+</head>
+
+<body style="opacity: 0">
+
+<slides class="layout-widescreen">
+<slide class="title-slide segue nobackground">
+  <hgroup class="auto-fadein">
+
+    <h1> Data Science with `pug`</h1>
+    <h2> PDX-Python January 2014</h2>
+    <p> <a href="https://github.com/hobsonlane">Hobson Lane</a></p>
+  </hgroup>
+</slide>
+
+
+<slide  >
+  
+    <hgroup>
+      <h2>Survey</h2>
+      <h3></h3>
+    </hgroup>
+    <article ><ul class="build">
+<li>Who has done Data Science?<ul class="build">
+<li>Stats, ML, NLP?<ul class="build">
+<li>optimization, controls, classification, prediction</li>
+</ul>
+</li>
+<li>DBs or ORMs?<ul class="build">
+<li><code>postgres</code>, <code>mysql</code>, <code>neo4j</code>, <code>sqlite</code>, <code>django</code></li>
+</ul>
+</li>
+</ul>
+</li>
+<li>Data Science using Python?<ul class="build">
+<li>R, Matlab, Octave?</li>
+</ul>
+</li>
+<li>NLP (Natural Language Processing) using Python?<ul class="build">
+<li><code>nltk</code>, <code>scrapy</code>, <code>numpy</code>, <code>collections.Counter</code></li>
+</ul>
+</li>
+</ul></article>
+ 
+</slide>
+
+<slide  >
+  
+    <hgroup>
+      <h2>Data</h2>
+      <h3></h3>
+    </hgroup>
+    <article ><ul>
+<li>Acquisition (ETL)</li>
+<li>Exploration (EDA)</li>
+</ul></article>
+ 
+</slide>
+
+<slide  >
+  
+    <hgroup>
+      <h2>Data Acquisition</h2>
+      <h3>ETL</h3>
+    </hgroup>
+    <article ><ul>
+<li><strong>E</strong>xtract -- download, API, scrape<ul>
+<li>Scrapy</li>
+</ul>
+</li>
+<li><strong>T</strong>ransform -- shuffle columns, normalize<ul>
+<li><a href="https://github.com/hobsonlane">pug</a> -- <code>manage.py dbstats</code></li>
+<li><code>manage.py inspectdb</code></li>
+</ul>
+</li>
+<li><strong>L</strong>oad -- <code>manage.py loaddata</code><ul>
+<li>DBA (Database Administration)</li>
+</ul>
+</li>
+</ul>
+<footer>e.g. Stanford Data Wrangler</footer></article>
+ 
+</slide>
+
+<slide  >
+  
+    <hgroup>
+      <h2>Exploration: Ask</h2>
+      <h3></h3>
+    </hgroup>
+    <article ><ul>
+<li>EDA (Exploratory Data Analysis)</li>
+<li>Questions to Ask (most DBs will tell you)<ul>
+<li>Size (# of databases, tables, records)</li>
+<li>Dimensions: # columns, any natural language</li>
+<li>Connectedness: relationships, indexes, PKs</li>
+<li>Types: ordinal, continuous, discrete, <em>bulk</em> (NL)</li>
+</ul>
+</li>
+</ul></article>
+ 
+</slide>
+
+<slide  >
+  
+    <hgroup>
+      <h2>Exploration: Calculate</h2>
+      <h3></h3>
+    </hgroup>
+    <article ><ul>
+<li>Things to calculate<ul>
+<li>Standard deviation, entropy</li>
+<li>Min/Max</li>
+<li>Correlation coefficients (mutual information)</li>
+</ul>
+</li>
+</ul>
+<p><a href="http://scikit-learn.org">scikit-learn</a> has an excellent <a href="http://scikit-learn.org/stable/tutorial/machine_learning_map/index.html">flow chart</a></p></article>
+ 
+</slide>
+
+<slide  >
+  
+    <hgroup>
+      <h2>Science</h2>
+      <h3></h3>
+    </hgroup>
+    <article ><ul>
+<li>Model (hypothesis)<ul>
+<li><code>scikit</code> has a lot of excellent models</li>
+<li><code>pug</code> has very few</li>
+</ul>
+</li>
+<li>Test<ul>
+<li>Configure the model</li>
+<li>Tune</li>
+<li>Cross-sample validation</li>
+<li><strong>repeat</strong></li>
+</ul>
+</li>
+<li>Share -- Visualization</li>
+</ul></article>
+ 
+</slide>
+
+<slide  >
+  
+    <hgroup>
+      <h2>Let's Do NLP</h2>
+      <h3>specifically LSI = Latent Semantic Indexing</h3>
+    </hgroup>
+    <article ><ul>
+<li>Count words (build an 'Occurrence Matrix</li>
+<li>Reduce dimensions (word vocabulary)</li>
+<li>Visualize the connections (graph)</li>
+<li>Visualize &amp; sort the matrices</li>
+<li><em>SVD on sparse matrix</em> &lt;-- not shown here, but in <code>pug</code></li>
+</ul></article>
+ 
+</slide>
+
+<slide  >
+  
+    <hgroup>
+      <h2>Count Word Occurrences</h2>
+      <h3></h3>
+    </hgroup>
+    <article ><pre class="prettyprint" data-lang="python">
+    from pug.nlp.classifier import get_words
+
+    docs = ['Explicit is better than implicit.',
+            'Simple is better than complex.',
+            'Flat is better than nested.',
+           ]
+    O_sparse = [Counter(get_words(d)) for d in docs]
+    print O_sparse
+</pre>
+
+<pre><code>[Counter({'better': 1, 'explicit': 1, 'than': 1, 'implicit': 1}), 
+ Counter({'simple': 1, 'better': 1, 'complex': 1, 'than': 1}), 
+ Counter({'better': 1, 'flat': 1, 'than': 1, 'nested': 1})]
+</code></pre></article>
+ 
+</slide>
+
+<slide  >
+  
+    <hgroup>
+      <h2>Total Counts</h2>
+      <h3></h3>
+    </hgroup>
+    <article ><pre class="prettyprint" data-lang="python">
+    from collections import Counter
+
+    total = Counter()
+    for c in O_sparse:
+        total += c
+    print total
+</pre>
+
+<pre><code>Counter({'than': 3, 'better': 3, 'flat': 1, 'simple': 1, 'explicit': 1,
+         'complex': 1, 'nested': 1, 'implicit': 1})
+</code></pre>
+<ul>
+<li>Not very interesting</li>
+</ul></article>
+ 
+</slide>
+
+<slide  >
+  
+    <hgroup>
+      <h2>Occurrence Matrix</h2>
+      <h3></h3>
+    </hgroup>
+    <article ><pre class="prettyprint" data-lang="python">
+    from tabulate import tabulate
+    words, O = list(total), []
+    for counts in O_sparse:
+        O += [[0] * len(words)]
+        for word, count in counts.iteritems():
+            j = words.index(word)
+            O[-1][j] += count
+    print tabulate(O)
+</pre>
+
+<pre><code>flat simple explicit than better complex nested implicit
+---- ------ -------- ---- ------ ------- ------ --------
+ 0     0     1        1    1      0       0      1
+ 0     1     0        1    1      1       0      0
+ 1     0     0        1    1      0       1      0
+</code></pre></article>
+ 
+</slide>
+
+<slide  >
+  
+    <hgroup>
+      <h2>Graph Visualization with D3</h2>
+      <h3></h3>
+    </hgroup>
+    <article ><ul>
+<li>Our word occurrence matrix shows connections<ul>
+<li>word1 &lt;--0--&gt; doc1</li>
+<li>word2 &lt;--3--&gt; doc1</li>
+<li>...</li>
+</ul>
+</li>
+<li>This is a directed graph<ul>
+<li>source: word</li>
+<li>target: document</li>
+<li>value: frequency (number of occurrences)</li>
+</ul>
+</li>
+</ul></article>
+ 
+</slide>
+
+<slide  >
+  
+    <hgroup>
+      <h2>Introducing `pug`</h2>
+      <h3></h3>
+    </hgroup>
+    <article ><pre class="prettyprint" data-lang="bash">
+    $ git clone git@github.com:hobsonlane/pug.git
+    $ cd pug/pug/miner/static
+    $ python server.py &
+    $ firefox http://localhost:8001/occurrence_force_graph.html
+</pre>
+
+<p>Do it yourself: <a href="http://hobsonlane.github.io/pug">hobsonlane.github.io/pug</a></a></p></article>
+ 
+</slide>
+
+<slide  >
+  
+    <hgroup>
+      <h2>A More Interesting Example</h2>
+      <h3></h3>
+    </hgroup>
+    <article ><pre><code>from nltk import download, ConditionalFreqDist
+download('inaugural')
+from nltk.corpus import inaugural
+
+cfd = ConditionalFreqDist(
+        (target, fileid[:4])
+        for fileid in inaugural.fileids()
+        for w in inaugural.words(fileid)
+        for target in ['america', 'citizen']
+        if w.lower().startswith(target)) [1]
+</code></pre></article>
+ 
+</slide>
+
+<slide class="img-top-center" >
+  
+    <hgroup>
+      <h2>Frequency Distribution Over Time</h2>
+      <h3>`cfd.plot()`</h3>
+    </hgroup>
+    <article ><p><img height=350 src=inaugural_cfd.png /></p></article>
+ 
+</slide>
+
+<slide  >
+  
+    <hgroup>
+      <h2>Which words are important</h2>
+      <h3>Entropy</h3>
+    </hgroup>
+    <article ><p>$\sum_{i=0}^n P(x_i) \log_b(P(x_i))$</p>
+<pre><code>&gt;&gt;&gt; from scipy.stats import entropy
+&gt;&gt;&gt; entropy([.5, .5]) * log(2.)
+1.0
+&gt;&gt;&gt; from pug.nlp import inaugural
+&gt;&gt;&gt; inaugural.renyi_entropy([.5, .5], alpha=1)
+1.0
+</code></pre></article>
+ 
+</slide>
+
+<slide  >
+  
+    <hgroup>
+      <h2>What Patterns Do You See?</h2>
+      <h3><a href="http://hobsonlane.github.io/pug/pug/miner/static/occurrence_force_graph.html">hobsonlane.github.io/pug</a></h3>
+    </hgroup>
+    <article ><ul>
+<li>Outliers?<ul>
+<li>Documents and Words</li>
+<li>George Washington... because of infrequent use of "the"</li>
+</ul>
+</li>
+</ul></article>
+ 
+</slide>
+
+<slide  >
+  
+    <hgroup>
+      <h2>Curse of Dimensionality</h2>
+      <h3></h3>
+    </hgroup>
+    <article ><ul>
+<li>Difficult to untangle<ul>
+<li>Additional pop ups and highlighting of edges would help</li>
+<li>Additional dimensions as size and shape of circles</li>
+<li>What about short-circuiting the documents to see word-word connections?</li>
+</ul>
+</li>
+<li><a href="view-source:http://hobsonlane.github.io/pug/pug/miner/static/occurrence_force_graph.html">view source</a></li>
+<li>Adjust charge, length, stiffness, friction -- balancing game...<ul>
+<li>Stability vs Structure</li>
+<li>Beauty vs Complexity</li>
+</ul>
+</li>
+</ul></article>
+ 
+</slide>
+
+<slide  >
+  
+    <hgroup>
+      <h2>Words Shared by Documents?</h2>
+      <h3></h3>
+    </hgroup>
+    <article ><p>Multiply the frequencies a word is used in documents linked to it to get a "total" count:</p>
+<p><strong>Document&lt;--&gt;Document</strong> <a href="http://hobsonlane.github.io/pug/pug/miner/static/doc_force_graph.html">graph</a> or <a href="http://hobsonlane.github.io/pug/pug/miner/static/doc_cooccurrence.html">matrix</a></p>
+<p>$\mathbf O_{docs}=\mathbf O \mathbf O^T$</p>
+<p><strong>Word&lt;--&gt;Word</strong> <a href="http://hobsonlane.github.io/pug/pug/miner/static/word_force_graph.html">graph</a> or <a href="http://hobsonlane.github.io/pug/pug/miner/static/word_cooccurrence.html">matrix</a></p>
+<p>$\mathbf O_{words}=\mathbf O^T \mathbf O$</p>
+<p>(for the examples given previously)</p></article>
+ 
+</slide>
+
+<slide  >
+  
+    <hgroup>
+      <h2>`pug` Modules</h2>
+      <h3></h3>
+    </hgroup>
+    <article ><ul>
+<li>crawler: django app for controlling wikiscrapy</li>
+<li>crawlnmine: django app for settings.py</li>
+<li>db: db_routers, explore, sqlserver</li>
+<li>miner: django app for db exploration</li>
+<li>nlp: classifier, <code>db_decision_tree</code>, db, mvlr, parse, util, re, wikiscrapy
+           format numbers &amp; dates, importing of "pivots" in spreadsheets</li>
+</ul></article>
+ 
+</slide>
+
+<slide  >
+  
+    <hgroup>
+      <h2>Thank You for the Education</h2>
+      <h3></h3>
+    </hgroup>
+    <article ><ul>
+<li><a href="sharplaboratories.com">Sharp Laboratories</a> -- John, Jeff, Phil, LiZhong</li>
+<li><a href="buildingenergy.com">Building Energy</a> -- Aleck, John, Steven</li>
+<li><a href="squishymedia.com">Squishy Media</a> -- Eric, Xian, Ben, Greg, Jesse</li>
+</ul></article>
+ 
+</slide>
+
+<slide  >
+  
+    <hgroup>
+      <h2>Resources</h2>
+      <h3></h3>
+    </hgroup>
+    <article ><ul>
+<li><a href="coursera.org">Coursera</a></li>
+<li><a href="udacity.com">Udacity</a></li>
+<li><a href="http://shop.oreilly.com/product/9780596529321.do">Programming Collective Intelligence</a></li>
+<li><a href="http://shop.oreilly.com/product/0636920023784.do">Python for Data Analysis</a></li>
+<li><a href="http://shop.oreilly.com/product/9781782161400.do">Building Machine Learning in Python</a></li>
+<li><a href="http://shop.oreilly.com/product/0636920028529.do">Doing Data Science</a></li>
+<li><a href="norvig.com">Norvig</a></li>
+</ul></article>
+ 
+</slide>
+
+<slide  >
+  
+    <hgroup>
+      <h2>Contributors</h2>
+      <h3></h3>
+    </hgroup>
+    <article ><ul>
+<li>Hobson Lane <a href="&#109;&#97;&#105;&#108;&#116;&#111;&#58;&#112;&#117;&#103;&#97;&#117;&#116;&#104;&#111;&#114;&#115;&#64;&#116;&#111;&#116;&#97;&#108;&#103;&#111;&#111;&#100;&#46;&#99;&#111;&#109;">&#112;&#117;&#103;&#97;&#117;&#116;&#104;&#111;&#114;&#115;&#64;&#116;&#111;&#116;&#97;&#108;&#103;&#111;&#111;&#100;&#46;&#99;&#111;&#109;</a></li>
+<li>LiZhong Zheng <a href="&#109;&#97;&#105;&#108;&#116;&#111;&#58;&#108;&#105;&#122;&#104;&#111;&#110;&#103;&#64;&#77;&#73;&#84;&#46;&#101;&#100;&#117;">&#108;&#105;&#122;&#104;&#111;&#110;&#103;&#64;&#77;&#73;&#84;&#46;&#101;&#100;&#117;</a></li>
+<li>Your Name Here ;) <a href="&#109;&#97;&#105;&#108;&#116;&#111;&#58;&#112;&#117;&#103;&#97;&#117;&#116;&#104;&#111;&#114;&#115;&#64;&#116;&#111;&#116;&#97;&#108;&#103;&#111;&#111;&#100;&#46;&#99;&#111;&#109;">&#112;&#117;&#103;&#97;&#117;&#116;&#104;&#111;&#114;&#115;&#64;&#116;&#111;&#116;&#97;&#108;&#103;&#111;&#111;&#100;&#46;&#99;&#111;&#109;</a></li>
+</ul></article>
+ 
+</slide>
+
+
+<slide class="thank-you-slide segue nobackground">
+  <!-- <aside class="gdbar right"><img src="images/google_developers_icon_128.png"></aside> -->
+  <article class="flexbox vleft auto-fadein">
+    <h2> Thanks PDX-Python!</h2>
+    <p> And the open source world...</p>
+  </article>
+  <p data-config-contact class="auto-fadein"> <a href="http://python.org">Python</a><br/> <a href="http://djangoproject.org">Django</a><br/> <a href="http://nltk.org">NLTK</a><br/> <a href="http://d3js.org">Mike Bostock</a><br/> <a href="http://pypi.python.org/pypi/pyodbc">pyODBC</a></p>
+  </p>
+</slide>
+
+<slide class="backdrop"></slide>
+
+</slides>
+
+<script>
+var _gaq = _gaq || [];
+_gaq.push(['_setAccount', 'UA-XXXXXXXX-1']);
+_gaq.push(['_trackPageview']);
+
+(function() {
+  var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true;
+  ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+  var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s);
+})();
+</script>
+
+<!--[if IE]>
+  <script src="http://ajax.googleapis.com/ajax/libs/chrome-frame/1/CFInstall.min.js"></script>
+  <script>CFInstall.check({mode: 'overlay'});</script>
+<![endif]-->
+</body>
+</html>

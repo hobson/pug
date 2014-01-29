@@ -36,7 +36,7 @@ d3.json("occurrence.json", function(error, json) {
     if (error) return console.warn(error);
     graph = json; 
 
-    var groups = ["", "Document", "Word"];
+    var groups = ["", "document", "word"];
     var width = 1000, height = 600, radius = width / 100., length = width / 4; 
     var charge = -2000;
     var stiffness = .15;
@@ -92,8 +92,8 @@ d3.json("occurrence.json", function(error, json) {
 
     node.append("title")
         .text(function(d) { 
-            if (d.group == 1) return d.name.substring(0,4) + "\n" + d.name.substring(5,30) + "\n" + groups[d.group];
-            else return d.name; });
+            return d.name.substring(0,4) + "\n" + d.name.substring(5,30) + "\n" + groups[d.group];
+        });
 
     force.on("tick", function() {
         link.attr("x1", function(d) { return d.source.x; })
