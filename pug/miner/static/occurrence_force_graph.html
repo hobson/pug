@@ -39,8 +39,9 @@ d3.json("occurrence.json", function(error, json) {
     var groups = ["", "document", "word"];
     var width = 1000, height = 600, radius = width / 100., length = width / 4; 
     var charge = -2000;
-    var stiffness = .15;
-    var friction = .5;
+    var stiffness = 0.15;
+    var friction = 0.5;
+    var stroke_width = [1.0, 0.5]
 
     for(var indx in graph.nodes) { 
         graph.nodes[indx].r = radius; }
@@ -75,8 +76,7 @@ d3.json("occurrence.json", function(error, json) {
         .data(graph.links)
         .enter().append("line")
             .attr("class", "link")
-            .style("stroke-width", function(d) { 
-                return (0.5 * Math.pow(d.value, .75)) }); //return Math.sqrt(d.value); });
+            .style("stroke-width", function(d) { return (stroke_width[0] * Math.pow(d.value, stroke_width[1])) });
 
     var node = svg.selectAll(".node")
         .data(graph.nodes)
@@ -91,9 +91,7 @@ d3.json("occurrence.json", function(error, json) {
         .call(force.drag);
 
     node.append("title")
-        .text(function(d) { 
-            return d.name.substring(0,4) + "\n" + d.name.substring(5,30) + "\n" + groups[d.group];
-        });
+        .text(function(d) { return d.name; });
 
     force.on("tick", function() {
         link.attr("x1", function(d) { return d.source.x; })

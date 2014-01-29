@@ -39,7 +39,8 @@ d3.json("word_cooccurrence.json", function(error, json) {
     var width = 1000, height = 500, radius = width / 100., length = width / 4.; 
     var charge = -50;
     var stiffness = 5;
-    var friction = .99;
+    var friction = 1.0;
+    var stroke_width = [.25, 0.65]
 
     for(var indx in graph.nodes) { 
         graph.nodes[indx].r = radius; }
@@ -74,7 +75,7 @@ d3.json("word_cooccurrence.json", function(error, json) {
         .data(graph.links)
         .enter().append("line")
             .attr("class", "link")
-            .style("stroke-width", function(d) { return (0.5 * d.value) }); 
+            .style("stroke-width", function(d) { return (stroke_width[0] * Math.pow(d.value, stroke_width[1])) }); 
 
     var node = svg.selectAll(".node")
         .data(graph.nodes)
