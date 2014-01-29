@@ -2,14 +2,16 @@
 % subtitle: PDX-Python January 2014
 % author: <a href="https://github.com/hobsonlane">Hobson Lane</a>
 % thankyou: Thanks PDX-Python!
-% thankyou_details: And all these open source contributors...
-% contact: <a href="http://djangoproject.org">Django</a>
+% thankyou_details: And the open source world...
 % contact: <a href="http://python.org">Python</a>
-% contact: <a href="http://pypi.python.org/pypi/pyodbc">pyODBC</a>
 % favicon: <img src="https://www.python.org/favicon.ico"/>
+% contact: <a href="http://djangoproject.org">Django</a>
+% contact: <a href="http://nltk.org">NLTK</a>
+% contact: <a href="http://d3js.org">Mike Bostock</a>
+% contact: <a href="http://pypi.python.org/pypi/pyodbc">pyODBC</a>
 
 ---
-title: Audience Survey
+title: Survey
 build_lists: true
 
 * Who has done Data Science?
@@ -30,16 +32,17 @@ title: Data
 
 ---
 title: Data Acquisition
+subtitle: ETL
 
-* ETL
-    * **E**xtract -- download, API, scrape
-        - Scrapy
-    * **T**ransform -- shuffle columns, normalize
-        - [pug](https://github.com/hobsonlane) -- `manage.py dbstats`
-        - `manage.py inspectdb`
-    * **L**oad -- `manage.py loaddata`
-        - DBA (Database Administration)
-* Stanford Data Wrangler
+* **E**xtract -- download, API, scrape
+    - Scrapy
+* **T**ransform -- shuffle columns, normalize
+    - [pug](https://github.com/hobsonlane) -- `manage.py dbstats`
+    - `manage.py inspectdb`
+* **L**oad -- `manage.py loaddata`
+    - DBA (Database Administration)
+
+<footer>e.g. Stanford Data Wrangler</footer>
 
 ---
 title: Exploration: Ask
@@ -76,14 +79,13 @@ title: Science
 
 ---
 title: Let's Do NLP
+subtitle: specifically LSI = Latent Semantic Indexing
 
 * Count words (build an 'Occurrence Matrix
 * Reduce dimensions (word vocabulary)
 * Visualize the connections (graph)
 * Visualize & sort the matrices
-* *SVD on sparse matrix*
-
-#LSI = Latent Semantic Indexing
+* *SVD on sparse matrix* <-- not shown here, but in `pug`
 
 ---
 title: Count Word Occurrences
@@ -120,6 +122,8 @@ title: Total Counts
 
 * Not very interesting
 
+
+
 ---
 title: Occurrence Matrix
 
@@ -152,7 +156,6 @@ title: Graph Visualization with D3
     - target: document
     - value: frequency (number of occurrences)
 
-
 ---
 title: Introducing `pug`
 
@@ -166,13 +169,46 @@ title: Introducing `pug`
 Do it yourself: [hobsonlane.github.io/pug](http://hobsonlane.github.io/pug)</a>
 
 ---
+title: A More Interesting Example
+
+    from nltk import download, ConditionalFreqDist
+    download('inaugural')
+    from nltk.corpus import inaugural
+
+    cfd = ConditionalFreqDist(
+            (target, fileid[:4])
+            for fileid in inaugural.fileids()
+            for w in inaugural.words(fileid)
+            for target in ['america', 'citizen']
+            if w.lower().startswith(target)) [1]
+
+---
+title: Frequency Distribution Over Time
+subtitle: `cfd.plot()`
+class: img-top-center
+
+<img height=350 src=inaugural_cfd.png />
+
+---
+title: Which words are important
+subtitle: Entropy
+
+$\sum_{i=0}^n P(x_i) \log_b(P(x_i))$
+
+    >>> from scipy.stats import entropy
+    >>> entropy([.5, .5]) * log(2.)
+    1.0
+    >>> from pug.nlp import inaugural
+    >>> inaugural.renyi_entropy([.5, .5], alpha=1)
+    1.0
+
+---
 title: What Patterns Do You See?
+subtitle: <a href="http://hobsonlane.github.io/pug/pug/miner/static/occurrence_force_graph.html">hobsonlane.github.io/pug</a>
 
 * Outliers?
     * Documents and Words
     * George Washington... because of infrequent use of "the"
-
-[hobsonlane.github.io/pug](http://hobsonlane.github.io/pug/pug/miner/static/occurrence_force_graph.html)
 
 ---
 title: Curse of Dimensionality
@@ -181,32 +217,60 @@ title: Curse of Dimensionality
     - Additional pop ups and highlighting of edges would help
     - Additional dimensions as size and shape of circles
     - What about short-circuiting the documents to see word-word connections?
-* [view source](view-source:http://hobsonlane.github.io/pug/pug/miner/static/occurrence_force_graph.html)"
+* [view source](view-source:http://hobsonlane.github.io/pug/pug/miner/static/occurrence_force_graph.html)
 * Adjust charge, length, stiffness, friction -- balancing game...
     - Stability vs Structure
     - Beauty vs Complexity
 
 ---
+title: Words Shared by Documents?
 
+Multiply the frequencies a word is used in documents linked to it to get a "total" count:
 
----
-title: `pug` Files
+**Document<-->Document** [graph](http://hobsonlane.github.io/pug/pug/miner/static/doc_force_graph.html) or [matrix](http://hobsonlane.github.io/pug/pug/miner/static/doc_cooccurrence.html)
 
-* bin -- command-line tools, .bashrc, and other config files
-* nlp/db -- interacting with databases and migrating data
-* nlp/util -- , DBs
-* nlp
+$\mathbf O_{docs}=\mathbf O \mathbf O^T$
+
+**Word<-->Word** [graph](http://hobsonlane.github.io/pug/pug/miner/static/word_force_graph.html) or [matrix](http://hobsonlane.github.io/pug/pug/miner/static/word_cooccurrence.html)
+
+$\mathbf O_{words}=\mathbf O^T \mathbf O$
+
+(for the examples given previously)
 
 ---
 title: `pug` Modules
 
-pug
-├── crawler -- django app for wikiscrapy
-├── crawlnmine -- django app for settings.py
-├── db -- db_routers, explore, sqlserver
-├── miner -- django app for db exploration
-└── nlp -- classifier, `db_decision_tree`, db, mvlr, parse, util, re
+* crawler: django app for controlling wikiscrapy
+* crawlnmine: django app for settings.py
+* db: db_routers, explore, sqlserver
+* miner: django app for db exploration
+* nlp: classifier, `db_decision_tree`, db, mvlr, parse, util, re, wikiscrapy
            format numbers & dates, importing of "pivots" in spreadsheets
-    ├── wikiscrapy
+
+---
+title: Thank You for the Education
+
+* [Sharp Laboratories](sharplaboratories.com) -- John, Jeff, Phil, LiZhong
+* [Building Energy](buildingenergy.com) -- Aleck, John, Steven
+* [Squishy Media](squishymedia.com) -- Eric, Xian, Ben, Greg, Jesse
+
+---
+title: Resources
+
+* [Coursera](coursera.org)
+* [Udacity](udacity.com)
+* [Programming Collective Intelligence](http://shop.oreilly.com/product/9780596529321.do)
+* [Python for Data Analysis](http://shop.oreilly.com/product/0636920023784.do)
+* [Building Machine Learning in Python](http://shop.oreilly.com/product/9781782161400.do)
+* [Doing Data Science](http://shop.oreilly.com/product/0636920028529.do)
+* [Norvig](norvig.com)
+
+---
+title: Contributors
+
+* Hobson Lane <pugauthors@totalgood.com>
+* LiZhong Zheng <lizhong@MIT.edu>
+* Your Name Here ;) <pugauthors@totalgood.com>
+
 
 
