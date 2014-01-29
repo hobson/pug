@@ -1,6 +1,6 @@
 % title: Data Science with `pug`
 % subtitle: PDX-Python
-% date: January 28, 2014
+% subtitle: <i><small>January 28, 2014</small></i>
 % author: <a href="https://hobsonlane.github.io/pug">hobsonlane.github.io/pug</a>
 % thankyou: Thanks PDX-Python!
 % thankyou_details: And the open source world...
