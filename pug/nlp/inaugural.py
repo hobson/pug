@@ -10,40 +10,64 @@ import nltk
 import numpy as np
 
 import character_subset as ascii
+from pug.db import listify
 
-DEFAULT_FILE_LIST = os.listdir('inaugural')
+IGNORE_FILES = ('readme',)
+DOCUMENT_FOLDER = 'data/inaugural_speeches'
+DEFAULT_FILE_LIST = os.listdir(DOCUMENT_FOLDER)
 
 
-def score_words_in_files(filenames=DEFAULT_FILE_LIST[:14], entropy_threshold=0.99):
+def is_ignorable(s, ignorable_strings=IGNORE_FILES, lower=True, filename=True, startswith=True):
+    ignorable_strings = listify(ignorable_strings)
+    if not (lower or filename or startswith):
+        return s in ignorable_strings
+    for ignorable in ignorable_strings:
+        if lower:
+            ignorable = ignorable.lower()
+            s = s.lower()
+        if filename:
+            s = s.split(os.path.sep)[-1]
+        if startswith and s.startswith(ignorable):
+            return True
+        elif s == ignorable:
+            return True
+
+
+def get_adjacency_matrix(filenames=DEFAULT_FILE_LIST, entropy_threshold=0.90, folder=DOCUMENT_FOLDER, normalized=False, verbosity=1):
     """Calculate relevance score for words in a set of files
 
     score_words_in_files(filenames=DEFAULT_FILE_LIST, entropy_threshold=0.9):
         return scores, occurrence_matrix, filenames, most_relevant_words
+
+    by LiZhong Zeng
     """
 
     filtered_filenames = []
 
-    Text = []     # list of tokened texts
+    Text = []     # list of segmented texts
     Total = []    # all texts put together 
     Speech_Length = []
     
-    print 'Reading %s files' % len(filenames)
+    if verbosity:
+        print 'Reading %s files' % len(filenames)
     i = 0
     for fn in filenames:
-        if fn.lower().split('/')[-1].startswith('readme'):
+        if is_ignorable(fn, ignorable_strings=IGNORE_FILES, lower=True, filename=True, startswith=True):
             continue
         filtered_filenames += [fn]
         i += 1
-        f=open('inaugural/'+fn)
-        print 'Reading ' + f.name
+        f = open(os.path.join(folder, fn))
+        if verbosity > 1:
+            print 'Reading ' + f.name
         raw = f.read()
-        tokens=nltk.word_tokenize(raw)
+        tokens = nltk.word_tokenize(raw)
         # delete short words and make everything lowercase
-        tokens=[w.lower() for w in tokens if len(w)>2]
+        tokens=[w.lower() for w in tokens if len(w) > 2]
         Speech_Length += [len(tokens)]
         Text.append(tokens)        
         Total=Total+tokens
-    print '%s files were indexed (%s were ignored)' % (i, len(filenames)-i)
+    if verbosity:
+        print '%s files were indexed (%s were ignored)' % (i, len(filenames)-i)
             
     Empirical_Total=nltk.FreqDist(Total)    
     Vocabulary=Empirical_Total.keys()   # the entire set of words
@@ -52,7 +76,7 @@ def score_words_in_files(filenames=DEFAULT_FILE_LIST[:14], entropy_threshold=0.9
 
     Dist=range(Size)
     Vectors=[]          # Record a list of empirical distributions
-    for i in range(len(filenames)-1):
+    for i in range(len(filtered_filenames)):
         fdist=nltk.FreqDist(Text[i])
 
         for j in range(Size):
@@ -62,36 +86,50 @@ def score_words_in_files(filenames=DEFAULT_FILE_LIST[:14], entropy_threshold=0.9
     
     Word_Relevance=range(Size) # store a relevance score for each word
     for wordIndex in range(Size):
-        Word_Dist= nltk.FreqDist([Vectors[i][wordIndex] for i in range(len(filenames)-1)])
-        
-        Word_Relevance[wordIndex]=0
-        
+        Word_Dist= nltk.FreqDist([Vectors[i][wordIndex] for i in range(len(filtered_filenames))])
+
+        Word_Relevance[wordIndex] = 0
+
         # # check if the number of files that do not have the word is close to half
         # if (abs(Word_Dist[0] - len(filenames)/2) <= 3):
         #    Word_Relevance[wordIndex]=1            
-         
-        # entropy normalized by the support 
+
+        # information entropy normalized by the support (number of events)
         H_normalized = renyi_entropy(Word_Dist, alpha=.6, base=e, normalized=True)
 
-        if (H_normalized > entropy_threshold):  # 0.9 is an arbitrary threshold
-            Word_Relevance[wordIndex]=1
-        
-    Key_words= [Vocabulary[i] for i in range(Size) if Word_Relevance[i] !=0 ] 
+        if (H_normalized > entropy_threshold):
+            Word_Relevance[wordIndex] = 1
 
-    print 'Computed a relevance score for %s words and reduced it to %s words above %s%% relevance.' % (Size, len(Key_words), entropy_threshold)
+    Key_words = [Vocabulary[i] for i in range(Size) if Word_Relevance[i]] 
+
+    if verbosity:
+        print 'Computed a relevance score for %s words and reduced it to %s words above %s%% relevance.' % (Size, len(Key_words), entropy_threshold * 100.)
 
     Reduced_Vectors=[]    
-    for i in range(len(filenames)-1):
-        Reduced_Vectors.append([Vectors[i][j] for j in range(Size) if Word_Relevance[j]!=0])
-    
-    U, s, V= np.linalg.svd(Reduced_Vectors)
+    for i in range(len(filtered_filenames)):
+        total_count = sum(Vectors[i])
+        Reduced_Vectors.append([Vectors[i][j] / total_count for j in range(Size) if Word_Relevance[j]])
+    return Reduced_Vectors, filtered_filenames, Key_words
 
-    Scores=range(len(filenames)-1)
-    print 'SCORES', ':', 'FILENAME'    
-    for i in range(len(filenames)-1):
-        Scores[i]= np.inner(V[0], Reduced_Vectors[i])/Speech_Length[i]
-        print Scores[i], ':', filenames[i]
-    return Scores, Reduced_Vectors, filtered_filenames, Key_words
+
+def svd_scores(vectors, labels=None, verbosity=1):
+    labels = labels or [str(i) for i in range(len(vectors))]
+    U, s, V = np.linalg.svd(vectors)
+
+    scores = []
+
+    if verbosity:
+        print 'SCORES', ':', 'LABELS'    
+    for i, vector in enumerate(vectors):
+        scores += [np.inner(V[0], vector) / sum(vector)]
+        if verbosity:
+            print scores[-1], ':', labels[-1]
+    return scores
+
+
+def score_words_in_files(filenames=DEFAULT_FILE_LIST, entropy_threshold=0.90, folder=DOCUMENT_FOLDER, verbosity=1):
+    adjacency_matrix, files, words = get_adjacency_matrix(filenames=DEFAULT_FILE_LIST, entropy_threshold=0.90, folder=DOCUMENT_FOLDER)
+    return svd_scores(adjacency_matrix, files, verbosity), adjacency_matrix, files, words 
 
 
 def reverse_dict(d):
@@ -426,7 +464,6 @@ def group_to_party(group):
 group_to_party.parties = ["", "Whig", "Democratic", "Republican", "Democratic-Republican", "Independent"]
 
 
-
 def generate_word_cooccurrence(adjacency_matrix, files, words, num_groups=5):
     O, names = co_adjacency(adjacency_matrix, row_names=files, col_names=words, bypass_col_names=False)
     O = matrix_scale_exp(O, out_min=1 ** 2, out_max=31 ** 2, exp=.5)
@@ -445,16 +482,6 @@ def generate_document_cooccurrence(adjacency_matrix, files, words, num_groups=5)
     graph = d3_graph(O, [(strip_path_ext_characters(n), party_to_group(president_party(n))) for n in names], str_to_group=yr_str_to_group)
     write_file_twice(graph, 'doc_cooccurrence.new.json')
 
-
-def generate_word_occurrence_document(adjacency_matrix, files, words, num_groups=5):
-    O, names = co_adjacency(adjacency_matrix, row_names=files, col_names=words, bypass_col_names=True)
-    O = matrix_scale_exp(O, out_min=1 ** .66, out_max=31 ** .66, exp=1.5)
-    yr_str_to_group.digits = 4
-    yr_str_to_group.min = min(float(s[:4]) for s in names)
-    yr_str_to_group.width = (max(float(s[:4]) for s in names) - yr_str_to_group.min) / num_groups
-    graph = d3_graph(O, [(strip_path_ext_characters(n), party_to_group(president_party(n))) for n in names], str_to_group=yr_str_to_group)
-    write_file_twice(graph, 'doc_cooccurrence.new.json')
-
    
 if __name__ == '__main__':
     """
@@ -462,6 +489,6 @@ if __name__ == '__main__':
     >>> scores, adjacency_matrix, files, words = score_words_in_files(DEFAULT_FILE_LIST[:14], entropy_threshold=0.99)
     >>> coadjacency, names = co_adjacency(adjacency_matrix, row_names=files, col_names=words, bypass_col_names=True)
     """
-    scores, adjacency_matrix, files, words = score_words_in_files(sorted(DEFAULT_FILE_LIST), entropy_threshold=0.92)
+    adjacency_matrix, files, words = get_adjacency_matrix(sorted(DEFAULT_FILE_LIST), entropy_threshold=0.92, normalized=True)
     graph = d3_graph_occurrence(adjacency_matrix, files, words)
     print json.dumps(graph, indent=4)
