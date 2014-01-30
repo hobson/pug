@@ -12,7 +12,6 @@ from pug.nlp import parse
 #from pug.nlp.character_subset import digits
 from pug.nlp import util
 from pug.nlp import db
-#count_in_category, count_in_date, sum_in_date, lagged_in_date, align_time_series, listify, datetime_in_milliseconds, best_scale_factor, round_to_sigfigs
 
 
 def home(request, graph_uri=None):
@@ -101,7 +100,7 @@ class StaticView(View):
 # #             if field['key'] not in ans:
 # #                 ans[field['key']] = field['default']
 # #         return ans
-# #     seq = listify(name, delim=',')
+# #     seq = db.listify(name, delim=',')
 # #     ans = {}
 # #     for j, field in enumerate(parse_node_name.schema):
 # #         if 'default' in field:

@@ -5,6 +5,7 @@ Makes data processing easier:
     * numerical processing with `numpy`
     * text processing with `nltk` and `pub.nlp`
     * visualization with d3, nvd3, and django-nvd3
+    * data structure manipulations (listify, intify)
 """
 
 import datetime
@@ -210,9 +211,6 @@ def listify(values, N=1, delim=None):
     return ans
 
 
-
-
-
 def sorted_dict_of_lists(dict_of_lists, field_names, reverse=False):
     """Sort a list of lists as if each list is a column (not a row as builtin sorted does) excel does, in the order listed in field names
 
@@ -222,6 +220,7 @@ def sorted_dict_of_lists(dict_of_lists, field_names, reverse=False):
     [('k1', [2, 1, 3]), ('k2', [8, 7, 6]), ('k3', [5, 6, 4])]
     """
     lists = [dict_of_lists[k] for k in field_names]
+    # FIXME: won't this unsort it, since the return value isn't an OrderedDict ?
     return dict(zip(field_names, util.transposed_lists(sorted(util.transposed_lists(lists), reverse=reverse))))
 
 
@@ -728,3 +727,5 @@ def field_cov(fields, models, apps):
     columns = util.get_columns(fields, models, apps)
     columns = util.make_real(columns)
     return np.cov(columns)
+
+
