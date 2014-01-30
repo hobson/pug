@@ -10,7 +10,7 @@ import nltk
 import numpy as np
 
 import character_subset as ascii
-from pug.db import listify
+from db import listify
 
 IGNORE_FILES = ('readme',)
 DOCUMENT_FOLDER = 'data/inaugural_speeches'
@@ -108,12 +108,19 @@ def get_adjacency_matrix(filenames=DEFAULT_FILE_LIST, entropy_threshold=0.90, fo
     Reduced_Vectors=[]    
     for i in range(len(filtered_filenames)):
         total_count = sum(Vectors[i])
-        Reduced_Vectors.append([Vectors[i][j] / total_count for j in range(Size) if Word_Relevance[j]])
+        if normalized: 
+            Reduced_Vectors.append([Vectors[i][j] / total_count for j in range(Size) if Word_Relevance[j]])
+        else:
+            Reduced_Vectors.append([Vectors[i][j] for j in range(Size) if Word_Relevance[j]])
     return Reduced_Vectors, filtered_filenames, Key_words
 
 
 def svd_scores(vectors, labels=None, verbosity=1):
     labels = labels or [str(i) for i in range(len(vectors))]
+
+    if len(labels) != len(vectors):
+        raise RuntimeWarning("The number of labels provided doesn't matc the number of vectors.")
+
     U, s, V = np.linalg.svd(vectors)
 
     scores = []
@@ -382,7 +389,7 @@ def d3_graph(adjacency_matrix, row_names, col_names=None, str_to_group=len_str_t
     return {'nodes': nodes, 'links': links}
 
 
-def d3_graph_occurrence(adjacency_matrix, row_names, col_names=None, str_to_group=len_str_to_group, str_to_name=strip_path_ext_characters, str_to_value=float, num_groups=4.):
+def d3_graph_occurrence(adjacency_matrix, row_names, col_names=None, str_to_group=len_str_to_group, str_to_name=strip_path_ext_characters, str_to_value=float, num_groups=4., verbosity=1):
     """Convert an adjacency matrix to a dict of nodes and links for d3 graph rendering
 
     row_names = [("name1", group_num), ("name2", group_num), ...]
@@ -420,12 +427,14 @@ def d3_graph_occurrence(adjacency_matrix, row_names, col_names=None, str_to_grou
     N, M = len(row_names), len(col_names)
     j = 0
 
-    print '-' * 10
+    if verbosity > 1:
+        print '-' * 10
     # get the nodes list first, from the row and column labels, even if not square
     for group_num, names in enumerate([row_names, col_names]):
         for i, name in enumerate(names):
             node = {"name": name, "group": group_num + 1}
-            print j, i + N, node
+            if verbosity > 1:
+                print j, node
             nodes += [node]
             j += 1
 
@@ -482,13 +491,24 @@ def generate_document_cooccurrence(adjacency_matrix, files, words, num_groups=5)
     graph = d3_graph(O, [(strip_path_ext_characters(n), party_to_group(president_party(n))) for n in names], str_to_group=yr_str_to_group)
     write_file_twice(graph, 'doc_cooccurrence.new.json')
 
-   
+
+def normalize_adjacency_matrix(adjacency_matrix, rowwise=True):
+    am_normalized = []
+    if rowwise:
+        for row in adjacency_matrix:
+            row_normalized, norm = [], sum(row)
+            for value in row:
+                row_normalized += [value / norm]
+            am_normalized += row_normalized
+
+
 if __name__ == '__main__':
     """
     # This will produce a 14 x 14 matrix, 
     >>> scores, adjacency_matrix, files, words = score_words_in_files(DEFAULT_FILE_LIST[:14], entropy_threshold=0.99)
     >>> coadjacency, names = co_adjacency(adjacency_matrix, row_names=files, col_names=words, bypass_col_names=True)
     """
-    adjacency_matrix, files, words = get_adjacency_matrix(sorted(DEFAULT_FILE_LIST), entropy_threshold=0.92, normalized=True)
+    adjacency_matrix, files, words = get_adjacency_matrix(sorted(DEFAULT_FILE_LIST), entropy_threshold=0.92, normalized=False, verbosity=2)
+    scores = svd_scores(adjacency_matrix, labels=files, verbosity=2)
     graph = d3_graph_occurrence(adjacency_matrix, files, words)
-    print json.dumps(graph, indent=4)
+    # print json.dumps(graph, indent=4)
