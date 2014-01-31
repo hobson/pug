@@ -32,7 +32,6 @@
 
 var graph;
 
-console.log('starting...');
 d3.json("occurrence.json", function(error, json) {
     if (error) return console.warn(error);
     graph = json; 
@@ -40,20 +39,26 @@ d3.json("occurrence.json", function(error, json) {
     var groups = ["", "document", "word"];
 
     var width = 1000, height = 500, radius = width / 100., length = width / 5.0; 
-    var charge = -1000;
+    var charge = -700;
     var stiffness = 0.1;
     var friction = 0.5;
     var stroke_width = 5;
 
+    var N_edges = graph.links.length
+    var N_nodes = graph.nodes.length
+    var stiffness = 0.5;
+
     var x_min = d3.min(graph.links, function (d) { return +d.value; });
     var x_max = d3.max(graph.links, function (d) { return +d.value; });
-    var x_mid = d3.mean(graph.links, function (d) { return +d.value; });
-    console.log([x_min, x_mid, x_max]);
+    var x_mid = d3.median(graph.links, function (d) { return +d.value; });
+    var x_ave = d3.mean(graph.links, function (d) { return +d.value; });
     var exp = Math.LN2 / Math.log((x_max - x_min) / (x_mid - x_min));
+    console.log('min, mid, max: ' + [x_min, x_mid, x_max] + ' gives exponent: ' + exp);
 
-    pow_scale = d3.scale.pow().exponent(exp).domain([x_min, x_max]).range([0.0, 1.0]);  // .range([0, 1])
-
-    console.log([pow_scale(x_min), pow_scale(x_mid), pow_scale(x_max)]);
+    pow_scale = d3.scale.pow().exponent(exp).domain([x_min, x_max]).range([0.0, 1.0]);
+    console.log('scaled min, mid, mean, max: ' + [pow_scale(x_min), pow_scale(x_mid), pow_scale(x_ave), pow_scale(x_max)]);
+    var length = 100 * (width + height) * Math.pow(pow_scale(x_ave) / pow_scale(x_mid), 2) / Math.pow(N_edges, .75) / Math.pow(N_nodes, .25)
+    console.log("length: " + length + " for " + N_edges + ", " +  N_nodes + " edges and nodes")
 
     for(var indx in graph.nodes) { 
         graph.nodes[indx].r = radius; }
@@ -63,8 +68,8 @@ d3.json("occurrence.json", function(error, json) {
     var force = d3.layout.force()
         .friction(1.0 - friction)
         .charge(charge)
-        .linkDistance(function (d) { return (.5 * radius + length * .001 / (Math.pow(pow_scale(d.value), 4) + .001)); })
-        .linkStrength(function (d) { return stiffness * Math.pow(pow_scale(d.value), 1); } ) 
+        .linkDistance(length)
+        .linkStrength(function (d) { return stiffness * Math.pow(pow_scale(d.value), 3); } ) 
         .size([width, height]);
 
     var svg = d3.select("div.content").append("svg")

@@ -10,27 +10,12 @@ import nltk
 import numpy as np
 
 import character_subset as ascii
-from db import listify
+from util import is_ignorable_str
 
 IGNORE_FILES = ('readme',)
 DOCUMENT_FOLDER = 'data/inaugural_speeches'
 DEFAULT_FILE_LIST = os.listdir(DOCUMENT_FOLDER)
 
-
-def is_ignorable(s, ignorable_strings=IGNORE_FILES, lower=True, filename=True, startswith=True):
-    ignorable_strings = listify(ignorable_strings)
-    if not (lower or filename or startswith):
-        return s in ignorable_strings
-    for ignorable in ignorable_strings:
-        if lower:
-            ignorable = ignorable.lower()
-            s = s.lower()
-        if filename:
-            s = s.split(os.path.sep)[-1]
-        if startswith and s.startswith(ignorable):
-            return True
-        elif s == ignorable:
-            return True
 
 
 def get_adjacency_matrix(filenames=DEFAULT_FILE_LIST, entropy_threshold=0.90, folder=DOCUMENT_FOLDER, normalized=False, verbosity=1):
@@ -52,7 +37,7 @@ def get_adjacency_matrix(filenames=DEFAULT_FILE_LIST, entropy_threshold=0.90, fo
         print 'Reading %s files' % len(filenames)
     i = 0
     for fn in filenames:
-        if is_ignorable(fn, ignorable_strings=IGNORE_FILES, lower=True, filename=True, startswith=True):
+        if is_ignorable_str(fn, ignorable_strings=IGNORE_FILES, lower=True, filename=True, startswith=True):
             continue
         filtered_filenames += [fn]
         i += 1
