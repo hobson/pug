@@ -32,35 +32,39 @@
 
 var graph;
 
+console.log('starting...');
 d3.json("occurrence.json", function(error, json) {
     if (error) return console.warn(error);
     graph = json; 
 
     var groups = ["", "document", "word"];
-    var width = 1000, height = 600, radius = width / 100., length = width / 4; 
-    var charge = -2000;
-    var stiffness = 0.15;
+
+    var width = 1000, height = 500, radius = width / 100., length = width / 5.0; 
+    var charge = -1000;
+    var stiffness = 0.1;
     var friction = 0.5;
-    var stroke_width = [0.04, 0.75]
+    var stroke_width = 5;
+
+    var x_min = d3.min(graph.links, function (d) { return +d.value; });
+    var x_max = d3.max(graph.links, function (d) { return +d.value; });
+    var x_mid = d3.mean(graph.links, function (d) { return +d.value; });
+    console.log([x_min, x_mid, x_max]);
+    var exp = Math.LN2 / Math.log((x_max - x_min) / (x_mid - x_min));
+
+    pow_scale = d3.scale.pow().exponent(exp).domain([x_min, x_max]).range([0.0, 1.0]);  // .range([0, 1])
+
+    console.log([pow_scale(x_min), pow_scale(x_mid), pow_scale(x_max)]);
 
     for(var indx in graph.nodes) { 
         graph.nodes[indx].r = radius; }
 
-    var color = d3.scale.ordinal().domain(d3.range(10)).range(['#17becf', '#8c564b', '#1f77b4', '#d62728', '#2ca02c', '#ff7f0e', '#9467bd',  '#e377c2', '#7f7f7f', '#bcbd22', ]);
+    var color = d3.scale.ordinal().domain(d3.range(10)).range(['#17becf', '#8c564b', '#1f77b4', '#d62728', '#2ca02c', '#ff7f0e', '#9467bd',  '#e377c2', '#7f7f7f', '#bcbd22']);
 
     var force = d3.layout.force()
-        .friction(1 - friction)
+        .friction(1.0 - friction)
         .charge(charge)
-        .linkDistance(
-            function (d) {
-                return length * (1.0 - 1.0 / (stiffness * Math.pow(d.value, .1) + 1))
-                }
-            )
-        .linkStrength(
-            function (d) {
-                return 1.0 - 1.0 / (stiffness * Math.pow(d.value, .1) + 1)
-                }
-            )
+        .linkDistance(function (d) { return (.5 * radius + length * .001 / (Math.pow(pow_scale(d.value), 4) + .001)); })
+        .linkStrength(function (d) { return stiffness * Math.pow(pow_scale(d.value), 1); } ) 
         .size([width, height]);
 
     var svg = d3.select("div.content").append("svg")
@@ -76,7 +80,9 @@ d3.json("occurrence.json", function(error, json) {
         .data(graph.links)
         .enter().append("line")
             .attr("class", "link")
-            .style("stroke-width", function(d) { return (stroke_width[0] * Math.pow(d.value, stroke_width[1])) });
+            .style("stroke", "#888")
+            .style("stroke-width", function(d) { return (stroke_width * Math.pow(pow_scale(d.value), 4.0)); })
+            .style("opacity", function(d) { return (stroke_width * Math.pow(pow_scale(d.value), 4.0)); }); //pow_scale(d.value); });
 
     var node = svg.selectAll(".node")
         .data(graph.nodes)
@@ -88,6 +94,7 @@ d3.json("occurrence.json", function(error, json) {
                     }
                 )
         .style("fill", function(d) { return color(d.group); })
+        .style("opacity", 0.5)
         .call(force.drag);
 
     node.append("title")
