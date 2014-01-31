@@ -25,7 +25,6 @@ from pug.nlp import regex_patterns as rep
 
 import numpy as np
 import scipy as sci
-from db import listify
 
 import logging
 logger = logging.getLogger('bigdata.info')
@@ -822,6 +821,88 @@ def tabulate(lol, headers, eol='\n'):
     yield '| %s:|' % ':| '.join(['-'*len(w) for w in headers]) + eol
     for row in lol:
         yield '| %s |' % '  |  '.join(str(c) for c in row) + eol
+
+
+def intify(obj):
+    """
+    Return an integer that is representative of a categorical object (string, dict, etc)
+
+    >>> intify('1.2345e10')
+    12345000000
+    >>> intify([12]), intify('[99]'), intify('(12,)')
+    (91, 91, 40)
+    >>> intify('A'), intify('B'), intify('b')
+    (97, 98, 98)
+    >>> intify(272)
+    272
+    """
+    try:
+        return int(float(obj))
+    except:
+        try:
+            return ord(str(obj)[0].lower())
+        except:
+            try:
+                return len(obj)
+            except:
+                try:
+                    return hash(str(obj))
+                except:
+                    return 0
+
+
+def listify(values, N=1, delim=None):
+    """Return an N-length list, with elements values, extrapolating as necessary.
+
+    >>> listify("don't split into characters")
+    ["don't split into characters"]
+    >>> listify("len = 3", 3)
+    ['len = 3', 'len = 3', 'len = 3']
+    >>> listify("But split on a delimeter, if requested.", delim=',')
+    ['But split on a delimeter', ' if requested.']
+    >>> listify(["obj 1", "obj 2", "len = 4"], N=4)
+    ['obj 1', 'obj 2', 'len = 4', 'len = 4']
+    >>> listify(iter("len=7"), N=7)
+    ['l', 'e', 'n', '=', '7', '7', '7']
+    >>> listify(iter("len=5"))
+    ['l', 'e', 'n', '=', '5']
+    >>> listify(None, 3)
+    [[], [], []]
+    >>> listify([None],3)
+    [None, None, None]
+    >>> listify([], 3)
+    [[], [], []]
+    >>> listify('', 2)
+    ['', '']
+    >>> listify(0)
+    [0]
+    >>> listify(False, 2)
+    [False, False]
+    """
+    ans = [] if values is None else values
+
+    # convert non-string non-list iterables into a list
+    if hasattr(ans, '__iter__') and not isinstance(values, basestring):
+        ans = list(ans)
+    else:
+        # split the string (if possible)
+        if isinstance(delim, basestring):
+            try:
+                ans = ans.split(delim)
+            except:
+                ans = [ans]
+        else:
+            ans = [ans]
+
+    # pad the end of the list if a length has been specified
+    if len(ans):
+        if len(ans) < N and N > 1:
+            ans += [ans[-1]] * (N - len(ans))
+    else:
+        if N > 1:
+            ans = [[]] * N
+
+    return ans
 
 
 def is_ignorable_str(s, ignorable_strings=(), lower=True, filename=True, startswith=True):

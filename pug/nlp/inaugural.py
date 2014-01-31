@@ -17,7 +17,6 @@ DOCUMENT_FOLDER = 'data/inaugural_speeches'
 DEFAULT_FILE_LIST = os.listdir(DOCUMENT_FOLDER)
 
 
-
 def get_adjacency_matrix(filenames=DEFAULT_FILE_LIST, entropy_threshold=0.90, folder=DOCUMENT_FOLDER, normalized=False, verbosity=1):
     """Calculate relevance score for words in a set of files
 
@@ -280,7 +279,7 @@ def len_str_to_group(s, bin_min=None, bin_width=None):
     if bin_min is None:
         bin_min = len_str_to_group.min
     bin_width = bin_width or len_str_to_group.width or 1
-    return int(round((len(s) - bin_min) / float(bin_width)))
+    return int(round((len(s) - bin_min + 1) / float(bin_width)))
 len_str_to_group.min = 3
 len_str_to_group.width = 3
 
@@ -319,7 +318,7 @@ def strip_path_ext_characters(s, strip_characters=ascii.ascii_nonword):
     return str(s).split('/')[-1].split('.')[0].strip(strip_characters)
 
 
-def d3_graph(adjacency_matrix, row_names, col_names=None, str_to_group=len_str_to_group, str_to_name=strip_path_ext_characters, str_to_value=float, num_groups=4.):
+def d3_graph(adjacency_matrix, row_names, col_names=None, str_to_group=len_str_to_group, str_to_name=strip_path_ext_characters, str_to_value=float, num_groups=7.):
     """Convert an adjacency matrix to a dict of nodes and links for d3 graph rendering
 
     row_names = [("name1", group_num), ("name2", group_num), ...]
@@ -374,7 +373,7 @@ def d3_graph(adjacency_matrix, row_names, col_names=None, str_to_group=len_str_t
     return {'nodes': nodes, 'links': links}
 
 
-def d3_graph_occurrence(adjacency_matrix, row_names, col_names=None, str_to_group=len_str_to_group, str_to_name=strip_path_ext_characters, str_to_value=float, num_groups=4., verbosity=1):
+def d3_graph_occurrence(adjacency_matrix, row_names, col_names=None, str_to_group=len_str_to_group, str_to_name=strip_path_ext_characters, str_to_value=float, num_groups=7., verbosity=1):
     """Convert an adjacency matrix to a dict of nodes and links for d3 graph rendering
 
     row_names = [("name1", group_num), ("name2", group_num), ...]
@@ -443,14 +442,14 @@ def write_file_twice(js, fn, other_dir='../miner/static'):
 def president_party(name):
     surname = strip_path_ext_characters(name.split(' ')[-1], strip_characters=ascii.ascii_nonletter)
     return president_party.surname_party.get(surname, '')
-president_party.party = dict() #reverse_dict_of_lists(json.load(open('data/president_political_parties.json','r')))
+president_party.party = reverse_dict_of_lists(json.load(open('data/president_political_parties.json','r')))
 president_party.surname_party = dict((name.split(' ')[-1], party) for (name, party) in president_party.party.iteritems())
 
 
 # FIXME: find the data/president_political_parties.json and add to git repo
 def party_to_group(s):
     return party_to_group.parties.get(s)
-party_to_group.parties = dict() #dict((p, i + 1) for (i, p) in enumerate(json.load(open('data/president_political_parties.json','r'))))
+party_to_group.parties = dict((p, i + 1) for (i, p) in enumerate(json.load(open('data/president_political_parties.json','r'))))
 
 
 def group_to_party(group):
@@ -458,23 +457,25 @@ def group_to_party(group):
 group_to_party.parties = ["", "Whig", "Democratic", "Republican", "Democratic-Republican", "Independent"]
 
 
-def generate_word_cooccurrence(adjacency_matrix, files, words, num_groups=5):
+def generate_word_cooccurrence(adjacency_matrix, files, words, num_groups=7.):
     O, names = co_adjacency(adjacency_matrix, row_names=files, col_names=words, bypass_col_names=False)
-    O = matrix_scale_exp(O, out_min=1 ** 2, out_max=31 ** 2, exp=.5)
+    #O = matrix_scale_exp(O, out_min=1 ** 2, out_max=31 ** 2, exp=.5)
     len_str_to_group.min = min(len(s) for s in names)
-    len_str_to_group.width = (max(len(s) for s in names) - len_str_to_group.min) / num_groups
+    len_str_to_group.width = float(max(len(s) for s in names) - len_str_to_group.min) / num_groups
     graph = d3_graph(O, names, str_to_group=len_str_to_group)
-    write_file_twice(graph, 'word_cooccurrence.new.json')
+    write_file_twice(graph, 'word_cooccurrence.json')
+    return graph
 
 
-def generate_document_cooccurrence(adjacency_matrix, files, words, num_groups=5):
+def generate_document_cooccurrence(adjacency_matrix, files, words, num_groups=7.):
     O, names = co_adjacency(adjacency_matrix, row_names=files, col_names=words, bypass_col_names=True)
-    O = matrix_scale_exp(O, out_min=1 ** .66, out_max=31 ** .66, exp=1.5)
+    #O = matrix_scale_exp(O, out_min=1 ** .66, out_max=31 ** .66, exp=1.5)
     yr_str_to_group.digits = 4
     yr_str_to_group.min = min(float(s[:4]) for s in names)
     yr_str_to_group.width = (max(float(s[:4]) for s in names) - yr_str_to_group.min) / num_groups
     graph = d3_graph(O, [(strip_path_ext_characters(n), party_to_group(president_party(n))) for n in names], str_to_group=yr_str_to_group)
-    write_file_twice(graph, 'doc_cooccurrence.new.json')
+    write_file_twice(graph, 'doc_cooccurrence.json')
+    return graph
 
 
 def normalize_adjacency_matrix(adjacency_matrix, rowwise=True):
@@ -484,7 +485,19 @@ def normalize_adjacency_matrix(adjacency_matrix, rowwise=True):
             row_normalized, norm = [], sum(row)
             for value in row:
                 row_normalized += [value / norm]
-            am_normalized += row_normalized
+            am_normalized += [row_normalized]
+    return am_normalized
+
+
+def generate_json():
+    adjacency_matrix, files, words = get_adjacency_matrix(sorted(DEFAULT_FILE_LIST), entropy_threshold=0.92, normalized=False, verbosity=2)
+    print len(adjacency_matrix), len(adjacency_matrix[0])
+    print sum(adjacency_matrix[0]), sum(adjacency_matrix[1])
+    adjacency_matrix = normalize_adjacency_matrix(adjacency_matrix)
+    print len(adjacency_matrix), len(adjacency_matrix[0])
+    print sum(adjacency_matrix[0]), sum(adjacency_matrix[1])
+    generate_document_cooccurrence(adjacency_matrix, files, words, num_groups=5)
+    generate_word_cooccurrence(adjacency_matrix, files, words, num_groups=5)
 
 
 if __name__ == '__main__':
@@ -493,7 +506,7 @@ if __name__ == '__main__':
     >>> scores, adjacency_matrix, files, words = score_words_in_files(DEFAULT_FILE_LIST[:14], entropy_threshold=0.99)
     >>> coadjacency, names = co_adjacency(adjacency_matrix, row_names=files, col_names=words, bypass_col_names=True)
     """
-    adjacency_matrix, files, words = get_adjacency_matrix(sorted(DEFAULT_FILE_LIST), entropy_threshold=0.92, normalized=False, verbosity=2)
-    scores = svd_scores(adjacency_matrix, labels=files, verbosity=2)
-    graph = d3_graph_occurrence(adjacency_matrix, files, words)
+    #adjacency_matrix, files, words = get_adjacency_matrix(sorted(DEFAULT_FILE_LIST), entropy_threshold=0.92, normalized=False, verbosity=2)
+    #scores = svd_scores(adjacency_matrix, labels=files, verbosity=2)
+    #graph = d3_graph_occurrence(adjacency_matrix, files, words)
     # print json.dumps(graph, indent=4)
