@@ -27,11 +27,12 @@
 
 <script>
 var graph;
-d3.json("cooccurrence.json", function(error, json) {
+d3.json("occurrence.json", function(error, json) {
     if (error) return console.warn(error);
     graph = json;
-    draw_force_directed_graph(graph, 1000, 600, 
-        "div.content"
+    draw_force_directed_graph(graph, 1000, 600, "div.content",
+        function (group) { 
+            return "";}
     ); 
 });
 </script>
