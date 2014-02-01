@@ -373,7 +373,7 @@ def d3_graph(adjacency_matrix, row_names, col_names=None, str_to_group=len_str_t
     return {'nodes': nodes, 'links': links}
 
 
-def d3_graph_occurrence(adjacency_matrix, row_names, col_names=None, str_to_group=len_str_to_group, str_to_name=strip_path_ext_characters, str_to_value=float, num_groups=7., verbosity=1):
+def d3_graph_occurrence(adjacency_matrix, row_names, col_names=None, str_to_group=len_str_to_group, str_to_value=float, verbosity=1):
     """Convert an adjacency matrix to a dict of nodes and links for d3 graph rendering
 
     row_names = [("name1", group_num), ("name2", group_num), ...]
@@ -438,7 +438,6 @@ def write_file_twice(js, fn, other_dir='../miner/static'):
         with open(other_path, 'w') as f:
             json.dump(js, f, indent=2)
 
-# FIXME: find the data/president_political_parties.json and add to git repo
 def president_party(name):
     surname = strip_path_ext_characters(name.split(' ')[-1], strip_characters=ascii.ascii_nonletter)
     return president_party.surname_party.get(surname, '')
@@ -446,15 +445,29 @@ president_party.party = reverse_dict_of_lists(json.load(open('data/president_pol
 president_party.surname_party = dict((name.split(' ')[-1], party) for (name, party) in president_party.party.iteritems())
 
 
-# FIXME: find the data/president_political_parties.json and add to git repo
-def party_to_group(s):
-    return party_to_group.parties.get(s)
-party_to_group.parties = dict((p, i + 1) for (i, p) in enumerate(json.load(open('data/president_political_parties.json','r'))))
-
-
 def group_to_party(group):
-    return group_to_party.parties[group]
-group_to_party.parties = ["", "Whig", "Democratic", "Republican", "Democratic-Republican", "Independent"]
+    return group_to_party.parties[group or 0] or ""
+group_to_party.parties = ["", "Whig", "Democratic", "Republican", "Democratic-Republican", "Federalist"]
+
+def party_to_group(s):
+    """
+    >>> group_to_party(party_to_group("Republican"))
+    'Republican'
+    >>> group_to_party(party_to_group("Democratic"))
+    'Democratic'
+    group_to_party(party_to_group(president_party("whatever/2001-Bush")))
+    'Republican'
+    group_to_party(party_to_group(president_party("whatever/1980-Reagan")))
+    'Republican'
+    group_to_party(party_to_group(president_party("whatever/2012-Obama")))
+    'Democratic'
+    group_to_party(party_to_group(president_party("whatever/1776-Washington")) or 0)
+    ''
+    group_to_party(party_to_group(president_party("whatever/12345-Jefferson")) or 0)
+    'Whig'
+    """
+    return party_to_group.parties.get(s)
+party_to_group.parties = dict((p, i) for (i, p) in enumerate(group_to_party.parties))
 
 
 def generate_word_cooccurrence(adjacency_matrix, files, words, num_groups=7.):
@@ -470,12 +483,17 @@ def generate_word_cooccurrence(adjacency_matrix, files, words, num_groups=7.):
 def generate_document_cooccurrence(adjacency_matrix, files, words, num_groups=7.):
     O, names = co_adjacency(adjacency_matrix, row_names=files, col_names=words, bypass_col_names=True)
     #O = matrix_scale_exp(O, out_min=1 ** .66, out_max=31 ** .66, exp=1.5)
-    yr_str_to_group.digits = 4
-    yr_str_to_group.min = min(float(s[:4]) for s in names)
-    yr_str_to_group.width = (max(float(s[:4]) for s in names) - yr_str_to_group.min) / num_groups
-    graph = d3_graph(O, [(strip_path_ext_characters(n), party_to_group(president_party(n))) for n in names], str_to_group=yr_str_to_group)
+    graph = d3_graph(O, [(strip_path_ext_characters(n), party_to_group(president_party(n)) or 1) for n in names])
     write_file_twice(graph, 'doc_cooccurrence.json')
     return graph
+
+
+def generate_occurrence(adjacency_matrix, files, words):
+    #O = matrix_scale_exp(O, out_min=1 ** .66, out_max=31 ** .66, exp=1.5)
+    graph = d3_graph_occurrence(adjacency_matrix, [strip_path_ext_characters(n) for n in files], [strip_path_ext_characters(n) for n in words])
+    write_file_twice(graph, 'occurrence.json')
+    return graph
+
 
 
 def normalize_adjacency_matrix(adjacency_matrix, rowwise=True):
@@ -498,6 +516,7 @@ def generate_json():
     print sum(adjacency_matrix[0]), sum(adjacency_matrix[1])
     generate_document_cooccurrence(adjacency_matrix, files, words, num_groups=5)
     generate_word_cooccurrence(adjacency_matrix, files, words, num_groups=5)
+    generate_occurrence(adjacency_matrix, files, words)
 
 
 if __name__ == '__main__':

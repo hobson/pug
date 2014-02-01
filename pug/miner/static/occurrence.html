@@ -37,7 +37,7 @@ var svg = d3.select("body").append("svg")
   .append("g")
     .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
 
-d3.json("cooccurrence.json", function(cooccurrence) {
+d3.json("occurrence.json", function(cooccurrence) {
   var matrix = [],
       nodes = cooccurrence.nodes,
       n = nodes.length;
