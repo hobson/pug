@@ -610,40 +610,5 @@ def lagged_series(series, lags=1, pads=None):
     return ans
 
 
-# TODO: use both get and set to avoid errors when different values chosen
-# TODO: modularize in separate function that finds CHOICES appropriate to a value key
-def normalize_choices(db_values, app_module, field_name, model_name='', human_readable=True, none_value='Null', blank_value='Unknown', missing_value='Unknown DB Code'):
-    if not db_values:
-        return
-    try:
-        db_values = dict(db_values)
-    except:
-        raise NotImplemented("This function can only handle objects that can be converted to a dict, not lists or querysets returned by django `.values().aggregate()`.")
-
-    if not field_name in db_values:
-        return db_values
-    if human_readable:
-        for i, db_value in enumerate(db_values[field_name]):
-            if db_value in (None, 'None'):
-                db_values[field_name][i] = none_value
-                continue
-            if isinstance(db_value, basestring):
-                normalized_code = str(db_value).strip().upper()
-            choices = getattr(app_module.models, 'CHOICES_%s' % field_name.upper())
-            normalized_name = None
-            if choices:
-                normalized_name = str(choices.get(normalized_code, missing_value)).strip()
-            elif normalized_code:
-                normalized_name = 'DB Code: "%s"' % normalized_code
-            db_values[field_name][i] = normalized_name or blank_value
-    else:
-        raise NotImplemented("This function can only convert database choices to human-readable strings.")
-    return db_values
-
-
-def field_cov(fields, models, apps):
-    columns = util.get_columns(fields, models, apps)
-    columns = util.make_real(columns)
-    return np.cov(columns)
 
 

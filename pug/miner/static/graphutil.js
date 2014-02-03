@@ -20,9 +20,9 @@ function autoscale_and_length(data, width, height) {
 
     var x_ave = d3.mean(data.links, function (d) { return +d.value; });
     var N_nodes = data.nodes.length;
-    length = 100 * (width + height) * Math.pow(pow_scale(x_ave) / pow_scale(x_mid), 2) / Math.pow(N_edges, .75) / Math.pow(N_nodes, .25);
+    length = 50 * (width + height) * Math.pow(pow_scale(x_ave) / pow_scale(x_mid), 2) / Math.pow(N_edges, .75) / Math.pow(N_nodes, .25);
 
-    console.log('scaled min, mid, mean, max: ' + [pow_scale(0), pow_scale(.5), pow_scale(x_ave), pow_scale(1)]);
+    console.log('scaled min, mid, mean, max: ' + [pow_scale(x_min), pow_scale(x_mid), pow_scale(x_ave), pow_scale(x_max)]);
     console.log("length: " + length + " for " + N_edges + ", " +  N_nodes + " edges and nodes");
     return [pow_scale, length];
 }
@@ -35,10 +35,10 @@ function draw_force_directed_graph(graph, width, height, tag, process_group, pro
     process_group = typeof process_group !== 'undefined' ? process_group : function (d) { return '' + d; };
     process_name = typeof process_name !== 'undefined' ? process_name : function (d) { return '' + d; };
     radius = typeof radius !== 'undefined' ? radius : (width + height) / 200.0;
-    friction = typeof friction !== 'undefined' ? friction : 0.5;
+    friction = typeof friction !== 'undefined' ? friction : 0.1;
     stiffness = typeof stiffness !== 'undefined' ? stiffness : 0.5;
     opacity = typeof opacity !== 'undefined' ? opacity : 0.5;
-    charge = typeof charge !== 'undefined' ? charge : -500;
+    charge = typeof charge !== 'undefined' ? charge : -200;
 
     var stroke_width = radius / 4.0;
 
@@ -104,4 +104,175 @@ function draw_force_directed_graph(graph, width, height, tag, process_group, pro
         node.attr("cx", function(d) { return d.x; })
             .attr("cy", function(d) { return d.y; });
         });
+}
+
+function graph_to_matrix(graph) {
+
+    var matrix = [], N_nodes = graph.nodes.length;
+    matrix['N'] = N_nodes;
+    
+    // Compute row and column numbers for each node.
+    graph.nodes.forEach(function(node, i) {
+        node.index = i;
+        // accumulate values from each edge (link) starting with a value of 0
+        node.value = 0;
+        // create a matrix row for each node
+        matrix[i] = d3.range(N_nodes).map(function(j) { return {x: j, y: i, z: 0}; });
+      });
+    console.log(graph.nodes.length)
+
+    // Links (edge) become cells in the matrix
+    graph.links.forEach(function(link) {
+        matrix[link.source][link.target].z += link.value;
+        matrix[link.target][link.source].z += link.value;
+        matrix[link.source][link.source].z += link.value;
+        matrix[link.target][link.target].z += link.value;
+        graph.nodes[link.source].value += link.value;
+        graph.nodes[link.target].value += link.value;
+      });
+
+    return matrix;
+    }
+
+function draw_matrix_heat_map(graph, width, height, tag) { //, process_group, process_name, friction, stiffness, charge, radius, opacity) {
+    width = typeof width !== 'undefined' ? width : 900;
+    height = typeof height !== 'undefined' ? height : width;
+    height = width; // FIXME: allow rectangular display shapes as well as rectangular graph data 
+    tag = typeof tag !== 'undefined' ? tag : "body"; //"div.content";
+    // groups = typeof groups !== 'undefined' ? groups : Array(11);
+    // process_group = typeof process_group !== 'undefined' ? process_group : function (d) { return '' + d; };
+    // process_name = typeof process_name !== 'undefined' ? process_name : function (d) { return '' + d; };
+    // radius = typeof radius !== 'undefined' ? radius : (width + height) / 200.0;
+    // friction = typeof friction !== 'undefined' ? friction : 0.1;
+    // stiffness = typeof stiffness !== 'undefined' ? stiffness : 0.5;
+    // opacity = typeof opacity !== 'undefined' ? opacity : 0.5;
+    // charge = typeof charge !== 'undefined' ? charge : -200;
+
+
+    pow_scale_and_length = autoscale_and_length(graph, width, height);
+    var pow_scale = pow_scale_and_length[0], length = pow_scale_and_length[1] ;
+
+    var margin = {
+        top: height / 10, bottom: height / 100,
+        left: width / 10,  right: width  / 100
+        };
+
+    var x = d3.scale.ordinal().rangeBands([0, width]),
+        z = pow_scale, //d3.scale.linear().domain([0, 1]).clamp(true),
+        c = d3.scale.category10().domain(d3.range(10));
+        // c = d3.scale.ordinal().domain(d3.range(10)).range(['#17becf', '#8c564b', '#1f77b4', '#d62728', '#2ca02c', '#ff7f0e', '#9467bd',  '#e377c2', '#7f7f7f'
+
+    var z_format = d3.format(".2r");
+
+    var svg = d3.select(tag).append("svg")
+        .attr("width", width + margin.left + margin.right)
+        .attr("height", height + margin.top + margin.bottom)
+        .style("margin-left", -margin.left + "px")
+        .append("g")
+        .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+
+    matrix = graph_to_matrix(graph);
+    console.log(matrix)
+
+    // Presort the column, row orderings.
+    var sort_choices = {
+        lex: d3.range(matrix.N).sort(function(a, b) { return d3.ascending(graph.nodes[a].name, graph.nodes[b].name); }),
+        value: d3.range(matrix.N).sort(function(a, b) { return graph.nodes[b].value - graph.nodes[a].value; }),
+        group: d3.range(matrix.N).sort(function(a, b) { return graph.nodes[b].group - graph.nodes[a].group; })
+    };
+
+    // Default column & row sort order is alphabetical (actually lexographical).
+    x.domain(sort_choices.lex);
+
+    svg.append("rect")
+        .attr("class", "background")
+        .attr("width", width)
+        .attr("height", height);
+
+    var row = svg.selectAll(".row")
+        .data(matrix)
+        .enter().append("g")
+        .attr("class", "row")
+        .attr("transform", function(d, i) { return "translate(0," + x(i) + ")"; })
+        .each(row);
+
+    // horizontal line for the "x-axis"
+    row.append("line").attr("x2", width);
+
+    // label each row
+    row.append("text")
+        .attr("x", -6)
+        .attr("y", x.rangeBand() / 2)
+        .attr("dy", ".32em")
+        .attr("text-anchor", "end")
+        .text(function(d, i) { return graph.nodes[i].name; });
+
+      var column = svg.selectAll(".column")
+          .data(matrix)
+        .enter().append("g")
+          .attr("class", "column")
+          .attr("transform", function(d, i) { return "translate(" + x(i) + ")rotate(-90)"; });
+
+      column.append("line")
+          .attr("x1", -width);
+
+      column.append("text")
+          .attr("x", 6)
+          .attr("y", x.rangeBand() / 2)
+          .attr("dy", ".32em")
+          .attr("text-anchor", "start")
+          .text(function(d, i) { return graph.nodes[i].name; });
+
+      function row(row) {
+        var cell = d3.select(this).selectAll(".cell")
+            .data(row.filter(function(d) { return d.z; }))
+          .enter().append("rect")
+            .attr("class", "cell")
+            .attr("x", function(d) { return x(d.x); })
+            .attr("width", x.rangeBand())
+            .attr("height", x.rangeBand())
+
+            .style("fill-opacity", function(d) { return z(d.z); })
+            .style("fill", function(d) { return graph.nodes[d.x].group == graph.nodes[d.y].group ? c(graph.nodes[d.x].group) : null; })
+            .on("mouseover", mouseover)
+            .on("mouseout", mouseout);
+
+        cell.append("title").text(function(d) { return z_format(d.z); });
+      }
+
+      function mouseover(p) {
+        d3.selectAll(".row text").classed("active", function(d, i) { return i == p.y; });
+        d3.selectAll(".column text").classed("active", function(d, i) { return i == p.x; });
+      }
+
+      function mouseout() {
+        d3.selectAll("text").classed("active", false);
+      }
+
+      d3.select("#order").on("change", function() {
+        clearTimeout(timeout);
+        order(this.value);
+      });
+
+    function order(value) {
+        x.domain(sort_choices[value]);
+
+        var t = svg.transition().duration(5000);
+
+        t.selectAll(".row")
+            .delay(function(d, i) { return x(i) * 4; })
+            .attr("transform", function(d, i) { return "translate(0," + x(i) + ")"; })
+          .selectAll(".cell")
+            .delay(function(d) { return x(d.x) * 4; })
+            .attr("x", function(d) { return x(d.x); });
+
+        t.selectAll(".column")
+            .delay(function(d, i) { return x(i) * 4; })
+            .attr("transform", function(d, i) { return "translate(" + x(i) + ")rotate(-90)"; });
+      }
+
+      var timeout = setTimeout(function() {
+        order("lex");
+        d3.select("#order").property("selectedIndex", 0).node().focus();
+      }, 2000);
 }

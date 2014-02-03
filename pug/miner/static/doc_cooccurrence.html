@@ -22,8 +22,6 @@ var margin = {top: 80, right: 0, bottom: 10, left: 80},
 
 var x = d3.scale.ordinal().rangeBands([0, width]),
     z = d3.scale.linear().domain([0, 4]).clamp(true),
-    c = d3.scale.category10().domain(d3.range(10));
-    console.log(c)  
     c = d3.scale.ordinal().domain(d3.range(10)).range(['#17becf', '#8c564b', '#1f77b4', '#d62728', '#2ca02c', '#ff7f0e', '#9467bd',  '#e377c2', '#7f7f7f', '#bcbd22', ]);
     console.log(c)
 
@@ -42,7 +40,6 @@ d3.json("doc_cooccurrence.json", function(cooccurrence) {
 
   // Compute index per node.
   nodes.forEach(function(node, i) {
-    console.log(node)
     node.index = i;
     node.count = 0;
     matrix[i] = d3.range(n).map(function(j) { return {x: j, y: i, z: 0}; });

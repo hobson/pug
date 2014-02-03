@@ -261,7 +261,7 @@ def zheng_normalized_entropy(Word_Dist, alpha=.6):
     return float(Entropy) / Entropy_Unif
 
 
-def co_adjacency(adjacency_matrix, row_names, col_names=None, bypass_col_names=True):
+def co_adjacency(adjacency_matrix, row_names, col_names=None, bypass_col_names=True, normalize_by_size=True):
     """Reduce a heterogenous adjacency matrix into a homogonous co-adjacency matrix
 
     coadjacency_matrix, names = co_adjacency(adjacency_matrix, row_names, col_names, bypass_col_names=True)
@@ -270,6 +270,9 @@ def co_adjacency(adjacency_matrix, row_names, col_names=None, bypass_col_names=T
     names = (row_names, col_names or row_names)[bypass_indx]
 
     A = np.matrix(adjacency_matrix)
+    if normalize_by_size:
+        size = (float(len(adjacency_matrix[0])), float(len(adjacency_matrix)))
+        A /= size[int(bypass_indx)]
     if not bypass_indx:
         return (A * A.transpose()).tolist(), names
     return (A.transpose() * A).tolist(), names
@@ -495,7 +498,6 @@ def generate_occurrence(adjacency_matrix, files, words):
     return graph
 
 
-
 def normalize_adjacency_matrix(adjacency_matrix, rowwise=True):
     am_normalized = []
     if rowwise:
@@ -511,9 +513,9 @@ def generate_json():
     adjacency_matrix, files, words = get_adjacency_matrix(sorted(DEFAULT_FILE_LIST), entropy_threshold=0.92, normalized=False, verbosity=2)
     print len(adjacency_matrix), len(adjacency_matrix[0])
     print sum(adjacency_matrix[0]), sum(adjacency_matrix[1])
-    adjacency_matrix = normalize_adjacency_matrix(adjacency_matrix)
-    print len(adjacency_matrix), len(adjacency_matrix[0])
-    print sum(adjacency_matrix[0]), sum(adjacency_matrix[1])
+    normalized_adjacency_matrix = normalize_adjacency_matrix(adjacency_matrix)
+    print len(normalized_adjacency_matrix), len(normalized_adjacency_matrix[0])
+    print sum(normalized_adjacency_matrix[0]), sum(normalized_adjacency_matrix[1])
     generate_document_cooccurrence(adjacency_matrix, files, words, num_groups=5)
     generate_word_cooccurrence(adjacency_matrix, files, words, num_groups=5)
     generate_occurrence(adjacency_matrix, files, words)

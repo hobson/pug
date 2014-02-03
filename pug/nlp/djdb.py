@@ -25,7 +25,8 @@ except ImproperlyConfigured:
 
 import util  # import transposed_lists #, sod_transposed
 from .words import synonyms
-from .db import listify, sort_prefix, normalize_choices, consolidated_counts, sorted_dict_of_lists, lagged_seq, NULL_VALUES, NAN_VALUES, BLANK_VALUES
+from .util import listify
+from .db import sort_prefix, consolidated_counts, sorted_dict_of_lists, lagged_seq, NULL_VALUES, NAN_VALUES, BLANK_VALUES
 
 
 class QueryTimer(object):
@@ -100,6 +101,40 @@ def normalize_values_queryset(values_queryset, model=None, app=None):
         new_list += [new_record]
     return new_list
 
+
+# TODO: use both get and set to avoid errors when different values chosen
+# TODO: modularize in separate function that finds CHOICES appropriate to a value key
+def normalize_choices(db_values, app_module, field_name, model_name='', human_readable=True, none_value='Null', blank_value='Unknown', missing_value='Unknown DB Code'):
+    if isinstance(app_module, basestring):
+        app_module = get_app(app_module)
+    if not db_values:
+        return
+    try:
+        db_values = dict(db_values)
+    except:
+        raise NotImplemented("This function can only handle objects that can be converted to a dict, not lists or querysets returned by django `.values().aggregate()`.")
+
+    if not field_name in db_values:
+        return db_values
+    if human_readable:
+        for i, db_value in enumerate(db_values[field_name]):
+            if db_value in (None, 'None'):
+                db_values[field_name][i] = none_value
+                continue
+            if isinstance(db_value, basestring):
+                normalized_code = str(db_value).strip().upper()
+            choices = getattr(app_module.models, 'CHOICES_%s' % field_name.upper())
+            normalized_name = None
+            if choices:
+                normalized_name = str(choices.get(normalized_code, missing_value)).strip()
+            elif normalized_code:
+                normalized_name = 'DB Code: "%s"' % normalized_code
+            db_values[field_name][i] = normalized_name or blank_value
+    else:
+        raise NotImplemented("This function can only convert database choices to human-readable strings.")
+    return db_values
+
+
 def get_app(app=-1):
     """
     >>> get_app('call').__class__.__name__ == 'module'
@@ -150,6 +185,13 @@ def get_model(model=DEFAULT_MODEL, app=DEFAULT_APP):
     model_names = [mc.__name__ for mc in models.get_models(app)]
     return models.get_model(app.__package__.split('.')[-1], fuzzy.extractOne(str(model), model_names)[0])
 
+
+
+
+def field_cov(fields, models, apps):
+    columns = util.get_columns(fields, models, apps)
+    columns = util.make_real(columns)
+    return np.cov(columns)
 
 def queryset_from_title_prefix(title_prefix=None, model=DEFAULT_MODEL, app=DEFAULT_APP):
     filter_dict = {}
