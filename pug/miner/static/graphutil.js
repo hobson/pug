@@ -188,8 +188,9 @@ function draw_matrix_heat_map(graph, width, height, tag) { //, process_group, pr
     matrix = graph_to_matrix(graph);
 
     console.log(matrix);
-    console.log(d3.sum(matrix[1], function(d) { return d.z; } ));
-    console.log(graph_sum_source(graph, 1));
+    console.log(matrix[0]);
+    console.log('matrix sum=' + matrix[0].reduce( function(prev, current, index, array) { return { z: prev.z + current.z}; }).z);  //, function(d) { return d.z; } ));
+    console.log('graph sum=' + graph_sum_source(graph, 0));
 
     // Presort the column, row orderings.
     var sort_choices = {
