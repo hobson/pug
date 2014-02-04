@@ -261,7 +261,7 @@ def zheng_normalized_entropy(Word_Dist, alpha=.6):
     return float(Entropy) / Entropy_Unif
 
 
-def co_adjacency(adjacency_matrix, row_names, col_names=None, bypass_col_names=True, normalize_by_size=True):
+def co_adjacency(adjacency_matrix, row_names, col_names=None, bypass_col_names=True, normalized=True):
     """Reduce a heterogenous adjacency matrix into a homogonous co-adjacency matrix
 
     coadjacency_matrix, names = co_adjacency(adjacency_matrix, row_names, col_names, bypass_col_names=True)
@@ -270,9 +270,11 @@ def co_adjacency(adjacency_matrix, row_names, col_names=None, bypass_col_names=T
     names = (row_names, col_names or row_names)[bypass_indx]
 
     A = np.matrix(adjacency_matrix)
-    if normalize_by_size:
+    print A
+    if normalized:
         size = (float(len(adjacency_matrix[0])), float(len(adjacency_matrix)))
-        A /= size[int(bypass_indx)]
+        A = A / size[int(bypass_indx)]
+    print A
     if not bypass_indx:
         return (A * A.transpose()).tolist(), names
     return (A.transpose() * A).tolist(), names
@@ -321,7 +323,7 @@ def strip_path_ext_characters(s, strip_characters=ascii.ascii_nonword):
     return str(s).split('/')[-1].split('.')[0].strip(strip_characters)
 
 
-def d3_graph(adjacency_matrix, row_names, col_names=None, str_to_group=len_str_to_group, str_to_name=strip_path_ext_characters, str_to_value=float, num_groups=7.):
+def d3_graph(adjacency_matrix, row_names, col_names=None, str_to_group=len_str_to_group, str_to_name=strip_path_ext_characters, str_to_value=float, num_groups=7., directional=True):
     """Convert an adjacency matrix to a dict of nodes and links for d3 graph rendering
 
     row_names = [("name1", group_num), ("name2", group_num), ...]
@@ -366,17 +368,18 @@ def d3_graph(adjacency_matrix, row_names, col_names=None, str_to_group=len_str_t
             node = {"name": name_group[0], "group": name_group[1] or 1}
             print node
             if node not in nodes:
-                nodes += [node]
+                nodes += [node]                
 
-    # get the edges next
     for i, row in enumerate(adjacency_matrix):
         for j, value in enumerate(row):
             links += [{"source": i, "target": j, "value": str_to_value(value)}]
+            if directional:
+                links += [{"source": j, "target": i, "value": str_to_value(value)}]
 
     return {'nodes': nodes, 'links': links}
 
 
-def d3_graph_occurrence(adjacency_matrix, row_names, col_names=None, str_to_group=len_str_to_group, str_to_value=float, verbosity=1):
+def d3_graph_occurrence(adjacency_matrix, row_names, col_names=None, str_to_group=len_str_to_group, str_to_value=float, verbosity=1, directional=True):
     """Convert an adjacency matrix to a dict of nodes and links for d3 graph rendering
 
     row_names = [("name1", group_num), ("name2", group_num), ...]
@@ -430,6 +433,8 @@ def d3_graph_occurrence(adjacency_matrix, row_names, col_names=None, str_to_grou
     for i, row in enumerate(adjacency_matrix):
         for j, value in enumerate(row):
             links += [{"source": i, "target": N + j, "value": str_to_value(value)}]
+            if directional:
+                links += [{"source": j, "target": i, "value": str_to_value(value)}]
 
     return {'nodes': nodes, 'links': links}
 
@@ -473,28 +478,36 @@ def party_to_group(s):
 party_to_group.parties = dict((p, i) for (i, p) in enumerate(group_to_party.parties))
 
 
-def generate_word_cooccurrence(adjacency_matrix, files, words, num_groups=7.):
-    O, names = co_adjacency(adjacency_matrix, row_names=files, col_names=words, bypass_col_names=False)
+def generate_word_cooccurrence(adjacency_matrix, files, words, num_groups=7., path=os.path.join('..','miner','static','word_cooccurrence.json'), normalized=False):
+    print len(adjacency_matrix), len(adjacency_matrix[0])
+    print sum(adjacency_matrix[0]), sum(adjacency_matrix[1])
+    O, names = co_adjacency(adjacency_matrix, row_names=files, col_names=words, bypass_col_names=False, normalized=normalized)
+    print len(O), len(O[0])
+    print sum(O[0]), sum(O[1])
     #O = matrix_scale_exp(O, out_min=1 ** 2, out_max=31 ** 2, exp=.5)
     len_str_to_group.min = min(len(s) for s in names)
     len_str_to_group.width = float(max(len(s) for s in names) - len_str_to_group.min) / num_groups
     graph = d3_graph(O, names, str_to_group=len_str_to_group)
-    write_file_twice(graph, 'word_cooccurrence.json')
+
+    print len(graph['nodes']), len(graph['links'])/float(len(graph['nodes']))
+    print sum(e['value'] for e in graph['links'] if e['source'] == 1), sum(e['value'] for e in graph['links'] if e['source'] == 2)
+    print '-'*50
+    json.dump(graph, open(path, 'w'), indent=2)
     return graph
 
 
-def generate_document_cooccurrence(adjacency_matrix, files, words, num_groups=7.):
-    O, names = co_adjacency(adjacency_matrix, row_names=files, col_names=words, bypass_col_names=True)
+def generate_document_cooccurrence(adjacency_matrix, files, words, num_groups=7., path=os.path.join('..','miner','static','doc_cooccurrence.json'), normalized=False):
+    O, names = co_adjacency(adjacency_matrix, row_names=files, col_names=words, bypass_col_names=True, normalized=normalized)
     #O = matrix_scale_exp(O, out_min=1 ** .66, out_max=31 ** .66, exp=1.5)
     graph = d3_graph(O, [(strip_path_ext_characters(n), party_to_group(president_party(n)) or 1) for n in names])
-    write_file_twice(graph, 'doc_cooccurrence.json')
+    json.dump(graph, open(path, 'w'), indent=2)
     return graph
 
 
-def generate_occurrence(adjacency_matrix, files, words):
+def generate_occurrence(adjacency_matrix, files, words, path=os.path.join('..','miner','static','occurrence.json')):
     #O = matrix_scale_exp(O, out_min=1 ** .66, out_max=31 ** .66, exp=1.5)
     graph = d3_graph_occurrence(adjacency_matrix, [strip_path_ext_characters(n) for n in files], [strip_path_ext_characters(n) for n in words])
-    write_file_twice(graph, 'occurrence.json')
+    json.dump(graph, open(path, 'w'), indent=2)
     return graph
 
 
@@ -516,9 +529,9 @@ def generate_json():
     normalized_adjacency_matrix = normalize_adjacency_matrix(adjacency_matrix)
     print len(normalized_adjacency_matrix), len(normalized_adjacency_matrix[0])
     print sum(normalized_adjacency_matrix[0]), sum(normalized_adjacency_matrix[1])
-    generate_document_cooccurrence(adjacency_matrix, files, words, num_groups=5)
-    generate_word_cooccurrence(adjacency_matrix, files, words, num_groups=5)
-    generate_occurrence(adjacency_matrix, files, words)
+    generate_document_cooccurrence(normalized_adjacency_matrix, files, words, num_groups=5, normalized=False)
+    generate_word_cooccurrence(normalized_adjacency_matrix, files, words, num_groups=5, normalized=False)
+    generate_occurrence(normalized_adjacency_matrix, files, words)
 
 
 if __name__ == '__main__':

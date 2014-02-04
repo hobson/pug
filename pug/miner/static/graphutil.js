@@ -106,7 +106,9 @@ function draw_force_directed_graph(graph, width, height, tag, process_group, pro
         });
 }
 
-function graph_to_matrix(graph) {
+function graph_to_matrix(graph, directional, add_diagonal) {
+    directional = typeof directional !== 'undefined' ? directional : true;
+    add_diagonal = typeof add_diagonal !== 'undefined' ? add_diagonal : false;
 
     var matrix = [], N_nodes = graph.nodes.length;
     matrix['N'] = N_nodes;
@@ -119,19 +121,31 @@ function graph_to_matrix(graph) {
         // create a matrix row for each node
         matrix[i] = d3.range(N_nodes).map(function(j) { return {x: j, y: i, z: 0}; });
       });
-    console.log(graph.nodes.length)
+    console.log(graph.nodes.length);
 
     // Links (edge) become cells in the matrix
     graph.links.forEach(function(link) {
         matrix[link.source][link.target].z += link.value;
-        matrix[link.target][link.source].z += link.value;
-        matrix[link.source][link.source].z += link.value;
-        matrix[link.target][link.target].z += link.value;
-        graph.nodes[link.source].value += link.value;
         graph.nodes[link.target].value += link.value;
-      });
-
+        if (add_diagonal) matrix[link.target][link.target].z += link.value;
+        if (directional != true) {
+            matrix[link.target][link.source].z += link.value;
+            graph.nodes[link.source].value += link.value;
+            if (add_diagonal) matrix[link.source][link.source].z += link.value;
+            }
+        });
     return matrix;
+    }
+
+function graph_sum_source(graph, source_node) {
+    var sum = 0.0;
+    for (var i=0; i<graph.links.length; i++) {
+        if (+graph.links[i].source == +source_node) {
+            sum = sum + graph.links[i].value;
+            
+            }
+        }
+    return sum;
     }
 
 function draw_matrix_heat_map(graph, width, height, tag) { //, process_group, process_name, friction, stiffness, charge, radius, opacity) {
@@ -172,7 +186,10 @@ function draw_matrix_heat_map(graph, width, height, tag) { //, process_group, pr
         .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
 
     matrix = graph_to_matrix(graph);
-    console.log(matrix)
+
+    console.log(matrix);
+    console.log(d3.sum(matrix[1], function(d) { return d.z; } ));
+    console.log(graph_sum_source(graph, 1));
 
     // Presort the column, row orderings.
     var sort_choices = {
@@ -198,6 +215,23 @@ function draw_matrix_heat_map(graph, width, height, tag) { //, process_group, pr
 
     // horizontal line for the "x-axis"
     row.append("line").attr("x2", width);
+
+    function order(value) {
+        x.domain(sort_choices[value]);
+
+        var t = svg.transition().duration(5000);
+
+        t.selectAll(".row")
+            .delay(function(d, i) { return x(i) * 4; })
+            .attr("transform", function(d, i) { return "translate(0," + x(i) + ")"; })
+          .selectAll(".cell")
+            .delay(function(d) { return x(d.x) * 4; })
+            .attr("x", function(d) { return x(d.x); });
+
+        t.selectAll(".column")
+            .delay(function(d, i) { return x(i) * 4; })
+            .attr("transform", function(d, i) { return "translate(" + x(i) + ")rotate(-90)"; });
+      }
 
     // label each row
     row.append("text")
@@ -237,7 +271,7 @@ function draw_matrix_heat_map(graph, width, height, tag) { //, process_group, pr
             .on("mouseover", mouseover)
             .on("mouseout", mouseout);
 
-        cell.append("title").text(function(d) { return z_format(d.z); });
+        cell.append("title").text(function(d) { return "" + z_format(d.z); });
       }
 
       function mouseover(p) {
@@ -253,23 +287,6 @@ function draw_matrix_heat_map(graph, width, height, tag) { //, process_group, pr
         clearTimeout(timeout);
         order(this.value);
       });
-
-    function order(value) {
-        x.domain(sort_choices[value]);
-
-        var t = svg.transition().duration(5000);
-
-        t.selectAll(".row")
-            .delay(function(d, i) { return x(i) * 4; })
-            .attr("transform", function(d, i) { return "translate(0," + x(i) + ")"; })
-          .selectAll(".cell")
-            .delay(function(d) { return x(d.x) * 4; })
-            .attr("x", function(d) { return x(d.x); });
-
-        t.selectAll(".column")
-            .delay(function(d, i) { return x(i) * 4; })
-            .attr("transform", function(d, i) { return "translate(" + x(i) + ")rotate(-90)"; });
-      }
 
       var timeout = setTimeout(function() {
         order("lex");
