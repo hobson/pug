@@ -21,7 +21,7 @@ from collections import Mapping
 from progressbar import ProgressBar
 
 import character_subset as chars
-from pug.nlp import regex_patterns as rep
+import regex_patterns as rep
 
 import numpy as np
 import scipy as sci
@@ -53,6 +53,21 @@ try:
     DEFAULT_TZ = timezone(settings.TIME_ZONE)
 except:
     DEFAULT_TZ = timezone('UTC')
+
+
+def get_words(s):
+    """Identify the features (words) in a string
+
+    TODO: make this a generator to improve memory efficiency
+    """
+    # only alpha words, no numbers
+    splitter = re.compile(r'\W*')
+    # filter after map, unlike collective intelligence which reverses this
+    return filter(get_words.filter_fun, map(get_words.map_fun, splitter.split(s)))
+get_words.map_fun = str.lower
+get_words.max_len = 16
+get_words.min_len = 3
+get_words.filter_fun = lambda x: len(x) >= get_words.min_len and len(x) <= get_words.max_len
 
 
 def qs_to_table(qs, excluded_fields=['id']):

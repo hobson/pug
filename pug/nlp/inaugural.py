@@ -3,18 +3,31 @@ from __future__ import division
 
 import os
 from math import log, e
-from collections import Mapping
+from collections import Mapping, Counter
 import json
 
 import nltk
 import numpy as np
 
 import character_subset as ascii
-from util import is_ignorable_str
+from util import is_ignorable_str, get_words
 
 IGNORE_FILES = ('readme',)
-DOCUMENT_FOLDER = 'data/inaugural_speeches'
-DEFAULT_FILE_LIST = os.listdir(DOCUMENT_FOLDER)
+
+DOCUMENT_FOLDER_SUFFIX = 'pug/nlp/data'
+for depth in range(7):
+    if depth:
+        DATA_FOLDER = os.path.join(os.path.sep.join(['..'] * depth), DOCUMENT_FOLDER_SUFFIX)
+    else:
+        DATA_FOLDER = DOCUMENT_FOLDER_SUFFIX
+    DOCUMENT_FOLDER = os.path.join(DATA_FOLDER, 'inaugural_speeches')
+    # print DOCUMENT_FOLDER
+    try:
+        DEFAULT_FILE_LIST = os.listdir(DOCUMENT_FOLDER)
+        break
+    except:
+        DEFAULT_FILE_LIST = []
+# print DATA_FOLDER
 
 
 def get_adjacency_matrix(filenames=DEFAULT_FILE_LIST, entropy_threshold=0.90, folder=DOCUMENT_FOLDER, normalized=False, verbosity=1):
@@ -98,7 +111,6 @@ def get_adjacency_matrix(filenames=DEFAULT_FILE_LIST, entropy_threshold=0.90, fo
             Reduced_Vectors.append([Vectors[i][j] for j in range(Size) if Word_Relevance[j]])
     return Reduced_Vectors, filtered_filenames, Key_words
 
-
 def svd_scores(vectors, labels=None, verbosity=1):
     labels = labels or [str(i) for i in range(len(vectors))]
 
@@ -117,6 +129,41 @@ def svd_scores(vectors, labels=None, verbosity=1):
             print scores[-1], ':', labels[-1]
     return scores
 
+
+def get_occurrence_matrix(strings, row_labels=None, tokenizer=get_words):
+    O_sparse = [Counter(tokenizer(s)) for s in strings]
+    return matrix_from_counters(O_sparse, row_labels=row_labels)
+
+
+def sum_counters(counters):
+    total = Counter()
+    for counter in counters:
+        total += counter
+    return total
+
+
+def matrix_from_counters(counters, row_labels=None):
+    if not row_labels and isinstance(counters, Mapping) and all(isinstance(counter, Counter) for row_label, counter in counters.iteritems()):
+        # TODO: def list_pair_from_dict(dict):
+        row_labels = []
+        new_counters = []
+        for row_label, counter in counters.iteritems():
+            row_labels += [row_label]
+            new_counters += [counter]
+        counters = new_counters
+    if not row_labels or len(row_labels) != len(counters):
+        row_labels = [i for i, c in enumerate(counters)]
+
+
+    total = sum_counters(counters)
+
+    col_labels, O = list(total), []
+    for counts in counters:
+        O += [[0] * len(col_labels)]
+        for label, count in counts.iteritems():
+            j = col_labels.index(label)
+            O[-1][j] += count
+    return O, row_labels, col_labels
 
 def score_words_in_files(filenames=DEFAULT_FILE_LIST, entropy_threshold=0.90, folder=DOCUMENT_FOLDER, verbosity=1):
     adjacency_matrix, files, words = get_adjacency_matrix(filenames=DEFAULT_FILE_LIST, entropy_threshold=0.90, folder=DOCUMENT_FOLDER)
@@ -261,7 +308,7 @@ def zheng_normalized_entropy(Word_Dist, alpha=.6):
     return float(Entropy) / Entropy_Unif
 
 
-def co_adjacency(adjacency_matrix, row_names, col_names=None, bypass_col_names=True, normalized=True):
+def co_adjacency(adjacency_matrix, row_names, col_names=None, bypass_col_names=True, normalized=True, verbosity=1):
     """Reduce a heterogenous adjacency matrix into a homogonous co-adjacency matrix
 
     coadjacency_matrix, names = co_adjacency(adjacency_matrix, row_names, col_names, bypass_col_names=True)
@@ -270,11 +317,9 @@ def co_adjacency(adjacency_matrix, row_names, col_names=None, bypass_col_names=T
     names = (row_names, col_names or row_names)[bypass_indx]
 
     A = np.matrix(adjacency_matrix)
-    print A
     if normalized:
         size = (float(len(adjacency_matrix[0])), float(len(adjacency_matrix)))
         A = A / size[int(bypass_indx)]
-    print A
     if not bypass_indx:
         return (A * A.transpose()).tolist(), names
     return (A.transpose() * A).tolist(), names
@@ -449,7 +494,7 @@ def write_file_twice(js, fn, other_dir='../miner/static'):
 def president_party(name):
     surname = strip_path_ext_characters(name.split(' ')[-1], strip_characters=ascii.ascii_nonletter)
     return president_party.surname_party.get(surname, '')
-president_party.party = reverse_dict_of_lists(json.load(open('data/president_political_parties.json','r')))
+president_party.party = reverse_dict_of_lists(json.load(open(os.path.join(DATA_FOLDER, 'president_political_parties.json'), 'r')))
 president_party.surname_party = dict((name.split(' ')[-1], party) for (name, party) in president_party.party.iteritems())
 
 
@@ -533,6 +578,25 @@ def generate_json():
     generate_word_cooccurrence(normalized_adjacency_matrix, files, words, num_groups=5, normalized=False)
     generate_occurrence(normalized_adjacency_matrix, files, words)
 
+
+def generate_matrix(normalized=True, matrix_only=False, format='json', path=os.path.join('..','miner','static','adjacency_matrix.json')):
+    adjacency_matrix, files, words = get_adjacency_matrix(sorted(DEFAULT_FILE_LIST), entropy_threshold=0.92, normalized=False, verbosity=2)
+    if normalized:
+        adjacency_matrix = normalize_adjacency_matrix(adjacency_matrix)
+    format = path.split('.')[-1].strip()
+    if format == 'json':
+        if matrix_only:
+            js = adjacency_matrix
+        else:
+            js = {
+                'column_labels': words,
+                'row_labels': files,
+                'matrix': adjacency_matrix,
+                }
+    else:
+        raise NotImplementedError("I only know how to write json files.")
+    json.dump(js, open(path, 'w'))
+    return adjacency_matrix, files, words
 
 if __name__ == '__main__':
     """
