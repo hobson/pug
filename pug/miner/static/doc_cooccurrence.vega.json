@@ -1,28 +1,28 @@
 {
   "name": "force",
-  "width": 100,
-  "height": 700,
+  "width": 1000,
+  "height": 600,
   "padding": {"top":0, "bottom":0, "left":0, "right":0},
   "data": [
     {
-      "name": "edges",
-      "url": "miserables.json",
-      "format": {"type": "json", "property": "links"},
+      "name": "links",
+      "url": "miserable_links.json",
+      "format": {"type": "json"},
       "transform": [
         {"type": "copy", "from": "data", "fields": ["source", "target"]}
       ]
     },
     {
       "name": "nodes",
-      "url": "miserables.json",
-      "format": {"type": "json", "property": "nodes"},
+      "url": "miserable_nodes.json",
+      "format": {"type": "json"},
       "transform": [
         {
           "type": "force",
-          "links": "edges",
+          "links": "links",
           "linkDistance": 70,
           "charge": -100,
-          "iterations": 10
+          "iterations": 1000
         }
       ]
     }
@@ -31,7 +31,7 @@
     {
       "type": "path",
       "from": {
-        "data": "edges",
+        "data": "links",
         "transform": [
           {"type": "link", "shape": "line"}
         ]
