@@ -15,7 +15,6 @@ import json
 
 import pytz
 from dateutil import parser as dateutil_parser
-import numpy as np
 import logging
 logger = logging.getLogger('bigdata.info')
 
@@ -259,7 +258,7 @@ def datetime_in_milliseconds(x, epoch=None):
         result = datetime_in_seconds(x, epoch=epoch_in_seconds)
     except:
         result = x
-    if not isinstance(x, (datetime.datetime, datetime.date, datetime.timediff)):
+    if not isinstance(x, (datetime.datetime, datetime.date, datetime.timedelta)):
         try:
             return type(x)([t * 1000 for t in result])
         except:

@@ -34,7 +34,7 @@ class Command(NoArgsCommand):
             raise CommandError("Database inspection isn't supported for the currently selected database backend.")
 
     def handle_inspection(self, options):
-        app = db.get_app(options.get('app'))
+        app = djdb.get_app(options.get('app'))
         db_alias = options.get('database')
         connection = connections[options.get('database')]
         # 'table_name_filter' is a stealth option

@@ -11,11 +11,16 @@ import logging
 logger = logging.getLogger('bigdata.info')
 
 
+
+DEFAULT_DB = 'default'
 DEFAULT_APP = None  # models.get_apps()[-1]
 DEFAULT_MODEL = None  # DEFAULT_MODEL.get_models()[0]
 from django.core.exceptions import ImproperlyConfigured
+models, connection, settings = None, None, None
 try:
-    from django.db import models, connection
+    from django.db import models
+    from django.db import connection
+    from django.conf import settings
 except ImproperlyConfigured:
     import traceback
     print traceback.format_exc()
@@ -104,9 +109,9 @@ def normalize_values_queryset(values_queryset, model=None, app=None):
 
 # TODO: use both get and set to avoid errors when different values chosen
 # TODO: modularize in separate function that finds CHOICES appropriate to a value key
-def normalize_choices(db_values, app_module, field_name, model_name='', human_readable=True, none_value='Null', blank_value='Unknown', missing_value='Unknown DB Code'):
-    if isinstance(app_module, basestring):
-        app_module = get_app(app_module)
+def normalize_choices(db_values, field_name, app=DEFAULT_APP, model_name='', human_readable=True, none_value='Null', blank_value='Unknown', missing_value='Unknown DB Code'):
+    if app and isinstance(app, basestring):
+        app = get_app(app)
     if not db_values:
         return
     try:
@@ -118,12 +123,14 @@ def normalize_choices(db_values, app_module, field_name, model_name='', human_re
         return db_values
     if human_readable:
         for i, db_value in enumerate(db_values[field_name]):
-            if db_value in (None, 'None'):
+            if db_value in (None, 'None') or app in (None, 'None'):
                 db_values[field_name][i] = none_value
                 continue
             if isinstance(db_value, basestring):
                 normalized_code = str(db_value).strip().upper()
-            choices = getattr(app_module.models, 'CHOICES_%s' % field_name.upper())
+            # the app is actually the models.py module, NOT the app_name package
+            # so don't look in app.models, you'll only find django.db.models there (app_name.models.models)
+            choices = getattr(app, 'CHOICES_%s' % field_name.upper(), [])
             normalized_name = None
             if choices:
                 normalized_name = str(choices.get(normalized_code, missing_value)).strip()
@@ -135,27 +142,49 @@ def normalize_choices(db_values, app_module, field_name, model_name='', human_re
     return db_values
 
 
-def get_app(app=-1):
-    """
+def get_app(app=None):
+    """Uses django.db.models.get_app and fuzzywuzzy to get the models module for a django app
+
+    Retrieve an app module from an app name string, even if mispelled (uses fuzzywuzzy to find the best match)
+    To get a list of all the apps use `get_app(None)` or `get_app([]) or get_app(())`
+    To get a single random app use `get_app('')`
+
     >>> get_app('call').__class__.__name__ == 'module'
     True
-    >>> get_app('cal cent').__name__ == 'miner.models'
+    >>> get_app('model').__name__ == 'miner.models'
     True
     >>> isinstance(get_app('whatever'), ModuleType)
     True
+    >>> isinstance(get_app(''), ModuleType)
+    True
+    isinstance(get_app(), ModuleType)
+    False
+    isinstance(get_app(), list)
+    True
     """
-    if app is -1:
-        app = get_app.default
+    print 'get_app(', app
+    if not app:
+        if not isinstance(app, (type(None), list, tuple)):
+            if get_app.default:
+                return get_app(get_app.default)
+            else:
+                return models.get_apps()[-1]
+        else:
+            return [app_class.__package__ for app_class in models.get_apps() if app_class and app_class.__package__]
+    if isinstance(app, basestring) and app.strip().endswith('.models'):
+        return get_app(app[:-len('.models')])
     if isinstance(app, ModuleType):
         return app
+    print 'type(' + repr(app) + ') = ' + repr(type(app))
     try:
+        print 'django.models.get_app(', app
         return models.get_app(app)
     except:
-        pass
-    if app:
-        app_names = [app_class.__package__ for app_class in models.get_apps()]
-        return models.get_app(fuzzy.extractOne(str(app), app_names)[0])
-    return [app_class.__package__ for app_class in models.get_apps()]
+        if not app:
+            print 'return None'
+            return None
+    app_names = [app_class.__package__ for app_class in models.get_apps() if app_class and app_class.__package__]
+    return get_app(fuzzy.extractOne(str(app), app_names)[0])
 get_app.default = DEFAULT_APP
 
 
@@ -172,26 +201,43 @@ def get_model(model=DEFAULT_MODEL, app=DEFAULT_APP):
     >>> get_model(get_model('CaseMaster', DEFAULT_APP)).objects.count() >= 0
     True
     """
+    print 'get_model' + repr(model) + ' app ' + repr(app)
     if isinstance(model, models.base.ModelBase):
         return model
-    model_name = None
+    app = get_app(app)
     try:
-        model_name = models.get_model(app, model) 
+        model_object = models.get_model(app, model)
+        if model_object:
+            return model_object
     except:
         pass
-    if model_name:
-        return model_name
     app = get_app(app)
+    if not app:
+        return None
     model_names = [mc.__name__ for mc in models.get_models(app)]
-    return models.get_model(app.__package__.split('.')[-1], fuzzy.extractOne(str(model), model_names)[0])
+    if app and model and model_names:
+        return models.get_model(app.__package__.split('.')[-1], fuzzy.extractOne(str(model), model_names)[0])
 
 
+def get_db_alias(app=DEFAULT_APP):
+    if app:
+        if isinstance(app, basestring) and str(app).strip():
+            if settings and str(app).strip() in settings.DATABASES:
+                return str(app).strip()
+            else:
+                return None
+        app = get_app(app)
+    try:
+        return get_db_alias(app.__package__)  # app.__name__.split('.')[0]
+    except:
+        return DEFAULT_DB
 
 
 def field_cov(fields, models, apps):
     columns = util.get_columns(fields, models, apps)
     columns = util.make_real(columns)
     return np.cov(columns)
+
 
 def queryset_from_title_prefix(title_prefix=None, model=DEFAULT_MODEL, app=DEFAULT_APP):
     filter_dict = {}
@@ -340,7 +386,7 @@ def count_in_category(x='call_type', filter_dict=None, model=DEFAULT_MODEL, app=
     objects = objects.all()
     if limit:
         objects = objects[:int(limit)]
-    objects = normalize_choices(util.sod_transposed(objects), app_module=app, field_name=x, human_readable=True)
+    objects = normalize_choices(util.sod_transposed(objects), field_name=x, app=app, human_readable=True)
     if not objects:
         return None
     objects = consolidated_counts(objects, field_name=x, count_name='y')

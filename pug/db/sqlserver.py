@@ -1,6 +1,8 @@
 from django.db import connections  #, transaction
 from collections import OrderedDict, namedtuple
 from django.conf import settings
+from django.db import DatabaseError
+from traceback import print_exc
 
 
 def dicts_from_table(table, keys=None):
@@ -78,7 +80,7 @@ def datatype(dbtype, description, cursor):
         return dt
 
 
-def get_meta_table(cursor='default', table=None):
+def get_meta_table(cursor='default', table=None, verbosity=0):
     cursor = make_cursor(cursor)
 
     # from dev branch of Django
@@ -138,19 +140,27 @@ def get_meta_table(cursor='default', table=None):
     #     ans += [[c[3], c[4], None, c[6], c[6], c[8], c[10]] for c in cursor.columns(table=table)]
     # # psycopg
     # else:
-    meta_table = cursor.db.introspection.get_table_description(cursor, table)
+    try:
+        meta_table = cursor.db.introspection.get_table_description(cursor, table)
+    except DatabaseError, e:
+        meta_table = []
+        if verbosity:
+            print_exc()
+            print "DatabaseError: Unable to find meta data for table %r using cursor %r (db_alias %s) because of %s." % (table, cursor, cursor.db.alias, e)
+
     ans += [list(c) + [None] for c in meta_table]
+    print ans
     return ans
 
 DATATYPE_TO_FIELDTYPE = {'int': 'IntegerField', 'float': 'FloatField', 'text': 'TextField', 'char': 'CharField', 'Decimal': 'DecimalField'}
 def datatype_to_fieldtype(datatype):
     return DATATYPE_TO_FIELDTYPE.get(datatype, 'TextField')
 
-def get_meta_tuples(cursor='default', table=None):
-    return namedtuples_from_table(get_meta_table(cursor=cursor, table=table))
+def get_meta_tuples(cursor='default', table=None, verbosity=0):
+    return namedtuples_from_table(get_meta_table(cursor=cursor, table=table, verbosity=verbosity))
 
-def get_meta_dicts(cursor='default', table=None):
-    return dicts_from_table(get_meta_table(cursor=cursor, table=table))
+def get_meta_dicts(cursor='default', table=None, verbosity=0):
+    return dicts_from_table(get_meta_table(cursor=cursor, table=table, verbosity=verbosity))
 
 def primary_keys(cursor='default', table=None):
     list_of_fields = get_meta_tuples(cursor=cursor, table=table)

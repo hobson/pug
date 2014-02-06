@@ -6,7 +6,7 @@ from optparse import make_option
 
 from django.core.management.base import NoArgsCommand, CommandError
 from django.db import DEFAULT_DB_ALIAS
-from pug.db.explore import db_meta, clean_utf8
+from pug.db.explore import get_db_meta, clean_utf8
 import json
 from pug.nlp.db import RobustEncoder
 
@@ -46,7 +46,7 @@ class Command(NoArgsCommand):
         one_table = options.get('table')
         verbosity = int(options.get('verbosity'))
         app = options.get('app')
-        meta = db_meta(app=app, db_alias=None, table=one_table, verbosity=verbosity)
+        meta = get_db_meta(app=app, db_alias=None, table=one_table, verbosity=verbosity)
 
         # meta is a dict of dicts of dicts, so doesn't iterate easily
         for line in json.dumps(meta, indent=4, cls=RobustEncoder).split('\n'):
