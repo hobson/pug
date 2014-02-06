@@ -3,6 +3,7 @@ from collections import OrderedDict, namedtuple
 from django.conf import settings
 from django.db import DatabaseError
 from traceback import print_exc
+from microsoft.constants import FIELD_TYPE
 
 
 def dicts_from_table(table, keys=None):
@@ -82,10 +83,30 @@ def datatype(dbtype, description, cursor):
 
 def get_meta_table(cursor='default', table=None, verbosity=0):
     cursor = make_cursor(cursor)
+    data_types_reverse = {
+        FIELD_TYPE.BLOB: 'TextField',
+        FIELD_TYPE.CHAR: 'CharField',
+        FIELD_TYPE.DECIMAL: 'DecimalField',
+        FIELD_TYPE.NEWDECIMAL: 'DecimalField',
+        FIELD_TYPE.DATE: 'DateField',
+        FIELD_TYPE.DATETIME: 'DateTimeField',
+        FIELD_TYPE.DOUBLE: 'FloatField',
+        FIELD_TYPE.FLOAT: 'FloatField',
+        FIELD_TYPE.INT24: 'IntegerField',
+        FIELD_TYPE.LONG: 'IntegerField',
+        FIELD_TYPE.LONGLONG: 'IntegerField',
+        FIELD_TYPE.SHORT: 'IntegerField',
+        FIELD_TYPE.STRING: 'CharField',
+        FIELD_TYPE.TIMESTAMP: 'DateTimeField',
+        FIELD_TYPE.TINY: 'IntegerField',
+        FIELD_TYPE.TINY_BLOB: 'TextField',
+        FIELD_TYPE.MEDIUM_BLOB: 'TextField',
+        FIELD_TYPE.LONG_BLOB: 'TextField',
+        FIELD_TYPE.VAR_STRING: 'CharField',
+    }
 
     # from dev branch of Django
     # FieldInfo = namedtuple('FieldInfo','name type_code display_size internal_size precision scale null_ok')
-    ans = [('name', 'type', 'display_size', 'internal_size', 'precision', 'scale', 'null_ok', 'primary_key')]
 
     #pep249 http://www.python.org/dev/peps/pep-0249
     #0: name  (mandatory)
@@ -147,7 +168,11 @@ def get_meta_table(cursor='default', table=None, verbosity=0):
         if verbosity:
             print_exc()
             print "DatabaseError: Unable to find meta data for table %r using cursor %r (db_alias %s) because of %s." % (table, cursor, cursor.db.alias, e)
+        return meta_table
 
+    for i, row in enumerate(meta_table):
+        meta_table[i][1] = data_types_reverse.get(row[1], row[1]) 
+    ans = [('name', 'type', 'display_size', 'internal_size', 'precision', 'scale', 'null_ok', 'primary_key')]
     ans += [list(c) + [None] for c in meta_table]
     print ans
     return ans
