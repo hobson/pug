@@ -44,7 +44,7 @@ class PatentBiblioSpider(CrawlSpider):
         self.start_urls = [r'http://www.google.com/googlebooks/uspto-patents-applications-biblio.html']
         if start_urls:
             self.start_urls = listify(start_urls)
-        super(WikiSpider, self).__init__(*args, **kwargs)
+        super(PatentBiblioSpider, self).__init__(*args, **kwargs)
 
 
     def clean_list(self, l):
