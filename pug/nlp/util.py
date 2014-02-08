@@ -116,7 +116,7 @@ def quantify_field_dict(field_dict, precision=None, date_precision=None, cleaner
     r"""Convert text and datetime dict values into float/int/long, if possible
 
     >>> sorted(quantify_field_dict({'_state': object(), 'x': 12345678911131517L, 'y': "\t  Wash Me! \n", 'z': datetime.datetime(1970, 10, 23, 23, 59, 59, 123456)}).items())
-    [('x', 12345678911131517L), ('y', u'Wash Me!'), ('z', 25592399.123456)]
+    [('x', 12345678911131517L), ('y', u'Wash Me!'), ('z', 25603199.123456)]
     """
     d = clean_field_dict(field_dict)
     for k, v in d.iteritems():
@@ -798,7 +798,7 @@ def clean_wiki_datetime(dt, squelch=False):
         raise(e)
 
 
-def minmax_len_and_blackwhite_list(s, min_len, max_len, blacklist=None, whitelist=None, lower=False, ):
+def minmax_len_and_blackwhite_list(s, min_len=1, max_len=256, blacklist=None, whitelist=None, lower=False):
     if min_len > len(s) or len(s) > max_len:
         return False
     if lower:
@@ -807,6 +807,8 @@ def minmax_len_and_blackwhite_list(s, min_len, max_len, blacklist=None, whitelis
         return False
     if whitelist and s not in whitelist:
         return False
+    return True
+
 
 def strip_HTML(s):
     """Simple, clumsy, slow HTML tag stripper"""
@@ -823,7 +825,7 @@ def strip_HTML(s):
     return result
 
 
-def strip_edge_punc(s, punc=None, lower=None):
+def strip_edge_punc(s, punc=None, lower=None, str_type=str):
     if lower is None:
         lower = strip_edge_punc.lower
     if punc is None:
@@ -831,7 +833,7 @@ def strip_edge_punc(s, punc=None, lower=None):
     if lower:
         s = s.lower()
     if not isinstance(s, basestring):
-        return [strip_edge_punc(unicode(s0), punc) for s0 in s]
+        return [strip_edge_punc(str_type(s0), punc) for s0 in s]
     return s.strip(punc)
 strip_edge_punc.lower = False
 strip_edge_punc.punc = PUNC
@@ -845,20 +847,22 @@ def get_sentences(s, regex=RE_SENTENCE_SPLIT):
 
 # this regex assumes "s' " is the end of a possessive word and not the end of an inner quotation, e.g. He said, "She called me 'Hoss'!"
 def get_words(s, splitter_regex=RE_WORD_SPLIT_IGNORE_EXTERNAL_APOSTROPHIES, 
-              preprocessor=strip_HTML, postprocessor=strip_edge_punc, min_len=None, max_len=None, blacklist=None, whitelist=None, lower=False, filter_fun=None):
+              preprocessor=strip_HTML, postprocessor=strip_edge_punc, min_len=None, max_len=None, blacklist=None, whitelist=None, lower=False, filter_fun=None, str_type=str):
     r"""Segment words (tokens), returning a list of all tokens (but not the separators/punctuation)
 
     >>> get_words('He said, "She called me \'Hoss\'!". I didn\'t hear.')
-    ['He', 'said', 'She', 'called', 'me', 'Hoss', 'I', "didn't", 'hear.']
+    ['He', 'said', 'She', 'called', 'me', 'Hoss', 'I', "didn't", 'hear']
     >>> get_words('The foxes\' oh-so-tiny den was 2empty!')
-    ['The', 'foxes', 'oh-so-tiny', den', 'was', '2empty']
+    ['The', 'foxes', 'oh-so-tiny', 'den', 'was', '2empty']
     """
     # TODO: Get rid of lower kwarg (and make sure code that uses it doesn't break) 
     #       That and other simple postprocessors can be done outside of get_words
-    postprocessor = postprocessor or unicode
-    preprocessor = preprocessor or unicode
-    min_len = min_len or get_words.min_len
-    max_len = max_len or get_words.max_len
+    postprocessor = postprocessor or str_type
+    preprocessor = preprocessor or str_type
+    if min_len is None:
+        min_len = get_words.min_len
+    if max_len is None:
+        max_len = get_words.max_len
     blacklist = blacklist or get_words.blacklist
     whitelist = whitelist or get_words.whitelist
     filter_fun = filter_fun or get_words.filter_fun
@@ -884,19 +888,16 @@ def get_words(s, splitter_regex=RE_WORD_SPLIT_IGNORE_EXTERNAL_APOSTROPHIES,
     if isinstance(splitter_regex, basestring):
         splitter_regex = re.compile(splitter_regex)
     s = map(postprocessor, splitter_regex.split(s))
+    s = map(str_type, s)
     if not filter_fun:
         return s
-    return [word for word in s if filter_fun(min_len=min_len, max_len=max_len, blacklist=blacklist, whitelist=whitelist, lower=lower)]
+    return [word for word in s if filter_fun(word, min_len=min_len, max_len=max_len, blacklist=blacklist, whitelist=whitelist, lower=lower)]
 get_words.blacklist = ('', None, '\'', '.', '_', '-')
 get_words.whitelist = None
 get_words.min_len = 1
-get_words.max_len = 20
+get_words.max_len = 256
 get_words.lower = False
-get_words.filter_fun = None
-
-
-
-
+get_words.filter_fun = minmax_len_and_blackwhite_list
 
 
 def pluralize_field_name(names=None, retain_prefix=False):
