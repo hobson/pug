@@ -39,6 +39,7 @@ def get_adjacency_matrix(filenames=DEFAULT_FILE_LIST, entropy_threshold=0.90, fo
     by LiZhong Zeng
     """
 
+    stem = nltk.stem.PorterStemmer().stem
     filtered_filenames = []
 
     Text = []     # list of segmented texts
@@ -57,7 +58,7 @@ def get_adjacency_matrix(filenames=DEFAULT_FILE_LIST, entropy_threshold=0.90, fo
         if verbosity > 1:
             print 'Reading ' + f.name
         raw = f.read()
-        tokens = nltk.word_tokenize(raw)
+        tokens = [stem(w) for w in nltk.word_tokenize(raw)]
         # delete short words and make everything lowercase
         tokens=[w.lower() for w in tokens if len(w) > 2]
         Speech_Length += [len(tokens)]
@@ -130,9 +131,14 @@ def svd_scores(vectors, labels=None, verbosity=1):
     return scores
 
 
-def get_occurrence_matrix(strings, row_labels=None, tokenizer=get_words):
-    O_sparse = [Counter(tokenizer(s)) for s in strings]
+def get_occurrence_matrix(strings, row_labels=None, tokenizer=get_words, stemmer=None):
+    if stemmer is None:
+        stemmer = get_occurrence_matrix.stemmer
+    stemmer = stemmer or unicode
+    print stemmer
+    O_sparse = [Counter(stemmer(w) for w in tokenizer(s)) for s in strings]
     return matrix_from_counters(O_sparse, row_labels=row_labels)
+get_occurrence_matrix.stemmer = nltk.stem.porter.PorterStemmer().stem
 
 
 def sum_counters(counters):
@@ -568,7 +574,7 @@ def normalize_adjacency_matrix(adjacency_matrix, rowwise=True):
 
 
 def generate_json():
-    adjacency_matrix, files, words = get_adjacency_matrix(sorted(DEFAULT_FILE_LIST), entropy_threshold=0.92, normalized=False, verbosity=2)
+    adjacency_matrix, files, words = get_adjacency_matrix(sorted(DEFAULT_FILE_LIST), entropy_threshold=0.90, normalized=False, verbosity=2)
     print len(adjacency_matrix), len(adjacency_matrix[0])
     print sum(adjacency_matrix[0]), sum(adjacency_matrix[1])
     normalized_adjacency_matrix = normalize_adjacency_matrix(adjacency_matrix)
@@ -603,6 +609,8 @@ if __name__ == '__main__':
     # This will produce a 14 x 14 matrix, 
     >>> scores, adjacency_matrix, files, words = score_words_in_files(DEFAULT_FILE_LIST[:14], entropy_threshold=0.99)
     >>> coadjacency, names = co_adjacency(adjacency_matrix, row_names=files, col_names=words, bypass_col_names=True)
+    >>> len(coadjacence), len(coadjacency[0], len(names)
+    (14, 14, 14)
     """
     #adjacency_matrix, files, words = get_adjacency_matrix(sorted(DEFAULT_FILE_LIST), entropy_threshold=0.92, normalized=False, verbosity=2)
     #scores = svd_scores(adjacency_matrix, labels=files, verbosity=2)
