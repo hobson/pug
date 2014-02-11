@@ -46,6 +46,17 @@ SCALAR_TYPES = (float, long, int, str, unicode)  # bool, complex, datetime.datet
 # numpy types are derived from these so no need to include numpy.float64, numpy.int64 etc
 DICTABLE_TYPES = (Mapping, tuple, list)  # convertable to a dictionary (inherits collections.Mapping or is a list of key/value pairs)
 VECTOR_TYPES = (list, tuple)
+PUNC = unicode(string.punctuation)
+
+RE_WORD_SPLIT_IGNORE_EXTERNAL_APOSTROPHIES = re.compile('\W*\s\'{1,3}|\'{1,3}\W+|[^-\'_.a-zA-Z0-9]+|\W+\s+')
+RE_WORD_SPLIT_PERMISSIVE = re.compile('[^-\'_.a-zA-Z0-9]+|[^\'a-zA-Z0-9]\s\W*')
+RE_SENTENCE_SPLIT = re.compile('[.?!](\W+)|$')
+RE_MONTH_NAME = re.compile('(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[acbeihmlosruty]*', re.IGNORECASE)
+
+# MONTHS = ['january', 'february', 'march', 'april', 'may', 'june', 'july', 'august', 'september', 'october', 'november', 'december']
+# MONTH_PREFIXES = [m[:3] for m in MONTHS]
+# MONTH_SUFFIXES = [m[3:] for m in MONTHS]
+# SUFFIX_LETTERS = ''.join(set(''.join(MONTH_SUFFIXES)))
 
 
 try:
@@ -53,21 +64,6 @@ try:
     DEFAULT_TZ = timezone(settings.TIME_ZONE)
 except:
     DEFAULT_TZ = timezone('UTC')
-
-
-def get_words(s):
-    """Identify the features (words) in a string
-
-    TODO: make this a generator to improve memory efficiency
-    """
-    # only alpha words, no numbers
-    splitter = re.compile(r'\W*')
-    # filter after map, unlike collective intelligence which reverses this
-    return filter(get_words.filter_fun, map(get_words.map_fun, splitter.split(s)))
-get_words.map_fun = str.lower
-get_words.max_len = 16
-get_words.min_len = 3
-get_words.filter_fun = lambda x: len(x) >= get_words.min_len and len(x) <= get_words.max_len
 
 
 def qs_to_table(qs, excluded_fields=['id']):
@@ -120,7 +116,7 @@ def quantify_field_dict(field_dict, precision=None, date_precision=None, cleaner
     r"""Convert text and datetime dict values into float/int/long, if possible
 
     >>> sorted(quantify_field_dict({'_state': object(), 'x': 12345678911131517L, 'y': "\t  Wash Me! \n", 'z': datetime.datetime(1970, 10, 23, 23, 59, 59, 123456)}).items())
-    [('x', 12345678911131517L), ('y', u'Wash Me!'), ('z', 25592399.123456)]
+    [('x', 12345678911131517L), ('y', u'Wash Me!'), ('z', 25603199.123456)]
     """
     d = clean_field_dict(field_dict)
     for k, v in d.iteritems():
@@ -751,15 +747,6 @@ def imported_modules():
             yield val
 
 
-
-# MONTHS = ['january', 'february', 'march', 'april', 'may', 'june', 'july', 'august', 'september', 'october', 'november', 'december']
-# MONTH_PREFIXES = [m[:3] for m in MONTHS]
-# MONTH_SUFFIXES = [m[3:] for m in MONTHS]
-# SUFFIX_LETTERS = ''.join(set(''.join(MONTH_SUFFIXES)))
-
-RE_MONTH_NAME = re.compile('(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[acbeihmlosruty]*', re.IGNORECASE)
-
-
 def make_tz_aware(dt, tz='UTC'):
     """Add timezone information to a datetime object, only if it is naive."""
     tz = dt.tzinfo or tz
@@ -809,6 +796,108 @@ def clean_wiki_datetime(dt, squelch=False):
             print format_exc(e) +  '\n^^^ Exception caught ^^^\nWARN: Failed to parse datetime string %r\n      from list of strings %r' % (' '.join(dt), dt)
             return dt
         raise(e)
+
+
+def minmax_len_and_blackwhite_list(s, min_len=1, max_len=256, blacklist=None, whitelist=None, lower=False):
+    if min_len > len(s) or len(s) > max_len:
+        return False
+    if lower:
+        s = s.lower()
+    if blacklist and s in blacklist:
+        return False
+    if whitelist and s not in whitelist:
+        return False
+    return True
+
+
+def strip_HTML(s):
+    """Simple, clumsy, slow HTML tag stripper"""
+    result = ''
+    total = 0
+    for c in s:
+        if c == '<':
+            total = 1
+        elif c == '>':
+            total = 0
+            result += ' '
+        elif total == 0:
+            result += c
+    return result
+
+
+def strip_edge_punc(s, punc=None, lower=None, str_type=str):
+    if lower is None:
+        lower = strip_edge_punc.lower
+    if punc is None:
+        punc = strip_edge_punc.punc
+    if lower:
+        s = s.lower()
+    if not isinstance(s, basestring):
+        return [strip_edge_punc(str_type(s0), punc) for s0 in s]
+    return s.strip(punc)
+strip_edge_punc.lower = False
+strip_edge_punc.punc = PUNC
+
+
+def get_sentences(s, regex=RE_SENTENCE_SPLIT):
+    if isinstance(regex, basestring):
+        regex = re.compile(regex)
+    return [sent for sent in regex.split(s) if sent]
+
+
+# this regex assumes "s' " is the end of a possessive word and not the end of an inner quotation, e.g. He said, "She called me 'Hoss'!"
+def get_words(s, splitter_regex=RE_WORD_SPLIT_IGNORE_EXTERNAL_APOSTROPHIES, 
+              preprocessor=strip_HTML, postprocessor=strip_edge_punc, min_len=None, max_len=None, blacklist=None, whitelist=None, lower=False, filter_fun=None, str_type=str):
+    r"""Segment words (tokens), returning a list of all tokens (but not the separators/punctuation)
+
+    >>> get_words('He said, "She called me \'Hoss\'!". I didn\'t hear.')
+    ['He', 'said', 'She', 'called', 'me', 'Hoss', 'I', "didn't", 'hear']
+    >>> get_words('The foxes\' oh-so-tiny den was 2empty!')
+    ['The', 'foxes', 'oh-so-tiny', 'den', 'was', '2empty']
+    """
+    # TODO: Get rid of lower kwarg (and make sure code that uses it doesn't break) 
+    #       That and other simple postprocessors can be done outside of get_words
+    postprocessor = postprocessor or str_type
+    preprocessor = preprocessor or str_type
+    if min_len is None:
+        min_len = get_words.min_len
+    if max_len is None:
+        max_len = get_words.max_len
+    blacklist = blacklist or get_words.blacklist
+    whitelist = whitelist or get_words.whitelist
+    filter_fun = filter_fun or get_words.filter_fun
+    lower = lower or get_words.lower
+    try:
+        s = open(s, 'r')
+    except:
+        pass
+    try:
+        s = s.read()
+    except:
+        pass
+    if not isinstance(s, basestring):
+        try:
+            # flatten the list of lists of words from each obj (file or string)
+            return [word for obj in s for word in get_words(obj)]
+        except:
+            pass
+    try:
+        s = preprocessor(s)
+    except:
+        pass
+    if isinstance(splitter_regex, basestring):
+        splitter_regex = re.compile(splitter_regex)
+    s = map(postprocessor, splitter_regex.split(s))
+    s = map(str_type, s)
+    if not filter_fun:
+        return s
+    return [word for word in s if filter_fun(word, min_len=min_len, max_len=max_len, blacklist=blacklist, whitelist=whitelist, lower=lower)]
+get_words.blacklist = ('', None, '\'', '.', '_', '-')
+get_words.whitelist = None
+get_words.min_len = 1
+get_words.max_len = 256
+get_words.lower = False
+get_words.filter_fun = minmax_len_and_blackwhite_list
 
 
 def pluralize_field_name(names=None, retain_prefix=False):
