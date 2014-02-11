@@ -433,8 +433,7 @@ def clean_utf8(utf8_string):
 def get_cursor_table_names(cursor):
     return [row[-2] for row in cursor.execute("""SELECT * FROM information_schema.tables""").fetchall()]
 
-
-def inspect_cursor(cursor=None):
+def print_cursor_table_names(cursor=None):
     if isinstance(cursor, basestring):
         cursor = connections[cursor].cursor()
     if not cursor:

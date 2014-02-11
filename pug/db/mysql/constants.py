@@ -1,3 +1,16 @@
+"""
+mysql.constants
+
+>>> FIELD_TYPE.VAR_STRING
+253
+>>> FIELD_TYPE.STRING
+254
+>>> field_type_name[FIELD_TYPE.INT24]
+'INT24'
+>>> reverse_field_type_name['FLOAT']
+4
+"""
+
 class FIELD_TYPE:
     BLOB = 252
     CHAR = 1
@@ -19,5 +32,14 @@ class FIELD_TYPE:
     LONG_BLOB = 251
     VAR_STRING = 253
     
-    # gis constants
+    # GIS constants
     GEOMETRY = 255
+
+field_type_name = dict(
+    (getattr(FIELD_TYPE, name, ''), name) for name in dir(FIELD_TYPE) if not name.startswith('_')
+    )
+
+reverse_field_type_name = dict(
+    (name, getattr(FIELD_TYPE, name, '')) for name in dir(FIELD_TYPE) if not name.startswith('_')
+    )
+

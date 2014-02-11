@@ -161,14 +161,17 @@ def get_meta_table(cursor='default', table=None, verbosity=0):
     #     ans += [[c[3], c[4], None, c[6], c[6], c[8], c[10]] for c in cursor.columns(table=table)]
     # # psycopg
     # else:
-    try:
-        meta_table = cursor.db.introspection.get_table_description(cursor, table)
-    except DatabaseError, e:
-        meta_table = []
-        if verbosity:
-            print_exc()
-            print "DatabaseError: Unable to find meta data for table %r using cursor %r (db_alias %s) because of %s." % (table, cursor, cursor.db.alias, e)
-        return meta_table
+    if cursor.cursor.__class__.__module__.endswith('odbc.base'):
+        meta_table = [[c[0], c[1], c[2], c[2], c[3], c[4], c[5], c[6]] for c in cursor.execute(column_properties_sql(table)).fetchall()]
+    else:
+        try:
+            meta_table = cursor.db.introspection.get_table_description(cursor, table)
+        except DatabaseError, e:
+            meta_table = []
+            if verbosity:
+                print_exc()
+                print "DatabaseError: Unable to find meta data for table %r using cursor %r (db_alias %s) because of %s." % (table, cursor, cursor.db.alias, e)
+            return meta_table
 
     for i, row in enumerate(meta_table):
         meta_table[i][1] = data_types_reverse.get(row[1], row[1]) 
