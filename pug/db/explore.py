@@ -8,8 +8,8 @@ import json
 from dateutil import parser
 import datetime
 
-from ..nlp import djdb
-from ..nlp import db
+from pug.nlp import djdb
+from pug.nlp import db
 import sqlserver as sql
 
 
@@ -29,7 +29,6 @@ except ImproperlyConfigured:
     print 'WARNING: The module named %r from file %r' % (__name__, __file__)
     print '         can only be used within a Django project!'
     print '         Though the module was imported, some of its functions may raise exceptions.'
-print 'imported explore.py'
 
 types_not_countable = ('text',)
 types_not_aggregatable = ('text', 'bit',)
@@ -387,23 +386,23 @@ def convert_loaded_json(js):
         except:
             return try_convert(js)
 
-
-
-
                     
 def models_with_unique_column(meta, exclude_single_pk=True, exclude_multi_pk=True):
     """Return a list of model names for models that have at least 1 field that has all distinct values (could be used as primary_key)"""
-    models_with_potential_pk = []
+    models_with_potential_pk = {}
+    fields_distinct = {}
     for model_name, model_fields in meta.iteritems():
-        if exclude_single_pk:
-            if model_fields['Meta']['primary_key']:
+        if exclude_single_pk and model_fields['Meta']['primary_key']:
                 continue
-        if exclude_multi_pk:
-            if any(not field['primary_key'] and field['num_distinct'] == 1 for field in model_fields if field is not 'Meta'):
-                models_with_potential_pk += model_name
-        else:
-            if any(field['num_distinct'] == 1 for field in model_fields if field is not 'Meta'):
-                models_with_potential_pk += model_name
+        fields_distinct = []
+        for field_name, field in model_fields.iteritems():
+            if field_name is 'Meta':
+                continue
+            if float(field.get('fraction_distinct', 0)) == 1.:
+                fields_distinct += [field_name]
+        # if any(not field['primary_key'] and field['num_distinct'] == 1 for field_name, field in model_fields.iteritems() if field is not 'Meta'):
+        if (not exclude_multi_pk and fields_distinct) or len(fields_distinct) == 1:
+            models_with_potential_pk[model_name] = fields_distinct
     return models_with_potential_pk
 
 

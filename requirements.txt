@@ -12,7 +12,7 @@ numpy==1.8.0
 progressbar==2.3
 # sudo yum install -y postgresql postgresql-server postgresql-libs postgresql-devel
 psycopg2==2.5.2
-#-e git+git@github.com:hobsonlane/pug.git@c7d37cffc21f333fce24351571df86821c2387cf#egg=pug-master
+#-e git+https://github.com/hobsonlane/pug.git#egg=pug-master
 pyOpenSSL==0.13.1
 python-dateutil==2.2
 pytz==2013.9
