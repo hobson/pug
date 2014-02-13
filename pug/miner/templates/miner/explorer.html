@@ -1,0 +1,63 @@
+{% extends 'base.html' %}
+{% comment %}
+    {% load nvd3_tags %}
+{% endcomment %}
+
+{% block extra_head %}
+    {% comment %}
+        {% include_nvd3jscss %}
+        {% if chart.charttype == 'pieChart' %}
+            {% load_chart chart.charttype chart.chartdata "nv_chart_container" %}
+        {% else %}
+            {% load_chart "lineWithFocusChart" chart.chartdata "nv_chart_container" chart.date_tag %}
+        {% endif %}
+    {% endcomment %}
+{% endblock %}
+
+{% block content %}
+    {# <pre> {{ chart|safe }} </pre><br /> #}
+    <h3>{{ stats.heading }}</h3>
+    <h4>Covariance</h3>
+    <table border='1'>
+    <tr>
+        <td></td>
+        {% for field in stats.fields %}
+            <th>{{ field }}</th>
+        {% endfor %}
+    </tr>
+    {% for row in stats.cov %}
+    {% with forloop.counter|cut:" " as index %}
+        <tr></tr>
+        <th>{{ row|slice:":1"|last }}</th>
+        {% for val in row|last %}
+            <td>{{ val|stringformat:".3e" }}</td>
+        {% endfor %}
+        </tr>
+    {% endwith %}
+    {% endfor %}
+    </table>
+    <h4>Pierson Linear Correlation</h4>
+    <table border='1'>
+    <tr>
+        <td></td>
+        {% for field in stats.fields %}
+            <th>{{ field }}</th>
+        {% endfor %}
+    </tr>
+    {% for row in stats.R %}
+    {% with forloop.counter|cut:" " as index %}
+        <tr></tr>
+        <th>{{ row|slice:":1"|last }}</th>
+        {% for val in row|last %}
+            <td>{{ val|floatformat:"-3" }}</td>
+        {% endfor %}
+        </tr>
+    {% endwith %}
+    {% endfor %}
+    </table>
+    <h3>{{ chart.chart_title }}</h3>
+    {% comment %}
+        {% include_container "nv_chart_container" 400 800 %}
+    {% endcomment %}
+{% endblock %}
+

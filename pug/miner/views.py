@@ -1,6 +1,7 @@
 #from collections import Mapping
 
 from django.shortcuts import render_to_response
+from django.http import HttpResponse
 from django.views.generic import View  #, TemplateView
 from django.template.response import TemplateResponse
 from django.template.loader import get_template
@@ -16,6 +17,11 @@ from pug.nlp import parse
 from pug.nlp import util
 from pug.nlp import db
 
+
+def explore(request, graph_uri=None):
+    """Explore the database (or any data provided by a REST service)"""
+    return HttpResponse('Looking for template in miner/explorer.html')
+    return render_to_response('miner/explorer.html')
 
 def home(request, graph_uri=None):
     """home page"""

@@ -10,7 +10,7 @@ class AppRouter(object):
     Route all queries to self._apps to their own db_alias by the same name.
     """
     # Django apps with their own database with a db_alias that is the same as the app __package__ name 
-    _apps = ('ssg', 'ssg_orig', 'crawler', 'miner')
+    _apps = ('ssg', 'ssg_orig', 'crawler', 'pug.miner')
 
     def db_for_read(self, model, **hints):
         """
