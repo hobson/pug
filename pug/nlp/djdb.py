@@ -142,7 +142,7 @@ def normalize_choices(db_values, field_name, app=DEFAULT_APP, model_name='', hum
     return db_values
 
 
-def get_app(app=None):
+def get_app(app=None, verbosity=3):
     """Uses django.db.models.get_app and fuzzywuzzy to get the models module for a django app
 
     Retrieve an app module from an app name string, even if mispelled (uses fuzzywuzzy to find the best match)
@@ -177,14 +177,21 @@ def get_app(app=None):
         return app
     print 'type(' + repr(app) + ') = ' + repr(type(app))
     try:
-        print 'django.models.get_app(', app
+        if verbosity > 1:
+            print 'Attempting django.models.get_app(%r)' % app
         return models.get_app(app)
     except:
         if not app:
-            print 'return None'
+            if verbosity:
+                print 'WARNING: app = %r, so returning None!' % app
             return None
+    if verbosity > 2:
+        print 'Trying a fuzzy match on app = %r' % app
     app_names = [app_class.__package__ for app_class in models.get_apps() if app_class and app_class.__package__]
-    return get_app(fuzzy.extractOne(str(app), app_names)[0])
+    fuzzy_app_name = fuzzy.extractOne(str(app), app_names)[0]
+    if verbosity:
+        print 'WARNING: Best fuzzy match for app name %r is %s' % (app, fuzzy_app_name)
+    return get_app(fuzzy_app_name)
 get_app.default = DEFAULT_APP
 
 

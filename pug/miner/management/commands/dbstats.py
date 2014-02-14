@@ -21,12 +21,12 @@ class Command(NoArgsCommand):
 
     option_list = NoArgsCommand.option_list + (
         make_option('--database', action='store', dest='database',
-            default=DEFAULT_DB_ALIAS, help='Nominates a database to '
+            default=None, help='Nominates a database to '
                 'introspect.  Defaults to using the "default" database.'),
         make_option('--table', action='store', dest='table',
             default=None, help='Table to compose model for (default = all).'),
         make_option('--app', action='store', dest='app',
-            default='crawler', help='App name to examine and compose data model for (default = all).'),
+            default='miner', help='App name to examine and compose data model for (default = all).'),
         # make_option('--extra', action='store_true', dest='extra',
         #     default=None, help='Whether to to use custom MS SQL to get extra meta data about tables and fields.'),
     )
@@ -46,7 +46,8 @@ class Command(NoArgsCommand):
         one_table = options.get('table')
         verbosity = int(options.get('verbosity'))
         app = options.get('app')
-        meta = get_db_meta(app=app, db_alias=None, table=one_table, verbosity=verbosity)
+        db_alias = options.get('database')
+        meta = get_db_meta(app=app, db_alias=db_alias, table=one_table, verbosity=verbosity)
 
         # meta is a dict of dicts of dicts, so doesn't iterate easily
         for line in json.dumps(meta, indent=4, cls=RobustEncoder).split('\n'):

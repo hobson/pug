@@ -6,7 +6,17 @@ from traceback import print_exc
 from ansi.constants import field_type_name
 
 
+def dictfetchall(cursor):
+    """Returns all rows from a cursor as a dict (rather than a headerless table)
+
+    From Django Documentation: https://docs.djangoproject.com/en/dev/topics/db/sql/
+    """
+    desc = cursor.description
+    return [dict(zip([col[0] for col in desc], row)) for row in cursor.fetchall()]
+
+
 def dicts_from_table(table, keys=None):
+    """Returns a list of dict() objects, one for each row in a list of lists (table)"""
     lod = []
     for row in table:
         if not keys:
@@ -16,6 +26,11 @@ def dicts_from_table(table, keys=None):
             continue
         lod += [OrderedDict((k, v) for k, v in zip(keys, row))]
     return lod
+
+
+def count(cursor, field, table, db, distinct=False):
+    sql = 'USE %s; SELECT COUNT(DISTINCT %s) FROM %s;' % (db, field, table)
+    return dictfetchall(cursor.execute(sql).fetchall())
 
 
 def namedtuples_from_table(table, keys=None):

@@ -8,7 +8,7 @@ import json
 from dateutil import parser
 import datetime
 
-from pug.nlp import djdb
+from pug.nlp import djdb  # FIXME: confusing name (too similar to common `import as` for django.db)
 from pug.nlp import db
 import sqlserver as sql
 
@@ -19,8 +19,7 @@ from django.db import DatabaseError
 DEFAULT_DB_ALIAS = 'default'
 DEFAULT_APP_NAME = None
 try:
-    from django.db import models, connection, connections
-    from django.db import DEFAULT_DB_ALIAS
+    from django.db import models, connection, connections, router
     from django.conf import settings
     DEFAULT_APP_NAME = settings.INSTALLED_APPS[-1].split('.')[-1]
 except ImproperlyConfigured:
@@ -45,15 +44,18 @@ def get_db_meta(app=DEFAULT_APP_NAME, db_alias=None, table=None, verbosity=0, co
         app = djdb.get_app(app)
     else:
         app = djdb.get_app('')
-    if not db_alias:
-        db_alias = djdb.get_db_alias(app)
-        if verbosity:
-            print 'Assuming db_alias for app %r is %r' % (app, db_alias)
     model_names = list(mc.__name__ for mc in models.get_models(app))
     meta = OrderedDict()
     # inspectdb uses: for table_name in connection.introspection.table_names(cursor):
     for model_name in model_names:
         model = djdb.get_model(model_name, app=app)
+        if db_alias:
+            model_db_alias = db_alias
+        else:
+            model_db_alias = router.db_for_read(model)
+        queryset = model.objects
+        if model_db_alias:
+            queryset = queryset.using(model_db_alias)
         if model and table is not None and isinstance(table, basestring):
             if model._meta.db_table != table:
                 if verbosity>1:
@@ -64,11 +66,11 @@ def get_db_meta(app=DEFAULT_APP_NAME, db_alias=None, table=None, verbosity=0, co
                 if verbosity>1:
                     print 'skipped model named %s with db table names %s.' % (model_name, model._meta.db_table)
                 continue
+        count = None
         try:
-            print 'trying to count for model %r and db_alias %r' % (model, db_alias)
-            count = model.objects.using(db_alias).count()
+            print 'trying to count for model %r and db_alias %r' % (model, model_db_alias)
+            count = queryset.count()
         except DatabaseError, e:
-            count = None
             if verbosity:
                 print_exc()
                 print "DatabaseError: Unable to count records for model '%s' (%s) because of %s." % (model.__name__, repr(model), e)
@@ -87,7 +89,7 @@ def get_db_meta(app=DEFAULT_APP_NAME, db_alias=None, table=None, verbosity=0, co
             print '%s.Meta = %r' % (model_name, meta[model_name]['Meta'])
         
         # inspectdb uses: connection.introspection.get_table_description(cursor, table_name)
-        properties_of_fields = sql.get_meta_dicts(cursor=db_alias, table=meta[model_name]['Meta']['db_table'], verbosity=verbosity)
+        properties_of_fields = sql.get_meta_dicts(cursor=model_db_alias, table=meta[model_name]['Meta']['db_table'], verbosity=verbosity)
         model_meta = OrderedDict((field['name'], field) for field in properties_of_fields)
         if verbosity > 1:
             print '-' * 20 + model_name + '-' * 20
@@ -95,8 +97,8 @@ def get_db_meta(app=DEFAULT_APP_NAME, db_alias=None, table=None, verbosity=0, co
         if len(db_primary_keys) == 1:
             meta[model_name]['Meta']['primary_key'] = db_primary_keys[0]
 
-        # augment model_meta with additional stats
-        model_meta = augment_model_meta(model, db_alias, model_meta, column_name_filter=column, count=count, verbosity=verbosity)
+        # augment model_meta with additional stats, but only if there are enough rows to get statistics
+        model_meta = augment_model_meta(model, model_db_alias, model_meta, column_name_filter=column, count=count, verbosity=verbosity)
 
         if verbosity > 1:
             print model_meta
@@ -106,7 +108,9 @@ def get_db_meta(app=DEFAULT_APP_NAME, db_alias=None, table=None, verbosity=0, co
 
 def augment_model_meta(model, db_alias, model_meta, column_name_filter=None, count=0, verbosity=0):
     """Fields are keyed by their db_column name rather than field name (like model_meta)"""
-    queryset = model.objects.using(db_alias)
+    queryset = model.objects
+    if db_alias:
+        queryset = queryset.using(db_alias)
     for field in model._meta._fields():
         db_column = field.db_column
         if not db_column:
@@ -134,7 +138,7 @@ def augment_model_meta(model, db_alias, model_meta, column_name_filter=None, cou
                 and field.primary_key and (not model_meta[db_column]['primary_key'])):
             continue
 
-        model_meta[db_column] = augment_field_meta(field, queryset, model_meta[db_column])
+        model_meta[db_column] = augment_field_meta(field, queryset, model_meta[db_column], count=count)
         if verbosity > 2:
             print '%s (%s) has %s / %s (%3.1f%%) distinct values between %s and %s, excluding %s nulls.' % (field.name, db_column, 
                                                          model_meta[db_column]['num_distinct'], 
@@ -146,7 +150,7 @@ def augment_model_meta(model, db_alias, model_meta, column_name_filter=None, cou
     return model_meta
 
 
-def augment_field_meta(field, queryset, field_properties, verbosity=0):
+def augment_field_meta(field, queryset, field_properties, verbosity=0, count=0):
     """Return a dict of statistical properties (metadata) for a database column (model field)
 
     Strings are UTF-8 encoded
@@ -176,10 +180,11 @@ def augment_field_meta(field, queryset, field_properties, verbosity=0):
     #   For columns that aren't populated with 100% distinct values, the fraction may help identify columns that are part of a  "unique-together" compound key
     #   Necessary constraint for col1 and col2 to be compound key: col1_uniqueness + col2_uniqueness >= 1.0 (100%)
     # TODO: check for other clues about primary_keyness besides just uniqueness 
-    field_properties['num_distinct'] = None
-    field_properties['num_null'] = None
+    field_properties['num_distinct'] = count
+    field_properties['num_null'] = count
+    field_properties['fraction_distinct'] = count
     typ = field_properties.get('type')
-    if typ and typ not in types_not_countable:
+    if typ and typ not in types_not_countable and count:
         field_properties['num_distinct'] = queryset.values(field.name).distinct().count()
         field_properties['num_null'] = queryset.filter(**{'%s__isnull' % field.name: True}).count()
         field_properties['fraction_distinct'] = float(field_properties['num_distinct']) / (queryset.count() or 1)
@@ -187,7 +192,7 @@ def augment_field_meta(field, queryset, field_properties, verbosity=0):
     field_properties['max'] = None
     field_properties['min'] = None
     # check field_properties['num_null'] for all Null first?
-    if typ and typ not in types_not_aggregatable:
+    if count and typ and typ not in types_not_aggregatable:
         connection.close()
         try:
             field_properties['max'] = clean_utf8(queryset.aggregate(max_value=models.Max(field.name))['max_value'])
@@ -289,11 +294,11 @@ def meta_to_indexes(meta, table_name=None, model_name=None):
     return indexes
 
 
-def get_relations(cursor, table_name, app=DEFAULT_APP_NAME, db_alias=DEFAULT_DB_ALIAS):
-    #meta = get_db_meta(app=app, db_alias=None, table=table_name, verbosity=0)
+def get_relations(cursor, table_name, app=DEFAULT_APP_NAME, db_alias=None):
+    #meta = get_db_meta(app=app, db_alias=db_alias, table=table_name, verbosity=0)
     return {}
 
-def get_indexes(cursor, table_name, app=DEFAULT_APP_NAME, db_alias=DEFAULT_DB_ALIAS, verbosity=0):
+def get_indexes(cursor, table_name, app=DEFAULT_APP_NAME, db_alias=None, verbosity=0):
     meta = get_db_meta(app=app, db_alias=db_alias, table=table_name, verbosity=0)
     if verbosity > 1:
         print meta
