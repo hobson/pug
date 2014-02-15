@@ -33,8 +33,12 @@ def inspect_dbs(output_dir='.', db_names=None, db_aliases=None, alias_prefix='SE
                         seditted_lines =  sed.get('before', '').format(**{'db_name': db_name, 'alias_prefix': alias_prefix}) or ''
                         seditted_lines += line if sed.get('sub', None) is None else sed['regex'].sub(sed['sub'], line)
                         seditted_lines += sed.get('after', '').format(**{'db_name': db_name, 'alias_prefix': alias_prefix}) or ''
+                        break;  # stop processing the regexes if one already matched this line
                 if verbosity > 2:
                     sys.stderr.write('WRITING: %r\n' % seditted_lines)
+                # TODO: Add a multi-line edit that deals with multiple primary_key=True fields
+                #       * delete second and subsequent primary_key=True arguments within the same Model
+                #       * add a unique_together constraint on all the primary_keys that were originally there
                 fp.write(seditted_lines)
                 line = models_py_buffer.readline()
 inspect_dbs.seds = [
@@ -49,9 +53,24 @@ inspect_dbs.seds = [
     {
         'regex': re.compile(r'^(\s+\w+\s*=\s*models[.])AutoField\(\)'),
         'sub': r"\1IntegerField(primary_key=True)",
-    }, 
+    },  
+    { # not strictly necessary, but since this is intended for read-only databases, probably a good idea
+        'regex': re.compile(r'^(\s+\w+\s*=\s*models[.])AutoField\((.*)(primary_key\=True)(.*)\)'),
+        'sub': r"\1IntegerField(\2\3\4)",
+    },
     {
         'regex': re.compile(r'^(\s+\w+\s*=\s*models[.])AutoField\((.+)\)'),
         'sub': r"\1IntegerField(\2)",
+    },
+    {
+        'regex': re.compile(r'^(\s+\w+\s*=\s*models[.])BooleanField\((.+)\)'),
+        'sub': r"\1NullBooleanField(\2)",
+    },
+    { # no need to do anything if a primary_key argument is set
+        'regex': re.compile(r'^(\s+)id(\s*=\s*models[.]\w)Field\((.*)(primary_key\=True)(.*)\)'),
+    },
+    { # need to set primary_key if not set for fields named id
+        'regex': re.compile(r'^(\s+)id(\s*=\s*models[.]\w)Field\((.*)\)'),
+        'sub': r"\1id\2Field(\3, primary_key=True)",
     },
     ]
