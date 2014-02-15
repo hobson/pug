@@ -33,6 +33,9 @@ def inspect_dbs(output_dir='.', db_names=None, db_aliases=None, alias_prefix='SE
                         seditted_lines =  sed.get('before', '').format(**{'db_name': db_name, 'alias_prefix': alias_prefix}) or ''
                         seditted_lines += line if sed.get('sub', None) is None else sed['regex'].sub(sed['sub'], line)
                         seditted_lines += sed.get('after', '').format(**{'db_name': db_name, 'alias_prefix': alias_prefix}) or ''
+                        if verbosity > 1:
+                            print 'WAS: %r' % line
+                            print ' IS: %r' % seditted_lines
                         break;  # stop processing the regexes if one already matched this line
                 if verbosity > 2:
                     sys.stderr.write('WRITING: %r\n' % seditted_lines)
@@ -54,23 +57,23 @@ inspect_dbs.seds = [
         'regex': re.compile(r'^(\s+\w+\s*=\s*models[.])AutoField\(\)'),
         'sub': r"\1IntegerField(primary_key=True)",
     },  
-    { # not strictly necessary, but since this is intended for read-only databases, probably a good idea
+    { # not strictly necessary, but since this is intended for read-only databases, probably a good idea to change AutoFields to IntegerFields, even if already a primary_key
         'regex': re.compile(r'^(\s+\w+\s*=\s*models[.])AutoField\((.*)(primary_key\=True)(.*)\)'),
         'sub': r"\1IntegerField(\2\3\4)",
     },
-    {
+    { # any AutoFields not yet turned to IntegerFields need to have their primary_key set
         'regex': re.compile(r'^(\s+\w+\s*=\s*models[.])AutoField\((.+)\)'),
-        'sub': r"\1IntegerField(\2)",
+        'sub': r"\1IntegerField(\2, primary_key=True)",
     },
     {
         'regex': re.compile(r'^(\s+\w+\s*=\s*models[.])BooleanField\((.+)\)'),
         'sub': r"\1NullBooleanField(\2)",
     },
     { # no need to do anything if a primary_key argument is set
-        'regex': re.compile(r'^(\s+)id(\s*=\s*models[.]\w)Field\((.*)(primary_key\=True)(.*)\)'),
+        'regex': re.compile(r'^\s+id\s*=\s*models[.]\w+Field\(.*primary_key\=True.*\)'),
     },
     { # need to set primary_key if not set for fields named id
-        'regex': re.compile(r'^(\s+)id(\s*=\s*models[.]\w)Field\((.*)\)'),
+        'regex': re.compile(r'^(\s+)id(\s*=\s*models[.]\w+)Field\((.*)\)'),
         'sub': r"\1id\2Field(\3, primary_key=True)",
     },
     ]

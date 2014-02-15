@@ -153,7 +153,7 @@ def augment_model_meta(model, db_alias, model_meta, column_name_filter=None, cou
 def augment_field_meta(field, queryset, field_properties, verbosity=0, count=0):
     """Return a dict of statistical properties (metadata) for a database column (model field)
 
-    Strings are UTF-8 encoded
+    Strings are UTF-8 encoded (UTF-16 or invalid UTF-8 characters are ignored)
     Resulting dictionary is json-serializable using the pug.nlp.db.RobustEncoder class.
 
     {
