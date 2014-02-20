@@ -349,17 +349,21 @@ def mapped_transposed_lists(lists, default=None):
     return map(lambda *row: [el if isinstance(el, (float, int)) else default for el in row], *lists)
 
 
+def make_name(s, camel=None, lower=None, space='_', remove_prefix=None):
+    """Process a string to produce a valid python variable/class/type name
 
-
-def make_name(s, camel=False, lower=True, space='_'):
-    """Make a python variable name, model name, or field name out of a string
+    Useful for producing Django model names out of file names, or Django field names out of a csv file headers
 
     >>> make_name("PD / SZ")
     'pd_sz'
     """
+    if camel is None and lower is None:
+        lower = True
     if not s:
         return None
-    s = str(s)
+    s = str(s)  # TODO: encode in ASCII, UTF-8, or the charset used for this file!
+    if remove_prefix and s.startswith(remove_prefix):
+        s = s[len(remove_prefix):]
     if camel:
         if any(c in ' \t\n\r' + string.punctuation for c in s) or s.lower() == s:
             if lower:
@@ -374,7 +378,7 @@ def make_name(s, camel=False, lower=True, space='_'):
             s = re.sub('[' + escape + space + ']{2,}', space, s)
     return s
 make_name.DJANGO_FIELD = {'camel': False, 'lower': True, 'space': '_'}
-make_name.DJANGO_MODEL = {'camel': True, 'lower': True, 'space': ''}
+make_name.DJANGO_MODEL = {'camel': True, 'lower': False, 'space': '', 'remove_prefix': 'models'}
 
 SCALAR_TYPES = (float, long, int, str, unicode)  # bool, complex, datetime.datetime
 # numpy types are derived from these so no need to include numpy.float64, numpy.int64 etc
@@ -646,6 +650,37 @@ def make_float(s, default='', ignore_commas=True):
                 try:
                     return float(first_digits(s))
                 except ValueError:
+                    return default
+
+
+# TODO: create and check MYSQL_MAX_FLOAT constant
+def make_int(s, default='', ignore_commas=True):
+    r"""Coerce a string into an integer (long ints will fail)
+
+    TODO:
+    - Ignore dashes and other punctuation within a long string of digits,
+       like a telephone number, partnumber, datecode or serial number.
+    - Use the Decimal type to allow infinite precision
+
+    >>> make_int('12345')
+    12345
+    >>> make_int('0000012345000       ')
+    12345
+    """
+    if ignore_commas and isinstance(s, basestring):
+        s = s.replace(',', '')
+    try:
+        return int(s)
+    except:
+        try:
+            return int(re.split(str(s), '[^-0-9,.Ee]')[0])
+        except ValueError:
+            try:
+                return int(float(normalize_scientific_notation(str(s), ignore_commas)))
+            except (ValueError, TypeError):
+                try:
+                    return int(first_digits(s))
+                except (ValueError, TypeError):
                     return default
 
 

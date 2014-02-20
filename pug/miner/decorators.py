@@ -2,6 +2,7 @@ from pug.nlp.db import representation
 from inspect import getmodule
 import os
 import re
+from pug.nlp.util import make_name
 
 
 class dbname(object):
@@ -37,6 +38,44 @@ class dbname_from_filename(dbname):
         setattr(cls, '_db_alias', self.alias_prefix + self.db_name.lower())    
         setattr(cls, '_db_name', self.db_name)
         return cls
+
+
+class prefix_model_name_with_filename(object):
+    "DOESNT WORK: Decorator to prefix the class __name__ with the *.py file name."
+
+    def __init__(self, sep=None, remove_prefix=None):
+        self.sep = sep or ''
+        self.remove_prefix = remove_prefix or 'models_'
+
+    def __call__(self, cls):
+        model_name= os.path.basename(getmodule(cls).__file__).split('.')[0]
+        kwargs = make_name.DJANGO_MODEL
+        kwargs['remove_prefix'] = self.remove_prefix
+        model_name = make_name(model_name, **kwargs)
+        # self.db_name = re.sub(r'[.]pyc?$', '', self.db_name, flags=re.IGNORECASE)
+        # self.db_name = re.sub(r'[._-]+models$', '', self.db_name, flags=re.IGNORECASE)
+        # self.db_name = re.sub(r'^models[._-]+', '', self.db_name, flags=re.IGNORECASE)
+        setattr(cls, '__name__', model_name + self.sep + getattr(cls, '__name__'))
+        return cls
+# http://stackoverflow.com/a/21863400/623735
+# def cls_changer(name, parents, attrs):
+#     model_name = os.path.basename(__file__).split('.')[0]
+#     res = type(model_name+name, parents, attrs)
+#     gl = globals()
+#     gl[model_name+name] = res
+#     return res
+
+# class ShipMeth(object):
+#     __metaclass__ = cls_changer
+#     ship_meth = models.CharField(max_length=1, primary_key=True)
+#     description = models.CharField(max_length=20, blank=True)
+#     charge = models.DecimalField(null=True, max_digits=8, decimal_places=2, blank=True)
+#     def_field = models.CharField(max_length=1, db_column='def', blank=True) # Field renamed because it was a Python reserved word.
+#     charge_net = models.DecimalField(null=True, max_digits=8, decimal_places=2, blank=True)
+#     charge_shipping = models.CharField(max_length=1, blank=True)
+#     ship_cost1 = models.DecimalField(null=True, max_digits=18, decimal_places=0, blank=True)
+#     ship_cost2 = models.DecimalField(null=True, max_digits=18, decimal_places=0, blank=True)
+
 
 
 def represent(cls):

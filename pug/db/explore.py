@@ -16,7 +16,7 @@ import sqlserver as sql
 from django.core.exceptions import ImproperlyConfigured
 from django.db import DatabaseError
 
-DEFAULT_DB_ALIAS = 'default'
+DEFAULT_DB_ALIAS = None  # 'default'
 DEFAULT_APP_NAME = None
 try:
     from django.db import models, connection, connections, router

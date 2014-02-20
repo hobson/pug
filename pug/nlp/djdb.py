@@ -142,7 +142,7 @@ def normalize_choices(db_values, field_name, app=DEFAULT_APP, model_name='', hum
     return db_values
 
 
-def get_app(app=None, verbosity=3):
+def get_app(app=None, verbosity=0):
     """Uses django.db.models.get_app and fuzzywuzzy to get the models module for a django app
 
     Retrieve an app module from an app name string, even if mispelled (uses fuzzywuzzy to find the best match)
@@ -162,7 +162,7 @@ def get_app(app=None, verbosity=3):
     isinstance(get_app(), list)
     True
     """
-    print 'get_app(', app
+    # print 'get_app(', app
     if not app:
         if not isinstance(app, (type(None), list, tuple)):
             if get_app.default:
@@ -175,7 +175,7 @@ def get_app(app=None, verbosity=3):
         return get_app(app[:-len('.models')])
     if isinstance(app, ModuleType):
         return app
-    print 'type(' + repr(app) + ') = ' + repr(type(app))
+    # print 'type(' + repr(app) + ') = ' + repr(type(app))
     try:
         if verbosity > 1:
             print 'Attempting django.models.get_app(%r)' % app
@@ -208,7 +208,7 @@ def get_model(model=DEFAULT_MODEL, app=DEFAULT_APP):
     >>> get_model(get_model('CaseMaster', DEFAULT_APP)).objects.count() >= 0
     True
     """
-    print 'get_model' + repr(model) + ' app ' + repr(app)
+    # print 'get_model' + repr(model) + ' app ' + repr(app)
     if isinstance(model, models.base.ModelBase):
         return model
     app = get_app(app)
