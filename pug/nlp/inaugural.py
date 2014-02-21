@@ -12,6 +12,9 @@ import numpy as np
 import character_subset as ascii
 from util import is_ignorable_str, get_words
 
+
+# trial for sharing code
+
 IGNORE_FILES = ('readme',)
 
 DOCUMENT_FOLDER_SUFFIX = 'pug/nlp/data'
