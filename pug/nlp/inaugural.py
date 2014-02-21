@@ -14,6 +14,8 @@ from util import is_ignorable_str, get_words
 
 IGNORE_FILES = ('readme',)
 
+# john is editing from his github account
+
 DOCUMENT_FOLDER_SUFFIX = 'pug/nlp/data'
 for depth in range(7):
     if depth:
