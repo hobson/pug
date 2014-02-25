@@ -12,7 +12,12 @@ import numpy as np
 import character_subset as ascii
 from util import is_ignorable_str, get_words
 
+
+# trial for sharing code
+
 IGNORE_FILES = ('readme',)
+
+# john is editing from his github account
 
 DOCUMENT_FOLDER_SUFFIX = 'pug/nlp/data'
 for depth in range(7):
