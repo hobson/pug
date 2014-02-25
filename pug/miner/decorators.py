@@ -57,6 +57,51 @@ class prefix_model_name_with_filename(object):
         # self.db_name = re.sub(r'^models[._-]+', '', self.db_name, flags=re.IGNORECASE)
         setattr(cls, '__name__', model_name + self.sep + getattr(cls, '__name__'))
         return cls
+
+# import django_filters
+# import django.db.models.fields as django_field_types
+
+# filter_field_type = {
+#     django_field_types.IntegerField: django_filters.NumberFilter,
+#     django_field_types.FloatField: django_filters.NumberFilter,
+#     django_field_types.DecimalField: django_filters.NumberFilter,
+#     django_field_types.CharField: django_filters.CharFilter,
+#     django_field_types.TextField: django_filters.CharFilter,
+#     django_field_types.BooleanField: django_filters.BooleanFilter,
+#     django_field_types.NullBooleanField: django_filters.BooleanFilter,
+#     #django_field_types.DateField: django_filters.DateFilter,
+#     django_field_types.DateTimeField: django_filters.DateTimeFilter,
+#     }
+# # TODO: different subsets of these within each of the filter types above
+# filter_suffixes = ('lt', 'lte', 'gt', 'gte') #, 'startswith', 'istartswith', 'endswith', 'iendswith', 'year', 'month', 'week_day', 'isnull')
+
+# class add_model_field_filters(object):
+#     "DOESNT WORK: Decorator to prefix the class __name__ with the *.py file name."
+
+#     def __init__(self, sep=None, remove_prefix=None):
+#         self.sep = sep or ''
+#         self.remove_prefix = remove_prefix or 'models_'
+
+#     def __call__(self, cls):
+#         model_name= os.path.basename(getmodule(cls).__file__).split('.')[0]
+#         kwargs = make_name.DJANGO_MODEL
+#         kwargs['remove_prefix'] = self.remove_prefix
+#         model_name = make_name(model_name, **kwargs)
+#         # self.db_name = re.sub(r'[.]pyc?$', '', self.db_name, flags=re.IGNORECASE)
+#         # self.db_name = re.sub(r'[._-]+models$', '', self.db_name, flags=re.IGNORECASE)
+#         # self.db_name = re.sub(r'^models[._-]+', '', self.db_name, flags=re.IGNORECASE)
+#         setattr(cls, '__name__', model_name + self.sep + getattr(cls, '__name__'))
+#         for field in cls._meta.model._meta.fields:
+#             print field
+#             for django_type, filter_type in filter_field_type.iteritems():
+#                 #print isinstance(field, django_type)
+#                 #print field, django_type
+#                 if isinstance(field, django_type):
+#                     for suffix in filter_suffixes:
+#                         #print field.name + '_' + suffix, '|', repr(filter_type(name=field.name, lookup_type=suffix))
+#                         setattr(cls, field.name + '_' + suffix, filter_type(name=field.name, lookup_type=suffix))
+#         return cls
+
 # http://stackoverflow.com/a/21863400/623735
 # def cls_changer(name, parents, attrs):
 #     model_name = os.path.basename(__file__).split('.')[0]
