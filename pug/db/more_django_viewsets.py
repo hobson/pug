@@ -10,7 +10,7 @@ from pug.db import more_django_filters
 from pug.nlp.util import listify
 
 def create_model_viewsets(local, app_names=None):
-    app_names = listify(app_names) or ['sec_refurb']
+    app_names = listify(app_names) or []
 
     for app_name in app_names:  # , 'npc_s'):
         app = get_app(app_name)
