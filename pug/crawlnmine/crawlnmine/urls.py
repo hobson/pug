@@ -9,8 +9,8 @@ from pug.miner import views
 urlpatterns = patterns('',
     # Examples:
     url(r'^$', views.home, name='home'),
-    url(r'^mine/', include('pug.miner.urls')),
-    url(r'^crawl/', include('pug.crawler.urls', namespace='crawler')),
+    url(r'^miner/', include('pug.miner.urls'), namespace='miner'),
+    url(r'^crawler/', include('pug.crawler.urls', namespace='crawler')),
 
     #url(r'^admin/', include(admin.site.urls)),
 )
