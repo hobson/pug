@@ -17,7 +17,7 @@ filter_field_type = {
     django_field_types.DateTimeField: DateTimeFilter,
     }
 # TODO: different subsets of these within each of the filter types above
-filter_suffixes = ('lt', 'lte', 'gt', 'gte', 'startswith', 'istartswith', 'endswith', 'iendswith', 'year', 'month', 'week_day', 'isnull')
+filter_suffixes = ('lt', 'lte', 'gt', 'gte', 'startswith', 'istartswith', 'contains', 'icontains', 'endswith', 'iendswith', 'year', 'month', 'week_day', 'isnull')
 
 
 class KitchenSinkFilterSetMetaclass(type):

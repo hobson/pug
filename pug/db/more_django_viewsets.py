@@ -1,5 +1,7 @@
 "Django ViewSet factory."
 
+import os.path
+
 from django.db.models import get_app, get_models
 
 from rest_framework import generics
@@ -10,7 +12,7 @@ from pug.db import more_django_filters
 from pug.nlp.util import listify
 
 def create_model_viewsets(local, app_names=None):
-    app_names = listify(app_names) or []
+    app_names = listify(app_names or os.path.basename(os.path.dirname(local.get('__file__', None))))
 
     for app_name in app_names:  # , 'npc_s'):
         app = get_app(app_name)
