@@ -13,6 +13,7 @@ def append_urls(local, app_names=None):
     urlpatterns = local.get('urlpatterns', patterns(''))
 
     for app_name in app_names:
+        print 'Composing REST API URLs (Django urlconf entries) for app named %r' % app_name
         views_name = app_name + '.views'
         app_module = __import__(views_name)
         app = get_app(app_name)
