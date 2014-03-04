@@ -4,6 +4,7 @@ from decimal import Decimal
 import sqlparse
 import re
 import json
+import chardet
 
 from dateutil import parser
 import datetime
@@ -33,12 +34,24 @@ types_not_countable = ('text', 'image')
 types_not_aggregatable = ('text', 'bit', 'image')
 
 
+def get_app_meta(apps=None, app_filter=lambda x: x.startswith('sec_'), app_exclude_filter=None, verbosity=0):
+    apps = apps or djdb.get_app(apps)
+    meta = []
+    for app in apps:
+        if (app_filter and not app_filter(app)) and (not app_exclude_filter or not app_exclude_filter(app)):
+            continue
+        meta += [get_db_meta(app=app, verbosity=verbosity)]
+        with open('db_meta_%s.json' % app, 'w') as fpout:
+            json.dump(meta, fpout)
+    return meta
+
+
 def get_db_meta(app=DEFAULT_APP_NAME, db_alias=None, table=None, verbosity=0, column=None):
     """Return a dict of dicts containing metadata about the database tables associated with an app
 
     TODO: allow multiple apps
     >>> get_db_meta('crawler', db_alias='default', table='crawler_wikiitem')  # doctest: +ELLIPSIS
-    OrderedDict([('WikiItem', OrderedDict([('Meta', OrderedDict([('primary_key', None), ('count', 1332), ('db_table', u'crawler_wikiitem')])), ('id', OrderedDict([('name', 'id'), ('type', ...
+    OrderedDict([('WikiItem', OrderedDict([('Meta', OrderedDict([('primary_key', None), ('count', 1332), ('db_table', u'crawler_wikiitem')])), (u'id', OrderedDict([('name', u'id'), ('type', ...
     """
     if verbosity:
         print 'Looking for app %r.' % (app, )
@@ -116,7 +129,8 @@ def augment_model_meta(model, db_alias, model_meta, column_name_filter=None, cou
     queryset = model.objects
     if db_alias:
         queryset = queryset.using(db_alias)
-    for field in model._meta._fields():
+    for field_name in model._meta.get_all_field_names():
+        field = model._meta.get_field(field_name)
         db_column = field.db_column
         if not db_column:
             if field.name in model_meta:
@@ -310,6 +324,7 @@ def get_indexes(cursor, table_name, app=DEFAULT_APP_NAME, db_alias=None, verbosi
         print meta
     return {}
 
+
 def try_convert(value, datetime_to_ms=False, precise=False):
     """Convert a str into more useful python type (datetime, float, int, bool), if possible
 
@@ -379,6 +394,53 @@ def try_convert(value, datetime_to_ms=False, precise=False):
     return value
 
 
+def make_serializable(data, mutable=True):
+    r"""Make sure the data structure is json serializable (json.dumps-able), all they way down to scalars in nested structures.
+
+    If mutable=False then return tuples for all iterables, except basestrings (strs),
+        so that they can be used as keys in a Mapping (dict).
+
+    >>> from collections import OrderedDict
+    >>> from decimal import Decimal
+    >>> data = {'x': Decimal('01.234567891113151719'), 'X': [{('y', 'z'): {'q': 'A\xFFB'}}, 'ender'] }
+    >>> make_serializable(OrderedDict(data)) == {'X': [{('y', 'z'): {'q': 'A\xc3\xbfB'}}, 'ender'], 'x': 1.2345678911131517}
+    True
+    """
+    #print 'serializabling: ' + repr(data)
+    # print 'type: ' + repr(type(data))
+    if isinstance(data, basestring):
+        return clean_utf8(data)
+    #print 'nonstring type: ' + repr(type(data))
+    if isinstance(data, Mapping):
+        mapping = tuple((make_serializable(k, mutable=False), make_serializable(v, mutable=mutable)) for (k, v) in data.iteritems())
+        # print 'mapping tuple = %s' % repr(mapping)
+        #print 'keys list = %s' % repr([make_serializable(k, mutable=False) for k in data])
+        # this mutability business is probably unneccessary because the keys of the mapping will already be immutable... at least until python 3 MutableMappings
+        if mutable:
+            return dict(mapping)
+        return mapping
+    if hasattr(data, '__iter__'):
+        if mutable:
+            #print list(make_serializable(v, mutable=mutable) for v in data)
+            return list(make_serializable(v, mutable=mutable) for v in data)
+        else:
+            #print tuple(make_serializable(v, mutable=mutable) for v in data)
+            return tuple(make_serializable(v, mutable=mutable) for v in data)
+    if isinstance(data, (float, Decimal)):
+        return float(data)
+    try:
+        return int(data)
+    except:
+        try:
+            return float(data)
+        except:
+            try:
+                return parser.parse(data)
+            except:
+                return make_serializable(try_convert(data), mutable=mutable)
+
+
+
 def convert_loaded_json(js):
     """Convert strings loaded as part of a json file/string to native python types
 
@@ -417,27 +479,63 @@ def models_with_unique_column(meta, exclude_single_pk=True, exclude_multi_pk=Tru
     return models_with_potential_pk
 
 
-def clean_utf8(utf8_string):
+def clean_utf8(byte_string, carefully=False):
     r"""Delete any invalid symbols in a UTF-8 encoded string
 
     Returns the cleaned string.
     
-    >>> clean_utf8('A\xffB\xffC ')
-    'ABC '
+    >>> clean_utf8('`A\xff\xffBC\x7fD\tE\r\nF~G`')
+    '`A\xc3\xbf\xc3\xbfBC\x7fD\tE\r\nF~G`'
+    >>> clean_utf8('`A\xff\xffBC\x7fD\tE\r\nF~G`', carefully=True)
+    '`ABC\x7fD\tE\r\nF~G`'
     """
-    if isinstance(utf8_string, basestring):
-        while True:
+    #print 'cleaning: ' + repr(byte_string)
+    if isinstance(byte_string, basestring):
+        if carefully:
+            while True:
+                try:
+                    byte_string.decode('utf8')
+                    # json.dumps(byte_string)
+                    break
+                except UnicodeDecodeError as e:
+                        m = re.match(r".*can't[ ]decode[ ]byte[ ]0x[0-9a-fA-F]{2}[ ]in[ ]position[ ](\d+)[ :.].*", str(e))
+                        if m and m.group(1):
+                            i = int(m.group(1))
+                            byte_string = byte_string[:i] + byte_string[i+1:]
+                        else:
+                            raise e
+            return byte_string
+        else:
+            # print 'not carefully'
+            diagnosis = chardet.detect(byte_string)
+            # print diagnosis
+            if diagnosis['confidence'] > 0.5:
+                try:
+                    #print diagnosis
+                    #print 'detected and cleaned: ' + repr(byte_string.decode(diagnosis['encoding']).encode('utf8'))
+                    return str(byte_string.decode(diagnosis['encoding']).encode('utf8'))
+                except:
+                    pass
             try:
-                json.dumps(utf8_string)
-                break
-            except UnicodeDecodeError as e:
-                m = re.match(r".*can't[ ]decode[ ]byte[ ]0x[0-9a-fA-F]{2}[ ]in[ ]position[ ](\d+)[ :.].*", str(e))
-                if m and m.group(1):
-                    i = int(m.group(1))
-                    utf8_string = utf8_string[:i] + utf8_string[i+1:]
-                else:
-                    raise e
-    return utf8_string
+                # Japanese corporations often use 'SQL_Latin1_General_CP1_CI_AS', a case-insensitive mix of CP-1252 and UTF-8
+                try:
+                    # print 'CP1252'
+                    #print byte_string.decode('CP-1252')
+                    return str(byte_string.decode('CP-1252').encode('utf8'))
+                # MS SQL Server default encoding
+                except:
+                    return str(byte_string.decode('iso-8859-1').encode('utf8'))
+            except:
+                pass
+            try:
+                #print 'utf-16'
+                return str(byte_string.decode('utf16').encode('utf8'))
+            except:
+                pass
+        #print 'failed to clean: ' + repr(byte_string)
+        return str(byte_string)
+    #print 'not a string!'
+    return byte_string
 
 
 def get_cursor_table_names(cursor):
@@ -453,13 +551,14 @@ def print_cursor_table_names(cursor=None):
 
 
 class QueryTimer(object):
-    """Based on https://github.com/jfalkner/Efficient-Django-QuerySet-Use
+    r"""Based on https://github.com/jfalkner/Efficient-Django-QuerySet-Use
 
-    >>> from example.models import Sample
+    >>> from pug.miner.models import Database
     >>> qt = QueryTimer()
-    >>> cm_list = list(Sample.objects.values()[:10])
+    >>> print 'If this fails, you may need to `manage.py syncdb`: %r' % list(Database.objects.values()[:1])  # doctest: +ELLIPSIS
+    If this fails, you may need to `manage.py syncdb`:...
     >>> qt.stop()  # doctest: +ELLIPSIS
-    QueryTimer(time=0.0..., num_queries=1)
+    QueryTimer(time=0.0..., num_queries=...)
     """
 
     def __init__(self, time=None, num_queries=None, sql=None, conn=None):

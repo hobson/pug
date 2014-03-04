@@ -164,13 +164,15 @@ def get_app(app=None, verbosity=0):
     """
     # print 'get_app(', app
     if not app:
-        if not isinstance(app, (type(None), list, tuple)):
+        # for an empty list, tuple or None, just get all apps
+        if isinstance(app, (type(None), list, tuple)):
+            return [app_class.__package__ for app_class in models.get_apps() if app_class and app_class.__package__]
+        # for a blank string, get the default app(s)
+        else:
             if get_app.default:
                 return get_app(get_app.default)
             else:
                 return models.get_apps()[-1]
-        else:
-            return [app_class.__package__ for app_class in models.get_apps() if app_class and app_class.__package__]
     if isinstance(app, basestring) and app.strip().endswith('.models'):
         return get_app(app[:-len('.models')])
     if isinstance(app, ModuleType):
