@@ -181,6 +181,8 @@ def get_app(app=None, verbosity=0):
             print 'Attempting django.models.get_app(%r)' % app
         return models.get_app(app)
     except:
+        from traceback import print_exc
+        print_exc()
         if not app:
             if verbosity:
                 print 'WARNING: app = %r, so returning None!' % app

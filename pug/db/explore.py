@@ -29,8 +29,8 @@ except ImproperlyConfigured:
     print '         can only be used within a Django project!'
     print '         Though the module was imported, some of its functions may raise exceptions.'
 
-types_not_countable = ('text',)
-types_not_aggregatable = ('text', 'bit',)
+types_not_countable = ('text', 'image')
+types_not_aggregatable = ('text', 'bit', 'image')
 
 
 def get_db_meta(app=DEFAULT_APP_NAME, db_alias=None, table=None, verbosity=0, column=None):
@@ -40,11 +40,15 @@ def get_db_meta(app=DEFAULT_APP_NAME, db_alias=None, table=None, verbosity=0, co
     >>> get_db_meta('crawler', db_alias='default', table='crawler_wikiitem')  # doctest: +ELLIPSIS
     OrderedDict([('WikiItem', OrderedDict([('Meta', OrderedDict([('primary_key', None), ('count', 1332), ('db_table', u'crawler_wikiitem')])), ('id', OrderedDict([('name', 'id'), ('type', ...
     """
+    if verbosity:
+        print 'Looking for app %r.' % (app, )
     if app and isinstance(app, basestring):
-        app = djdb.get_app(app)
+        app = djdb.get_app(app, verbosity=verbosity)
     else:
         app = djdb.get_app('')
     model_names = list(mc.__name__ for mc in models.get_models(app))
+    if verbosity:
+        print 'Found %d models for app %r.' % (len(model_names), app)
     meta = OrderedDict()
     # inspectdb uses: for table_name in connection.introspection.table_names(cursor):
     for model_name in model_names:
@@ -59,16 +63,17 @@ def get_db_meta(app=DEFAULT_APP_NAME, db_alias=None, table=None, verbosity=0, co
         if model and table is not None and isinstance(table, basestring):
             if model._meta.db_table != table:
                 if verbosity>1:
-                    print 'skipped model named %s with db table names %s.' % (model_name, model._meta.db_table)
+                    print 'Skipped model named %s with db table names %s.' % (model_name, model._meta.db_table)
                 continue
         elif callable(table):
             if not table(model._meta.db_table):
                 if verbosity>1:
-                    print 'skipped model named %s with db table names %s.' % (model_name, model._meta.db_table)
+                    print 'Skipped model named %s with db table names %s.' % (model_name, model._meta.db_table)
                 continue
         count = None
         try:
-            print 'trying to count for model %r and db_alias %r' % (model, model_db_alias)
+            if verbosity > 1:
+                print 'Trying to count records in model %r and db_alias %r' % (model, model_db_alias)
             count = queryset.count()
         except DatabaseError, e:
             if verbosity:
@@ -138,15 +143,16 @@ def augment_model_meta(model, db_alias, model_meta, column_name_filter=None, cou
                 and field.primary_key and (not model_meta[db_column]['primary_key'])):
             continue
 
-        model_meta[db_column] = augment_field_meta(field, queryset, model_meta[db_column], count=count)
+        model_meta[db_column] = augment_field_meta(field, queryset, model_meta[db_column], count=count, verbosity=verbosity)
         if verbosity > 2:
-            print '%s (%s) has %s / %s (%3.1f%%) distinct values between %s and %s, excluding %s nulls.' % (field.name, db_column, 
-                                                         model_meta[db_column]['num_distinct'], 
-                                                         count,
-                                                         100. * (model_meta[db_column]['num_distinct'] or 0) / (count or 1),
-                                                         repr(model_meta[db_column]['min']),
-                                                         repr(model_meta[db_column]['max']),
-                                                         model_meta[db_column]['num_null'])
+            print '%s (%s of type %s) has %s / %s (%3.1f%%) distinct values between %s and %s, excluding %s nulls.' % (field.name, db_column, 
+                                                        model_meta[db_column]['type'],
+                                                        model_meta[db_column]['num_distinct'], 
+                                                        count,
+                                                        100. * (model_meta[db_column]['num_distinct'] or 0) / (count or 1),
+                                                        repr(model_meta[db_column]['min']),
+                                                        repr(model_meta[db_column]['max']),
+                                                        model_meta[db_column]['num_null'])
     return model_meta
 
 
@@ -487,3 +493,35 @@ class QueryTimer(object):
 
     def __repr__(self):
         return '%s(time=%s, num_queries=%s)' % (self.__class__.__name__, self.time, self.num_queries)
+
+
+# TODO: make this a django filter query of a database rather than a generator
+def count_unique(table, field=-1):
+    """Use the Django ORM or collections.Counter to count unique values of a field in a table
+
+    `table` is one of:
+    1. An iterable of Django model instances for a database table (e.g. a Django queryset)
+    2. An iterable of dicts or lists with elements accessed by row[field] where field can be an integer or string
+    3. An iterable of objects or namedtuples with elements accessed by `row.field`
+
+    `field` can be any immutable object (the key or index in a row of the table that access the value to be counted)
+    """
+    from collections import Counter
+
+    # try/except only happens once, and fastest route (straight to db) tried first
+    try:
+        ans = {}
+        for row in table.distinct().values(field).annotate(field_value_count=models.Count(field)):
+            ans[row[field]] = row['field_value_count']
+        return ans
+    except:
+        try:
+            return Counter(row[field] for row in table)
+        except:
+            try:
+                return Counter(row.get(field, None) for row in table)
+            except:
+                try:
+                    return Counter(row.getattr(field, None) for row in table)
+                except:
+                    pass
