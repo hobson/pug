@@ -16,6 +16,8 @@ import sqlserver as sql
 
 from django.core.exceptions import ImproperlyConfigured
 from django.db import DatabaseError
+from django.core.exceptions import FieldError
+from django.db.models import FieldDoesNotExist
 
 DEFAULT_DB_ALIAS = None  # 'default'
 DEFAULT_APP_NAME = None
@@ -98,7 +100,7 @@ def get_db_meta(app=DEFAULT_APP_NAME, db_alias=None, table=None, verbosity=0, co
             if verbosity > 1:
                 print 'Trying to count records in model %r and db_alias %r' % (model, model_db_alias)
             count = queryset.count()
-        except DatabaseError, e:
+        except DatabaseError as e:
             if verbosity:
                 print_exc()
                 print "DatabaseError: Unable to count records for model '%s' (%s) because of %s." % (model.__name__, repr(model), e)
@@ -140,8 +142,18 @@ def augment_model_meta(model, db_alias, model_meta, column_name_filter=None, cou
     if db_alias:
         queryset = queryset.using(db_alias)
     for field_name in model._meta.get_all_field_names():
-        field = model._meta.get_field(field_name)
-        db_column = field.db_column
+        field = None
+        try:
+            field = model._meta.get_field(field_name)
+            db_column = field.db_column
+        # Django creates reverse ForeignKey relationship fields that may not have a database column in this table
+        # This happens if you make existing fields/columns in other tables a ForeignKey referencing this table
+        except FieldDoesNotExist:
+            db_column = None
+        if not field:
+            if verbosity:
+                print "WARNING: Skipped 'phantom' field named '%s'. No field found in the model '%s' for database '%s'." % (field_name, model.__name__, db_alias)
+            continue
         if not db_column:
             if field.name in model_meta:
                 db_column = field.name
@@ -218,12 +230,28 @@ def augment_field_meta(field, queryset, field_properties, verbosity=0, count=0):
         try:
             field_properties['num_distinct'] = queryset.values(field.name).distinct().count()
             field_properties['num_null'] = queryset.filter(**{'%s__isnull' % field.name: True}).count()
-            field_properties['fraction_distinct'] = float(field_properties['num_distinct']) / (queryset.count() or 1)
-        except DatabaseError, e:
+            field_properties['fraction_distinct'] = float(field_properties['num_distinct']) / (count or 1)
+        except DatabaseError as e:
             if verbosity:
                 print_exc()
                 print "DatabaseError: Skipped count of values in field named '%s' (%s) because of %s." % (field.name, repr(field.db_column), e)
             connection.close()
+        try:
+            if field_properties['num_distinct'] > 1 and (0 < field_properties['fraction_distinct'] < 0.999):
+                # this will not work until pyodbc is updated
+                # May be related to django-pyodbc incompatability with django 1.6
+                # FIXME: use the working query for values.distinct.count and sort that dict and then query the top 10 of those individually
+                field_properties['most_frequent'] = [(v, c) for (v,c) in 
+                                                     queryset.distinct().values(field.name).annotate(field_value_count=models.Count(field.name))
+                                                     .extra(order_by=['-field_value_count']).values_list(field.name, 'field_value_count')
+                                                     [:min(field_properties['num_distinct'], 10)]
+                                                    ]
+        except (StandardError, FieldError, DatabaseError) as e:
+            if verbosity:
+                print "Warning: Failed to calculate the Top-10 histogram for field named '%s' (%s) because of %s." % (field.name, repr(field.db_column), e)
+            if verbosity > 2:
+                print_exc()
+
     field_properties['max'] = None
     field_properties['min'] = None
     # check field_properties['num_null'] for all Null first?
@@ -232,7 +260,7 @@ def augment_field_meta(field, queryset, field_properties, verbosity=0, count=0):
         try:
             field_properties['max'] = clean_utf8(queryset.aggregate(max_value=models.Max(field.name))['max_value'])
             field_properties['min'] = clean_utf8(queryset.aggregate(min_value=models.Min(field.name))['min_value'])
-        except ValueError, e:
+        except ValueError as e:
             if verbosity:
                 print_exc()
                 print "ValueError (perhaps UnicodeDecodeError?): Skipped max/min calculations for field named '%s' (%s) because of %s." % (field.name, repr(field.db_column), e)
@@ -245,7 +273,6 @@ def augment_field_meta(field, queryset, field_properties, verbosity=0, count=0):
         # validate values that might be invalid strings do to db encoding/decoding errors (make sure they are UTF-8
         for k in ('min', 'max'):
             clean_utf8(field_properties.get(k))
-
     return field_properties
 
 def get_index(model_meta, weights=None, verbosity=0):
@@ -507,52 +534,51 @@ def clean_utf8(byte_string, carefully=False):
     '`ABC\x7fD\tE\r\nF~G`'
     """
     #print 'cleaning: ' + repr(byte_string)
-    if isinstance(byte_string, basestring):
-        if carefully:
-            while True:
-                try:
-                    byte_string.decode('utf8')
-                    # json.dumps(byte_string)
-                    break
-                except UnicodeDecodeError as e:
-                        m = re.match(r".*can't[ ]decode[ ]byte[ ]0x[0-9a-fA-F]{2}[ ]in[ ]position[ ](\d+)[ :.].*", str(e))
-                        if m and m.group(1):
-                            i = int(m.group(1))
-                            byte_string = byte_string[:i] + byte_string[i+1:]
-                        else:
-                            raise e
-            return byte_string
-        else:
-            # print 'not carefully'
-            diagnosis = chardet.detect(byte_string)
-            # print diagnosis
-            if diagnosis['confidence'] > 0.5:
-                try:
-                    #print diagnosis
-                    #print 'detected and cleaned: ' + repr(byte_string.decode(diagnosis['encoding']).encode('utf8'))
-                    return str(byte_string.decode(diagnosis['encoding']).encode('utf8'))
-                except:
-                    pass
+    if not isinstance(byte_string, basestring):
+        return byte_string
+    if carefully:
+        while True:
             try:
-                # Japanese corporations often use 'SQL_Latin1_General_CP1_CI_AS', a case-insensitive mix of CP-1252 and UTF-8
-                try:
-                    # print 'CP1252'
-                    #print byte_string.decode('CP-1252')
-                    return str(byte_string.decode('CP-1252').encode('utf8'))
-                # MS SQL Server default encoding
-                except:
-                    return str(byte_string.decode('iso-8859-1').encode('utf8'))
+                byte_string.decode('utf8')
+                # json.dumps(byte_string)
+                break
+            except UnicodeDecodeError as e:
+                    m = re.match(r".*can't[ ]decode[ ]byte[ ]0x[0-9a-fA-F]{2}[ ]in[ ]position[ ](\d+)[ :.].*", str(e))
+                    if m and m.group(1):
+                        i = int(m.group(1))
+                        byte_string = byte_string[:i] + byte_string[i+1:]
+                    else:
+                        raise e
+        return byte_string
+    else:
+        # print 'not carefully'
+        diagnosis = chardet.detect(byte_string)
+        # print diagnosis
+        if diagnosis['confidence'] > 0.5:
+            try:
+                #print diagnosis
+                #print 'detected and cleaned: ' + repr(byte_string.decode(diagnosis['encoding']).encode('utf8'))
+                return str(byte_string.decode(diagnosis['encoding']).encode('utf8'))
             except:
                 pass
+        try:
+            # Japanese corporations often use 'SQL_Latin1_General_CP1_CI_AS', a case-insensitive mix of CP-1252 and UTF-8
             try:
-                #print 'utf-16'
-                return str(byte_string.decode('utf16').encode('utf8'))
+                # print 'CP1252'
+                #print byte_string.decode('CP-1252')
+                return str(byte_string.decode('CP-1252').encode('utf8'))
+            # MS SQL Server default encoding
             except:
-                pass
-        #print 'failed to clean: ' + repr(byte_string)
-        return str(byte_string)
-    #print 'not a string!'
-    return byte_string
+                return str(byte_string.decode('iso-8859-1').encode('utf8'))
+        except:
+            pass
+        try:
+            #print 'utf-16'
+            return str(byte_string.decode('utf16').encode('utf8'))
+        except:
+            pass
+    #print 'failed to clean: ' + repr(byte_string)
+    return str(byte_string)
 
 
 def get_cursor_table_names(cursor):
