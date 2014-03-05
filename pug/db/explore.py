@@ -30,19 +30,29 @@ except ImproperlyConfigured:
     print '         can only be used within a Django project!'
     print '         Though the module was imported, some of its functions may raise exceptions.'
 
-types_not_countable = ('text', 'image')
-types_not_aggregatable = ('text', 'bit', 'image')
+types_not_countable = ['text', 'image', 'ntext']
+types_not_aggregatable = types_not_countable + ['bit', 'uniqueidentifier']
 
 
-def get_app_meta(apps=None, app_filter=lambda x: x.startswith('sec_'), app_exclude_filter=None, verbosity=0):
+def get_app_meta(apps=None, app_filter=lambda x: x.startswith('sec_') or x.startswith('siica_'), app_exclude_filter=None, verbosity=0, save=True):
     apps = apps or djdb.get_app(apps)
     meta = []
     for app in apps:
         if (app_filter and not app_filter(app)) and (not app_exclude_filter or not app_exclude_filter(app)):
             continue
         meta += [get_db_meta(app=app, verbosity=verbosity)]
-        with open('db_meta_%s.json' % app, 'w') as fpout:
-            json.dump(meta, fpout)
+        if save:
+            with open('db_meta_%s.json' % app, 'w') as fpout:
+                try:
+                    json.dump(make_serializable(meta[-1]), fpout, indent=4)
+                except:
+                    print_exc()
+    if save:
+        with open('db_meta_all_apps.json' % app, 'w') as fpout:
+            try:
+                json.dump(make_serializable(meta), fpout, indent=4)
+            except:
+                print_exc()
     return meta
 
 
@@ -205,10 +215,15 @@ def augment_field_meta(field, queryset, field_properties, verbosity=0, count=0):
     field_properties['fraction_distinct'] = count
     typ = field_properties.get('type')
     if typ and typ not in types_not_countable and count:
-        field_properties['num_distinct'] = queryset.values(field.name).distinct().count()
-        field_properties['num_null'] = queryset.filter(**{'%s__isnull' % field.name: True}).count()
-        field_properties['fraction_distinct'] = float(field_properties['num_distinct']) / (queryset.count() or 1)
-
+        try:
+            field_properties['num_distinct'] = queryset.values(field.name).distinct().count()
+            field_properties['num_null'] = queryset.filter(**{'%s__isnull' % field.name: True}).count()
+            field_properties['fraction_distinct'] = float(field_properties['num_distinct']) / (queryset.count() or 1)
+        except DatabaseError, e:
+            if verbosity:
+                print_exc()
+                print "DatabaseError: Skipped count of values in field named '%s' (%s) because of %s." % (field.name, repr(field.db_column), e)
+            connection.close()
     field_properties['max'] = None
     field_properties['min'] = None
     # check field_properties['num_null'] for all Null first?
@@ -410,6 +425,8 @@ def make_serializable(data, mutable=True):
     # print 'type: ' + repr(type(data))
     if isinstance(data, basestring):
         return clean_utf8(data)
+    if isinstance(data, (datetime.datetime, datetime.date, datetime.time)):
+        return str(data)
     #print 'nonstring type: ' + repr(type(data))
     if isinstance(data, Mapping):
         mapping = tuple((make_serializable(k, mutable=False), make_serializable(v, mutable=mutable)) for (k, v) in data.iteritems())
@@ -435,10 +452,10 @@ def make_serializable(data, mutable=True):
             return float(data)
         except:
             try:
-                return parser.parse(data)
+                # try to parse a date or datetime string
+                return parser.parse(str(data))
             except:
-                return make_serializable(try_convert(data), mutable=mutable)
-
+                return str(try_convert(data))
 
 
 def convert_loaded_json(js):
