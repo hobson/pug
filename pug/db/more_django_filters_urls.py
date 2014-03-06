@@ -18,6 +18,7 @@ def append_urls(local, app_names=None):
         app_module = __import__(views_name)
         app = get_app(app_name)
         for Model in get_models(app):
+            # print Model
             model_name = Model.__name__
             View = app_module.views.__dict__[model_name + 'List']
             urlpatterns += patterns('', url(r'^' + app_name + r'/' + model_name, View.as_view()))#, name='order-list'),)

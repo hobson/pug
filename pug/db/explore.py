@@ -19,6 +19,9 @@ from django.db import DatabaseError
 from django.core.exceptions import FieldError
 from django.db.models import FieldDoesNotExist
 
+import matplotlib.pyplot as plt
+
+
 DEFAULT_DB_ALIAS = None  # 'default'
 DEFAULT_APP_NAME = None
 try:
@@ -40,22 +43,98 @@ def get_app_meta(apps=None, app_filter=lambda x: x.startswith('sec_') or x.start
     apps = apps or djdb.get_app(apps)
     meta = []
     for app in apps:
-        if (app_filter and not app_filter(app)) and (not app_exclude_filter or not app_exclude_filter(app)):
+        if filter_reject(app, app_filter, app_exclude_filter):
             continue
         meta += [get_db_meta(app=app, verbosity=verbosity)]
         if save:
-            with open('db_meta_%s.json' % app, 'w') as fpout:
-                try:
-                    json.dump(make_serializable(meta[-1]), fpout, indent=4)
-                except:
-                    print_exc()
-    if save:
-        with open('db_meta_all_apps.json' % app, 'w') as fpout:
             try:
-                json.dump(make_serializable(meta), fpout, indent=4)
+                with open('db_meta_%s.json' % app, 'w') as fpout:
+                    json.dump(make_serializable(meta[-1]), fpout, indent=4)
             except:
                 print_exc()
+    if save:
+        try:
+            with open('db_meta_all_apps.json', 'w') as fpout:
+                jsonifiable_data = make_serializable(meta)
+                json.dump(jsonifiable_data, fpout, indent=4)
+        except:
+            print_exc()
     return meta
+
+
+def filter_reject(s, accept_filters, reject_filters=None):
+    if callable(accept_filters) and callable(reject_filters):
+        if (accept_filters and not accept_filters(s)) and (not reject_filters or not reject_filters(s)):
+            return True
+        else:
+            return False
+    elif isinstance(accept_filters, (tuple, list, set)) and (not reject_filters or callable(reject_filters)):
+        return any(filter_reject(s, af, reject_filters) for af in accept_filters)
+    elif (not accept_filters or callable(accept_filters)) and isinstance(reject_filters, (tuple, list, set)):
+        return any(filter_reject(s, accept_filters, rf) for rf in reject_filters)
+    elif (not reject_filters or callable(reject_filters)) and isinstance(accept_filters, (tuple, list, set)):
+        return any(filter_reject(s, af, reject_filters) for af in accept_filters)
+    elif isinstance(accept_filters, basestring) and (not reject_filters or callable(reject_filters)):
+        return filter_reject(s, lambda x: x.startswith(accept_filters), reject_filters)
+    elif (not accept_filters or callable(accept_filters)) and isinstance(reject_filters, basestring):
+        return filter_reject(s, accept_filters, lambda x: x.startswith(reject_filters))
+
+    return None
+
+
+def load_app_meta(apps=None, app_filter=['sec_', 'siica_'], app_exclude_filter=None):
+    apps = apps or djdb.get_app(apps)
+    meta = {}
+    for app in apps:
+        # if filter_reject(app, app_filter, app_exclude_filter):
+        #     continue
+        if (app_filter and not any(app.startswith(af) for af in app_filter)) and (
+                not app_exclude_filter or not any(app.startswith(rf) for rf in app_exclude_filter)):
+            continue
+        with open('db_meta_%s.json' % app, 'r') as fpin:        
+            m = json.load(fpin)
+        for table_name, table_meta in m.iteritems():
+            table_name = app + '.' + table_name
+            for field_name, field_meta in table_meta.iteritems():
+                meta[table_name + '.' + field_name] = field_meta
+    return meta
+
+
+def meta_bar_chart(series=None, N=20):
+    "Each column in the series is a dict of dicts"
+    if not series or isinstance(series, basestring):
+        series = json.load(load_app_meta)
+    if isinstance(series, Mapping) and isinstance(series.values()[0], Mapping):
+        rows_received = series['# Received'].items()
+    elif isinstance(series, Mapping):
+        rows_received = series.items()
+    else:
+        rows_received = list(series)
+
+    #rows = sorted(rows, key=operator.itemgetter(1), reverse=True)
+    rows = sorted(rows_received, key=lambda x: x[1], reverse=True)
+    received_names, received_qty = zip(*rows)
+    ra_qty = [(series['Qty in RA'].get(name, 0.) or 0.) for name in received_names]
+    percent = [100. - 100. * (num or 0.) / (den or 1.) for num, den in zip(received_qty, ra_qty)]
+
+    # only care about the top 30 model numbers in terms of quantity
+    #ind = range(N)
+
+    figs = []
+
+    figs += [plt.figure()]
+    ax = figs[-1].add_subplot(111)
+    ax.set_ylabel('# Units Returned')
+    ax.set_title('Most-Returned LCDTV Models 2013-present')
+    x = np.arange(N)
+    bars1 = ax.bar(x, received_qty[:N], color='b', width=.4, log=1)
+    bars2 = ax.bar(x+.4, ra_qty[:N], color='g', width=.4, log=1)
+    ax.set_xticks(range(N))
+    ax.set_xticklabels(received_names[:N], rotation=35)
+    ax.grid(True)
+    ax.legend((bars1[0], bars2[0]), ('# in RA', '# Received'), 'center right')
+    figs[-1].show()
+    #fig.autofmt_xdate()
 
 
 def get_db_meta(app=DEFAULT_APP_NAME, db_alias=None, table=None, verbosity=0, column=None):
