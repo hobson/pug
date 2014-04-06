@@ -13,6 +13,7 @@ import csv
 import datetime
 import dateutil
 import pytz
+import warnings
 
 #import math
 from pytz import timezone
@@ -28,6 +29,8 @@ import scipy as sci
 
 import logging
 logger = logging.getLogger('bigdata.info')
+
+import ascii
 
 #from django.core.exceptions import ImproperlyConfigured
 # try:
@@ -46,6 +49,7 @@ SCALAR_TYPES = (float, long, int, str, unicode)  # bool, complex, datetime.datet
 # numpy types are derived from these so no need to include numpy.float64, numpy.int64 etc
 DICTABLE_TYPES = (Mapping, tuple, list)  # convertable to a dictionary (inherits collections.Mapping or is a list of key/value pairs)
 VECTOR_TYPES = (list, tuple)
+PYTHON_NUMBER_TYPES = (float, long, int)  # bool, complex, datetime.datetime,
 PUNC = unicode(string.punctuation)
 
 RE_WORD_SPLIT_IGNORE_EXTERNAL_APOSTROPHIES = re.compile('\W*\s\'{1,3}|\'{1,3}\W+|[^-\'_.a-zA-Z0-9]+|\W+\s+')
@@ -115,8 +119,9 @@ def clean_field_dict(field_dict, cleaner=unicode.strip, time_zone=None):
 def quantify_field_dict(field_dict, precision=None, date_precision=None, cleaner=unicode.strip):
     r"""Convert text and datetime dict values into float/int/long, if possible
 
+    FIXME: this test probably needs to define a time zone for the datetime object
     >>> sorted(quantify_field_dict({'_state': object(), 'x': 12345678911131517L, 'y': "\t  Wash Me! \n", 'z': datetime.datetime(1970, 10, 23, 23, 59, 59, 123456)}).items())
-    [('x', 12345678911131517L), ('y', u'Wash Me!'), ('z', 25603199.123456)]
+    [('x', 12345678911131517L), ('y', u'Wash Me!'), ('z', 25592399.123456)]
     """
     d = clean_field_dict(field_dict)
     for k, v in d.iteritems():
@@ -268,40 +273,92 @@ def consolidate_stats(dict_of_seqs, stats_key=None, sep=','):
         return list({k: result[stats_key][i]} for i, k in enumerate(result[joined_key]))
     return [{joined_seq((d[k] for k in sorted(d) if k is not stats_key), sep): d[stats_key]} for d in dict_of_seqs]
 
-        
-def transposed_lists(list_of_lists, default=None):
+
+def dos_from_table(table, header=None):
+    """Produce dictionary of sequences from sequence of sequences, optionally with a header "row".
+
+    >>> dos_from_table([['hello', 'world'], [1, 2], [3,4]]) == {'hello': [1, 3], 'world': [2, 4]}
+    True
+    """
+    start_row = 0
+    if not table:
+        return table
+    if not header:
+        header = table[0]
+        start_row = 1
+    header_list = header
+    if header and isinstance(header, basestring):
+        header_list = header.split('\t')
+        if len(header_list)!=len(table[0]):
+            header_list = header.split(',')
+        if len(header_list)!=len(table[0]):
+            header_list = header.split(' ')
+    ans = {}
+    for i, k in enumerate(header):
+        ans[k] = [row[i] for row in table[start_row:]]
+    return ans
+
+
+def transposed_lists(list_of_lists, default=(None,), fill=True, inner_type=None, outer_type=None):
     """Like numpy.transposed
 
     >>> transposed_lists([[1, 2], [3, 4, 5], [6]])
     [[1, 3, 6], [2, 4], [5]]
-    >>> transposed_lists(transposed_lists([[], [1, 2, 3], [4]]))
+    >>> transposed_lists(transposed_lists([[], [1, 2, 3], [4]]), default=None)  # FIXME
     [[1, 2, 3], [4]]
+    >>> transposed_lists(transposed_lists([[], [1, 2, 3], [4]]), default=[None])
+    [[None, None, None], [1, 2, 3], [4, None, None]]
     >>> l = transposed_lists([range(4),[4,5]])
     >>> l
-    [[0, 4], [1, 5], [2], [3]]
+    [[0, 4], [1, 5], [2, None], [3, None]]
     >>> transposed_lists(l)
-    [[0, 1, 2, 3], [4, 5]]
+    [[0, 4], [1, 5], [2, None], [3, None]]
+    >>> transposed_lists([[1,2],[1],[1,2,3]])
+    [[1, 1, 1], [2, None, 2], [None, None, 3]]
     """
-    if default is None or default is [] or default is tuple():
+    # if not list_of_lists or not list_of_lists[0]:
+    #     return list_of_lists
+
+    if default is None or default == [] or default == tuple():
         default = []
-    elif default is 'None':
+    elif default is 'None' or default == [None] or default == (None,):
         default = [None]
     else:
-        default = [default]
-    
+        default = listify(default)
+
+    initial_value = default or [None]
+    try:
+        inner_type = inner_type or type(list_of_lists[0])
+    except:
+        inner_type = list
     N = len(list_of_lists)
     Ms = [len(row) for row in list_of_lists]
     M = max(Ms)
     ans = []
+    # for each row in the new matrix
     for j in range(M):
-        ans += [[]]
+        # add a row full of copies the `fill` value up to the maximum width required
+        ans += [initial_value * N]
         for i in range(N):
-            if j < Ms[i]:
-                ans[-1] += [list_of_lists[i][j]]
-            else:
-                ans[-1] += list(default)
-    return ans
+            try:
+                ans[j][i] = list_of_lists[i][j]
+            except IndexError:
+                pass
 
+    if not default and not fill:
+        for i in xrange(M - 1, -1, -1):
+            for j in xrange(N - 1, -1, -1):
+                if ans[i][j] is None:
+                    del(ans[i][j])
+ 
+
+    outer_type = outer_type or type(list_of_lists)
+    try:
+        if isinstance(ans[0], inner_type):
+            return outer_type(ans)
+    except:
+        pass
+    return outer_type([inner_type(row) for row in ans])
 
 
 def update_dict(d, u, depth=-1, default_map=dict, default_set=set, prefer_update_type=False):
@@ -379,12 +436,6 @@ def make_name(s, camel=None, lower=None, space='_', remove_prefix=None):
     return s
 make_name.DJANGO_FIELD = {'camel': False, 'lower': True, 'space': '_'}
 make_name.DJANGO_MODEL = {'camel': True, 'lower': False, 'space': '', 'remove_prefix': 'models'}
-
-SCALAR_TYPES = (float, long, int, str, unicode)  # bool, complex, datetime.datetime
-# numpy types are derived from these so no need to include numpy.float64, numpy.int64 etc
-PYTHON_NUMBER_TYPES = (float, long, int)  # bool, complex, datetime.datetime,
-DICTABLE_TYPES = (Mapping, tuple, list)  # convertable to a dictionary (inherits collections.Mapping or is a list of key/value pairs)
-VECTOR_TYPES = (list, tuple)
 
 
 def tryconvert(value, desired_types=SCALAR_TYPES, default=None, empty='', strip=True):
@@ -665,7 +716,7 @@ def make_int(s, default='', ignore_commas=True):
     >>> make_int('12345')
     12345
     >>> make_int('0000012345000       ')
-    12345
+    12345000
     """
     if ignore_commas and isinstance(s, basestring):
         s = s.replace(',', '')
@@ -725,6 +776,53 @@ def normalize_scientific_notation(s, ignore_commas=True):
     if s:
         return s
     return None
+
+
+def normalize_serial_number(sn, max_length=10, left_fill='0', right_fill='', blank='', valid_chars='0123456789', invalid_chars=None, join=False):
+    r"""Make a string compatible with typical serial number requirements
+
+    >>> normalize_serial_number('1C 234567890             ')
+    '0234567890'
+    >>> normalize_serial_number(' \t1C\t-\t234567890 \x00\x7f', max_length=14, left_fill='0', valid_chars='0123456789ABC', invalid_chars=None, join=True)
+    '0001C234567890'
+    >>> normalize_serial_number('Unknown', blank=False)
+    '0000000000'
+    >>> normalize_serial_number('Unknown', blank=None)
+    >>> normalize_serial_number('N/A', blank='')
+    ''
+    >>> normalize_serial_number('NO SERIAL', blank='----------')  # doctest: +NORMALIZE_WHITESPACE
+    '----------' 
+    """
+    # strip internal and external whitespace and consider only last 10 characters
+    if invalid_chars is None:
+        invalid_chars = (c for c in ascii.all_ if c not in valid_chars)
+    invalid_chars = ''.join(invalid_chars)
+    sn = str(sn).strip(invalid_chars)
+    if invalid_chars:
+        if join:
+            sn = sn.translate(None, invalid_chars)
+        else:
+            sn = multisplit(sn, invalid_chars)[-1]
+    sn = sn[-max_length:]
+    if not sn and not (blank is False):
+        return blank
+    if left_fill:
+        sn = left_fill * (max_length - len(sn)/len(left_fill)) + sn
+    if right_fill:
+        sn = sn + right_fill * (max_length - len(sn)/len(right_fill))
+    return sn
+
+
+def multisplit(s, seps=list(string.punctuation) + list(string.whitespace), blank=True):
+    r"""Just like str.split(), except that a variety (list) of seperators is allowed.
+    
+    >>> multisplit(r'1-2?3,;.4+-', string.punctuation)
+    ['1', '2', '3', '', '', '4', '', '']
+    >>> multisplit(r'1-2?3,;.4+-', string.punctuation, blank=False)
+    ['1', '2', '3', '4']
+    """
+    seps = ''.join(seps)
+    return [s2 for s2 in s.translate(''.join([(chr(i) if chr(i) not in seps else seps[0]) for i in range(256)])).split(seps[0]) if (blank or s2)]
 
 
 def make_real(list_of_lists):
@@ -1088,4 +1186,63 @@ def is_ignorable_str(s, ignorable_strings=(), lower=True, filename=True, startsw
             return True
         elif s == ignorable:
             return True
+
+
+def strip_keys(d, nones=False, depth=0):
+    r"""Strip whitespace from all dictionary keys, to the depth indicated
+
+    >>> strip_keys({' a': ' a', ' b\t c ': {'d e  ': 'd e  '}}) == {'a': ' a', 'b\t c': {'d e  ': 'd e  '}}
+    True
+    >>> strip_keys({' a': ' a', ' b\t c ': {'d e  ': 'd e  '}}, depth=100) == {'a': ' a', 'b\t c': {'d e': 'd e  '}}
+    True
+    """
+    ans = type(d)((str(k).strip(), v) for (k, v) in OrderedDict(d).iteritems() if (not nones or (str(k).strip() and str(k).strip() != 'None')))
+    if int(depth) < 1:
+        return ans
+    if int(depth) > strip_keys.MAX_DEPTH:
+        warnings.warn(RuntimeWarning("Maximum recursion depth allowance (%r) exceeded." % strip_keys.MAX_DEPTH))
+    for k, v in ans.iteritems():
+        if isinstance(v, Mapping):
+            ans[k] = strip_keys(v, nones=nones, depth=int(depth)-1)
+    return ans
+strip_keys.MAX_DEPTH = 1e6
+
+
+def str_from_table(table, sep='\t', eol='\n', max_rows=100000000, max_cols=1000000):
+    max_rows = min(max_rows, len(table))
+    return eol.join([sep.join(list(str(field) for field in row[:max_cols])) for row in table[:max_rows]])
+
+
+def get_table_from_csv(filename='ssg_report_aarons_returns.csv', delimiter=',', dos=False):
+    """Dictionary of sequences from CSV file"""
+    table = []
+    with open(filename, 'rb') as f:
+        reader = csv.reader(f, dialect='excel', delimiter=delimiter)
+        for row in reader:
+            table += [row]
+    if not dos:
+        return table
+    return dos_from_table(table)
+
+
+def shorten(s, max_length=16):
+    """Attempt to shorten a phrase by deleting words at the end of the phrase
+
+    >>> shorten('Hello World!')
+    'Hello World'
+    >>> shorten("Hello World! I'll talk your ear off!", 15)
+    'Hello World'
+    """
+    short = s
+    words = [abbreviate(word) for word in get_words(s)]
+    for i in xrange(len(words), 0, -1):
+        short = ' '.join(words[:i])
+        if len(short) <= max_length:
+            break
+    return short[:max_length]
+
+
+def abbreviate(word):
+    return abbreviate.words.get(word, word)
+abbreviate.words = {'account': 'acct', 'number': 'num', 'customer': 'cust', 'member': 'membr' }
 

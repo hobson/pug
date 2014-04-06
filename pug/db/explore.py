@@ -6,6 +6,7 @@ import re
 import json
 import chardet
 
+import numpy as np
 from dateutil import parser
 import datetime
 
@@ -35,6 +36,7 @@ except ImproperlyConfigured:
     print '         can only be used within a Django project!'
     print '         Though the module was imported, some of its functions may raise exceptions.'
 
+types_varchar = ['nvarchar', 'varchar', 'sysname']  # `sysname` stores MS-TSQL object names and is equivalent to `nvarchar(128)`
 types_not_countable = ['text', 'image', 'ntext']
 types_not_aggregatable = types_not_countable + ['bit', 'uniqueidentifier']
 
@@ -115,7 +117,7 @@ def meta_bar_chart(series=None, N=20):
     rows = sorted(rows_received, key=lambda x: x[1], reverse=True)
     received_names, received_qty = zip(*rows)
     ra_qty = [(series['Qty in RA'].get(name, 0.) or 0.) for name in received_names]
-    percent = [100. - 100. * (num or 0.) / (den or 1.) for num, den in zip(received_qty, ra_qty)]
+    # percent = [100. - 100. * (num or 0.) / (den or 1.) for num, den in zip(received_qty, ra_qty)]
 
     # only care about the top 30 model numbers in terms of quantity
     #ind = range(N)

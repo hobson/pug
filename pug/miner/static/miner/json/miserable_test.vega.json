@@ -6,7 +6,7 @@
   "data": [
     {
       "name": "links",
-      "url": "miserable_links.json",
+      "url": "http://bigdata.enet.sharplabs.com:8000/static/miner/json/miserable_links.json",
       "format": {"type": "json"},
       "transform": [
         {"type": "copy", "from": "data", "fields": ["source", "target"]}
@@ -14,7 +14,7 @@
     },
     {
       "name": "nodes",
-      "url": "miserable_nodes.json",
+      "url": "http://bigdata.enet.sharplabs.com:8000/static/miner/json/miserable_nodes.json",
       "format": {"type": "json"},
       "transform": [
         {

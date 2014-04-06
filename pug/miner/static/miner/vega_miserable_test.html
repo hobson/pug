@@ -8,6 +8,7 @@
     <script src="http://trifacta.github.io/vega/vega.js"></script>
   </head>
   <body>
+    <h3>Vega Test</h3>
     <div id="vis"></div>
   </body>
 <script type="text/javascript">
@@ -15,6 +16,6 @@
 function parse(spec) {
   vg.parse.spec(spec, function(chart) { chart({el:"#vis"}).update(); });
 }
-parse("doc_cooccurrence.vega.json");
+parse("http://bigdata.enet.sharplabs.com:8000/static/miner/json/miserable_test.vega.json");
 </script>
 </html>

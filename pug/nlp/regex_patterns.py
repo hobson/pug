@@ -16,3 +16,4 @@ nonword           = re.compile(r'[\W]')
 white_space       = re.compile(r'[\s]')
 scientific_notation_exponent = re.compile(r'\s*(?:[xX]{1}\s*10\s*[*^]{1,2}|[eE]){1}\s*')
 not_digit_nor_sign = re.compile(r'[^0-9-+]+')
+
