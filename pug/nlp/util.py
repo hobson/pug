@@ -342,32 +342,43 @@ def transposed_matrix(matrix, filler=None, row_type=list, matrix_type=list, valu
     Also, makes all elements a uniform type (default=type(matrix[0][0])), 
     except for filler elements.
 
+    TODO: add feature to delete None's at the end of rows so that transpose(transpose(LOL)) = LOL
+
     >>> transposed_matrix([[1, 2], [3, 4, 5], [6]])
-    [[1, 3, 6], [2, 4, None], [5, None, None]]
+    [[1, 3, 6], [2, 4, None], [None, 5, None]]
+    >>> transposed_matrix(transposed_matrix([[1, 2], [3, 4, 5], [6]]))
+    [[1, 2, None], [3, 4, 5], [6, None, None]]
+    >>> transposed_matrix([[], [1, 2, 3], [4]])  # empty first row forces default value type (float)
+    [[None, 1.0, 4.0], [None, 2.0, None], [None, 3.0, None]]
     >>> transposed_matrix(transposed_matrix([[], [1, 2, 3], [4]]))
-    [[None, None, None], [1, 2, 3], [4, None, None]]
-    >>> transposed_matrix(transposed_matrix([[], [1, 2, 3], [4]]))
-    [[None, None, None], [1, 2, 3], [4, None, None]]
+    [[None, None, None], [1.0, 2.0, 3.0], [4.0, None, None]]
     >>> l = transposed_matrix([range(4),[4,5]])
     >>> l
     [[0, 4], [1, 5], [2, None], [3, None]]
     >>> transposed_matrix(l)
-    [[0, 4], [1, 5], [2, None], [3, None]]
+    [[0, 1, 2, 3], [4, 5, None, None]]
     >>> transposed_matrix([[1,2],[1],[1,2,3]])
     [[1, 1, 1], [2, None, 2], [None, None, 3]]
     """
 
+    matrix_type = matrix_type or type(matrix)
+    # matrix = matrix_type(matrix)
+
     try:
         row_type = row_type or type(matrix[0])
     except:
+        pass
+    if not row_type or row_type == type(None):
         row_type = list
 
     try:
-        value_type = value_type or type(matrix[0][0])
+        value_type = value_type or type(matrix[0][0]) or float
     except:
+        pass
+    if not value_type or value_type == type(None):
         value_type = float
 
-    matrix_type = matrix_type or type(matrix)
+    #print matrix_type, row_type, value_type
 
     # original matrix is NxM, new matrix will be MxN
     N = len(matrix)
@@ -385,6 +396,8 @@ def transposed_matrix(matrix, filler=None, row_type=list, matrix_type=list, valu
                 ans[j][i] = value_type(matrix[i][j])
             except IndexError:
                 ans[j][i] = filler
+            except TypeError:
+                ans[j][i] = filler
 
     try:
         if isinstance(ans[0], row_type):
@@ -400,39 +413,20 @@ def hist_from_values_list(values_list, fillers=(None,), normalize=False, cumulat
     Only works for discrete (integer) values (doesn't bin real values).
     `fillers`: list or tuple of values to ignore in computing the histogram
 
-    >>> hist_from_values_list([1,1,2,1,1,1,2,3,2,4,4,5,7,10])  # doctest: +NORMALIZE_WHITESPACE
+    >>> hist_from_values_list([1,1,2,1,1,1,2,3,2,4,4,5,7,7,9])  # doctest: +NORMALIZE_WHITESPACE
     [(1, 5),
      (2, 3),
      (3, 1),
      (4, 2),
      (5, 1),
      (6, 0),
-     (7, 1),
+     (7, 2),
      (8, 0),
-     (9, 0),
-     (10, 1)]
-    >>> hist_from_values_list([(1,9),(1,8),(2,7),(1,6),(1,4),(2,5),(3,3),(5,0),(2,2)])  # doctest: +NORMALIZE_WHITESPACE
-    [(0, 0, 1),
-     (1, 4, 0),
-     (2, 3, 1),
-     (3, 1, 1),
-     (4, 0, 1),
-     (5, 1, 1),
-     (6, 0, 1),
-     (7, 0, 1),
-     (8, 0, 1),
-     (9, 0, 1)]
+     (9, 1)]
+    >>> hist_from_values_list([(1,9),(1,8),(2,),(1,),(1,4),(2,5),(3,3),(5,0),(2,2)])  # doctest: +NORMALIZE_WHITESPACE
+    [(0, 0, 1), (1, 4, 0), (2, 3, 1), (3, 1, 1), (4, 0, 1), (5, 1, 1), (6, 0, 0), (7, 0, 0), (8, 0, 1), (9, 0, 1)]
     >>> hist_from_values_list(transposed_matrix([(8,),(1,3,5),(2,),(3,4,5,8)]))  # doctest: +NORMALIZE_WHITESPACE
-    [(0, 0, 1),
-     (1, 4, 0),
-     (2, 3, 1),
-     (3, 1, 1),
-     (4, 0, 1),
-     (5, 1, 1),
-     (6, 0, 1),
-     (7, 0, 1),
-     (8, 0, 1),
-     (9, 0, 1)]
+    [(1, 0, 1, 0, 0), (2, 0, 0, 1, 0), (3, 0, 1, 0, 1), (4, 0, 0, 0, 1), (5, 0, 1, 0, 1), (6, 0, 0, 0, 0), (7, 0, 0, 0, 0), (8, 1, 0, 0, 1)]
     """
     value_types = tuple([int] + [type(filler) for filler in fillers])
     if all(isinstance(value, value_types) for value in values_list):
@@ -450,20 +444,21 @@ def hist_from_values_list(values_list, fillers=(None,), normalize=False, cumulat
                 if ig in counts:
                     del counts[ig]
 
-    histograms = []
-    for counts in counters:
-        intkeys = [c for c in counts if (isinstance(c, int) or (isinstance(c, float) and int(c) == c))]
-        try:
-            min_bin = int(min_bin)
-        except:
-            min_bin = min(intkeys)
-        min_bin = max(min_bin, min(intkeys))  # TODO: reuse min(intkeys)
-        try:
-            max_bin = int(max_bin)
-        except:
-            max_bin = max(intkeys)
-        max_bin = min(max_bin, max(intkeys))  # TODO: reuse max(intkeys)
+    intkeys_list = [[c for c in counts if (isinstance(c, int) or (isinstance(c, float) and int(c) == c))] for counts in counters]
+    try:
+        min_bin = int(min_bin)
+    except:
+        min_bin = min(min(intkeys) for intkeys in intkeys_list)
+    try:
+        max_bin = int(max_bin)
+    except:
+        max_bin = max(max(intkeys) for intkeys in intkeys_list)
 
+    min_bin = max(min_bin, min(min(intkeys) for intkeys in intkeys_list))  # TODO: reuse min(intkeys)
+    max_bin = min(max_bin, max(max(intkeys) for intkeys in intkeys_list))  # TODO: reuse max(intkeys)
+
+    histograms = []
+    for intkeys, counts in zip(intkeys_list, counters):
         histograms += [OrderedDict()]
         if not intkeys:
             continue
