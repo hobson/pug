@@ -299,66 +299,86 @@ def dos_from_table(table, header=None):
     return ans
 
 
-def transposed_lists(list_of_lists, default=(None,), fill=True, inner_type=None, outer_type=None):
+def transposed_lists(list_of_lists, default=None):
     """Like numpy.transposed
 
     >>> transposed_lists([[1, 2], [3, 4, 5], [6]])
     [[1, 3, 6], [2, 4], [5]]
-    >>> transposed_lists(transposed_lists([[], [1, 2, 3], [4]]), default=None)  # FIXME
+    >>> transposed_lists(transposed_lists([[], [1, 2, 3], [4]]))
     [[1, 2, 3], [4]]
-    >>> transposed_lists(transposed_lists([[], [1, 2, 3], [4]]), default=[None])
-    [[None, None, None], [1, 2, 3], [4, None, None]]
     >>> l = transposed_lists([range(4),[4,5]])
     >>> l
-    [[0, 4], [1, 5], [2, None], [3, None]]
+    [[0, 4], [1, 5], [2], [3]]
     >>> transposed_lists(l)
-    [[0, 4], [1, 5], [2, None], [3, None]]
-    >>> transposed_lists([[1,2],[1],[1,2,3]])
-    [[1, 1, 1], [2, None, 2], [None, None, 3]]
+    [[0, 1, 2, 3], [4, 5]]
     """
-    # if not list_of_lists or not list_of_lists[0]:
-    #     return list_of_lists
-
-    if default is None or default == [] or default == tuple():
+    if default is None or default is [] or default is tuple():
         default = []
-    elif default is 'None' or default == [None] or default == (None,):
+    elif default is 'None':
         default = [None]
     else:
-        default = listify(default)
-
-    initial_value = default or [None]
-    try:
-        inner_type = inner_type or type(list_of_lists[0])
-    except:
-        inner_type = list
+        default = [default]
+    
     N = len(list_of_lists)
     Ms = [len(row) for row in list_of_lists]
     M = max(Ms)
     ans = []
-    # for each row in the new matrix
+    for j in range(M):
+        ans += [[]]
+        for i in range(N):
+            if j < Ms[i]:
+                ans[-1] += [list_of_lists[i][j]]
+            else:
+                ans[-1] += list(default)
+    return ans
+
+
+def transposed_matrix(matrix, filler=None, row_type=list, matrix_type=list, value_type=float):
+    """Like numpy.transposed, evens up row (list) lengths that aren't uniform, filling with None.
+
+    >>> transposed_matrix([[1, 2], [3, 4, 5], [6]])
+    [[1, 3, 6], [2, 4, None], [5, None, None]]
+    >>> transposed_matrix(transposed_matrix([[], [1, 2, 3], [4]]), default=None)  # FIXME
+    [[1, 2, 3], [4]]
+    >>> transposed_matrix(transposed_matrix([[], [1, 2, 3], [4]]), default=[None])
+    [[None, None, None], [1, 2, 3], [4, None, None]]
+    >>> l = transposed_matrix([range(4),[4,5]])
+    >>> l
+    [[0, 4], [1, 5], [2, None], [3, None]]
+    >>> transposed_matrix(l)
+    [[0, 4], [1, 5], [2, None], [3, None]]
+    >>> transposed_matrix([[1,2],[1],[1,2,3]])
+    [[1, 1, 1], [2, None, 2], [None, None, 3]]
+    """
+
+    try:
+        row_type = row_type or type(matrix[0])
+    except:
+        row_type = list
+    # original matrix is NxM
+    N = len(matrix)
+    Ms = [len(row) for row in matrix]
+    M = max(Ms)
+
+    ans = []
+
+    # for each row in the new matrix (column in old matrix)
     for j in range(M):
         # add a row full of copies the `fill` value up to the maximum width required
-        ans += [initial_value * N]
+        ans += [row_type([filler] * N)]
         for i in range(N):
             try:
-                ans[j][i] = list_of_lists[i][j]
+                ans[j][i] = value_type(matrix[i][j])
             except IndexError:
-                pass
+                ans[j][i] = filler
 
-    if not default and not fill:
-        for i in xrange(M - 1, -1, -1):
-            for j in xrange(N - 1, -1, -1):
-                if ans[i][j] is None:
-                    del(ans[i][j])
- 
-
-    outer_type = outer_type or type(list_of_lists)
+    matrix_type = matrix_type or type(matrix)
     try:
-        if isinstance(ans[0], inner_type):
-            return outer_type(ans)
+        if isinstance(ans[0], row_type):
+            return matrix_type(ans)
     except:
         pass
-    return outer_type([inner_type(row) for row in ans])
+    return matrix_type([row_type(row) for row in ans])
 
 
 def update_dict(d, u, depth=-1, default_map=dict, default_set=set, prefer_update_type=False):
