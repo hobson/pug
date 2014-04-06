@@ -14,6 +14,7 @@ import datetime
 import dateutil
 import pytz
 import warnings
+from collections import Counter
 
 #import math
 from pytz import timezone
@@ -300,7 +301,9 @@ def dos_from_table(table, header=None):
 
 
 def transposed_lists(list_of_lists, default=None):
-    """Like numpy.transposed
+    """Like numpy.transposed, but allows for uneven row lengths
+
+    Uneven lengths will affect the order of the elements in the rows of the transposed lists
 
     >>> transposed_lists([[1, 2], [3, 4, 5], [6]])
     [[1, 3, 6], [2, 4], [5]]
@@ -333,14 +336,17 @@ def transposed_lists(list_of_lists, default=None):
     return ans
 
 
-def transposed_matrix(matrix, filler=None, row_type=list, matrix_type=list, value_type=float):
+def transposed_matrix(matrix, filler=None, row_type=list, matrix_type=list, value_type=None):
     """Like numpy.transposed, evens up row (list) lengths that aren't uniform, filling with None.
+
+    Also, makes all elements a uniform type (default=type(matrix[0][0])), 
+    except for filler elements.
 
     >>> transposed_matrix([[1, 2], [3, 4, 5], [6]])
     [[1, 3, 6], [2, 4, None], [5, None, None]]
-    >>> transposed_matrix(transposed_matrix([[], [1, 2, 3], [4]]), default=None)  # FIXME
-    [[1, 2, 3], [4]]
-    >>> transposed_matrix(transposed_matrix([[], [1, 2, 3], [4]]), default=[None])
+    >>> transposed_matrix(transposed_matrix([[], [1, 2, 3], [4]]))
+    [[None, None, None], [1, 2, 3], [4, None, None]]
+    >>> transposed_matrix(transposed_matrix([[], [1, 2, 3], [4]]))
     [[None, None, None], [1, 2, 3], [4, None, None]]
     >>> l = transposed_matrix([range(4),[4,5]])
     >>> l
@@ -355,7 +361,15 @@ def transposed_matrix(matrix, filler=None, row_type=list, matrix_type=list, valu
         row_type = row_type or type(matrix[0])
     except:
         row_type = list
-    # original matrix is NxM
+
+    try:
+        value_type = value_type or type(matrix[0][0])
+    except:
+        value_type = float
+
+    matrix_type = matrix_type or type(matrix)
+
+    # original matrix is NxM, new matrix will be MxN
     N = len(matrix)
     Ms = [len(row) for row in matrix]
     M = max(Ms)
@@ -372,13 +386,110 @@ def transposed_matrix(matrix, filler=None, row_type=list, matrix_type=list, valu
             except IndexError:
                 ans[j][i] = filler
 
-    matrix_type = matrix_type or type(matrix)
     try:
         if isinstance(ans[0], row_type):
             return matrix_type(ans)
     except:
         pass
     return matrix_type([row_type(row) for row in ans])
+
+
+def hist_from_values_list(values_list, fillers=(None,), normalize=False, cumulative=False, to_str=False, sep=',', min_bin=None, max_bin=None):
+    """Compute an emprical histogram, PMF or CDF in a list of lists or a csv string
+
+    Only works for discrete (integer) values (doesn't bin real values).
+    `fillers`: list or tuple of values to ignore in computing the histogram
+
+    >>> hist_from_values_list([1,1,2,1,1,1,2,3,2,4,4,5,7,10])  # doctest: +NORMALIZE_WHITESPACE
+    [(1, 5),
+     (2, 3),
+     (3, 1),
+     (4, 2),
+     (5, 1),
+     (6, 0),
+     (7, 1),
+     (8, 0),
+     (9, 0),
+     (10, 1)]
+    >>> hist_from_values_list([(1,9),(1,8),(2,7),(1,6),(1,4),(2,5),(3,3),(5,0),(2,2)])  # doctest: +NORMALIZE_WHITESPACE
+    [(0, 0, 1),
+     (1, 4, 0),
+     (2, 3, 1),
+     (3, 1, 1),
+     (4, 0, 1),
+     (5, 1, 1),
+     (6, 0, 1),
+     (7, 0, 1),
+     (8, 0, 1),
+     (9, 0, 1)]
+    >>> hist_from_values_list(transposed_matrix([(8,),(1,3,5),(2,),(3,4,5,8)]))  # doctest: +NORMALIZE_WHITESPACE
+    [(0, 0, 1),
+     (1, 4, 0),
+     (2, 3, 1),
+     (3, 1, 1),
+     (4, 0, 1),
+     (5, 1, 1),
+     (6, 0, 1),
+     (7, 0, 1),
+     (8, 0, 1),
+     (9, 0, 1)]
+    """
+    value_types = tuple([int] + [type(filler) for filler in fillers])
+    if all(isinstance(value, value_types) for value in values_list):
+        counters = [Counter(values_list)]
+    elif all(len(row)==1 for row in values_list) and all(isinstance(row[0], value_types) for row in values_list):
+        counters = [Counter(values[0] for values in values_list)]
+    else:
+        values_list_t = transposed_matrix(values_list)
+        counters = [Counter(col) for col in values_list_t]
+
+    if fillers:
+        fillers = listify(fillers)
+        for counts in counters:
+            for ig in fillers:
+                if ig in counts:
+                    del counts[ig]
+
+    histograms = []
+    for counts in counters:
+        intkeys = [c for c in counts if (isinstance(c, int) or (isinstance(c, float) and int(c) == c))]
+        try:
+            min_bin = int(min_bin)
+        except:
+            min_bin = min(intkeys)
+        min_bin = max(min_bin, min(intkeys))  # TODO: reuse min(intkeys)
+        try:
+            max_bin = int(max_bin)
+        except:
+            max_bin = max(intkeys)
+        max_bin = min(max_bin, max(intkeys))  # TODO: reuse max(intkeys)
+
+        histograms += [OrderedDict()]
+        if not intkeys:
+            continue
+        if normalize:
+            N = sum(counts[c] for c in intkeys)
+            for c in intkeys:
+                counts[c] = float(counts[c]) / N
+        if cumulative:
+            for i in xrange(min_bin, max_bin + 1):
+                histograms[-1][i] = counts.get(i, 0) + histograms[-1].get(i-1, 0)
+        else:
+            for i in xrange(min_bin, max_bin + 1):
+                histograms[-1][i] = counts.get(i, 0)
+
+    # fill in the zero counts between the integer bins of the histogram
+    aligned_histograms = []
+    min_bin = min(min(hist) for hist in histograms if hist)
+    iN = max(max(hist) for hist in histograms if hist)
+    for i in range(min_bin, iN + 1):
+        aligned_histograms += [tuple([i] + [hist.get(i, 0) for hist in histograms])]
+
+    if to_str:
+        # FIXME: add header row
+        return str_from_table(aligned_histograms, sep=sep, max_rows=365*2+1)
+
+    return aligned_histograms
 
 
 def update_dict(d, u, depth=-1, default_map=dict, default_set=set, prefer_update_type=False):
