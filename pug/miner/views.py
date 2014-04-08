@@ -19,6 +19,7 @@ from pug.nlp import parse
 from pug.nlp import util
 from pug.nlp import db
 
+from Returns import tv_lags as module
 
 def explorer(request, graph_uri=None):
     """Explore the database (or any data provided by a REST service)"""
@@ -170,38 +171,37 @@ def demo_linewithfocuschart(request):
     """
     linewithfocuschart page
     """
-    nb_element = 100
-    start_time = int(time.mktime(datetime.datetime(2012, 6, 1).timetuple()) * 1000)
+    lags_dict, hist, pmf, cdf, ccf = module.explore_lags(fiscal_years=['2013'], model_numbers=['LC'], reasons=['R%02d' % i for i in range(10,14)], account_numbers=[''], num_samples=10000, verbosity=1)
+    
+    hist_t=[[],[],[],[]]
+    if hist and len(hist) > 1:
+        hist_t = util.transposed_matrix(hist[1:])
 
-    xdata = range(nb_element)
-    xdata = map(lambda x: start_time + x * 1000000000, xdata)
-    ydata = [i + random.randint(1, 10) for i in range(nb_element)]
-    ydata2 = map(lambda x: x * 2, ydata)
-    ydata3 = map(lambda x: x * 3, ydata)
-    ydata4 = map(lambda x: x * 4, ydata)
+    names = hist[0][1:]
+    xdata = hist_t[0]
+    ydata = hist_t[1:]
 
-    tooltip_date = "%d %b %Y %H:%M:%S %p"
-    extra_serie = {"tooltip": {"y_start": "There are ", "y_end": " calls"},
-                   "date_format": tooltip_date}
+    #tooltip_date = "%d %b %Y %H:%M:%S %p"
+    extra_series = {"tooltip": {"y_start": "There are ", "y_end": " calls"},
+                   #"date_format": tooltip_date
+                   }
 
-    chartdata = {
-        'x': xdata,
-        'name1': 'series 1', 'y1': ydata, 'extra1': extra_serie,
-        'name2': 'series 2', 'y2': ydata2, 'extra2': extra_serie,
-        'name3': 'series 3', 'y3': ydata3, 'extra3': extra_serie,
-        'name4': 'series 4', 'y4': ydata4, 'extra4': extra_serie
-    }
-    charttype = "lineWithFocusChart"
-    chartcontainer = 'linewithfocuschart_container'  # container name
+    chartdata = { 'x': xdata }
+
+    for i, name in enumerate(names):
+        chartdata['name%d' % i] = name,
+        chartdata['y%d' % i] = ydata[i],
+        chartdata['extra%d' % i] = extra_series,
+
     data = {
-        'charttype': charttype,
+        'charttype': "lineWithFocusChart",
         'chartdata': chartdata,
-        'chartcontainer': chartcontainer,
+        'chartcontainer': 'linewithfocuschart_container',
         'extra': {
-            'x_is_date': True,
-            'x_axis_format': '%d %b %Y %H',
+            'x_is_date': False,
+            'x_axis_format': '', # %b %Y %H',
             'tag_script_js': True,
             'jquery_on_ready': True,
         }
     }
-    return render_to_response('linewithfocuschart.html', data)
+    return render_to_response('miner/linewithfocuschart.html', data)

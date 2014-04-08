@@ -383,10 +383,9 @@ def transposed_matrix(matrix, filler=None, row_type=list, matrix_type=list, valu
     # original matrix is NxM, new matrix will be MxN
     N = len(matrix)
     Ms = [len(row) for row in matrix]
-    M = max(Ms)
+    M = 0 if not Ms else max(Ms)
 
     ans = []
-
     # for each row in the new matrix (column in old matrix)
     for j in range(M):
         # add a row full of copies the `fill` value up to the maximum width required
@@ -454,8 +453,8 @@ def hist_from_values_list(values_list, fillers=(None,), normalize=False, cumulat
     except:
         max_bin = max(max(intkeys) for intkeys in intkeys_list)
 
-    min_bin = max(min_bin, min(min(intkeys) for intkeys in intkeys_list))  # TODO: reuse min(intkeys)
-    max_bin = min(max_bin, max(max(intkeys) for intkeys in intkeys_list))  # TODO: reuse max(intkeys)
+    min_bin = max(min_bin, min((min(intkeys) if intkeys else [0]) for intkeys in intkeys_list))  # TODO: reuse min(intkeys)
+    max_bin = min(max_bin, max((max(intkeys) if intkeys else [0]) for intkeys in intkeys_list))  # TODO: reuse max(intkeys)
 
     histograms = []
     for intkeys, counts in zip(intkeys_list, counters):
