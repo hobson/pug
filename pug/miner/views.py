@@ -1,6 +1,4 @@
-import time
-import random
-import datetime
+
 
 from django.shortcuts import render_to_response
 #from django.http import HttpResponse
@@ -168,11 +166,19 @@ class JSONView(View):
 # #               )
 
 def demo_linewithfocuschart(request):
-    """
-    linewithfocuschart page
-    """
-    lags_dict, hist, pmf, cdf, ccf = module.explore_lags(fiscal_years=['2013'], model_numbers=['LC'], reasons=['R%02d' % i for i in range(10,14)], account_numbers=[''], num_samples=10000, verbosity=1)
+    """Line chart with zoom and pan and "focus area" at bottom like google analytics.
     
+    Data takes a long time to load, so you better use this to increase the timeout
+    python gunicorn bigdata.wsgi:application --bind bigdata.enet.sharplabs.com:8000 --graceful-timeout=60 --timeout=60
+    """
+
+    fy = 2011
+    mn = 'LC60'
+    an = ''
+
+    lags_dict, hist, pmf, cdf, ccf = module.explore_lags(fiscal_years=[fy], model_numbers=[mn], reasons=['R%02d' % i for i in range(10,14)], account_numbers=[an], num_samples=400000, verbosity=1)
+    
+    hist = ccf
     hist_t=[[],[],[],[]]
     if hist and len(hist) > 1:
         hist_t = util.transposed_matrix(hist[1:])
@@ -180,6 +186,7 @@ def demo_linewithfocuschart(request):
     names = hist[0][1:]
     xdata = hist_t[0]
     ydata = hist_t[1:]
+    print names
 
     #tooltip_date = "%d %b %Y %H:%M:%S %p"
     extra_series = {"tooltip": {"y_start": "There are ", "y_end": " calls"},
@@ -189,17 +196,21 @@ def demo_linewithfocuschart(request):
     chartdata = { 'x': xdata }
 
     for i, name in enumerate(names):
-        chartdata['name%d' % i] = name,
-        chartdata['y%d' % i] = ydata[i],
-        chartdata['extra%d' % i] = extra_series,
+        chartdata['name%d' % (i + 1)] = name
+        chartdata['y%d' % (i + 1)] = ydata[i]
+        chartdata['extra%d' % (i + 1)] = extra_series
+
+    print chartdata
 
     data = {
+        'title': 'FY %d Returns Lag for Model %s*' % (fy, mn),
         'charttype': "lineWithFocusChart",
         'chartdata': chartdata,
         'chartcontainer': 'linewithfocuschart_container',
         'extra': {
             'x_is_date': False,
-            'x_axis_format': '', # %b %Y %H',
+            'x_axis_format': ',.0f', # %b %Y %H',
+            'y_axis_format': ',.0f', # "%d %b %Y"
             'tag_script_js': True,
             'jquery_on_ready': True,
         }
