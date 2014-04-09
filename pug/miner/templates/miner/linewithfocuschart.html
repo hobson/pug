@@ -1,11 +1,14 @@
+{% extends 'base.html' %}
 {% load nvd3_tags %}
-<head>
+
+{% block extra_head %}
     {% include_chart_jscss %}
     {# Jquery CDN : Needed when using jquery_on_ready=True #}
     <script src="http://code.jquery.com/jquery-1.10.1.min.js"></script>
     {% load_chart charttype chartdata chartcontainer extra %}
-</head>
-<body>
+{% endblock %}
+
+{% block content %}
     <H3>{{ title }}</H3>
     {% include_container chartcontainer 400 '100%' %}
-</body>
+{% endblock %}

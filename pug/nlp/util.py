@@ -453,8 +453,8 @@ def hist_from_values_list(values_list, fillers=(None,), normalize=False, cumulat
     except:
         max_bin = max(max(intkeys) for intkeys in intkeys_list)
 
-    min_bin = max(min_bin, min((min(intkeys) if intkeys else [0]) for intkeys in intkeys_list))  # TODO: reuse min(intkeys)
-    max_bin = min(max_bin, max((max(intkeys) if intkeys else [0]) for intkeys in intkeys_list))  # TODO: reuse max(intkeys)
+    min_bin = max(min_bin, min((min(intkeys) if intkeys else 0) for intkeys in intkeys_list))  # TODO: reuse min(intkeys)
+    max_bin = min(max_bin, max((max(intkeys) if intkeys else 0) for intkeys in intkeys_list))  # TODO: reuse max(intkeys)
 
     histograms = []
     for intkeys, counts in zip(intkeys_list, counters):
@@ -471,12 +471,13 @@ def hist_from_values_list(values_list, fillers=(None,), normalize=False, cumulat
         else:
             for i in xrange(min_bin, max_bin + 1):
                 histograms[-1][i] = counts.get(i, 0)
+    if not histograms:
+        histograms = [OrderedDict()]
 
     # fill in the zero counts between the integer bins of the histogram
     aligned_histograms = []
-    min_bin = min(min(hist) for hist in histograms if hist)
-    iN = max(max(hist) for hist in histograms if hist)
-    for i in range(min_bin, iN + 1):
+
+    for i in range(min_bin, max_bin + 1):
         aligned_histograms += [tuple([i] + [hist.get(i, 0) for hist in histograms])]
 
     if to_str:
@@ -903,11 +904,13 @@ def normalize_scientific_notation(s, ignore_commas=True):
     return None
 
 
-def normalize_serial_number(sn, max_length=10, left_fill='0', right_fill='', blank='', valid_chars='0123456789', invalid_chars=None, join=False):
+def normalize_serial_number(sn, max_length=10, left_fill='0', right_fill='', blank='', valid_chars='0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ -', invalid_chars=None, join=False):
     r"""Make a string compatible with typical serial number requirements
 
-    >>> normalize_serial_number('1C 234567890             ')
+    >>> normalize_serial_number('1C 234567890             ', valid_chars='0123456789')
     '0234567890'
+    >>> normalize_serial_number('1C 234567890             ')
+    '1C 0234567890'
     >>> normalize_serial_number(' \t1C\t-\t234567890 \x00\x7f', max_length=14, left_fill='0', valid_chars='0123456789ABC', invalid_chars=None, join=True)
     '0001C234567890'
     >>> normalize_serial_number('Unknown', blank=False)

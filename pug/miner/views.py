@@ -32,19 +32,6 @@ def home(request, graph_uri=None):
         }
     return render_to_response('miner/home.html', data)
 
-
-def url_graph(request, chart_type='lineWithFocusChart', values_list=('modified'), filter_dict={'title__startswith': 'E'}, model='WikiItem'):
-    """
-    Send data in the context variable "data" for a pie chart (x, y) and a line chart.
-    """
-
-    graph_uri = r'Origin,3,1_I,2,2_10~Origin_II,2~I_III~I_IV~II_IV~IV_V~V_I~VI_V,.5,3~VII,.2,4_V'
-    data = {
-        'graph_uri': graph_uri,
-    }
-    return render_to_response('miner/chart.html', data)
-
-
 def connections(request, edges):
     """
     Plot a force-directed graph based on the edges provided
@@ -183,9 +170,10 @@ def demo_linewithfocuschart(request):
     if hist and len(hist) > 1:
         hist_t = util.transposed_matrix(hist[1:])
 
-    names = hist[0][1:]
-    xdata = hist_t[0]
-    ydata = hist_t[1:]
+    if hist and hist[0]:
+        names = hist[0][1:]
+        xdata = hist_t[0]
+        ydata = hist_t[1:]
     print names
 
     #tooltip_date = "%d %b %Y %H:%M:%S %p"

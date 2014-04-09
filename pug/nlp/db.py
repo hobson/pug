@@ -56,6 +56,7 @@ def has_suffix(model, suffixes=('Orig',)):
             return True
     return False
 
+
 def has_prefix(model, prefixes=('Wiki')):
     for prefix in prefixes:
         if model._meta.object_name.startswith(prefix) or model._meta.db_table.startswith(prefix):
@@ -66,19 +67,25 @@ def has_prefix(model, prefixes=('Wiki')):
 def representation(model, field_names=None):
     """
     Unicode representation of a particular model instance (object or record or DB table row)
+
+    TODO:
+    - check for _meta.unique_together and use them to order the all_names list
+    - do fuzzywuzzy matching on field names to identify important fields automatically (name, id, serial, model, account, last, first, email, phone, city)
     """
     if field_names is None:
         all_names = model._meta.get_all_field_names()
-        field_names = getattr(model, 'IMPORTANT_FIELDS', None) or \
-            getattr(model, '_important_fields', None) or \
-            ['pk'] + all_names[:min(representation.default_fields, len(all_names))]
-    retval = model.__class__.__name__ + u'('
-    retval += ', '.join("%s" % (repr(getattr(model, s, '') or '')) for s in field_names[:min(len(field_names), representation.max_fields)])
-    return retval + u')'
+        field_names = None
+        for field_names_name in ('IMPORTANT_FIELDS', '_important_fields', 'REPR_FIELDS', '_repr_fields'):  #, 'SECURE_FIELDS', '_secure_fields'):
+            field_names = getattr(model, field_names_name, None)  # or getattr(getattr(model, '_meta', None), field_names_name, None) # ticket 5793 wont fix, custom Meta.* not allowed 
+            if field_names:
+                break
+    field_names = field_names or (['pk'] + all_names[:min(representation.default_fields, len(all_names))])
+    return (model.__class__.__name__
+        + '('
+        + ', '.join("%s" % (repr(getattr(model, s, '') or '')) for s in field_names[:min(len(field_names), representation.max_fields)])
+        + ')')
 representation.max_fields = 10
 representation.default_fields = 3
-
-
 
 
 def best_scale_factor(x, y):

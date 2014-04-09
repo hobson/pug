@@ -5,22 +5,22 @@ import sqlparse
 import re
 import json
 import chardet
-
-import numpy as np
-from dateutil import parser
 import datetime
 
-from pug.nlp import djdb  # FIXME: confusing name (too similar to common `import as` for django.db)
-from pug.nlp import db
-import sqlserver as sql
-
+import numpy as np
+import matplotlib.pyplot as plt
+from dateutil import parser
+from progressbar import ProgressBar, Bar, Percentage, ETA, RotatingMarker
 
 from django.core.exceptions import ImproperlyConfigured
 from django.db import DatabaseError
 from django.core.exceptions import FieldError
 from django.db.models import FieldDoesNotExist
 
-import matplotlib.pyplot as plt
+from pug.nlp import djdb  # FIXME: confusing name (too similar to common `import as` for django.db)
+from pug.nlp import db
+from pug.nlp import util
+import sqlserver as sql
 
 
 DEFAULT_DB_ALIAS = None  # 'default'
@@ -355,6 +355,51 @@ def augment_field_meta(field, queryset, field_properties, verbosity=0, count=0):
         for k in ('min', 'max'):
             clean_utf8(field_properties.get(k))
     return field_properties
+
+
+def index_with_dupes(values_list, unique_together=2, model_number_i=0, serial_number_i=1, verbosity=1):
+    '''Create dict from values_list with first N values as a compound key.
+
+    Default N (number of columns assumbed to be "unique_together") is 2.
+    >>> index_with_dupes([(1,2,3), (5,6,7), (5,6,8), (2,1,3)]) == ({(1, 2): (1, 2, 3), (2, 1): (2, 1, 3), (5, 6): (5, 6, 7)}, {(5, 6): [(5, 6, 7), (5, 6, 8)]})
+    True
+    '''
+    try:
+        N = values_list.count()
+    except:
+        N = len(values_list)
+    if verbosity:
+        print 'Indexing %d values_lists in a queryset or a sequence of Django model instances (database table rows).' % N
+    index, dupes = {}, {}
+    pbar = None
+    if verbosity and N > min(1000000, max(0, 100000**(1./verbosity))):
+        widgets = ['%d rows: ' % N, Percentage(), ' ', RotatingMarker(), ' ', Bar(),' ', ETA()]
+        pbar = ProgressBar(widgets=widgets, maxval=len(values_list)).start()
+    rownum = 0
+    for row in values_list:
+        normalized_key = [type(row[model_number_i])(str(row[model_number_i]).strip()), 
+                                type(row[serial_number_i])(util.normalize_serial_number(str(row[serial_number_i])))]
+        normalized_key += [i for i in range(unique_together) if i not in (serial_number_i, model_number_i)]
+        normalized_key = tuple(normalized_key)
+        if normalized_key in index:
+            # need to add the first nondupe before we add the dupes to the list
+            if normalized_key not in dupes:
+                dupes[normalized_key] = [index[normalized_key]]
+            dupes[normalized_key] = dupes[normalized_key] + [row]
+            if verbosity > 2:
+                print 'Duplicate model-serial number found. Here are all the rows that match this key:'
+                print dupes[normalized_key]
+        else:
+            index[normalized_key] = row 
+        if pbar:
+            pbar.update(rownum)
+        rownum += 1
+    if pbar:
+        pbar.finish()
+    if verbosity:
+        print 'Found %d duplicate model-serial pairs in the %d records or %g%%' % (len(dupes), len(index), len(dupes)*100./(len(index) or 1.))
+    return index, dupes
+
 
 def get_index(model_meta, weights=None, verbosity=0):
     """Return a single tuple of index metadata for the model metadata dict provided

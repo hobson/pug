@@ -22,7 +22,7 @@ models, connection, settings = None, None, None
 try:
     from django.db import models
     from django.db import connection
-    from django.conf import settings
+    from django.conf import settings  # there is only one function that requires settings, all other functions should be moved to nlp.db module?
 except ImproperlyConfigured:
     import traceback
     print traceback.format_exc()
@@ -932,11 +932,11 @@ def fixture_record_from_row():
     }"""
 
 
-def django_object_from_row(row, model, field_names=None, include_id=False):
-    return model(**field_dict_from_row(row, model, field_names=field_names, include_id=include_id))
+def django_object_from_row(row, model, field_names=None, include_id=False, strip=True, verbosity=0):
+    return model(**field_dict_from_row(row, model, field_names=field_names, include_id=include_id, strip=strip, verbosity=verbosity))
 
 
-def field_dict_from_row(row, model, field_names=None, include_id=False, verbosity=0):
+def field_dict_from_row(row, model, field_names=None, include_id=False, strip=True, verbosity=0):
     field_classes = [f for f in model._meta._fields() if (include_id or f.name != 'id')]
     if not field_names:
         field_names = [f.name for f in field_classes if (include_id or f.name != 'id')]
@@ -951,17 +951,19 @@ def field_dict_from_row(row, model, field_names=None, include_id=False, verbosit
             clean_value = type(field_class)().to_python(value)
         except:  # ValidationError
             clean_value = str(type(field_class)().to_python(util.clean_wiki_datetime(value)))
+        if strip and isinstance(clean_value, basestring):
+            clean_value = clean_value.strip()
         field_dict[field_name] = clean_value
     return field_dict
 
 
-def load_csv_to_model(path, model, field_names=None, delimiter='|', batch_size=1000, num_header_rows=1, dry_run=True, verbosity=1):
+def load_csv_to_model(path, model, field_names=None, delimiter='|', batch_size=1000, num_header_rows=1, strip=True, dry_run=True, verbosity=1):
     """Bulk create databse records from batches of rows in a csv file."""
     path = path or './'
     if not delimiter:
         for d in ',', '|', '\t', ';':
             try:
-                return load_csv_to_model(path=path, model=model, field_names=field_names, delimiter=d, batch_size=batch_size, num_header_rows=num_header_rows, verbosity=verbosity)
+                return load_csv_to_model(path=path, model=model, field_names=field_names, delimiter=d, batch_size=batch_size, num_header_rows=num_header_rows, strip=strip, dry_run=dry_run, verbosity=verbosity)
             except:
                 pass
         return None
@@ -976,7 +978,7 @@ def load_csv_to_model(path, model, field_names=None, delimiter='|', batch_size=1
             i += len(batch_of_rows)
             if verbosity:
                 print i
-            batch_of_objects = [django_object_from_row(row, model=model, field_names=field_names) for row in batch_of_rows]
+            batch_of_objects = [django_object_from_row(row, model=model, field_names=field_names, strip=strip) for row in batch_of_rows]
             if not dry_run:
                 model.objects.bulk_create(batch_of_objects)
             elif verbosity:
@@ -984,7 +986,7 @@ def load_csv_to_model(path, model, field_names=None, delimiter='|', batch_size=1
     return i
 
 
-def load_all_csvs_to_model(path, model, field_names=None, delimiter=None, batch_size=1000, num_header_rows=1, recursive=False, clear=False, dry_run=True, verbosity=1):
+def load_all_csvs_to_model(path, model, field_names=None, delimiter=None, batch_size=10000, num_header_rows=1, recursive=False, clear=False, dry_run=True, strip=True, verbosity=1):
     """Bulk create database records from all csv files found within a directory."""
     path = path or './'
     batch_size = batch_size or 1000
@@ -1009,7 +1011,7 @@ def load_all_csvs_to_model(path, model, field_names=None, delimiter=None, batch_
             if verbosity:
                 print 'loading "%s"...' % os.path.join(dir_path, fn)
             if fn.lower().endswith(".csv"):
-                N += load_csv_to_model(path=os.path.join(dir_path, fn), model=model, field_names=field_names, delimiter=delimiter, batch_size=batch_size, num_header_rows=num_header_rows, dry_run=dry_run, verbosity=verbosity)
+                N += load_csv_to_model(path=os.path.join(dir_path, fn), model=model, field_names=field_names, delimiter=delimiter, strip=strip, batch_size=batch_size, num_header_rows=num_header_rows, dry_run=dry_run, verbosity=verbosity)
         if not recursive:
             return N
     return N
