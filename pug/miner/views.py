@@ -152,32 +152,52 @@ class JSONView(View):
 # #                 {'key': 'group', 'type': intify, 'default': 0},  # TODO: this should be a string like the names/indexes to nodes (groups are just hidden nodes)
 # #               )
 
-def demo_linewithfocuschart(request):
+def lag(request, *args):
     """Line chart with zoom and pan and "focus area" at bottom like google analytics.
     
     Data takes a long time to load, so you better use this to increase the timeout
     python gunicorn bigdata.wsgi:application --bind bigdata.enet.sharplabs.com:8000 --graceful-timeout=60 --timeout=60
     """
+    hist_formats = ['hist', 'pmf', 'cdf', 'cmf']
+    hist_format = 'cmf'
+    if args and len(str(args[0])):
+        hist_format_str = str(args[0]).lower().strip()
+    if hist_format_str in hist_formats:
+        hist_format = hist_format_str
 
-    fy = 2011
-    mn = 'LC60'
-    an = ''
+    fiscal_years = request.GET.get('fy', '2011').split(',') or [2011]
+    reasons = request.GET.get('r', 'R').split(',') or ['R']
+    account_numbers = request.GET.get('an', '').split(',') or ['']
+    model_numbers = request.GET.get('mn', 'LC').split(',') or ['LC']
 
-    lags_dict, hist, pmf, cdf, ccf = module.explore_lags(fiscal_years=[fy], model_numbers=[mn], reasons=['R%02d' % i for i in range(10,14)], account_numbers=[an], num_samples=400000, verbosity=1)
+    params = {
+        'FY': fiscal_years,
+        'Reason': reasons,
+        'Account #': account_numbers,
+        'Model #': model_numbers,
+        }
+
     
-    hist = ccf
+    lags = module.explore_lags(fiscal_years=fiscal_years, model_numbers=model_numbers, reasons=reasons, account_numbers=account_numbers, verbosity=1)
+    hist = lags[hist_formats.index(hist_format)+1]
+
+    print hist_formats.index(hist_format)
+    print [max([y[1] for y in x]) for x in lags[1:]]
+
     hist_t=[[],[],[],[]]
     if hist and len(hist) > 1:
         hist_t = util.transposed_matrix(hist[1:])
 
     if hist and hist[0]:
+        print hist[0]
         names = hist[0][1:]
+        print names
         xdata = hist_t[0]
         ydata = hist_t[1:]
-    print names
+    # print names
 
     #tooltip_date = "%d %b %Y %H:%M:%S %p"
-    extra_series = {"tooltip": {"y_start": "There are ", "y_end": " calls"},
+    extra_series = {"tooltip": {"y_start": " ", "y_end": " returns"},
                    #"date_format": tooltip_date
                    }
 
@@ -188,10 +208,15 @@ def demo_linewithfocuschart(request):
         chartdata['y%d' % (i + 1)] = ydata[i]
         chartdata['extra%d' % (i + 1)] = extra_series
 
-    print chartdata
+    subtitle = []
+
+    for k, v in params.iteritems():
+        if len(v) == 1 and v[0] and len(str(v[0])):
+            subtitle += [str(k) + ': ' + str(v[0])] 
 
     data = {
-        'title': 'FY %d Returns Lag for Model %s*' % (fy, mn),
+        'title': 'Returns Lag ' + hist_format.upper(),
+        'subtitle': ', '.join(subtitle),
         'charttype': "lineWithFocusChart",
         'chartdata': chartdata,
         'chartcontainer': 'linewithfocuschart_container',
