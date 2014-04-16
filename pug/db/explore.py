@@ -19,7 +19,7 @@ from django.db.models import FieldDoesNotExist
 
 from pug.nlp import djdb  # FIXME: confusing name (too similar to common `import as` for django.db)
 from pug.nlp import db
-from pug.nlp import util
+#from pug.nlp import util
 import sqlserver as sql
 
 
@@ -377,8 +377,7 @@ def index_with_dupes(values_list, unique_together=2, model_number_i=0, serial_nu
         pbar = ProgressBar(widgets=widgets, maxval=len(values_list)).start()
     rownum = 0
     for row in values_list:
-        normalized_key = [type(row[model_number_i])(str(row[model_number_i]).strip()), 
-                                type(row[serial_number_i])(util.normalize_serial_number(str(row[serial_number_i])))]
+        normalized_key = [str(row[model_number_i]).strip(), str(row[serial_number_i]).strip()]
         normalized_key += [i for i in range(unique_together) if i not in (serial_number_i, model_number_i)]
         normalized_key = tuple(normalized_key)
         if normalized_key in index:
