@@ -1,4 +1,4 @@
-from django.conf.urls import patterns, url
+from django.conf.urls import patterns, include, url
 #from django.conf import settings
 #from django.views.generic import TemplateView
 #import django.views.static
@@ -19,3 +19,14 @@ urlpatterns = patterns('',
     #url(r'^static/(?P<page>.*)\.json$', JSONView.as_view()),
     url(r'^(?P<page>.+)\.html$', StaticView.as_view()),
 )
+
+
+urlpatterns += patterns('',
+    url(r'^$', 'miner.views.testcele', name='testcele'),
+    url(r'^do_task$', 'miner.views.do_task', name='do_task'),
+    url(r'^poll_state$', 'miner.views.poll_state', name='poll_state'),
+
+    # # Uncomment the next line to enable the admin:
+    # url(r'^admin/', include(admin.site.urls)),
+)
+

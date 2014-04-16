@@ -3,7 +3,7 @@
 from django.shortcuts import render_to_response
 #from django.http import HttpResponse
 from django.views.generic import View  #, TemplateView
-from django.template.response import TemplateResponse
+from django.template.response import TemplateResponse, HttpResponse
 from django.template.loader import get_template
 from django.http import Http404
 from django import http
@@ -24,13 +24,13 @@ def explorer(request, graph_uri=None):
     #return HttpResponse('Looking for template in miner/explorer.html')
     return render_to_response('miner/explorer.html')
 
-def home(request, graph_uri=None):
-    """home page"""
-    graph_uri = graph_uri or r'Origin,3,1_I,2,2_10~Origin_II,2~I_III~I_IV~II_IV~IV_V~V_I~VI_V,.5,3~VII,.2,4_V'
-    data = {
-        'graph_uri': graph_uri,
-        }
-    return render_to_response('miner/home.html', data)
+# def home(request, graph_uri=None):
+#     """home page"""
+#     graph_uri = graph_uri or r'Origin,3,1_I,2,2_10~Origin_II,2~I_III~I_IV~II_IV~IV_V~V_I~VI_V,.5,3~VII,.2,4_V'
+#     data = {
+#         'graph_uri': graph_uri,
+#         }
+#     return render_to_response('miner/home.html', data)
 
 def connections(request, edges):
     """
@@ -117,47 +117,64 @@ class JSONView(View):
         return json.dumps(context)
 
 
-# # def parse_node_name(name, use_defaults=False):
-# #     """
-# #     >>> sorted(parse_node_name('Origin,2.7, 3 ')[1].items())
-# #     [('charge', 2.7), ('group', 3), ('name', 'Origin')]
-# #     >>> parse_node_name('Origin,2.7, 3 ')[0]
-# #     'Origin'
-# #     """
-# #     # if the name is not a string, but a dict defining a node, then just set the defaults and return it
-# #     if isinstance(name, Mapping):
-# #         ans = dict(name)
-# #         for j, field in enumerate(parse_node_name.schema):
-# #             if field['key'] not in ans:
-# #                 ans[field['key']] = field['default']
-# #         return ans
-# #     seq = db.listify(name, delim=',')
-# #     ans = {}
-# #     for j, field in enumerate(parse_node_name.schema):
-# #         if 'default' in field:
-# #             try:
-# #                 ans[field['key']] = field['type'](seq[j])
-# #             except:
-# #                 if use_defaults:
-# #                     ans[field['key']] = field['default']
-# #         else:
-# #             try:
-# #                 ans[field['key']] = ans.get(field['key'], field['type'](seq[j]))
-# #             except:
-# #                 pass
-# #     return ans
-# # parse_node_name.schema = (
-# #                 {'key': 'name', 'type': str},  # TODO: use the absence of a default value (rather than index > 0) to identify mandatory fields
-# #                 {'key': 'charge', 'type': float, 'default': 1},
-# #                 {'key': 'group', 'type': intify, 'default': 0},  # TODO: this should be a string like the names/indexes to nodes (groups are just hidden nodes)
-# #               )
+# testcele progress bar test
+
+#from django.shortcuts import render_to_response
+from django.template import RequestContext
+#from django.http import HttpResponse
+#from django.utils import simplejson as json
+from django.views.decorators.csrf import csrf_exempt
+
+from celery.result import AsyncResult
+
+from miner import tasks
+
+
+def testcele(request):
+    if 'task_id' in request.session.keys() and request.session['task_id']:
+        task_id = request.session['task_id']
+    return render_to_response('miner/testcele.html', locals(), context_instance=RequestContext(request))
+
+
+@csrf_exempt
+def do_task(request):
+    """ A view the call the task and write the task id to the session """
+    data = 'Fail'
+    if request.is_ajax():
+        job = tasks.create_models.delay()
+        request.session['task_id'] = job.id
+        data = job.id
+    else:
+        data = 'This is not an ajax request!'
+
+    json_data = json.dumps(data)
+
+    return HttpResponse(json_data, mimetype='application/json')
+
+
+@csrf_exempt
+def poll_state(request):
+    """ A view to report the progress to the user """
+    data = 'Fail'
+    if request.is_ajax():
+        if 'task_id' in request.POST.keys() and request.POST['task_id']:
+           task_id = request.POST['task_id']
+           task = AsyncResult(task_id)
+           data = task.result or task.state
+        else:
+            data = 'No task_id in the request'
+    else:
+        data = 'This is not an ajax request'
+    json_data = json.dumps(data)
+    return HttpResponse(json_data, mimetype='application/json')
+
 
 def lag(request, *args):
-    """Line chart with zoom and pan and "focus area" at bottom like google analytics.
+    '''Line chart with zoom and pan and "focus area" at bottom like google analytics.
     
     Data takes a long time to load, so you better use this to increase the timeout
     python gunicorn bigdata.wsgi:application --bind bigdata.enet.sharplabs.com:8000 --graceful-timeout=60 --timeout=60
-    """
+    '''
     hist_formats = ['hist', 'pmf', 'cdf', 'cmf']
     hist_format = 'cmf'
     if args and len(str(args[0])):
@@ -215,7 +232,7 @@ def lag(request, *args):
             subtitle += [str(k) + ': ' + str(v[0])] 
 
     data = {
-        'title': 'Returns Lag ' + hist_format.upper(),
+        'title': 'Returns Lag <font color="gray">' + hist_format.upper() + '</font>',
         'subtitle': ', '.join(subtitle),
         'charttype': "lineWithFocusChart",
         'chartdata': chartdata,
