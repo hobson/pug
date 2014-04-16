@@ -119,54 +119,54 @@ class JSONView(View):
 
 # testcele progress bar test
 
-#from django.shortcuts import render_to_response
-from django.template import RequestContext
-#from django.http import HttpResponse
-#from django.utils import simplejson as json
-from django.views.decorators.csrf import csrf_exempt
+# #from django.shortcuts import render_to_response
+# from django.template import RequestContext
+# #from django.http import HttpResponse
+# #from django.utils import simplejson as json
+# from django.views.decorators.csrf import csrf_exempt
 
-from celery.result import AsyncResult
+# from celery.result import AsyncResult
 
-from miner import tasks
-
-
-def testcele(request):
-    if 'task_id' in request.session.keys() and request.session['task_id']:
-        task_id = request.session['task_id']
-    return render_to_response('miner/testcele.html', locals(), context_instance=RequestContext(request))
+# from miner import tasks
 
 
-@csrf_exempt
-def do_task(request):
-    """ A view the call the task and write the task id to the session """
-    data = 'Fail'
-    if request.is_ajax():
-        job = tasks.create_models.delay()
-        request.session['task_id'] = job.id
-        data = job.id
-    else:
-        data = 'This is not an ajax request!'
-
-    json_data = json.dumps(data)
-
-    return HttpResponse(json_data, mimetype='application/json')
+# def testcele(request):
+#     if 'task_id' in request.session.keys() and request.session['task_id']:
+#         task_id = request.session['task_id']
+#     return render_to_response('miner/testcele.html', locals(), context_instance=RequestContext(request))
 
 
-@csrf_exempt
-def poll_state(request):
-    """ A view to report the progress to the user """
-    data = 'Fail'
-    if request.is_ajax():
-        if 'task_id' in request.POST.keys() and request.POST['task_id']:
-           task_id = request.POST['task_id']
-           task = AsyncResult(task_id)
-           data = task.result or task.state
-        else:
-            data = 'No task_id in the request'
-    else:
-        data = 'This is not an ajax request'
-    json_data = json.dumps(data)
-    return HttpResponse(json_data, mimetype='application/json')
+# @csrf_exempt
+# def do_task(request):
+#     """ A view the call the task and write the task id to the session """
+#     data = 'Fail'
+#     if request.is_ajax():
+#         job = tasks.create_models.delay()
+#         request.session['task_id'] = job.id
+#         data = job.id
+#     else:
+#         data = 'This is not an ajax request!'
+
+#     json_data = json.dumps(data)
+
+#     return HttpResponse(json_data, mimetype='application/json')
+
+
+# @csrf_exempt
+# def poll_state(request):
+#     """ A view to report the progress to the user """
+#     data = 'Fail'
+#     if request.is_ajax():
+#         if 'task_id' in request.POST.keys() and request.POST['task_id']:
+#            task_id = request.POST['task_id']
+#            task = AsyncResult(task_id)
+#            data = task.result or task.state
+#         else:
+#             data = 'No task_id in the request'
+#     else:
+#         data = 'This is not an ajax request'
+#     json_data = json.dumps(data)
+#     return HttpResponse(json_data, mimetype='application/json')
 
 
 def lag(request, *args):
