@@ -82,3 +82,15 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/1.6/howto/static-files/
 
 STATIC_URL = '/static/'
+
+
+# List of modules to import when celery starts.  But crawlnmine.crawlnmine.__init__ will do this
+#CELERY_IMPORTS = ("testcele.tasks",)
+
+CELERYBEAT_SCHEDULER = 'djcelery.schedulers.DatabaseScheduler'
+CELERY_RESULT_BACKEND = "database"
+#CELERY_RESULT_DBURI = "mysql://mydb_user:mydb_password@localhost/celery"
+
+# BROKER_URL = 'message_broker://user:password@hostname:port/virtual_host'
+# BROKER_URL = 'amqp://new_user:1q2w3e@localhost:5672/myvhost'
+# BROKER_URL = 'redis:' #...

@@ -23,13 +23,13 @@ def explore(request, graph_uri=None):
     return HttpResponse('Looking for template in miner/explorer.html')
     return render_to_response('miner/explorer.html')
 
-def home(request, graph_uri=None):
-    """home page"""
-    graph_uri = graph_uri or r'Origin,3,1_I,2,2_10~Origin_II,2~I_III~I_IV~II_IV~IV_V~V_I~VI_V,.5,3~VII,.2,4_V'
-    data = {
-        'graph_uri': graph_uri,
-        }
-    return render_to_response('miner/home.html', data)
+# def home(request, graph_uri=None):
+#     """home page"""
+#     graph_uri = graph_uri or r'Origin,3,1_I,2,2_10~Origin_II,2~I_III~I_IV~II_IV~IV_V~V_I~VI_V,.5,3~VII,.2,4_V'
+#     data = {
+#         'graph_uri': graph_uri,
+#         }
+#     return render_to_response('miner/home.html', data)
 
 
 def url_graph(request, chart_type='lineWithFocusChart', values_list=('modified'), filter_dict={'title__startswith': 'E'}, model='WikiItem'):
@@ -163,3 +163,57 @@ class JSONView(View):
 # #                 {'key': 'charge', 'type': float, 'default': 1},
 # #                 {'key': 'group', 'type': intify, 'default': 0},  # TODO: this should be a string like the names/indexes to nodes (groups are just hidden nodes)
 # #               )
+
+
+# testcele progress bar test
+
+#from django.shortcuts import render_to_response
+from django.template import RequestContext
+#from django.http import HttpResponse
+#from django.utils import simplejson as json
+from django.views.decorators.csrf import csrf_exempt
+
+from celery.result import AsyncResult
+
+from miner import tasks
+
+
+def testcele(request):
+    if 'task_id' in request.session.keys() and request.session['task_id']:
+        task_id = request.session['task_id']
+    return render_to_response('miner/testcele.html', locals(), context_instance=RequestContext(request))
+
+
+@csrf_exempt
+def do_task(request):
+    """ A view the call the task and write the task id to the session """
+    data = 'Fail'
+    if request.is_ajax():
+        job = tasks.create_models.delay()
+        request.session['task_id'] = job.id
+        data = job.id
+    else:
+        data = 'This is not an ajax request!'
+
+    json_data = json.dumps(data)
+
+    return HttpResponse(json_data, mimetype='application/json')
+
+
+@csrf_exempt
+def poll_state(request):
+ """ A view to report the progress to the user """
+ data = 'Fail'
+ if request.is_ajax():
+  if 'task_id' in request.POST.keys() and request.POST['task_id']:
+   task_id = request.POST['task_id']
+   task = AsyncResult(task_id)
+   data = task.result or task.state
+  else:
+   data = 'No task_id in the request'
+ else:
+  data = 'This is not an ajax request'
+
+ json_data = json.dumps(data)
+
+ return HttpResponse(json_data, mimetype='application/json')

@@ -28,3 +28,5 @@ sqlparse==0.1.10
 w3lib==1.5
 wsgiref==0.1.2
 zope.interface==4.0.5
+django_celery
+celery
