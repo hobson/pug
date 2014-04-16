@@ -13,6 +13,8 @@ import csv
 import datetime
 import dateutil
 import pytz
+import warnings
+from collections import Counter
 
 #import math
 from pytz import timezone
@@ -28,6 +30,8 @@ import scipy as sci
 
 import logging
 logger = logging.getLogger('bigdata.info')
+
+import ascii
 
 #from django.core.exceptions import ImproperlyConfigured
 # try:
@@ -46,6 +50,7 @@ SCALAR_TYPES = (float, long, int, str, unicode)  # bool, complex, datetime.datet
 # numpy types are derived from these so no need to include numpy.float64, numpy.int64 etc
 DICTABLE_TYPES = (Mapping, tuple, list)  # convertable to a dictionary (inherits collections.Mapping or is a list of key/value pairs)
 VECTOR_TYPES = (list, tuple)
+PYTHON_NUMBER_TYPES = (float, long, int)  # bool, complex, datetime.datetime,
 PUNC = unicode(string.punctuation)
 
 RE_WORD_SPLIT_IGNORE_EXTERNAL_APOSTROPHIES = re.compile('\W*\s\'{1,3}|\'{1,3}\W+|[^-\'_.a-zA-Z0-9]+|\W+\s+')
@@ -115,8 +120,9 @@ def clean_field_dict(field_dict, cleaner=unicode.strip, time_zone=None):
 def quantify_field_dict(field_dict, precision=None, date_precision=None, cleaner=unicode.strip):
     r"""Convert text and datetime dict values into float/int/long, if possible
 
+    FIXME: this test probably needs to define a time zone for the datetime object
     >>> sorted(quantify_field_dict({'_state': object(), 'x': 12345678911131517L, 'y': "\t  Wash Me! \n", 'z': datetime.datetime(1970, 10, 23, 23, 59, 59, 123456)}).items())
-    [('x', 12345678911131517L), ('y', u'Wash Me!'), ('z', 25603199.123456)]
+    [('x', 12345678911131517L), ('y', u'Wash Me!'), ('z', 25592399.123456)]
     """
     d = clean_field_dict(field_dict)
     for k, v in d.iteritems():
@@ -268,9 +274,36 @@ def consolidate_stats(dict_of_seqs, stats_key=None, sep=','):
         return list({k: result[stats_key][i]} for i, k in enumerate(result[joined_key]))
     return [{joined_seq((d[k] for k in sorted(d) if k is not stats_key), sep): d[stats_key]} for d in dict_of_seqs]
 
-        
+
+def dos_from_table(table, header=None):
+    """Produce dictionary of sequences from sequence of sequences, optionally with a header "row".
+
+    >>> dos_from_table([['hello', 'world'], [1, 2], [3,4]]) == {'hello': [1, 3], 'world': [2, 4]}
+    True
+    """
+    start_row = 0
+    if not table:
+        return table
+    if not header:
+        header = table[0]
+        start_row = 1
+    header_list = header
+    if header and isinstance(header, basestring):
+        header_list = header.split('\t')
+        if len(header_list)!=len(table[0]):
+            header_list = header.split(',')
+        if len(header_list)!=len(table[0]):
+            header_list = header.split(' ')
+    ans = {}
+    for i, k in enumerate(header):
+        ans[k] = [row[i] for row in table[start_row:]]
+    return ans
+
+
 def transposed_lists(list_of_lists, default=None):
-    """Like numpy.transposed
+    """Like numpy.transposed, but allows for uneven row lengths
+
+    Uneven lengths will affect the order of the elements in the rows of the transposed lists
 
     >>> transposed_lists([[1, 2], [3, 4, 5], [6]])
     [[1, 3, 6], [2, 4], [5]]
@@ -302,6 +335,156 @@ def transposed_lists(list_of_lists, default=None):
                 ans[-1] += list(default)
     return ans
 
+
+def transposed_matrix(matrix, filler=None, row_type=list, matrix_type=list, value_type=None):
+    """Like numpy.transposed, evens up row (list) lengths that aren't uniform, filling with None.
+
+    Also, makes all elements a uniform type (default=type(matrix[0][0])), 
+    except for filler elements.
+
+    TODO: add feature to delete None's at the end of rows so that transpose(transpose(LOL)) = LOL
+
+    >>> transposed_matrix([[1, 2], [3, 4, 5], [6]])
+    [[1, 3, 6], [2, 4, None], [None, 5, None]]
+    >>> transposed_matrix(transposed_matrix([[1, 2], [3, 4, 5], [6]]))
+    [[1, 2, None], [3, 4, 5], [6, None, None]]
+    >>> transposed_matrix([[], [1, 2, 3], [4]])  # empty first row forces default value type (float)
+    [[None, 1.0, 4.0], [None, 2.0, None], [None, 3.0, None]]
+    >>> transposed_matrix(transposed_matrix([[], [1, 2, 3], [4]]))
+    [[None, None, None], [1.0, 2.0, 3.0], [4.0, None, None]]
+    >>> l = transposed_matrix([range(4),[4,5]])
+    >>> l
+    [[0, 4], [1, 5], [2, None], [3, None]]
+    >>> transposed_matrix(l)
+    [[0, 1, 2, 3], [4, 5, None, None]]
+    >>> transposed_matrix([[1,2],[1],[1,2,3]])
+    [[1, 1, 1], [2, None, 2], [None, None, 3]]
+    """
+
+    matrix_type = matrix_type or type(matrix)
+    # matrix = matrix_type(matrix)
+
+    try:
+        row_type = row_type or type(matrix[0])
+    except:
+        pass
+    if not row_type or row_type == type(None):
+        row_type = list
+
+    try:
+        value_type = value_type or type(matrix[0][0]) or float
+    except:
+        pass
+    if not value_type or value_type == type(None):
+        value_type = float
+
+    #print matrix_type, row_type, value_type
+
+    # original matrix is NxM, new matrix will be MxN
+    N = len(matrix)
+    Ms = [len(row) for row in matrix]
+    M = 0 if not Ms else max(Ms)
+
+    ans = []
+    # for each row in the new matrix (column in old matrix)
+    for j in range(M):
+        # add a row full of copies the `fill` value up to the maximum width required
+        ans += [row_type([filler] * N)]
+        for i in range(N):
+            try:
+                ans[j][i] = value_type(matrix[i][j])
+            except IndexError:
+                ans[j][i] = filler
+            except TypeError:
+                ans[j][i] = filler
+
+    try:
+        if isinstance(ans[0], row_type):
+            return matrix_type(ans)
+    except:
+        pass
+    return matrix_type([row_type(row) for row in ans])
+
+
+def hist_from_values_list(values_list, fillers=(None,), normalize=False, cumulative=False, to_str=False, sep=',', min_bin=None, max_bin=None):
+    """Compute an emprical histogram, PMF or CDF in a list of lists or a csv string
+
+    Only works for discrete (integer) values (doesn't bin real values).
+    `fillers`: list or tuple of values to ignore in computing the histogram
+
+    >>> hist_from_values_list([1,1,2,1,1,1,2,3,2,4,4,5,7,7,9])  # doctest: +NORMALIZE_WHITESPACE
+    [(1, 5),
+     (2, 3),
+     (3, 1),
+     (4, 2),
+     (5, 1),
+     (6, 0),
+     (7, 2),
+     (8, 0),
+     (9, 1)]
+    >>> hist_from_values_list([(1,9),(1,8),(2,),(1,),(1,4),(2,5),(3,3),(5,0),(2,2)])  # doctest: +NORMALIZE_WHITESPACE
+    [(0, 0, 1), (1, 4, 0), (2, 3, 1), (3, 1, 1), (4, 0, 1), (5, 1, 1), (6, 0, 0), (7, 0, 0), (8, 0, 1), (9, 0, 1)]
+    >>> hist_from_values_list(transposed_matrix([(8,),(1,3,5),(2,),(3,4,5,8)]))  # doctest: +NORMALIZE_WHITESPACE
+    [(1, 0, 1, 0, 0), (2, 0, 0, 1, 0), (3, 0, 1, 0, 1), (4, 0, 0, 0, 1), (5, 0, 1, 0, 1), (6, 0, 0, 0, 0), (7, 0, 0, 0, 0), (8, 1, 0, 0, 1)]
+    """
+    value_types = tuple([int] + [type(filler) for filler in fillers])
+    if all(isinstance(value, value_types) for value in values_list):
+        counters = [Counter(values_list)]
+    elif all(len(row)==1 for row in values_list) and all(isinstance(row[0], value_types) for row in values_list):
+        counters = [Counter(values[0] for values in values_list)]
+    else:
+        values_list_t = transposed_matrix(values_list)
+        counters = [Counter(col) for col in values_list_t]
+
+    if fillers:
+        fillers = listify(fillers)
+        for counts in counters:
+            for ig in fillers:
+                if ig in counts:
+                    del counts[ig]
+
+    intkeys_list = [[c for c in counts if (isinstance(c, int) or (isinstance(c, float) and int(c) == c))] for counts in counters]
+    try:
+        min_bin = int(min_bin)
+    except:
+        min_bin = min(min(intkeys) for intkeys in intkeys_list)
+    try:
+        max_bin = int(max_bin)
+    except:
+        max_bin = max(max(intkeys) for intkeys in intkeys_list)
+
+    min_bin = max(min_bin, min((min(intkeys) if intkeys else 0) for intkeys in intkeys_list))  # TODO: reuse min(intkeys)
+    max_bin = min(max_bin, max((max(intkeys) if intkeys else 0) for intkeys in intkeys_list))  # TODO: reuse max(intkeys)
+
+    histograms = []
+    for intkeys, counts in zip(intkeys_list, counters):
+        histograms += [OrderedDict()]
+        if not intkeys:
+            continue
+        if normalize:
+            N = sum(counts[c] for c in intkeys)
+            for c in intkeys:
+                counts[c] = float(counts[c]) / N
+        if cumulative:
+            for i in xrange(min_bin, max_bin + 1):
+                histograms[-1][i] = counts.get(i, 0) + histograms[-1].get(i-1, 0)
+        else:
+            for i in xrange(min_bin, max_bin + 1):
+                histograms[-1][i] = counts.get(i, 0)
+    if not histograms:
+        histograms = [OrderedDict()]
+
+    # fill in the zero counts between the integer bins of the histogram
+    aligned_histograms = []
+
+    for i in range(min_bin, max_bin + 1):
+        aligned_histograms += [tuple([i] + [hist.get(i, 0) for hist in histograms])]
+
+    if to_str:
+        # FIXME: add header row
+        return str_from_table(aligned_histograms, sep=sep, max_rows=365*2+1)
+
+    return aligned_histograms
 
 
 def update_dict(d, u, depth=-1, default_map=dict, default_set=set, prefer_update_type=False):
@@ -379,12 +562,6 @@ def make_name(s, camel=None, lower=None, space='_', remove_prefix=None):
     return s
 make_name.DJANGO_FIELD = {'camel': False, 'lower': True, 'space': '_'}
 make_name.DJANGO_MODEL = {'camel': True, 'lower': False, 'space': '', 'remove_prefix': 'models'}
-
-SCALAR_TYPES = (float, long, int, str, unicode)  # bool, complex, datetime.datetime
-# numpy types are derived from these so no need to include numpy.float64, numpy.int64 etc
-PYTHON_NUMBER_TYPES = (float, long, int)  # bool, complex, datetime.datetime,
-DICTABLE_TYPES = (Mapping, tuple, list)  # convertable to a dictionary (inherits collections.Mapping or is a list of key/value pairs)
-VECTOR_TYPES = (list, tuple)
 
 
 def tryconvert(value, desired_types=SCALAR_TYPES, default=None, empty='', strip=True):
@@ -665,7 +842,7 @@ def make_int(s, default='', ignore_commas=True):
     >>> make_int('12345')
     12345
     >>> make_int('0000012345000       ')
-    12345
+    12345000
     """
     if ignore_commas and isinstance(s, basestring):
         s = s.replace(',', '')
@@ -725,6 +902,55 @@ def normalize_scientific_notation(s, ignore_commas=True):
     if s:
         return s
     return None
+
+
+def normalize_serial_number(sn, max_length=10, left_fill='0', right_fill='', blank='', valid_chars='0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ -', invalid_chars=None, join=False):
+    r"""Make a string compatible with typical serial number requirements
+
+    >>> normalize_serial_number('1C 234567890             ', valid_chars='0123456789')
+    '0234567890'
+    >>> normalize_serial_number('1C 234567890             ')
+    '1C 0234567890'
+    >>> normalize_serial_number(' \t1C\t-\t234567890 \x00\x7f', max_length=14, left_fill='0', valid_chars='0123456789ABC', invalid_chars=None, join=True)
+    '0001C234567890'
+    >>> normalize_serial_number('Unknown', blank=False)
+    '0000000000'
+    >>> normalize_serial_number('Unknown', blank=None)
+    >>> normalize_serial_number('N/A', blank='')
+    ''
+    >>> normalize_serial_number('NO SERIAL', blank='----------')  # doctest: +NORMALIZE_WHITESPACE
+    '----------' 
+    """
+    # strip internal and external whitespace and consider only last 10 characters
+    if invalid_chars is None:
+        invalid_chars = (c for c in ascii.all_ if c not in valid_chars)
+    invalid_chars = ''.join(invalid_chars)
+    sn = str(sn).strip(invalid_chars)
+    if invalid_chars:
+        if join:
+            sn = sn.translate(None, invalid_chars)
+        else:
+            sn = multisplit(sn, invalid_chars)[-1]
+    sn = sn[-max_length:]
+    if not sn and not (blank is False):
+        return blank
+    if left_fill:
+        sn = left_fill * (max_length - len(sn)/len(left_fill)) + sn
+    if right_fill:
+        sn = sn + right_fill * (max_length - len(sn)/len(right_fill))
+    return sn
+
+
+def multisplit(s, seps=list(string.punctuation) + list(string.whitespace), blank=True):
+    r"""Just like str.split(), except that a variety (list) of seperators is allowed.
+    
+    >>> multisplit(r'1-2?3,;.4+-', string.punctuation)
+    ['1', '2', '3', '', '', '4', '', '']
+    >>> multisplit(r'1-2?3,;.4+-', string.punctuation, blank=False)
+    ['1', '2', '3', '4']
+    """
+    seps = ''.join(seps)
+    return [s2 for s2 in s.translate(''.join([(chr(i) if chr(i) not in seps else seps[0]) for i in range(256)])).split(seps[0]) if (blank or s2)]
 
 
 def make_real(list_of_lists):
@@ -1088,4 +1314,63 @@ def is_ignorable_str(s, ignorable_strings=(), lower=True, filename=True, startsw
             return True
         elif s == ignorable:
             return True
+
+
+def strip_keys(d, nones=False, depth=0):
+    r"""Strip whitespace from all dictionary keys, to the depth indicated
+
+    >>> strip_keys({' a': ' a', ' b\t c ': {'d e  ': 'd e  '}}) == {'a': ' a', 'b\t c': {'d e  ': 'd e  '}}
+    True
+    >>> strip_keys({' a': ' a', ' b\t c ': {'d e  ': 'd e  '}}, depth=100) == {'a': ' a', 'b\t c': {'d e': 'd e  '}}
+    True
+    """
+    ans = type(d)((str(k).strip(), v) for (k, v) in OrderedDict(d).iteritems() if (not nones or (str(k).strip() and str(k).strip() != 'None')))
+    if int(depth) < 1:
+        return ans
+    if int(depth) > strip_keys.MAX_DEPTH:
+        warnings.warn(RuntimeWarning("Maximum recursion depth allowance (%r) exceeded." % strip_keys.MAX_DEPTH))
+    for k, v in ans.iteritems():
+        if isinstance(v, Mapping):
+            ans[k] = strip_keys(v, nones=nones, depth=int(depth)-1)
+    return ans
+strip_keys.MAX_DEPTH = 1e6
+
+
+def str_from_table(table, sep='\t', eol='\n', max_rows=100000000, max_cols=1000000):
+    max_rows = min(max_rows, len(table))
+    return eol.join([sep.join(list(str(field) for field in row[:max_cols])) for row in table[:max_rows]])
+
+
+def get_table_from_csv(filename='ssg_report_aarons_returns.csv', delimiter=',', dos=False):
+    """Dictionary of sequences from CSV file"""
+    table = []
+    with open(filename, 'rb') as f:
+        reader = csv.reader(f, dialect='excel', delimiter=delimiter)
+        for row in reader:
+            table += [row]
+    if not dos:
+        return table
+    return dos_from_table(table)
+
+
+def shorten(s, max_length=16):
+    """Attempt to shorten a phrase by deleting words at the end of the phrase
+
+    >>> shorten('Hello World!')
+    'Hello World'
+    >>> shorten("Hello World! I'll talk your ear off!", 15)
+    'Hello World'
+    """
+    short = s
+    words = [abbreviate(word) for word in get_words(s)]
+    for i in xrange(len(words), 0, -1):
+        short = ' '.join(words[:i])
+        if len(short) <= max_length:
+            break
+    return short[:max_length]
+
+
+def abbreviate(word):
+    return abbreviate.words.get(word, word)
+abbreviate.words = {'account': 'acct', 'number': 'num', 'customer': 'cust', 'member': 'membr' }
 

@@ -1,7 +1,7 @@
-#from collections import Mapping
+
 
 from django.shortcuts import render_to_response
-from django.http import HttpResponse
+#from django.http import HttpResponse
 from django.views.generic import View  #, TemplateView
 from django.template.response import TemplateResponse
 from django.template.loader import get_template
@@ -17,10 +17,11 @@ from pug.nlp import parse
 from pug.nlp import util
 from pug.nlp import db
 
+from Returns import tv_lags as module
 
-def explore(request, graph_uri=None):
+def explorer(request, graph_uri=None):
     """Explore the database (or any data provided by a REST service)"""
-    return HttpResponse('Looking for template in miner/explorer.html')
+    #return HttpResponse('Looking for template in miner/explorer.html')
     return render_to_response('miner/explorer.html')
 
 # def home(request, graph_uri=None):
@@ -30,19 +31,6 @@ def explore(request, graph_uri=None):
 #         'graph_uri': graph_uri,
 #         }
 #     return render_to_response('miner/home.html', data)
-
-
-def url_graph(request, chart_type='lineWithFocusChart', values_list=('modified'), filter_dict={'title__startswith': 'E'}, model='WikiItem'):
-    """
-    Send data in the context variable "data" for a pie chart (x, y) and a line chart.
-    """
-
-    graph_uri = r'Origin,3,1_I,2,2_10~Origin_II,2~I_III~I_IV~II_IV~IV_V~V_I~VI_V,.5,3~VII,.2,4_V'
-    data = {
-        'graph_uri': graph_uri,
-    }
-    return render_to_response('miner/chart.html', data)
-
 
 def connections(request, edges):
     """
@@ -164,7 +152,6 @@ class JSONView(View):
 # #                 {'key': 'group', 'type': intify, 'default': 0},  # TODO: this should be a string like the names/indexes to nodes (groups are just hidden nodes)
 # #               )
 
-
 # testcele progress bar test
 
 #from django.shortcuts import render_to_response
@@ -217,3 +204,57 @@ def poll_state(request):
  json_data = json.dumps(data)
 
  return HttpResponse(json_data, mimetype='application/json')
+
+
+def demo_linewithfocuschart(request):
+    """Line chart with zoom and pan and "focus area" at bottom like google analytics.
+    
+    Data takes a long time to load, so you better use this to increase the timeout
+    python gunicorn bigdata.wsgi:application --bind bigdata.enet.sharplabs.com:8000 --graceful-timeout=60 --timeout=60
+    """
+
+    fy = 2011
+    mn = 'LC60'
+    an = ''
+
+    lags_dict, hist, pmf, cdf, ccf = module.explore_lags(fiscal_years=[fy], model_numbers=[mn], reasons=['R%02d' % i for i in range(10,14)], account_numbers=[an], num_samples=400000, verbosity=1)
+    
+    hist = ccf
+    hist_t=[[],[],[],[]]
+    if hist and len(hist) > 1:
+        hist_t = util.transposed_matrix(hist[1:])
+
+    if hist and hist[0]:
+        names = hist[0][1:]
+        xdata = hist_t[0]
+        ydata = hist_t[1:]
+    print names
+
+    #tooltip_date = "%d %b %Y %H:%M:%S %p"
+    extra_series = {"tooltip": {"y_start": "There are ", "y_end": " calls"},
+                   #"date_format": tooltip_date
+                   }
+
+    chartdata = { 'x': xdata }
+
+    for i, name in enumerate(names):
+        chartdata['name%d' % (i + 1)] = name
+        chartdata['y%d' % (i + 1)] = ydata[i]
+        chartdata['extra%d' % (i + 1)] = extra_series
+
+    print chartdata
+
+    data = {
+        'title': 'FY %d Returns Lag for Model %s*' % (fy, mn),
+        'charttype': "lineWithFocusChart",
+        'chartdata': chartdata,
+        'chartcontainer': 'linewithfocuschart_container',
+        'extra': {
+            'x_is_date': False,
+            'x_axis_format': ',.0f', # %b %Y %H',
+            'y_axis_format': ',.0f', # "%d %b %Y"
+            'tag_script_js': True,
+            'jquery_on_ready': True,
+        }
+    }
+    return render_to_response('miner/linewithfocuschart.html', data)

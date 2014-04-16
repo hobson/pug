@@ -1,8 +1,9 @@
 # decision tree for list of lists (table) classification
 # attempts to identify cases that result in a service call
 
-from django.db import models
 from examples import tobes_data
+from nlp.db.explore import count_unique
+
 
 #from  django.db.models import Manager
 #from django.db.models.query import QuerySet
@@ -54,29 +55,6 @@ def divide(table, field, target=0, default=0, return_type=list, ignore_fields=['
     # print inspect.getsource(judge)
     
     return (true_group, false_group)
-
-
-# TODO: make this a django filter query of a database rather than a generator
-def count_unique(table, field=-1):
-    from collections import Counter
-
-    # try/except only happens once, and fastest route (straight to db) tried first
-    try:
-        ans = {}
-        for row in table.distinct().values(field).annotate(field_value_count=models.Count(field)):
-            ans[row[field]] = row['field_value_count']
-        return ans
-    except:
-        try:
-            return Counter(row[field] for row in table)
-        except:
-            try:
-                return Counter(row.get(field, None) for row in table)
-            except:
-                try:
-                    return Counter(row.getattr(field, None) for row in table)
-                except:
-                    pass
 
 
 def gini_impurity(table, field=-1):

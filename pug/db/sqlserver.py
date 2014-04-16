@@ -159,7 +159,7 @@ def get_meta_table(cursor='default', table=None, verbosity=0):
         meta_table = [[c[0], c[1], c[2], c[2], c[3], c[4], c[5], c[6]] for c in cursor.execute(column_properties_sql(table)).fetchall()]
     else:
         try:
-            meta_table = cursor.db.introspection.get_table_description(cursor, table)
+            meta_table = list(list(row) for row in cursor.db.introspection.get_table_description(cursor, table))
         except DatabaseError, e:
             meta_table = []
             if verbosity:
@@ -171,7 +171,8 @@ def get_meta_table(cursor='default', table=None, verbosity=0):
         meta_table[i][1] = field_type_name.get(row[1], '').lower() or row[1]
     ans = [('name', 'type', 'display_size', 'internal_size', 'precision', 'scale', 'null_ok', 'primary_key')]
     ans += [list(c) + [None] for c in meta_table]
-    print ans
+    if verbosity > 2:
+        print ans
     return ans
 
 DATATYPE_TO_FIELDTYPE = {'int': 'IntegerField', 'float': 'FloatField', 'text': 'TextField', 'char': 'CharField', 'Decimal': 'DecimalField'}

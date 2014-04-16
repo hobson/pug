@@ -1,48 +1,39 @@
-<!DOCTYPE html>
-<html class="miner">
-<meta charset="utf-8">
-<title>Document Co-occurrence Force Graph</title>
-<style> @import url(cooccurrence.css); </style>
-<script src="d3.v2.8.1.min.js"></script>
+{% extends 'base.html' %}
+{% load nvd3_tags %}
 
+{% block extra_head %}
+    <script src="http://d3js.org/d3.v3.min.js"></script>
+{% endblock %}
 
-
-<style type="text/css">
-    circle.node {
-      cursor: pointer;
-      stroke: #000;
-      stroke-width: .5px;
-    }
-
-    line.link {
-      fill: none;
-      stroke: #9ecae1;
+{% block extra_style %}
+    <style>
+    .node {
+      stroke: #fff;
       stroke-width: 1.5px;
     }
-</style>
-<body>
-<h1>NLP Graph</h1>
+    .link {
+      stroke: #999;
+      stroke-opacity: .6;
+    }
+    </style>
+{% endblock %}
 
-<div class="content"></div>
+{% block content %}
+    <p>Learn how to compose your own graph <a href="{% url 'wiki:root' %}/GraphURLFormat">here</a>.</p>
+    <p>Or browse (mouse-over) the graph below to find a machine-learning algorithm for your data.</p>
+    <h3>Machine Learning with <a href="http://scikit-learn.org/stable/tutorial/machine_learning_map/index.html">sklearn</a></h4>
+{% endblock %}
 
-<p>This visualization uses <a href="http://d3js.org/">d3.js</a> by <a href="http://bost.ocks.org/mike/">Mike Bostock</a>.
-<script src="http://d3js.org/d3.v3.min.js"></script>
-
+{% block extra_content %}
+<h4>Your URL was parsed to produce this...</h4>
+<pre>var nodes = {{ nodes|safe }}</pre>
+<pre>var edges = {{ edges|safe }}</pre>
 <script>
+    var graph = { "nodes": {{ nodes|safe }}, "links": {{ edges|safe }} };
 
-var graph;
+    var width = 350, height = 250, radius = 6, length = 80, charge = 100;
 
-d3.json("doc_cooccurrence.json", function(error, json) {
-    if (error) return console.warn(error);
-    graph = json; 
-
-    var width = 1000, height = 500, charge = 10;
-    var radius = width / 100.;
-    var length = radius * 5; 
-
-    for(var indx in graph.nodes) { graph.nodes[indx].r = radius; }
-
-    var color = d3.scale.ordinal().domain(d3.range(10)).range(['#17becf', '#8c564b', '#1f77b4', '#d62728', '#2ca02c', '#ff7f0e', '#9467bd',  '#e377c2', '#7f7f7f', '#bcbd22', ]);
+    var color = d3.scale.category20();
 
     var force = d3.layout.force()
         .charge(
@@ -76,9 +67,9 @@ d3.json("doc_cooccurrence.json", function(error, json) {
         .data(graph.nodes)
         .enter().append("circle")
             .attr("class", "node")
-            .attr("r",
+            .attr("r", 
                 function (d) {
-                    return d.r
+                    return radius * Math.sqrt(d.charge)
                     }
                 )
         .style("fill", function(d) { return color(d.group); })
@@ -96,8 +87,6 @@ d3.json("doc_cooccurrence.json", function(error, json) {
         node.attr("cx", function(d) { return d.x; })
             .attr("cy", function(d) { return d.y; });
         });
-});
 </script>
-
-<p>Click on a node to collapse the tree around it.
+{% endblock %}
 

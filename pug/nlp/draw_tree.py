@@ -1,5 +1,6 @@
 from PIL import Image, ImageDraw
 from pug.nlp import db_decision_tree as dt
+from pug.db.explore import count_unique
 
 
 def draw_tree(tree, path='tree.jpg'):
@@ -75,7 +76,7 @@ def prune(tree, mingain):
         if delta < mingain:
             # Merge the branches
             tree.tb, tree.fb = None, None
-            tree.results = dt.count_unique(tb + fb)
+            tree.results = count_unique(tb + fb)
 
 
 def mdclassify(observation, tree):

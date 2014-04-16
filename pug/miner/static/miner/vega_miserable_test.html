@@ -1,0 +1,21 @@
+<html>
+  <head>
+    <meta http-equiv="Content-type" content="text/html;charset=UTF-8">
+    <meta charset="UTF-8">
+    <title>Document Co-Occurrence Force-Balanced Graph</title>
+    <script src="http://trifacta.github.io/vega/lib/d3.v3.min.js"></script>
+    <script src="http://trifacta.github.io/vega/lib/d3.geo.projection.min.js" charset="UTF-8"></script>
+    <script src="http://trifacta.github.io/vega/vega.js"></script>
+  </head>
+  <body>
+    <h3>Vega Test</h3>
+    <div id="vis"></div>
+  </body>
+<script type="text/javascript">
+// parse a spec and create a visualization view
+function parse(spec) {
+  vg.parse.spec(spec, function(chart) { chart({el:"#vis"}).update(); });
+}
+parse("http://bigdata.enet.sharplabs.com:8000/static/miner/json/miserable_test.vega.json");
+</script>
+</html>

@@ -1,12 +1,11 @@
 # decision tree for DB record classification
 # attempts to identify cases that result in a service call
 
-from django.db import models
 from examples import tobes_data
 import datetime
 
-#from  django.db.models import Manager
-#from django.db.models.query import QuerySet
+from pug.db.explore import count_unique
+
 
 def divide(qs, field, target=0, default=0, ignore_fields=None, include_fields=None):
     if ignore_fields is None:
@@ -32,14 +31,6 @@ def divide(qs, field, target=0, default=0, ignore_fields=None, include_fields=No
     
     return (true_qs, false_qs)
 
-
-# TODO: make this a django filter query of a database rather than a generator
-def count_unique(qs, field):
-    '''Use django ORM to count unique values of a field in the DB'''
-    ans = {}
-    for row in qs.distinct().values(field).annotate(field_value_count=models.Count(field)):
-        ans[row[field]] = row['field_value_count']
-    return ans
 
 
 def gini_impurity(qs, field):

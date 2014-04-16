@@ -2,7 +2,7 @@
 <html class="miner">
 <meta charset="utf-8">
 <title>Document Co-occurrence of Words</title>
-<style> @import url(cooccurrence.css); </style>
+<style> @import url(css/cooccurrence.css); </style>
 
 <h1>Document Co-occurrence of Words</h1>
 
@@ -16,12 +16,12 @@
 
 <div id="matrix"></div>
 
-<script src="js/d3.v3.min.js"></script>
-<script src="graphutil.js"></script>
+<script src="lib/d3.v3.min.js"></script>
+<script src="js/graphutil.js"></script>
 <script>
 
 var graph;
-d3.json("doc_cooccurrence.json", function(error, json) {
+d3.json("json/doc_cooccurrence.json", function(error, json) {
     if (error) return console.warn(error);
     graph = json;
     draw_matrix_heat_map(graph, 900, 900, "#matrix");
