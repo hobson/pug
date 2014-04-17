@@ -9,7 +9,7 @@
 {% endblock %}
 
 {% block content %}
-    <H3>{{ title }}</H3>
-    <H4>{{ subtitle }}</H4>
+    <H3>{{ title|safe }}</H3>
+    <H4>{{ subtitle|safe }}</H4>
     {% include_container chartcontainer 400 '100%' %}
 {% endblock %}

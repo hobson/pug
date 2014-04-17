@@ -24,6 +24,11 @@ def explorer(request, graph_uri=None):
     #return HttpResponse('Looking for template in miner/explorer.html')
     return render_to_response('miner/explorer.html')
 
+def home(request):
+    """Explore the database (or any data provided by a REST service)"""
+    #return HttpResponse('Looking for template in miner/explorer.html')
+    return render_to_response('miner/home.html')
+
 # def home(request, graph_uri=None):
 #     """home page"""
 #     graph_uri = graph_uri or r'Origin,3,1_I,2,2_10~Origin_II,2~I_III~I_IV~II_IV~IV_V~V_I~VI_V,.5,3~VII,.2,4_V'
