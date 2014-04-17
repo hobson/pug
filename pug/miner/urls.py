@@ -8,7 +8,7 @@ import views
 urlpatterns = patterns('',
     #url(r'^$', home, name='home'),
     url(r'^(?:chart/)?(?:[Cc]onnect(?:ion)?s?|[Gg]raph)/(?P<edges>[^/]*)', views.connections, name='miner-connections'),
-    url(r'^$', views.home, name='miner-home'),
+    url(r'^$', views.home, name='home'),
     url(r'^explorer?/', views.explorer, name='miner-explorer'),
     url(r'^lag-?(cmf|pmf|cdf|hist)?/', views.lag, name='miner-lag'),
     #url(r'^static/(?P<path>.*)$', django.views.static.serve, { 'document_root': settings.STATIC_ROOT} ),
@@ -18,12 +18,12 @@ urlpatterns = patterns('',
 )
 
 
-urlpatterns += patterns('',
-    url(r'^$', views.testcele, name='testcele'),
-    url(r'^do_task$', views.do_task, name='do_task'),
-    url(r'^poll_state$', views.poll_state, name='poll_state'),
+# urlpatterns += patterns('',
+#     url(r'^$', views.testcele, name='testcele'),
+#     url(r'^do_task$', views.do_task, name='do_task'),
+#     url(r'^poll_state$', views.poll_state, name='poll_state'),
 
-    # # Uncomment the next line to enable the admin:
-    # url(r'^admin/', include(admin.site.urls)),
-)
+#     # # Uncomment the next line to enable the admin:
+#     # url(r'^admin/', include(admin.site.urls)),
+# )
 
