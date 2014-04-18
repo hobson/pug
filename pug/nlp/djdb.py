@@ -6,7 +6,8 @@ from types import ModuleType
 import sqlparse
 import os
 import csv
-
+import json
+from traceback import print_exc
 
 from fuzzywuzzy import process as fuzzy
 import numpy as np
@@ -191,7 +192,6 @@ def get_app(app=None, verbosity=0):
             print 'Attempting django.models.get_app(%r)' % app
         return models.get_app(app)
     except:
-        from traceback import print_exc
         print_exc()
         if not app:
             if verbosity:
@@ -941,6 +941,11 @@ def field_dict_from_row(row, model, field_names=None, include_id=False, strip=Tr
     if not field_names:
         field_names = [f.name for f in field_classes if (include_id or f.name != 'id')]
     field_dict = {}
+    if isinstance(row, Mapping):
+        row = [row.get(field_name, '') for field_name in field_names]
+    print field_names
+    print field_classes
+    print row
     for field_name, field_class, value in zip(field_names, field_classes, row):
         if verbosity >= 3:
             print field_name, field_class, value 
@@ -948,9 +953,11 @@ def field_dict_from_row(row, model, field_names=None, include_id=False, strip=Tr
             value = ''
         try:
             # get a clean python value from a string, etc
-            clean_value = type(field_class)().to_python(value)
+            clean_value = field_class().to_python(value)
         except:  # ValidationError
-            clean_value = str(type(field_class)().to_python(util.clean_wiki_datetime(value)))
+            print 'field_class=%r , %r' % (field_class, type(field_class))
+            print_exc()
+            clean_value = str(field_class().to_python(util.clean_wiki_datetime(value)))
         if strip and isinstance(clean_value, basestring):
             clean_value = clean_value.strip()
         field_dict[field_name] = clean_value
@@ -1015,6 +1022,53 @@ def load_all_csvs_to_model(path, model, field_names=None, delimiter=None, batch_
         if not recursive:
             return N
     return N
+
+
+def import_items(item_seq, dest_model,  batch_size=100, db_alias='default', verbosity=2):
+    """Given a sequence (queryset, generator, tuple, list) of dicts import them into the given model"""
+    try:
+        try:
+            src_qs = item_seq.objects.all()
+        except:
+            src_qs = item_seq.all()
+        num_items = src_qs.all().count()
+        item_seq = iter(src_qs.values_list())
+    except:
+        print_exc()
+        num_items = len(item_seq)
+    if verbosity > 1:
+        print('Loading %r records from sequence provided...' % num_items)
+    for batch_num, dict_batch in enumerate(util.generate_batches(item_seq, batch_size)):
+        if verbosity > 2:
+            print(repr(dict_batch))
+            print(repr((batch_num, len(dict_batch), batch_size)))
+            print(type(dict_batch))
+        item_batch = []
+        for d in dict_batch:
+            if verbosity > 2:
+                print(repr(d))
+            m = dest_model()
+            try:
+                m.import_item(d, verbosity=verbosity)
+            except:
+                m = django_object_from_row(d, dest_model)
+            item_batch += [m]
+        if verbosity > 1:
+            print('Writing {0} {1} items in batch {2} out of {3} batches to the {3} database...'.format(
+                len(item_batch), dest_model.__name__, batch_num, int(num_items / float(batch_size)), db_alias))
+        dest_model.objects.bulk_create(item_batch)
+
+
+def import_json(path, model, batch_size=100, db_alias='default', verbosity=2):
+    """Read json file (not in django fixture format) and create the appropriate records using the provided database model."""
+
+    # TODO: use a generator to save memory for large json files/databases
+    if verbosity:
+        print('Reading json records (dictionaries) from {0}.'.format(repr(path)))
+    item_list = json.load(open(path, 'r'))
+    if verbosity:
+        print('Finished reading {0} items from {1}.'.format(len(item_list), repr(path)))
+    import_items(item_list, model=model, batch_size=batch_size, db_alias=db_alias, verbosity=verbosity)
 
 
 def fixture_from_table(table, header_rows=1):

@@ -1,6 +1,6 @@
 from __future__ import print_function
 from django.db import models
-import json
+#import json
 
 from pug.nlp import db, util
 
@@ -70,40 +70,41 @@ class WikiItem(models.Model):
     def __unicode__(self):
         return db.representation(self)
 
+from pug.nlp.db import import_items as generic_import_items
+from pug.nlp.db import import_json as generic_import_json
 
 def import_items(item_seq, model=WikiItem,  batch_size=100, db_alias='default', verbosity=2):
-    """Given a sequence (generator, tuple, list) of dicts import them into the given model"""
+    """Given a sequence (queryset, generator, tuple, list) of dicts import them into the given model"""
+    return generic_import_items(item_seq, dest_model=model, batch_size=batch_size, db_alias=db_alias, verbosity=verbosity)
+    # num_items = len(item_seq)
+    # if verbosity > 1:
+    #     print('Loading %r records from sequence provided...' % len(item_seq))
+    # for batch_num, dict_batch in enumerate(util.generate_batches(item_seq, batch_size)):
+    #     if verbosity > 2:
+    #         print(repr(dict_batch))
+    #         print(repr((batch_num, len(dict_batch), batch_size)))
+    #         print(type(dict_batch))
+    #     item_batch = []
+    #     for d in dict_batch:
+    #         if verbosity > 2:
+    #             print(repr(d))
+    #         m = model()
+    #         m.import_item(d, verbosity=verbosity)
+    #         item_batch += [m]
+    #     if verbosity > 1:
+    #         print('Writing {0} {1} items in batch {2} out of {3} batches to the {3} database...'.format(
+    #             len(item_batch), model.__name__, batch_num, int(num_items / float(batch_size)), db_alias))
+    #     model.objects.bulk_create(item_batch)
 
-    num_items = len(item_seq)
-    if verbosity > 1:
-        print('Loading %r records from sequence provided...' % len(item_seq))
-    for batch_num, dict_batch in enumerate(util.generate_batches(item_seq, batch_size)):
-        if verbosity > 2:
-            print(repr(dict_batch))
-            print(repr((batch_num, len(dict_batch), batch_size)))
-            print(type(dict_batch))
-        item_batch = []
-        for d in dict_batch:
-            if verbosity > 2:
-                print(repr(d))
-            m = model()
-            m.import_item(d, verbosity=verbosity)
-            item_batch += [m]
-        if verbosity > 1:
-            print('Writing {0} {1} items in batch {2} out of {3} batches to the {3} database...'.format(
-                len(item_batch), model.__name__, batch_num, int(num_items / float(batch_size)), db_alias))
-        model.objects.bulk_create(item_batch)
 
-
-def import_json(path='wikipedia_crawler_data.json', model=WikiItem, batch_size=100, db_alias='default',
-    verbosity=2):
+def import_json(path='wikipedia_crawler_data.json', model=WikiItem, batch_size=100, db_alias='default', verbosity=2):
     """Read json file and create the appropriate records according to the given database model."""
-
-    # TODO: use a generator to save memory for large json files/databases
-    if verbosity:
-        print('Reading json records (dictionaries) from {0}.'.format(repr(path)))
-    item_list = json.load(open(path, 'r'))
-    if verbosity:
-        print('Finished reading {0} items from {1}.'.format(len(item_list), repr(path)))
-    import_items(item_list, model=model, batch_size=batch_size, db_alias=db_alias, verbosity=verbosity)
+    return generic_import_json(path=path, model=model,  batch_size=batch_size, db_alias=db_alias, verbosity=verbosity)
+    # # TODO: use a generator to save memory for large json files/databases
+    # if verbosity:
+    #     print('Reading json records (dictionaries) from {0}.'.format(repr(path)))
+    # item_list = json.load(open(path, 'r'))
+    # if verbosity:
+    #     print('Finished reading {0} items from {1}.'.format(len(item_list), repr(path)))
+    # import_items(item_list, model=model, batch_size=batch_size, db_alias=db_alias, verbosity=verbosity)
 

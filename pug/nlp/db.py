@@ -616,5 +616,3 @@ def lagged_series(series, lags=1, pads=None):
     return ans
 
 
-
-
