@@ -10,7 +10,6 @@
     {% endcomment %}
     <H3>Tools</H3>
     <table>
-
         <tr><td>Admin Interface</td><td><a href="{% url "admin:index" as url %}">{{ url }}</a>
         <tr><td>Explore and Visualize &nbsp</td><td><a href="{% url 'miner:explorer' as url  %}">{{ url }}</a></td>
         <tr><td>Lag Plot</td><td><a href="{% url 'miner:lag' as url  %}">{{ url }}</a></td>

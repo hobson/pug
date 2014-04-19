@@ -12,10 +12,13 @@ import datetime
 import calendar
 from math import log
 import json
+import chardet
+import re
 
 import pytz
 from dateutil import parser as dateutil_parser
 import logging
+
 logger = logging.getLogger('bigdata.info')
 
 from pug.nlp import util  # import transposed_lists, sod_transposed, listify, intify
@@ -616,3 +619,59 @@ def lagged_series(series, lags=1, pads=None):
     return ans
 
 
+def clean_utf8(byte_string, carefully=False):
+    r"""Delete any invalid symbols in a UTF-8 encoded string
+
+    Returns the cleaned string.
+    
+    >>> clean_utf8('`A\xff\xffBC\x7fD\tE\r\nF~G`')
+    '`A\xc3\xbf\xc3\xbfBC\x7fD\tE\r\nF~G`'
+    >>> clean_utf8('`A\xff\xffBC\x7fD\tE\r\nF~G`', carefully=True)
+    '`ABC\x7fD\tE\r\nF~G`'
+    """
+    #print 'cleaning: ' + repr(byte_string)
+    if not isinstance(byte_string, basestring):
+        return byte_string
+    if carefully:
+        while True:
+            try:
+                byte_string.decode('utf8')
+                # json.dumps(byte_string)
+                break
+            except UnicodeDecodeError as e:
+                    m = re.match(r".*can't[ ]decode[ ]byte[ ]0x[0-9a-fA-F]{2}[ ]in[ ]position[ ](\d+)[ :.].*", str(e))
+                    if m and m.group(1):
+                        i = int(m.group(1))
+                        byte_string = byte_string[:i] + byte_string[i+1:]
+                    else:
+                        raise e
+        return byte_string
+    else:
+        # print 'not carefully'
+        diagnosis = chardet.detect(byte_string)
+        # print diagnosis
+        if diagnosis['confidence'] > 0.5:
+            try:
+                #print diagnosis
+                #print 'detected and cleaned: ' + repr(byte_string.decode(diagnosis['encoding']).encode('utf8'))
+                return str(byte_string.decode(diagnosis['encoding']).encode('utf8'))
+            except:
+                pass
+        try:
+            # Japanese corporations often use 'SQL_Latin1_General_CP1_CI_AS', a case-insensitive mix of CP-1252 and UTF-8
+            try:
+                # print 'CP1252'
+                #print byte_string.decode('CP-1252')
+                return str(byte_string.decode('CP-1252').encode('utf8'))
+            # MS SQL Server default encoding
+            except:
+                return str(byte_string.decode('iso-8859-1').encode('utf8'))
+        except:
+            pass
+        try:
+            #print 'utf-16'
+            return str(byte_string.decode('utf16').encode('utf8'))
+        except:
+            pass
+    #print 'failed to clean: ' + repr(byte_string)
+    return str(byte_string)

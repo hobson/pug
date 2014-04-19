@@ -6,9 +6,9 @@ from optparse import make_option
 
 from django.core.management.base import NoArgsCommand, CommandError
 # from django.db import DEFAULT_DB_ALIAS
-from pug.db.explore import get_db_meta, clean_utf8
+from pug.db.explore import get_db_meta
 import json
-from pug.nlp.db import RobustEncoder
+from pug.nlp.db import RobustEncoder, clean_utf8
 
 datetime_format = '%Y-%m-%d %H:%M:%S'  # plus timezone name at the end
 

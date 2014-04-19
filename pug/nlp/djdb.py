@@ -36,6 +36,7 @@ import util  # import transposed_lists #, sod_transposed, dos_from_table
 from .words import synonyms
 from .util import listify
 from .db import sort_prefix, consolidated_counts, sorted_dict_of_lists, lagged_seq, NULL_VALUES, NAN_VALUES, BLANK_VALUES
+from pug.nlp.db import clean_utf8
 
 #from pug.nlp.util import make_int, dos_from_table  #, sod_transposed
 #from pug.db.explore import count_unique, make_serializable
@@ -941,25 +942,32 @@ def field_dict_from_row(row, model, field_names=None, include_id=False, strip=Tr
     if not field_names:
         field_names = [f.name for f in field_classes if (include_id or f.name != 'id')]
     field_dict = {}
+    print row
     if isinstance(row, Mapping):
         row = [row.get(field_name, '') for field_name in field_names]
+    print row
     print field_names
     print field_classes
     print row
     for field_name, field_class, value in zip(field_names, field_classes, row):
         if verbosity >= 3:
             print field_name, field_class, value 
-        if value is None:
-            value = ''
+        if not value:
+            value = None
+        print 'field_class=%r , %r' % (field_class, type(field_class))
+
         try:
             # get a clean python value from a string, etc
-            clean_value = field_class().to_python(value)
+            clean_value = field_class.to_python(value)
         except:  # ValidationError
-            print 'field_class=%r , %r' % (field_class, type(field_class))
-            print_exc()
-            clean_value = str(field_class().to_python(util.clean_wiki_datetime(value)))
-        if strip and isinstance(clean_value, basestring):
-            clean_value = clean_value.strip()
+            try:
+                clean_value = str(field_class.to_python(util.clean_wiki_datetime(value)))
+            except:
+                clean_value = field_class().to_python()
+        if isinstance(clean_value, basestring):
+            if strip:
+                clean_value = clean_value.strip()
+            clean_value = clean_utf8(clean_value)
         field_dict[field_name] = clean_value
     return field_dict
 
@@ -1031,8 +1039,8 @@ def import_items(item_seq, dest_model,  batch_size=100, db_alias='default', verb
             src_qs = item_seq.objects.all()
         except:
             src_qs = item_seq.all()
-        num_items = src_qs.all().count()
-        item_seq = iter(src_qs.values_list())
+        num_items = src_qs.count()
+        item_seq = iter(src_qs.values())
     except:
         print_exc()
         num_items = len(item_seq)
@@ -1054,7 +1062,7 @@ def import_items(item_seq, dest_model,  batch_size=100, db_alias='default', verb
                 m = django_object_from_row(d, dest_model)
             item_batch += [m]
         if verbosity > 1:
-            print('Writing {0} {1} items in batch {2} out of {3} batches to the {3} database...'.format(
+            print('Writing {0} {1} items in batch {2} out of {3} batches to the {4} database...'.format(
                 len(item_batch), dest_model.__name__, batch_num, int(num_items / float(batch_size)), db_alias))
         dest_model.objects.bulk_create(item_batch)
 
