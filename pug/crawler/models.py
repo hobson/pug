@@ -9,6 +9,8 @@ def datetime_parser(s, default=None):
         return util.clean_wiki_datetime(s)
     return default
 
+from pug.nlp.djdb import import_items as generic_import_items
+from pug.nlp.djdb import import_json as generic_import_json
 
 
 class WikiItem(models.Model):
@@ -69,9 +71,6 @@ class WikiItem(models.Model):
 
     def __unicode__(self):
         return db.representation(self)
-
-from pug.nlp.db import import_items as generic_import_items
-from pug.nlp.db import import_json as generic_import_json
 
 def import_items(item_seq, model=WikiItem,  batch_size=100, db_alias='default', verbosity=2):
     """Given a sequence (queryset, generator, tuple, list) of dicts import them into the given model"""
