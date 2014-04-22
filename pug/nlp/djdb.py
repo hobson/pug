@@ -9,6 +9,7 @@ import csv
 import json
 from traceback import print_exc
 
+from progressbar import ProgressBar, Percentage, RotatingMarker, Bar, ETA
 from fuzzywuzzy import process as fuzzy
 import numpy as np
 import logging
@@ -942,19 +943,13 @@ def field_dict_from_row(row, model, field_names=None, include_id=False, strip=Tr
     if not field_names:
         field_names = [f.name for f in field_classes if (include_id or f.name != 'id')]
     field_dict = {}
-    print row
     if isinstance(row, Mapping):
         row = [row.get(field_name, '') for field_name in field_names]
-    print row
-    print field_names
-    print field_classes
-    print row
     for field_name, field_class, value in zip(field_names, field_classes, row):
         if verbosity >= 3:
             print field_name, field_class, value 
         if not value:
             value = None
-        print 'field_class=%r , %r' % (field_class, type(field_class))
 
         try:
             # get a clean python value from a string, etc
@@ -1032,20 +1027,64 @@ def load_all_csvs_to_model(path, model, field_names=None, delimiter=None, batch_
     return N
 
 
-def import_items(item_seq, dest_model,  batch_size=100, db_alias='default', verbosity=2):
+def clean_duplicates(model, unique_together=('material', 'serial_number',), date_field='created_on',
+                     seq_field='model_serial_seq', seq_max_field='model_serial_seq_max', verbosity=1):
+    qs = model.objects.order_by(list(unique_together) + util.listify(date_field)).all()
+    N = qs.count()
+
+    if verbosity:
+        print 'Retrieving the first of %d records for %r.' % (N, model)
+    qsit = iter(qs)
+    i, obj = 1, qsit.next()
+    setattr(obj, seq_field, 0)
+    setattr(obj, seq_max_field, 0)
+    obj.save()
+    dupes = [obj]
+
+    if verbosity:
+        widgets = ['%d rows: ' % N, Percentage(), ' ', RotatingMarker(), ' ', Bar(),' ', ETA()]
+        i, pbar = 0, ProgressBar(widgets=widgets, maxval=N).start()       
+    for obj in qsit:
+        if verbosity:
+            pbar.update(i)
+        i += 1
+        if all([getattr(obj, f, None) == getattr(dupes[0], f, None) for f in unique_together]):
+            dupes += [obj]
+        else:
+            if len(dupes) > 1:
+                for j in range(len(dupes)):
+                    setattr(dupes[j], seq_field, j)
+                    setattr(dupes[j], seq_max_field, len(dupes) - 1)
+                    dupes[j].save() 
+                # model.bulk_create(dupes) would not delete the old ones, would have to do that separately
+                # model.bulk_create(dupes)
+            dupes = [obj]
+    if verbosity:
+        pbar.finish()
+
+
+def import_items(item_seq, dest_model,  batch_size=500, clear=False, dry_run=True, verbosity=1):
     """Given a sequence (queryset, generator, tuple, list) of dicts import them into the given model"""
     try:
         try:
             src_qs = item_seq.objects.all()
         except:
             src_qs = item_seq.all()
-        num_items = src_qs.count()
+        N = src_qs.count()
         item_seq = iter(src_qs.values())
     except:
         print_exc()
-        num_items = len(item_seq)
-    if verbosity > 1:
-        print('Loading %r records from sequence provided...' % num_items)
+        N = len(item_seq)
+
+    if verbosity:
+        print('Loading %r records from sequence provided...' % N)
+        widgets = ['%d records: ' % N, Percentage(), ' ', RotatingMarker(), ' ', Bar(),' ', ETA()]
+        pbar = ProgressBar(widgets=widgets, maxval=N).start()
+
+    if clear and not dry_run:
+        if verbosity:
+            print "WARNING: Deleting %d records from %r !!!!!!!" % (dest_model.objects.count(), dest_model)
+        dest_model.objects.all().delete()
     for batch_num, dict_batch in enumerate(util.generate_batches(item_seq, batch_size)):
         if verbosity > 2:
             print(repr(dict_batch))
@@ -1061,11 +1100,126 @@ def import_items(item_seq, dest_model,  batch_size=100, db_alias='default', verb
             except:
                 m = django_object_from_row(d, dest_model)
             item_batch += [m]
-        if verbosity > 1:
-            print('Writing {0} {1} items in batch {2} out of {3} batches to the {4} database...'.format(
-                len(item_batch), dest_model.__name__, batch_num, int(num_items / float(batch_size)), db_alias))
-        dest_model.objects.bulk_create(item_batch)
+        if verbosity and verbosity < 2:
+            pbar.update(batch_num * batch_size + len(dict_batch))
+        elif verbosity > 1:
+            print('Writing {0} items in batch {2} out of {3} batches to the {4} model...'.format(
+                len(item_batch), batch_num, int(N / float(batch_size)), dest_model))
+        if not dry_run:
+            dest_model.objects.bulk_create(item_batch)
+    if verbosity:
+        pbar.finish()
 
+
+def import_queryset(qs, dest_model,  batch_size=500, clear=False, dry_run=True, verbosity=1):
+    """Given a sequence (queryset, generator, tuple, list) of dicts import them into the given model"""
+    try:
+        qs = qs.objects
+    except:
+        pass
+    N = qs.count()
+
+    if verbosity:
+        print('Loading %r records from the queryset provided...' % N)
+    qs = qs.values()
+
+    if clear and not dry_run:
+        if verbosity:
+            print "WARNING: Deleting %d records from %r !!!!!!!" % (dest_model.objects.count(), dest_model)
+        dest_model.objects.all().delete()
+    if verbosity:
+        widgets = ['%d records: ' % N, Percentage(), ' ', RotatingMarker(), ' ', Bar(),' ', ETA()]
+        pbar = ProgressBar(widgets=widgets, maxval=N).start()
+    for batch_num, dict_batch in enumerate(util.generate_batches(qs, batch_size)):
+        if verbosity > 2:
+            print(repr(dict_batch))
+        item_batch = []
+        for d in dict_batch:
+            if verbosity > 2:
+                print(repr(d))
+            m = dest_model()
+            try:
+                m.import_item(d, verbosity=verbosity)
+            except:
+                m = django_object_from_row(d, dest_model)
+            item_batch += [m]
+        if verbosity and verbosity < 2:
+            pbar.update(batch_num * batch_size + len(dict_batch))
+        elif verbosity > 1:
+            print('Writing {0} items in batch {2} out of {3} batches to the {4} model...'.format(
+                len(item_batch), batch_num, int(N / float(batch_size)), dest_model))
+        if not dry_run:
+            dest_model.objects.bulk_create(item_batch)
+    if verbosity:
+        pbar.finish()
+# def import_qs(src_qs, dest_model,  batch_size=100, db_alias='default', 
+#         unique_together=('model', 'serialno'), seq_field='model_serial_seq', seq_max_field='model_serial_seq_max', 
+#         verbosity=2):
+#     """FIXME: Given a sequence (queryset, generator, tuple, list) of dicts import them into the given model
+
+#     Efficiently count duplicates of the index formed from the fields listed in unique_together.
+#     Store this count in the new model in the field indicated by the `seq_max_field` argument.
+#     Store a sequence number in `seq_field`, starting at 0 and ending at the value stored in `seq_max_field`
+#     """
+#     num_items = None
+#     src_qs = None
+#     try:
+#         src_qs = src_qs.objects.all()
+#     except:
+#         src_qs = src_qs.all()
+
+#     index_uniques = False
+#     if index_uniques and hasattr(dest_model, seq_field) and hasattr(dest_model, seq_max_field):
+#         try:
+#             src_qs = src_qs.order_by(*unique_together)
+#             index_uniques = True
+#         except:
+#             print_exc()
+
+#     try:
+#         item_seq = src_qs.values()
+#     except:
+#         print_exc()
+
+#     num_items = src_qs.count()
+
+#     if verbosity > 1:
+#         print('Loading %r records from seq provided...' % num_items)
+#     dupes = []
+#     for batch_num, dict_batch in enumerate(util.generate_batches(item_seq, batch_size)):
+#         if verbosity > 2:
+#             print(repr(dict_batch))
+#             print(repr((batch_num, len(dict_batch), batch_size)))
+#             print(type(dict_batch))
+#         item_batch = []
+#         for d in dict_batch:
+#             if verbosity > 2:
+#                 print(repr(d))
+#             m = dest_model()
+#             try:
+#                 m.import_item(d, verbosity=verbosity)
+#             except:
+#                 m = django_object_from_row(d, dest_model)
+#             if index_uniques:
+#                 if dupes:
+#                     try:
+#                         if all([getattr(dupes[0], f) == getattr(m, f) for f in unique_together]):
+#                             setattr(m, seq_field, getattr(dupes[-1], seq_field) + 1)
+#                             dupes += [m]
+#                         else:
+#                             for j in range(len(dupes)):
+#                                 setattr(dupes[j], seq_max_field, len(dupes) - 1) 
+#                             dupes = [m]
+#                     except:
+#                         pass # FIXME
+#                 else:
+#                     dupes = [m]
+
+#             item_batch += [m]
+#         if verbosity > 1:
+#             print('Writing {0} {1} items in batch {2} out of {3} batches to the {4} database...'.format(
+#                 len(item_batch), dest_model.__name__, batch_num, int(num_items / float(batch_size)), db_alias))
+#         dest_model.objects.bulk_create(item_batch)
 
 def import_json(path, model, batch_size=100, db_alias='default', verbosity=2):
     """Read json file (not in django fixture format) and create the appropriate records using the provided database model."""
