@@ -36,8 +36,11 @@ INSTALLED_APPS = (
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'celery',
+
     'pug.crawler',
     'pug.miner',
+    'pug.agile',
 )
 
 MIDDLEWARE_CLASSES = (
@@ -87,8 +90,8 @@ STATIC_URL = '/static/'
 # List of modules to import when celery starts.  But crawlnmine.crawlnmine.__init__ will do this
 #CELERY_IMPORTS = ("testcele.tasks",)
 
-CELERYBEAT_SCHEDULER = 'djcelery.schedulers.DatabaseScheduler'
-CELERY_RESULT_BACKEND = "database"
+# CELERYBEAT_SCHEDULER = 'djcelery.schedulers.DatabaseScheduler'
+# CELERY_RESULT_BACKEND = "database"
 #CELERY_RESULT_DBURI = "mysql://mydb_user:mydb_password@localhost/celery"
 
 # BROKER_URL = 'message_broker://user:password@hostname:port/virtual_host'

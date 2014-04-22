@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html class="miner">
+<meta charset="utf-8">
+<title>Word Co-occurrence of Documents</title>
+<style> @import url(css/cooccurrence.css); </style>
+<!-- <script src="d3.v2.8.1.min.js"></script> -->
+
+<h1>Word Co-occurrence of Documents</h1>
+
+<p>Each cell in this heat map matrix is shaded proportional the product of the number of occurrences of each pair of words in the same document summed over all the documents (the product of the occurrence matrix with its transpose).</a></i>.
+
+<p>Sort by: <select id="order">
+  <option value="lex">Lexographic</option>
+  <option value="value">Frequency</option>
+  <option value="group">Cluster</option>
+</select>
+
+<div id="matrix"></div>
+
+<script src="lib/d3.v3.min.js"></script>
+<script src="js/graphutil.js"></script>
+<script>
+
+var graph;
+d3.json("word_cooccurrence.json", function(error, json) {
+    if (error) return console.warn(error);
+    graph = json;
+    draw_matrix_heat_map(graph, 900, 900, "#matrix");
+        //,function (group_num) { var groups = ["", "Whig", "Democratic", "Republican", "Democratic-Republican", "Federalist"]; return groups[group_num]; },
+        //function (name) { return name.substring(0,4) + "\n" + name.substring(5,30); }
+    //);
+});
+
+</script>
+
+
+<p>Each colored cell represents two words that appeared in the same document (usually a webpage). Darker cells indicate words that co-occurred more frequently.
+
+<p>You can sort the matrix rows and columns using the pull-down menu above.
+
+<p>This dynamic visualization uses <a href="http://d3js.org/">d3.js</a> by <a href="http://bost.ocks.org/mike/">Mike Bostock</a>.
+</aside>
+
+<p>A typical NLP (natural language processing) data structure is an "Occurence Matrix". Each cell in the occurrence matrix represents the number of times (or  frequency or probability) that a word occurs in a given set of words (usually a document or webpage).
+
+<p>At a fundamental level, this occurence matrix is really a graph (network of connections) where each element of the matrix at row <i>i</i> and column <i>j</i> represents the value of a connection (edge) from vertex <i>i</i> to node (vertex) <i>j</i>.
+
+<p>So if you start with a word in the Occurrence Graph and traverse through the it's document nodes and reach all the word nodes connected to each of those documents individually you can identify the words that "co-occur" in the same document. To form a new, smaller graph, with nodes of the same type you can delete all the document nodes and edges and replace them with the word-to-word nodes that are equivalent. 
+
+<p>This results in a Co-Occurrence graph, which itself can be viewed as a Matrix (just like the Occurence Matrix). Each element <i>ij</i> represents the value of an edge from vertex <i>i</i> to vertex <i>j</i>.

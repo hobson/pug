@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html class="miner">
+<meta charset="utf-8">
+<title>Document Co-occurrence Force Graph</title>
+<style> @import url(css/cooccurrence.css); </style>
+<style type="text/css">
+    circle.node {
+      cursor: pointer;
+      stroke: #000;
+      stroke-width: .5px;
+    }
+
+    line.link {
+      fill: none;
+      stroke: #9ecae1;
+      stroke-width: 1.5px;
+    }
+</style>
+<script src="js/graphutil.js"></script>
+<script src="lib/d3.v3.min.js"></script>
+<body>
+<h1>Document-Document Graph</h1>
+
+<div class="content"></div>
+
+<p>This visualization uses <a href="http://d3js.org/">d3.js</a> by <a href="http://bost.ocks.org/mike/">Mike Bostock</a>.
+<script>
+var graph;
+d3.json("doc_cooccurrence.json", function(error, json) {
+    if (error) return console.warn(error);
+    graph = json;
+    draw_force_directed_graph(graph, 1000, 600, "div.content",
+        function (group_num) { var groups = ["", "Whig", "Democratic", "Republican", "Democratic-Republican", "Federalist"]; return groups[group_num]; },
+        function (name) { return name.substring(0,4) + "\n" + name.substring(5,30); }
+    );
+});
+</script>
+
