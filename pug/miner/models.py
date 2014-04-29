@@ -23,16 +23,27 @@ class Database(models.Model):
     __unicode__ = db.representation
 
 
-
 class Table(models.Model):
     # _important_fields = ('table_name', 'model_name')
-    app          = models.CharField(max_length=256, null=True)
+    app          = models.CharField(max_length=256, default='', null=False, blank=True)
     database     = models.ForeignKey(Database)
     name         = models.CharField(max_length=256, null=False)
     django_model = models.CharField(max_length=256, null=True)
     primary_key  = models.OneToOneField('Field')
 
     __unicode__ = db.representation
+
+
+class ChangeLog(models.Model):
+    '''Log of hash of `.values()` of records in any database.table (app.model)
+
+    Used to track changes to tables across databases.
+    Facilitates mirroring across databases.
+    '''
+    model = models.CharField(max_length=255, default='', null=False, blank=True)
+    app = models.CharField(max_length=255, default='', null=False, blank=True)
+    primary_key = models.IntegerField(default=None, null=True)
+    values_hash = models.IntegerField(db_index=True, help_text='Integer hash of a tuple of all of the fields, hash(tuple(record.values_list())), for the source data record.', default=None, null=True, blank=True)
 
 
 class Type(models.Model):

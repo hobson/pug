@@ -175,6 +175,26 @@ def generate_batches(sequence, batch_len=1, allow_partial=True):
         yield batch
 
 
+def generate_slices(sliceable_set, batch_len=1, allow_partial=True, length=None):
+    """Iterate through a sequence (or generator) in batches of length `batch_len`
+
+    http://stackoverflow.com/a/761125/623735
+    >>> [batch for batch in generate_batches(range(7), 3)]
+    [[0, 1, 2], [3, 4, 5], [6]]
+    """
+    if length is None:
+        try:
+            length = sliceable_set.count()
+        except:
+            length = len(sliceable_set)
+
+    for i in range(length / batch_len + 1):
+        start = i * batch_len
+        end = min((i + 1) * batch_len, length)
+        yield sliceable_set[start:end]
+    raise StopIteration
+
+
 COUNT_NAMES = ['count', 'cnt', 'number', 'num', '#', 'frequency', 'probability', 'prob', 'occurences']
 def find_count_label(d):
     """Find the member of a set that means "count" or "frequency" or "probability" or "number of occurrences".

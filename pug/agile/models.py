@@ -2,7 +2,7 @@ import datetime
 
 from django.db import models
 from django.utils.translation import ugettext_lazy as _  # get_language_info, 
-# from django.contrib.auth import User, Group, Permission
+from django.contrib.auth.models import User, Group, Permission
 
 from pug.miner import decorators as decorate
 from pug.nlp import db
@@ -39,9 +39,7 @@ class NameDescriptionSlugTag(NameDescription):
 @decorate.represent
 class Tracked(models.Model):
     '''Track modifications of records in the database (transaction logging at the python level)'''
-
-    class Meta:
-        abstract = True
+    pass
 
 
 @decorate.represent
@@ -70,8 +68,8 @@ class Organization(NameDescriptionSlug):
     colloquial = models.CharField(max_length=10, default='', blank=True)
     location = models.ManyToManyField('Location', null=True, default=None, blank=True)
     parent = models.ManyToManyField('Organization', null=True, default=None, blank=True)
-    user = models.ManyToManyField('User', null=True, default=None, blank=True)
-    group = models.ManyToManyField('Group', null=True, default=None, blank=True)
+    user = models.ManyToManyField(User, null=True, default=None, blank=True)
+    group = models.ManyToManyField(Group, null=True, default=None, blank=True)
 
 
 @decorate.represent
@@ -88,9 +86,9 @@ class Story(Tracked, NameDescriptionSlugTag):
     '''
     # tag = models.ManyToManyField('Tag')
     category = models.CharField(max_length=64, default='', null=False, blank=True)
-    author = models.ManyToManyField('User')  # will be available at attribute "authors" (plural)
-    stakeholder = models.ManyToManyField('User')  # will be available at attribute "authors" (plural)
-    organization = models.ManyToManyField('Organization')  # will be available at attribute "authors" (plural)
+    author = models.ManyToManyField(User, related_name='story_author')  # will be available at attribute "authors" (plural)
+    stakeholder = models.ManyToManyField(User) #, related_name='story_stakeholder') 
+    organization = models.ManyToManyField('Organization')
     task = models.ManyToManyField('Task')
 
     def __unicode__(self):
@@ -109,8 +107,8 @@ class Task(Tracked, NameDescriptionSlugTag):
     planned_start = models.DateTimeField(default=None, null=True, blank=True)
     start = models.DateTimeField(default=None, null=True, blank=True)
     finish = models.DateTimeField(default=None, null=True, blank=True)
-    author = models.ManyToManyField('User')
-    developer = models.ManyToManyField('User')
+    author = models.ManyToManyField(User, related_name='task_author')
+    developer = models.ManyToManyField(User)  #, related_name='task_developer_user')
     blockers = models.ManyToManyField('Task')
 
     def __unicode__(self):

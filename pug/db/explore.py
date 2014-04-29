@@ -732,3 +732,11 @@ def count_unique(table, field=-1):
                     return Counter(row.getattr(field, None) for row in table)
                 except:
                     pass
+
+
+def get_field_names(model, types=[models.TextField]):
+    names = []
+    for name in model.get_all_field_names():
+        if type(model.get_field(name)) in types:
+            names += [name]
+    return names

@@ -7,7 +7,10 @@ import sqlparse
 import os
 import csv
 import json
+import warnings
 from traceback import print_exc
+from django.core import serializers
+
 
 from progressbar import ProgressBar, Percentage, RotatingMarker, Bar, ETA
 from fuzzywuzzy import process as fuzzy
@@ -15,7 +18,8 @@ import numpy as np
 import logging
 logger = logging.getLogger('bigdata.info')
 
-
+# required to monkey-patch django.utils.encoding.force_text
+from django.utils.encoding import is_protected_type, DjangoUnicodeDecodeError, six
 DEFAULT_DB = 'default'
 DEFAULT_APP = None  # models.get_apps()[-1]
 DEFAULT_MODEL = None  # DEFAULT_MODEL.get_models()[0]
@@ -25,6 +29,7 @@ try:
     from django.db import models
     from django.db import connection
     from django.conf import settings  # there is only one function that requires settings, all other functions should be moved to nlp.db module?
+
 except ImproperlyConfigured:
     import traceback
     print traceback.format_exc()
@@ -38,6 +43,7 @@ from .words import synonyms
 from .util import listify
 from .db import sort_prefix, consolidated_counts, sorted_dict_of_lists, lagged_seq, NULL_VALUES, NAN_VALUES, BLANK_VALUES
 from pug.nlp.db import clean_utf8
+from pug.miner.models import ChangeLog
 
 #from pug.nlp.util import make_int, dos_from_table  #, sod_transposed
 #from pug.db.explore import count_unique, make_serializable
@@ -1027,9 +1033,10 @@ def load_all_csvs_to_model(path, model, field_names=None, delimiter=None, batch_
     return N
 
 
-def clean_duplicates(model, unique_together=('material', 'serial_number',), date_field='created_on',
-                     seq_field='model_serial_seq', seq_max_field='model_serial_seq_max', verbosity=1):
-    qs = model.objects.order_by(list(unique_together) + util.listify(date_field)).all()
+def clean_duplicates(model, unique_together=('serial_number',), date_field='created_on',
+                     seq_field='seq', seq_max_field='seq_max', verbosity=1):
+    qs = getattr(model, 'objects', model)
+    qs = qs.order_by(*(util.listify(unique_together) + util.listify(date_field)))
     N = qs.count()
 
     if verbosity:
@@ -1061,6 +1068,27 @@ def clean_duplicates(model, unique_together=('material', 'serial_number',), date
             dupes = [obj]
     if verbosity:
         pbar.finish()
+
+
+def hash_model_values(model, clear=True, hash_field='values_hash', hash_fun=hash, ignore_pk=True, ignore_fields=[]):
+    """Hash values of DB table records to facilitate tracking changes to the DB table
+
+    Intended for comparing records in one table to those in another (with potentially differing id/pk values)
+    For example, changes to a table in a read-only MS SQL database can be quickly identified
+    and mirrored to a writeable PostGRE DB where these hash values are stored along side the data.
+    """
+    qs = getattr(model, 'objects', model)
+    model = qs.model
+    if ignore_pk:
+        ignore_fields += [model._meta.pk.name]
+    if not hasattr(model, hash_field):
+        warnings.warn("%r doesn't have a field named %s in which to store a hash value. Skipping." % (model, hash_field))
+        return
+    for obj in qs:
+        # ignore primary key (id field) when hashing values
+        h = hash_fun(tuple([getattr(obj, k) for k in obj._meta.get_all_field_names() if k not in ignore_fields]))
+        tracking_obj, created = ChangeLog.get_or_create(app=model._meta.app_label, model=model._meta.object_name, primary_key=obj.pk)
+        tracking_obj.update(hash_value=h)
 
 
 def import_items(item_seq, dest_model,  batch_size=500, clear=False, dry_run=True, verbosity=1):
@@ -1243,3 +1271,63 @@ def fixture_from_table(table, header_rows=1):
         else:
             yield ',\n' + s + '\n'
     yield ']\n'
+
+
+def force_text(s, encoding='utf-8', strings_only=False, errors='strict'):
+    """
+    A monkey-patch for django.utils.encoding.force_text to robustly handle UTF16
+    and latin encodings from non-compliant drivers (myodbc, FreeTDS, some camera EXIF tags).
+    Uses pug.nlp.db.clean_utf8 when all other attempts using `six` fail.
+ 
+    Similar to smart_text, except that lazy instances are resolved to
+    strings, rather than kept as lazy objects.
+
+    If strings_only is True, don't convert (some) non-string-like objects.
+    """
+    # Handle the common case first, saves 30-40% when s is an instance of
+    # six.text_type. This function gets called often in that setting.
+    if isinstance(s, six.text_type):
+        return s
+    if strings_only and is_protected_type(s):
+        return s
+    try:
+        if not isinstance(s, six.string_types):
+            if hasattr(s, '__unicode__'):
+                s = s.__unicode__()
+            else:
+                if six.PY3:
+                    if isinstance(s, bytes):
+                        s = six.text_type(s, encoding, errors)
+                    else:
+                        s = six.text_type(s)
+                else:
+                    s = six.text_type(bytes(s), encoding, errors)
+        else:
+            # Note: We use .decode() here, instead of six.text_type(s, encoding,
+            # errors), so that if s is a SafeBytes, it ends up being a
+            # SafeText at the end.
+            s = s.decode(encoding, errors)
+    except UnicodeDecodeError as e:
+        if not isinstance(s, Exception):
+            try:
+                s = clean_utf8(s)
+            except:
+                raise DjangoUnicodeDecodeError(s, *e.args)
+        else:
+            # If we get to here, the caller has passed in an Exception
+            # subclass populated with non-ASCII bytestring data without a
+            # working unicode method. Try to handle this without raising a
+            # further exception by individually forcing the exception args
+            # to unicode.
+            s = ' '.join([force_text(arg, encoding, strings_only,
+                    errors) for arg in s])
+    return s
+
+
+def dump_json(model, batch_len=1000000):
+    "Dump database records to a json file in Django fixture format, one file for each batch of 1M records"
+    JSONSerializer = serializers.get_serializer("json")
+    jser = JSONSerializer()
+    for i, partial_qs in enumerate(util.generate_slices(model.objects.all(), batch_len=batch_len)):
+        with open(model._meta.app_label + '--' + model._meta.object_name + '--%04d.json' % i, 'w') as fpout:
+            jser.serialize(partial_qs, indent=1, stream=fpout)
