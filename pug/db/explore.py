@@ -17,6 +17,7 @@ from django.db.models import FieldDoesNotExist
 
 from pug.nlp import djdb  # FIXME: confusing name (too similar to common `import as` for django.db)
 from pug.nlp import db
+from pug.nlp import util
 
 import sqlserver as sql
 
@@ -372,7 +373,7 @@ def index_with_dupes(values_list, unique_together=2, model_number_i=0, serial_nu
     pbar = None
     if verbosity and N > min(1000000, max(0, 100000**(1./verbosity))):
         widgets = ['%d rows: ' % N, Percentage(), ' ', RotatingMarker(), ' ', Bar(),' ', ETA()]
-        pbar = ProgressBar(widgets=widgets, maxval=len(values_list)).start()
+        pbar = ProgressBar(widgets=widgets, maxval=N).start()
     rownum = 0
     for row in values_list:
         normalized_key = [str(row[model_number_i]).strip(), str(row[serial_number_i]).strip()]
@@ -384,7 +385,7 @@ def index_with_dupes(values_list, unique_together=2, model_number_i=0, serial_nu
                 dupes[normalized_key] = [index[normalized_key]]
             dupes[normalized_key] = dupes[normalized_key] + [row]
             if verbosity > 2:
-                print 'Duplicate model-serial number found. Here are all the rows that match this key:'
+                print 'Duplicate "unique_together" tuple found. Here are all the rows that match this key:'
                 print dupes[normalized_key]
         else:
             index[normalized_key] = row 
@@ -398,8 +399,123 @@ def index_with_dupes(values_list, unique_together=2, model_number_i=0, serial_nu
     return index, dupes
 
 
-def get_index(model_meta, weights=None, verbosity=0):
-    """Return a single tuple of index metadata for the model metadata dict provided
+def index_model_field(model, field, value_field='pk', key_formatter=str.strip, value_formatter=str.strip, batch_len=10000, limit=10000000, verbosity=1):
+    '''Create dict {obj.<field>: obj.pk} for all field_values in a model or queryset.
+
+    Default N (number of columns assumbed to be "unique_together") is 2.
+    >>> index_with_dupes([(1,2,3), (5,6,7), (5,6,8), (2,1,3)]) == ({(1, 2): (1, 2, 3), (2, 1): (2, 1, 3), (5, 6): (5, 6, 7)}, {(5, 6): [(5, 6, 7), (5, 6, 8)]})
+    True
+    '''
+    try:
+        qs = model.objects
+    except:
+        qs = model
+
+    N = qs.count()
+    if verbosity:
+        print 'Indexing %d rows (database records) to aid in finding record %r values using the field %r.' % (N, value_field, field)
+
+    index, dupes, rownum = {}, {}, 0
+
+    pbar, rownum = None, 0
+    if verbosity and N > min(1000000, max(0, 100000**(1./verbosity))):
+        widgets = ['%d rows: ' % N, Percentage(), ' ', RotatingMarker(), ' ', Bar(),' ', ETA()]
+        pbar = ProgressBar(widgets=widgets, maxval=N).start()
+
+    # to determine the type of the field value and decide whether to strip() or normalize in any way
+    #obj0 = qs.filter(**{field + '__isnull': False}).all()[0]
+
+    for obj in qs.all():
+        field_value = getattr(obj, field)
+        try:
+            field_value = key_formatter(field_value)
+        except:
+            pass
+        if value_field:
+            entry_value = getattr(obj, value_field)
+        else:
+            entry_value = obj
+        try:
+            entry_value = value_formatter(entry_value)
+        except:
+            pass
+        if field_value in index:
+            dupes[field_value] = dupes.get(field_value, []) + [entry_value]
+        else:
+            index[field_value] = entry_value
+        rownum += 1
+        if rownum >= limit:
+            break
+        if pbar:
+            pbar.update(rownum)
+    if pbar:
+        pbar.finish()
+    if verbosity:
+        print 'Found %d duplicate %s values among the %d records or %g%%' % (len(dupes), field, len(index), len(dupes)*100./(len(index) or 1.))
+    return index, dupes
+
+
+def index_model_field_batches(model, field, value_field='pk', key_formatter=str.strip, value_formatter=str.strip, batch_len=10000, limit=10000000, verbosity=1):
+    '''Like index_model_field except uses 50x less memory and 10x more processing cycles
+
+        Default N (number of columns assumbed to be "unique_together") is 2.
+    >>> index_with_dupes([(1,2,3), (5,6,7), (5,6,8), (2,1,3)]) == ({(1, 2): (1, 2, 3), (2, 1): (2, 1, 3), (5, 6): (5, 6, 7)}, {(5, 6): [(5, 6, 7), (5, 6, 8)]})
+    True
+    '''
+
+    try:
+        qs = model.objects
+    except:
+        qs = model
+
+    N = qs.count()
+    if verbosity:
+        print 'Indexing %d rows (database records) to aid in finding record %r values using the field %r.' % (N, value_field, field)
+
+    index, dupes, rownum = {}, {}, 0
+
+    pbar, rownum = None, 0
+    if verbosity and N > min(1000000, max(0, 100000**(1./verbosity))):
+        widgets = ['%d rows: ' % N, Percentage(), ' ', RotatingMarker(), ' ', Bar(),' ', ETA()]
+        pbar = ProgressBar(widgets=widgets, maxval=N).start()
+
+
+    # to determine the type of the field value and decide whether to strip() or normalize in any way
+    #obj0 = qs.filter(**{field + '__isnull': False}).all()[0]
+
+    for batch in util.generate_slices(qs.all()):
+        for obj in batch:
+            field_value = getattr(obj, field)
+            try:
+                field_value = key_formatter(field_value)
+            except:
+                pass
+            if value_field:
+                entry_value = getattr(obj, value_field)
+            else:
+                entry_value = obj
+            try:
+                entry_value = value_formatter(entry_value)
+            except:
+                pass
+            if field_value in index:
+                dupes[field_value] = dupes.get(field_value, []) + [entry_value]
+            else:
+                index[field_value] = entry_value
+            rownum += 1
+            if rownum >= limit:
+                break
+            if pbar:
+                pbar.update(rownum)
+    if pbar:
+        pbar.finish()
+    if verbosity:
+        print 'Found %d duplicate %s values among the %d records or %g%%' % (len(dupes), field, len(index), len(dupes)*100./(len(index) or 1.))
+    return index, dupes
+
+
+def find_index(model_meta, weights=None, verbosity=0):
+    """Return a tuple of index metadata for the model metadata dict provided
 
     return value format is: 
 
@@ -412,7 +528,7 @@ def get_index(model_meta, weights=None, verbosity=0):
             score,
         )
     """
-    weights = weights or get_index.default_weights
+    weights = weights or find_index.default_weights
     N = model_meta['Meta'].get('count', 0)
     for field_name, field_meta in model_meta.iteritems():
         if field_name == 'Meta':
@@ -460,7 +576,7 @@ def get_index(model_meta, weights=None, verbosity=0):
         },
         max_name[0],
         )
-get_index.default_weights = (('num_distinct', (1e-3, 'normalize')), ('unique', 1.), ('num_null', (-1e-3, 'normalize')), ('fraction_null', -2.), 
+find_index.default_weights = (('num_distinct', (1e-3, 'normalize')), ('unique', 1.), ('num_null', (-1e-3, 'normalize')), ('fraction_null', -2.), 
                              ('type', (.3, 'numeric')), ('type', (.2, 'char')), ('type',(-.3, 'text')),
                             )
 
@@ -474,7 +590,7 @@ def meta_to_indexes(meta, table_name=None, model_name=None):
     for meta_model_name, model_meta in meta.iteritems():
         if (table_name or model_name) and not (table_name == model_meta['Meta'].get('db_table', '') or model_name == meta_model_name):
             continue
-        field_name, field_infodict, score = get_index(model_meta)
+        field_name, field_infodict, score = find_index(model_meta)
         indexes.append(('%s.%s' % (meta_model_name, field_name), field_infodict, score))
     return indexes
 
