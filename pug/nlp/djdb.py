@@ -1035,7 +1035,7 @@ def load_csv_to_model(path, model, field_names=None, delimiter='|', batch_size=1
     delimiter = str(delimiter)
 
     with open(path, 'rU') as f:
-        reader = csv.reader(f, dialect='excel_tab', delimiter=delimiter)
+        reader = csv.reader(f, dialect=csv.excel_tab, delimiter=delimiter)
         header_rows = []
         for i in range(num_header_rows):
             header_rows += [reader.next()]
@@ -1086,20 +1086,38 @@ def load_all_csvs_to_model(path, model, field_names=None, delimiter=None, batch_
         if verbosity and not dry_run:
             N_existing = model.objects.count()
             if N_existing:
-                ans = raw_input('Are you sure you want to delete all %d existing database records in %r? (y/n)' % (N_existing, model))
+                ans = raw_input('Are you sure you want to delete all %d existing database records in %r? (y/n) ' % (N_existing, model))
         if ans.lower().startswith('y') and not dry_run:
             model.objects.all().delete()
         if dry_run:
             print "DRY_RUN: NOT deleting %d records in %r." % (model.objects.all().count(), model)
     N = 0
+    # TODO: preprocess should catalog the entire list of files (full paths), their sizes, and number of lines?
+    if verbosity:
+        file_bytes = 0
+        print 'Preprocessing files to estimate ETA'
+        for dir_path, dir_names, filenames in os.walk(path):
+            for fn in filenames:
+                if fn.lower().endswith(ext):
+                    file_bytes += os.getsize(os.path.join(dir_path, fn))
+            if not recursive:
+                break
     for dir_path, dir_names, filenames in os.walk(path):
         if verbosity:
             print dir_path, dir_names, filenames
+        if verbosity:
+            widgets = ['%d bytes for all files: ' % file_bytes, Percentage(), ' ', RotatingMarker(), ' ', Bar(),' ', ETA()]
+            i, pbar = 0, ProgressBar(widgets=widgets, maxval=N).start()       
         for fn in filenames:
-            if verbosity:
-                print 'loading "%s"...' % os.path.join(dir_path, fn)
             if fn.lower().endswith(ext):
+                if verbosity:
+                    pbar.update(os.getsize(os.path.join(dir_path, fn)))
+                    print
+                    print 'Loading "%s"...' % os.path.join(dir_path, fn)
                 N += load_csv_to_model(path=os.path.join(dir_path, fn), model=model, field_names=field_names, delimiter=delimiter, strip=strip, batch_size=batch_size, num_header_rows=num_header_rows, dry_run=dry_run, verbosity=verbosity)
+            else:
+                if verbosity:
+                    print 'Skipping "%s"...' % os.path.join(dir_path, fn)
         if not recursive:
             return N
     return N
