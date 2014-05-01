@@ -12,7 +12,7 @@ from traceback import print_exc
 from django.core import serializers
 
 
-from progressbar import ProgressBar, Percentage, RotatingMarker, Bar, ETA
+import progressbar as pb  # import ProgressBar, Percentage, RotatingMarker, Bar, ETA
 from fuzzywuzzy import process as fuzzy
 import numpy as np
 import logging
@@ -787,7 +787,6 @@ class Columns(OrderedDict):
         #print '='*20
         #print list(self)
         for i, d in enumerate(lol):
-            #print i
             if not i:
                 for j, value in enumerate(d):
                     self[j] = [value]
@@ -1040,28 +1039,28 @@ def load_csv_to_model(path, model, field_names=None, delimiter='|', batch_size=1
         for i in range(num_header_rows):
             header_rows += [reader.next()]
         if verbosity:
-            N = count_lines(path) - i
-            widgets = ['%d lines: ' % N, Percentage(), ' ', RotatingMarker(), ' ', Bar(),' ', ETA()]
-            i, pbar = 0, ProgressBar(widgets=widgets, maxval=N).start()       
+            N = count_lines(path) - i + 10  # + 10 fudge factor in case multiple newlines in a single csv row
+            widgets = [pb.Counter(), '/%d lines: ' % N, pb.Percentage(), ' ', pb.RotatingMarker(), ' ', pb.Bar(),' ', pb.ETA()]
+            i, pbar = 0, pb.ProgressBar(widgets=widgets, maxval=N).start()       
         for batch_num, batch_of_rows in enumerate(util.generate_batches(reader, batch_size)):
-            if verbosity:
-                i += len(batch_of_rows)
-                pbar.update(i)
-                if verbosity > 1:
-                    print
-                    print i
             batch_of_objects = []
             for j, row in enumerate(batch_of_rows):
                 try:
                     batch_of_objects += [django_object_from_row(row, model=model, field_names=field_names, strip=strip)]
                 except:
                     if verbosity:
-                        pbar.update(i - batch_size + j + 1)
-                        print
-                        print 'Error importing row #%d' % (i + j)
+                        print 'Error importing row #%d' % (i + j + 1)
                         print_exc()
                     if not ignore_errors:
                         raise
+                if verbosity:
+                    try:
+                        pbar.update(i + j)
+                    except:
+                        print_exc()
+                        if not ignore_errors:
+                            raise
+            i += len(batch_of_rows)
             if not dry_run:
                 model.objects.bulk_create(batch_of_objects)
             elif verbosity:
@@ -1095,31 +1094,34 @@ def load_all_csvs_to_model(path, model, field_names=None, delimiter=None, batch_
     # TODO: preprocess should catalog the entire list of files (full paths), their sizes, and number of lines?
     if verbosity:
         file_bytes = 0
-        print 'Preprocessing files to estimate ETA'
+        print 'Preprocessing files to estimate pb.ETA'
         for dir_path, dir_names, filenames in os.walk(path):
             for fn in filenames:
                 if fn.lower().endswith(ext):
-                    file_bytes += os.getsize(os.path.join(dir_path, fn))
+                    file_bytes += os.path.getsize(os.path.join(dir_path, fn))
             if not recursive:
                 break
     for dir_path, dir_names, filenames in os.walk(path):
         if verbosity:
             print dir_path, dir_names, filenames
         if verbosity:
-            widgets = ['%d bytes for all files: ' % file_bytes, Percentage(), ' ', RotatingMarker(), ' ', Bar(),' ', ETA()]
-            i, pbar = 0, ProgressBar(widgets=widgets, maxval=N).start()       
+            widgets = [pb.Counter, '/%d bytes for all files: ' % file_bytes, pb.Percentage(), ' ', pb.RotatingMarker(), ' ', pb.Bar(),' ', pb.ETA()]
+            i, pbar = 0, pb.ProgressBar(widgets=widgets, maxval=file_bytes).start()
+        file_bytes_done = 0
         for fn in filenames:
             if fn.lower().endswith(ext):
                 if verbosity:
-                    pbar.update(os.getsize(os.path.join(dir_path, fn)))
                     print
                     print 'Loading "%s"...' % os.path.join(dir_path, fn)
                 N += load_csv_to_model(path=os.path.join(dir_path, fn), model=model, field_names=field_names, delimiter=delimiter, strip=strip, batch_size=batch_size, num_header_rows=num_header_rows, dry_run=dry_run, verbosity=verbosity)
+                if verbosity:
+                    file_bytes_done += os.path.getsize(os.path.join(dir_path, fn))
+                    pbar.update(file_bytes_done)
             else:
                 if verbosity:
                     print 'Skipping "%s"...' % os.path.join(dir_path, fn)
         if not recursive:
-            return N
+            break
     return N
 
 
@@ -1139,8 +1141,8 @@ def clean_duplicates(model, unique_together=('serial_number',), date_field='crea
     dupes = [obj]
 
     if verbosity:
-        widgets = ['%d rows: ' % N, Percentage(), ' ', RotatingMarker(), ' ', Bar(),' ', ETA()]
-        i, pbar = 0, ProgressBar(widgets=widgets, maxval=N).start()       
+        widgets = [pb.Counter(), '/%d rows: ' % N, pb.Percentage(), ' ', pb.RotatingMarker(), ' ', pb.Bar(),' ', pb.ETA()]
+        i, pbar = 0, pb.ProgressBar(widgets=widgets, maxval=N).start()       
     for obj in qsit:
         if verbosity:
             pbar.update(i)
@@ -1196,8 +1198,8 @@ def import_items(item_seq, dest_model,  batch_size=500, clear=False, dry_run=Tru
 
     if verbosity:
         print('Loading %r records from sequence provided...' % N)
-        widgets = ['%d records: ' % N, Percentage(), ' ', RotatingMarker(), ' ', Bar(),' ', ETA()]
-        pbar = ProgressBar(widgets=widgets, maxval=N).start()
+        widgets = [pb.Counter(), '/%d records: ' % N, pb.Percentage(), ' ', pb.RotatingMarker(), ' ', pb.Bar(),' ', pb.ETA()]
+        pbar = pb.ProgressBar(widgets=widgets, maxval=N).start()
 
     if clear and not dry_run:
         if verbosity:
@@ -1246,8 +1248,8 @@ def import_queryset(qs, dest_model,  batch_size=500, clear=False, dry_run=True, 
             print "WARNING: Deleting %d records from %r !!!!!!!" % (dest_model.objects.count(), dest_model)
         dest_model.objects.all().delete()
     if verbosity:
-        widgets = ['%d records: ' % N, Percentage(), ' ', RotatingMarker(), ' ', Bar(),' ', ETA()]
-        pbar = ProgressBar(widgets=widgets, maxval=N).start()
+        widgets = [pb.Counter, '/%d records: ' % N, pb.Percentage(), ' ', pb.RotatingMarker(), ' ', pb.Bar(),' ', pb.ETA()]
+        pbar = pb.ProgressBar(widgets=widgets, maxval=N).start()
     for batch_num, dict_batch in enumerate(util.generate_batches(qs, batch_size)):
         if verbosity > 2:
             print(repr(dict_batch))
