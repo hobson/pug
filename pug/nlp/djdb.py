@@ -940,11 +940,12 @@ def fixture_record_from_row():
     }"""
 
 
-def django_object_from_row(row, model, field_names=None, include_id=False, strip=True, verbosity=0):
-    return model(**field_dict_from_row(row, model, field_names=field_names, include_id=include_id, strip=strip, verbosity=verbosity))
+def django_object_from_row(row, model, field_names=None, include_id=False, strip=True, ignore_errors=True, verbosity=0):
+    return model(**field_dict_from_row(row, model, field_names=field_names, include_id=include_id, strip=strip,
+                                       ignore_errors=ignore_errors, verbosity=verbosity))
 
 
-def field_dict_from_row(row, model, field_names=None, include_id=False, strip=True, verbosity=0):
+def field_dict_from_row(row, model, field_names=None, include_id=False, strip=True, blank_none=True, ignore_errors=True, verbosity=0):
     field_classes = [f for f in model._meta._fields() if (include_id or f.name != 'id')]
     if not field_names:
         field_names = [f.name for f in field_classes if (include_id or f.name != 'id')]
@@ -955,8 +956,13 @@ def field_dict_from_row(row, model, field_names=None, include_id=False, strip=Tr
         if verbosity >= 3:
             print field_name, field_class, value 
         if not value:
-            value = None
-
+            if blank_none and isinstance(value, basestring):
+                try:
+                    value = '' if isinstance(field_class.to_python(''), basestring) else None
+                except:
+                    value = None
+            else:
+                value = None
         try:
             # get a clean python value from a string, etc
             clean_value = field_class.to_python(value)
@@ -964,7 +970,19 @@ def field_dict_from_row(row, model, field_names=None, include_id=False, strip=Tr
             try:
                 clean_value = str(field_class.to_python(util.clean_wiki_datetime(value)))
             except:
-                clean_value = field_class().to_python()
+                try:
+                    clean_value = field_class.to_python(util.make_float(value))
+                except:
+                    try:
+                        clean_value = field_class.to_python(value)
+                    except:
+                        clean_value = None
+                        if verbosity:
+                            print 'parsed row:'
+                            print row
+                            print_exc()
+                        if not ignore_errors:
+                            raise
         if isinstance(clean_value, basestring):
             if strip:
                 clean_value = clean_value.strip()
@@ -973,8 +991,25 @@ def field_dict_from_row(row, model, field_names=None, include_id=False, strip=Tr
     return field_dict
 
 
-def load_csv_to_model(path, model, field_names=None, delimiter='|', batch_size=1000, num_header_rows=1, strip=True, dry_run=True, verbosity=1):
-    """Bulk create databse records from batches of rows in a csv file."""
+def count_lines(fname):
+    '''Count the number of lines in a file
+
+    Only faster way would be to utilize multiple processor cores to perform parallel reads.
+    http://stackoverflow.com/q/845058/623735
+    '''
+
+    with open(fname) as f:
+        for i, l in enumerate(f):
+            pass
+    return i + 1
+
+
+def load_csv_to_model(path, model, field_names=None, delimiter='|', batch_size=1000, num_header_rows=1, strip=True,
+                      dry_run=True, ignore_errors=True, verbosity=2):
+    '''
+    Bulk create database records from batches of rows in a csv file.  
+    '''
+
     path = path or './'
     if not delimiter:
         for d in ',', '|', '\t', ';':
@@ -984,25 +1019,46 @@ def load_csv_to_model(path, model, field_names=None, delimiter='|', batch_size=1
                 pass
         return None
     delimiter = str(delimiter)
+
     with open(path, 'rb') as f:
         reader = csv.reader(f, dialect='excel', delimiter=delimiter)
         header_rows = []
         for i in range(num_header_rows):
             header_rows += [reader.next()]
-        i = 0
+        if verbosity:
+            N = count_lines(path) - i
+            widgets = ['%d lines: ' % N, Percentage(), ' ', RotatingMarker(), ' ', Bar(),' ', ETA()]
+            i, pbar = 0, ProgressBar(widgets=widgets, maxval=N).start()       
         for batch_num, batch_of_rows in enumerate(util.generate_batches(reader, batch_size)):
-            i += len(batch_of_rows)
             if verbosity:
-                print i
-            batch_of_objects = [django_object_from_row(row, model=model, field_names=field_names, strip=strip) for row in batch_of_rows]
+                i += len(batch_of_rows)
+                pbar.update(i)
+                if verbosity > 1:
+                    print
+                    print i
+            batch_of_objects = []
+            for j, row in enumerate(batch_of_rows):
+                try:
+                    batch_of_objects += [django_object_from_row(row, model=model, field_names=field_names, strip=strip)]
+                except:
+                    if verbosity:
+                        pbar.update(i+j)
+                        print
+                        print 'Error importing row #%d' % (i + j)
+                        print_exc()
+                    if not ignore_errors:
+                        raise
             if not dry_run:
                 model.objects.bulk_create(batch_of_objects)
             elif verbosity:
                 print "DRY_RUN: NOT bulk creating batch of %d records in %r" % (len(batch_of_objects), model)
+        if verbosity:
+            pbar.finish()
     return i
 
 
-def load_all_csvs_to_model(path, model, field_names=None, delimiter=None, batch_size=10000, num_header_rows=1, recursive=False, clear=False, dry_run=True, strip=True, verbosity=1):
+def load_all_csvs_to_model(path, model, field_names=None, delimiter=None, batch_size=10000, num_header_rows=1, recursive=False, strip=True,
+                           clear=False, dry_run=True, ignore_errors=True, verbosity=1, ext=''):
     """Bulk create database records from all csv files found within a directory."""
     path = path or './'
     batch_size = batch_size or 1000
@@ -1014,7 +1070,9 @@ def load_all_csvs_to_model(path, model, field_names=None, delimiter=None, batch_
     if clear:
         ans = 'y'
         if verbosity and not dry_run:
-            ans = input('Are you sure you want to delete all %d existing database records in %r? (y/n)' % (model.objects.all().count(), model))
+            N_existing = model.objects.count()
+            if N_existing:
+                ans = raw_input('Are you sure you want to delete all %d existing database records in %r? (y/n)' % (N_existing, model))
         if ans.lower().startswith('y') and not dry_run:
             model.objects.all().delete()
         if dry_run:
@@ -1026,7 +1084,7 @@ def load_all_csvs_to_model(path, model, field_names=None, delimiter=None, batch_
         for fn in filenames:
             if verbosity:
                 print 'loading "%s"...' % os.path.join(dir_path, fn)
-            if fn.lower().endswith(".csv"):
+            if fn.lower().endswith(ext):
                 N += load_csv_to_model(path=os.path.join(dir_path, fn), model=model, field_names=field_names, delimiter=delimiter, strip=strip, batch_size=batch_size, num_header_rows=num_header_rows, dry_run=dry_run, verbosity=verbosity)
         if not recursive:
             return N
