@@ -976,17 +976,31 @@ def field_dict_from_row(row, model, field_names=None, include_id=False, strip=Tr
                     try:
                         clean_value = field_class.to_python(value)
                     except:
-                        clean_value = None
                         if verbosity:
-                            print 'parsed row:'
+                            print
+                            print "The row below has a value (%r) that can't be coerced by %r:" % (value, field_class.to_python)
                             print row
                             print_exc()
+                        clean_value = None
                         if not ignore_errors:
                             raise
         if isinstance(clean_value, basestring):
             if strip:
                 clean_value = clean_value.strip()
             clean_value = clean_utf8(clean_value)
+            max_length = getattr(field_class, 'max_length')
+            if max_length:
+                try:
+                    assert(len(clean_value) <= field_class.max_length)
+                except:
+                    if verbosity:
+                        print
+                        print "The row below has a string (%r) that is too long (> %d):" % (clean_value, max_length)
+                        print row
+                        print_exc()
+                    clean_value = clean_value[:max_length]
+                    if not ignore_errors:
+                        raise
         field_dict[field_name] = clean_value
     return field_dict
 
