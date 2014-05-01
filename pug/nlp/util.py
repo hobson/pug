@@ -814,6 +814,8 @@ def make_us_postal_code(s, allowed_lengths=(), allowed_digits=()):
 def make_float(s, default='', ignore_commas=True):
     r"""Coerce a string into a float
 
+    >>> make_float('12,345')
+    12345
     >>> make_float('12.345')
     12.345
     >>> make_float('1+2')
@@ -1038,7 +1040,7 @@ def make_tz_aware(dt, tz='UTC'):
     return tz.localize(dt)
 
 
-def clean_wiki_datetime(dt, squelch=False):
+def clean_wiki_datetime(dt, squelch=True):
     if isinstance(dt, datetime.datetime):
         return dt
     elif not isinstance(dt, basestring):
@@ -1047,7 +1049,7 @@ def clean_wiki_datetime(dt, squelch=False):
         return make_tz_aware(dateutil.parser.parse(dt))
     except:
         if not squelch:
-            print("Failed to parse %r" % dt)
+            print("Failed to parse %r as a date" % dt)
     dt = [s.strip() for s in dt.split(' ')]
     # get rid of any " at " or empty strings
     dt = [s for s in dt if s and s.lower() != 'at']
