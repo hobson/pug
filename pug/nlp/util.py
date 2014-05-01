@@ -15,6 +15,7 @@ import dateutil
 import pytz
 import warnings
 from collections import Counter
+from traceback import print_exc
 
 #import math
 from pytz import timezone
@@ -151,7 +152,7 @@ def quantify_field_dict(field_dict, precision=None, date_precision=None, cleaner
     return d
 
 
-def generate_batches(sequence, batch_len=1, allow_partial=True):
+def generate_batches(sequence, batch_len=1, allow_partial=True, ignore_errors=True, verbosity=1):
     """Iterate through a sequence (or generator) in batches of length `batch_len`
 
     http://stackoverflow.com/a/761125/623735
@@ -171,7 +172,13 @@ def generate_batches(sequence, batch_len=1, allow_partial=True):
                 if batch:
                     break
                 else:
-                    raise StopIteration       
+                    raise StopIteration
+            except Exception:
+                # 'Error: new-line character seen in unquoted field - do you need to open the file in universal-newline mode?'       
+                if verbosity:
+                    print_exc()
+                if not ignore_errors:
+                    raise
         yield batch
 
 

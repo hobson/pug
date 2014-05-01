@@ -1034,8 +1034,8 @@ def load_csv_to_model(path, model, field_names=None, delimiter='|', batch_size=1
         return None
     delimiter = str(delimiter)
 
-    with open(path, 'rb') as f:
-        reader = csv.reader(f, dialect='excel', delimiter=delimiter)
+    with open(path, 'rU') as f:
+        reader = csv.reader(f, dialect='excel_tab', delimiter=delimiter)
         header_rows = []
         for i in range(num_header_rows):
             header_rows += [reader.next()]
@@ -1056,7 +1056,7 @@ def load_csv_to_model(path, model, field_names=None, delimiter='|', batch_size=1
                     batch_of_objects += [django_object_from_row(row, model=model, field_names=field_names, strip=strip)]
                 except:
                     if verbosity:
-                        pbar.update(i+j)
+                        pbar.update(i - batch_size + j + 1)
                         print
                         print 'Error importing row #%d' % (i + j)
                         print_exc()
