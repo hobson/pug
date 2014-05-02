@@ -1071,7 +1071,7 @@ def load_csv_to_model(path, model, field_names=None, delimiter='|', batch_size=1
 
 
 def load_all_csvs_to_model(path, model, field_names=None, delimiter=None, batch_size=10000, num_header_rows=1, recursive=False, strip=True,
-                           clear=False, dry_run=True, ignore_errors=True, verbosity=1, ext=''):
+                           sort_files=True, clear=False, dry_run=True, ignore_errors=True, verbosity=1, ext=''):
     """Bulk create database records from all csv files found within a directory."""
     path = path or './'
     batch_size = batch_size or 1000
@@ -1091,37 +1091,38 @@ def load_all_csvs_to_model(path, model, field_names=None, delimiter=None, batch_
         if dry_run:
             print "DRY_RUN: NOT deleting %d records in %r." % (model.objects.all().count(), model)
     N = 0
-    # TODO: preprocess should catalog the entire list of files (full paths), their sizes, and number of lines?
+    files_in_queue = []
+    file_bytes = 0
     if verbosity:
-        file_bytes = 0
         print 'Preprocessing files to estimate pb.ETA'
-        for dir_path, dir_names, filenames in os.walk(path):
-            for fn in filenames:
-                if fn.lower().endswith(ext):
-                    file_bytes += os.path.getsize(os.path.join(dir_path, fn))
-            if not recursive:
-                break
     for dir_path, dir_names, filenames in os.walk(path):
-        if verbosity:
-            print dir_path, dir_names, filenames
-        if verbosity:
-            widgets = [pb.Counter, '/%d bytes for all files: ' % file_bytes, pb.Percentage(), ' ', pb.RotatingMarker(), ' ', pb.Bar(),' ', pb.ETA()]
-            i, pbar = 0, pb.ProgressBar(widgets=widgets, maxval=file_bytes).start()
-        file_bytes_done = 0
         for fn in filenames:
             if fn.lower().endswith(ext):
-                if verbosity:
-                    print
-                    print 'Loading "%s"...' % os.path.join(dir_path, fn)
-                N += load_csv_to_model(path=os.path.join(dir_path, fn), model=model, field_names=field_names, delimiter=delimiter, strip=strip, batch_size=batch_size, num_header_rows=num_header_rows, dry_run=dry_run, verbosity=verbosity)
-                if verbosity:
-                    file_bytes_done += os.path.getsize(os.path.join(dir_path, fn))
-                    pbar.update(file_bytes_done)
-            else:
-                if verbosity:
-                    print 'Skipping "%s"...' % os.path.join(dir_path, fn)
+                files_in_queue += [[os.path.join(dir_path, fn), 0]]
+                files_in_queue[-1][1] = os.path.getsize(files_in_queue[-1][0])
+                file_bytes += files_in_queue[-1][1]
         if not recursive:
             break
+    if sort_files:
+        files_in_queue = sorted(files_in_queue)
+    if verbosity > 1:
+        print files_in_queue
+    if verbosity:
+        widgets = [pb.Counter, '/%d bytes for all files: ' % file_bytes, pb.Percentage(), ' ', pb.RotatingMarker(), ' ', pb.Bar(),' ', pb.ETA()]
+        i, pbar = 0, pb.ProgressBar(widgets=widgets, maxval=file_bytes).start()
+    file_bytes_done = 0
+    for file_path, file_size in files_in_queue:
+        if fn.lower().endswith(ext):
+            if verbosity:
+                print
+                print 'Loading "%s"...' % file_path
+            N += load_csv_to_model(path=file_path, model=model, field_names=field_names, delimiter=delimiter, strip=strip, batch_size=batch_size, num_header_rows=num_header_rows, dry_run=dry_run, verbosity=verbosity)
+            if verbosity:
+                file_bytes_done += file_size
+                pbar.update(file_bytes_done)
+        else:
+            if verbosity:
+                print 'Skipping "%s"...' % file_path
     return N
 
 
