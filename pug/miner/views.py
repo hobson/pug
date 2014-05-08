@@ -3,7 +3,7 @@
 from django.shortcuts import render_to_response
 #from django.http import HttpResponse
 from django.views.generic import View  #, TemplateView
-from django.template.response import TemplateResponse, HttpResponse
+from django.template.response import TemplateResponse #, HttpResponse
 from django.template.loader import get_template
 from django.http import Http404
 from django import http
@@ -17,7 +17,7 @@ from pug.nlp import parse
 from pug.nlp import util
 from pug.nlp import db
 
-from Returns import tv_lags as module
+from Returns import tv_lags
 
 def explorer(request, graph_uri=None):
     """Explore the database (or any data provided by a REST service)"""
@@ -199,21 +199,21 @@ def lag(request, *args):
         'Model #': model_numbers,
         }
 
-    
-    lags = module.explore_lags(fiscal_years=fiscal_years, model_numbers=model_numbers, reasons=reasons, account_numbers=account_numbers, verbosity=1)
+    # print params
+    lags = tv_lags.explore_lags(fiscal_years=fiscal_years, model_numbers=model_numbers, reasons=reasons, account_numbers=account_numbers, verbosity=1)
     hist = lags[hist_formats.index(hist_format)+1]
 
-    print hist_formats.index(hist_format)
-    print [max([y[1] for y in x]) for x in lags[1:]]
+    #print hist_formats.index(hist_format)
+    #print [max([y[1] for y in x]) for x in lags[1:]]
 
     hist_t=[[],[],[],[]]
     if hist and len(hist) > 1:
         hist_t = util.transposed_matrix(hist[1:])
 
     if hist and hist[0]:
-        print hist[0]
+        #print hist[0]
         names = hist[0][1:]
-        print names
+        #print names
         xdata = hist_t[0]
         ydata = hist_t[1:]
     # print names

@@ -514,6 +514,98 @@ def hist_from_values_list(values_list, fillers=(None,), normalize=False, cumulat
     return aligned_histograms
 
 
+def hist_from_float_values_list(values_list, fillers=(None,), normalize=False, cumulative=False, to_str=False, sep=',', min_bin=None, max_bin=None):
+    """FIXME: DOESNT WORK!!!: Compute an emprical histogram, PMF or CDF in a list of lists or a csv string
+
+    FIXME: make it work for both integer and float bin values (bin floats into ints).
+    `fillers`: list or tuple of values to ignore in computing the histogram
+
+    >>> hist_from_values_list([1,1,2,1,1,1,2,3,2,4,4,5,7,7,9])  # doctest: +NORMALIZE_WHITESPACE
+    [(1, 5),
+     (2, 3),
+     (3, 1),
+     (4, 2),
+     (5, 1),
+     (6, 0),
+     (7, 2),
+     (8, 0),
+     (9, 1)]
+    >>> hist_from_values_list([(1,9),(1,8),(2,),(1,),(1,4),(2,5),(3,3),(5,0),(2,2)])  # doctest: +NORMALIZE_WHITESPACE
+    [(0, 0, 1), (1, 4, 0), (2, 3, 1), (3, 1, 1), (4, 0, 1), (5, 1, 1), (6, 0, 0), (7, 0, 0), (8, 0, 1), (9, 0, 1)]
+    >>> hist_from_values_list(transposed_matrix([(8,),(1,3,5),(2,),(3,4,5,8)]))  # doctest: +NORMALIZE_WHITESPACE
+    [(1, 0, 1, 0, 0), (2, 0, 0, 1, 0), (3, 0, 1, 0, 1), (4, 0, 0, 0, 1), (5, 0, 1, 0, 1), (6, 0, 0, 0, 0), (7, 0, 0, 0, 0), (8, 1, 0, 0, 1)]
+    """
+    value_types = tuple([int, float, datetime.timedelta] + [type(filler) for filler in fillers])
+    if all(isinstance(value, value_types) for value in values_list):
+        counters = [Counter(values_list)]
+    elif all(len(row)==1 for row in values_list) and all(isinstance(row[0], value_types) for row in values_list):
+        counters = [Counter(values[0] for values in values_list)]
+    else:
+        values_list_t = transposed_matrix(values_list)
+        counters = [Counter(col) for col in values_list_t]
+
+    print counters
+
+    if fillers:
+        fillers = listify(fillers)
+        for counts in counters:
+            for ig in fillers:
+                if ig in counts:
+                    del counts[ig]
+
+    # bin keys using int()
+    intkeys_list = [OrderedDict((int(k or 0), k) for k in counts if isinstance(k, value_types)) for counts in counters]
+    print intkeys_list
+    try:
+        min_bin = int(min_bin)
+    except:
+        min_bin = min(min(intkeys) for intkeys in intkeys_list)
+    try:
+        max_bin = int(max_bin)
+    except:
+        max_bin = max(max(intkeys) for intkeys in intkeys_list)
+
+    print min_bin, max_bin
+
+    min_bin = max(min_bin, min((min(intkeys) if intkeys else 0) for intkeys in intkeys_list))  # TODO: reuse min(intkeys)
+    max_bin = min(max_bin, max((max(intkeys) if intkeys else 0) for intkeys in intkeys_list))  # TODO: reuse max(intkeys)
+
+    print min_bin, max_bin
+
+    histograms = []
+    for intkeys, counts in zip(intkeys_list, counters):
+        histograms += [OrderedDict()]
+        if not intkeys:
+            continue
+        if normalize:
+            N = sum(counts[intkeys[c]] for c in intkeys)
+            for c in intkeys:
+                counts[c] = float(counts[intkeys[c]]) / N
+        if cumulative:
+            for i in xrange(min_bin, max_bin + 1):
+                histograms[-1][i] = counts.get(intkeys[i], 0) + histograms[-1].get(intkeys[i-1], 0)
+        else:
+            for i in xrange(min_bin, max_bin + 1):
+                histograms[-1][i] = counts.get(intkeys[i], 0)
+    if not histograms:
+        histograms = [OrderedDict()]
+
+    print histograms
+
+    # fill in the zero counts between the integer bins of the histogram
+    aligned_histograms = []
+
+    for i in range(min_bin, max_bin + 1):
+        aligned_histograms += [tuple([i] + [hist.get(i, 0) for hist in histograms])]
+
+    if to_str:
+        # FIXME: add header row
+        return str_from_table(aligned_histograms, sep=sep, max_rows=365*2+1)
+
+    print aligned_histograms
+
+    return aligned_histograms
+
 def update_dict(d, u, depth=-1, default_map=dict, default_set=set, prefer_update_type=False):
     """
     Recursively merge (union or update) dict-like objects (collections.Mapping) to the specified depth.

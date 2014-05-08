@@ -1,6 +1,6 @@
 
 import datetime
-from collections import OrderedDict, Mapping
+import collections as collect
 import re
 from types import ModuleType
 import sqlparse
@@ -10,7 +10,6 @@ import json
 import warnings
 from traceback import print_exc
 from django.core import serializers
-
 
 import progressbar as pb  # import ProgressBar, Percentage, RotatingMarker, Bar, ETA
 from fuzzywuzzy import process as fuzzy
@@ -620,19 +619,19 @@ def get_columns(fields, models, filter_dicts, apps):
         columns += [get_column(field, model, filter_dict, app)]
 
 
-class Columns(OrderedDict):
-    """An OrderedDict of named columns of data
-         `OrderedDict([('name1', [x11, x21, ..., xM1]), ... ('nameM', [x1, ... objNM])]`
+class Columns(collect.OrderedDict):
+    """An collect.OrderedDict of named columns of data
+         `collect.OrderedDict([('name1', [x11, x21, ..., xM1]), ... ('nameM', [x1, ... objNM])]`
           similar to a Pandas `DataFrame`, but with the added convenience functions for DB I/O
           and numpy data processing
 
-    keys of OrderedDict are the column (db field) names
+    keys of collect.OrderedDict are the column (db field) names
         prefixed with the app and and table name if ambiguous
-    The attribute `Columns.db_fields` is an OrderedDict which stores a list of tuples 
+    The attribute `Columns.db_fields` is an collect.OrderedDict which stores a list of tuples 
         `(app_name, table_name, column_name, db_filter_dict)` 
-        using the same keys as the Columns OrderedDict data container
+        using the same keys as the Columns collect.OrderedDict data container
 
-    values of the OrderedDict
+    values of the collect.OrderedDict
     """
     default_app = DEFAULT_APP
     default_table = DEFAULT_MODEL
@@ -668,13 +667,13 @@ class Columns(OrderedDict):
             apps = listify(self.default_app, self.len_column)
         self.default_app = apps[0]
 
-        self.db_fields = OrderedDict((fields[i], (apps[i], tables[i], fields[i], filters[i])) for i in range(self.len_column))
+        self.db_fields = collect.OrderedDict((fields[i], (apps[i], tables[i], fields[i], filters[i])) for i in range(self.len_column))
 
         if len(args) == 1:
             if isinstance(args[0], basestring):
                 self.from_string(args[0])
             elif isinstance(args[0], models.query.ValuesQuerySet) or hasattr(args[0], '__iter__'):
-                if isinstance(iter(args[0]).next(), Mapping):
+                if isinstance(iter(args[0]).next(), collect.Mapping):
                     self.from_valuesqueryset(args[0])
                 else:
                     self.from_row_wise_lists(args[0], **kwargs)
@@ -740,7 +739,7 @@ class Columns(OrderedDict):
                 self.clear()
                 for name in d:
                     self[name] = []
-                if not isinstance(d, Mapping):
+                if not isinstance(d, collect.Mapping):
                     if not all(isinstance(name, basestring) for name in self):
                         for name in self:
                             del(self[name])
@@ -749,7 +748,7 @@ class Columns(OrderedDict):
                     names = list(self)
                     # the first row has already been processed (as either column names or column values), so move right along
                     continue
-            if not isinstance(d, Mapping):
+            if not isinstance(d, collect.Mapping):
                 for j, value in enumerate(d):
                     try:
                         self[names[j]] += [value]
@@ -949,7 +948,7 @@ def field_dict_from_row(row, model, field_names=None, include_id=False, strip=Tr
     if not field_names:
         field_names = [f.name for f in field_classes if (include_id or f.name != 'id')]
     field_dict = {}
-    if isinstance(row, Mapping):
+    if isinstance(row, collect.Mapping):
         row = [row.get(field_name, '') for field_name in field_names]
     for field_name, field_class, value in zip(field_names, field_classes, row):
         if verbosity >= 3:
@@ -1017,11 +1016,36 @@ def count_lines(fname):
     return i + 1
 
 
-def load_csv_to_model(path, model, field_names=None, delimiter='|', batch_size=1000, num_header_rows=1, strip=True,
-                      dry_run=True, ignore_errors=True, verbosity=2):
+def clear_model(model, clear=False, dry_run=True, verbosity=1):
+    '''Delete all data records in a model, obeying `clear`, `dry_run`, and `verbosity` flags
+    
+    If a clear was requested (dry_run or otherwise), return the number of records deleted (# before minus # after)
+    '''
+    if clear:
+        N_existing = model.objects.count()
+        if dry_run:
+            print "DRY_RUN: NOT deleting %d records in %r." % (model.objects.all().count(), model)
+        if N_existing:
+            ans = 'y'
+            if verbosity and not dry_run:
+                ans = raw_input('Are you sure you want to delete all %d existing database records in %r? (y/n) ' % (N_existing, model))
+            if ans.lower().startswith('y') and not dry_run:
+                model.objects.all().delete()
+            return N_existing - model.objects.count()
+    return 0
+
+
+def load_csv_to_model(path, model, field_names=None, delimiter=None, dialect=None, batch_size=10000, num_header_rows=1, strip=True,
+                      clear=False, dry_run=True, ignore_errors=True, verbosity=2):
     '''
     Bulk create database records from batches of rows in a csv file.  
     '''
+
+    reader_kwargs = {}
+    if delimiter or dialect:
+        reader_kwargs['dialect'] = dialect or 'excel'
+        if delimiter:
+            reader_kwargs['delimiter'] = delimiter
 
     path = path or './'
     if not delimiter:
@@ -1033,8 +1057,11 @@ def load_csv_to_model(path, model, field_names=None, delimiter='|', batch_size=1
         return None
     delimiter = str(delimiter)
 
+    clear_model(model, clear=clear, dry_run=dry_run, verbosity=verbosity)
+
+    M = 0
     with open(path, 'rU') as f:
-        reader = csv.reader(f, dialect=csv.excel_tab, delimiter=delimiter)
+        reader = csv.reader(f, **reader_kwargs)
         header_rows = []
         for i in range(num_header_rows):
             header_rows += [reader.next()]
@@ -1045,6 +1072,12 @@ def load_csv_to_model(path, model, field_names=None, delimiter='|', batch_size=1
         for batch_num, batch_of_rows in enumerate(util.generate_batches(reader, batch_size)):
             batch_of_objects = []
             for j, row in enumerate(batch_of_rows):
+                if verbosity or not ignore_errors:
+                    M = M or len(row)
+                    if len(row) != M:
+                        print 'ERROR importing row #%d which had %d columns, but previous rows had %d.' % (i + j + 1, len(row), M)
+                        if not ignore_errors:
+                            raise ValueError('ERROR importing row #%d which had %d columns, but previous rows had %d.' % (i + j + 1, len(row), M))
                 try:
                     batch_of_objects += [django_object_from_row(row, model=model, field_names=field_names, strip=strip)]
                 except:
@@ -1070,7 +1103,7 @@ def load_csv_to_model(path, model, field_names=None, delimiter='|', batch_size=1
     return i
 
 
-def load_all_csvs_to_model(path, model, field_names=None, delimiter=None, batch_size=10000, num_header_rows=1, recursive=False, strip=True,
+def load_all_csvs_to_model(path, model, field_names=None, delimiter=None, dialect=None, batch_size=10000, num_header_rows=1, recursive=False, strip=True,
                            sort_files=True, clear=False, dry_run=True, ignore_errors=True, verbosity=1, ext=''):
     """Bulk create database records from all csv files found within a directory."""
     path = path or './'
@@ -1080,16 +1113,9 @@ def load_all_csvs_to_model(path, model, field_names=None, delimiter=None, batch_
             print 'DRY_RUN: actions will not modify the database.'
         else:
             print 'THIS IS NOT A DRY RUN, THESE ACTIONS WILL MODIFY THE DATABASE!!!!!!!!!'
-    if clear:
-        ans = 'y'
-        if verbosity and not dry_run:
-            N_existing = model.objects.count()
-            if N_existing:
-                ans = raw_input('Are you sure you want to delete all %d existing database records in %r? (y/n) ' % (N_existing, model))
-        if ans.lower().startswith('y') and not dry_run:
-            model.objects.all().delete()
-        if dry_run:
-            print "DRY_RUN: NOT deleting %d records in %r." % (model.objects.all().count(), model)
+
+    clear_model(model, clear=clear, dry_run=dry_run, verbosity=verbosity)
+
     N = 0
     files_in_queue = []
     file_bytes = 0
@@ -1108,15 +1134,17 @@ def load_all_csvs_to_model(path, model, field_names=None, delimiter=None, batch_
     if verbosity > 1:
         print files_in_queue
     if verbosity:
-        widgets = [pb.Counter, '/%d bytes for all files: ' % file_bytes, pb.Percentage(), ' ', pb.RotatingMarker(), ' ', pb.Bar(),' ', pb.ETA()]
-        i, pbar = 0, pb.ProgressBar(widgets=widgets, maxval=file_bytes).start()
+        widgets = [pb.Counter(), '/%d bytes for all files: ' % file_bytes, pb.Percentage(), ' ', pb.RotatingMarker(), ' ', pb.Bar(),' ', pb.ETA()]
+        i, pbar = 0, pb.ProgressBar(widgets=widgets, maxval=file_bytes)
+        print pbar
+        pbar.start()
     file_bytes_done = 0
     for file_path, file_size in files_in_queue:
         if fn.lower().endswith(ext):
             if verbosity:
                 print
                 print 'Loading "%s"...' % file_path
-            N += load_csv_to_model(path=file_path, model=model, field_names=field_names, delimiter=delimiter, strip=strip, batch_size=batch_size, num_header_rows=num_header_rows, dry_run=dry_run, verbosity=verbosity)
+            N += load_csv_to_model(path=file_path, model=model, field_names=field_names, delimiter=delimiter, dialect=dialect, strip=strip, batch_size=batch_size, num_header_rows=num_header_rows, dry_run=dry_run, verbosity=verbosity)
             if verbosity:
                 file_bytes_done += file_size
                 pbar.update(file_bytes_done)
@@ -1134,31 +1162,30 @@ def clean_duplicates(model, unique_together=('serial_number',), date_field='crea
 
     if verbosity:
         print 'Retrieving the first of %d records for %r.' % (N, model)
-    qsit = iter(qs)
-    i, obj = 1, qsit.next()
-    setattr(obj, seq_field, 0)
-    setattr(obj, seq_max_field, 0)
-    obj.save()
-    dupes = [obj]
+    qs = qs.all()
 
+    i, dupes = 0, []
     if verbosity:
         widgets = [pb.Counter(), '/%d rows: ' % N, pb.Percentage(), ' ', pb.RotatingMarker(), ' ', pb.Bar(),' ', pb.ETA()]
-        i, pbar = 0, pb.ProgressBar(widgets=widgets, maxval=N).start()       
-    for obj in qsit:
+        pbar = pb.ProgressBar(widgets=widgets, maxval=N).start()       
+    for obj in qs:
         if verbosity:
             pbar.update(i)
-        i += 1
-        if all([getattr(obj, f, None) == getattr(dupes[0], f, None) for f in unique_together]):
+        if i and all([getattr(obj, f, None) == getattr(dupes[0], f, None) for f in unique_together]):
             dupes += [obj]
         else:
             if len(dupes) > 1:
                 for j in range(len(dupes)):
                     setattr(dupes[j], seq_field, j)
                     setattr(dupes[j], seq_max_field, len(dupes) - 1)
-                    dupes[j].save() 
-                # model.bulk_create(dupes) would not delete the old ones, would have to do that separately
-                # model.bulk_create(dupes)
+                    dupes[j].save()
+            else:
+                # TODO: speed up by doing a bulk_update
+                setattr(obj, seq_field, 0)
+                setattr(obj, seq_max_field, 0)
+                obj.save()
             dupes = [obj]
+        i += 1
     if verbosity:
         pbar.finish()
 
@@ -1232,12 +1259,13 @@ def import_items(item_seq, dest_model,  batch_size=500, clear=False, dry_run=Tru
         pbar.finish()
 
 
-def import_queryset(qs, dest_model,  batch_size=500, clear=False, dry_run=True, verbosity=1):
+def import_queryset_in_batches(qs, dest_model,  batch_size=500, clear=False, dry_run=True, verbosity=1):
     """Given a sequence (queryset, generator, tuple, list) of dicts import them into the given model"""
     try:
         qs = qs.objects
     except:
         pass
+
     N = qs.count()
 
     if verbosity:
@@ -1249,7 +1277,7 @@ def import_queryset(qs, dest_model,  batch_size=500, clear=False, dry_run=True, 
             print "WARNING: Deleting %d records from %r !!!!!!!" % (dest_model.objects.count(), dest_model)
         dest_model.objects.all().delete()
     if verbosity:
-        widgets = [pb.Counter, '/%d records: ' % N, pb.Percentage(), ' ', pb.RotatingMarker(), ' ', pb.Bar(),' ', pb.ETA()]
+        widgets = [pb.Counter(), '/%d records: ' % N, pb.Percentage(), ' ', pb.RotatingMarker(), ' ', pb.Bar(),' ', pb.ETA()]
         pbar = pb.ProgressBar(widgets=widgets, maxval=N).start()
     for batch_num, dict_batch in enumerate(util.generate_batches(qs, batch_size)):
         if verbosity > 2:
@@ -1273,6 +1301,43 @@ def import_queryset(qs, dest_model,  batch_size=500, clear=False, dry_run=True, 
             dest_model.objects.bulk_create(item_batch)
     if verbosity:
         pbar.finish()
+
+
+def import_queryset(qs, dest_model,  clear=False, dry_run=True, verbosity=1):
+    """Given a sequence (queryset, generator, tuple, list) of dicts import them into the given model"""
+    try:
+        qs = qs.objects
+    except:
+        pass
+    N = qs.count()
+
+    if verbosity:
+        print('Loading %r records from the queryset provided...' % N)
+    qs = qs.values()
+
+    if clear and not dry_run:
+        if verbosity:
+            print "WARNING: Deleting %d records from %r !!!!!!!" % (dest_model.objects.count(), dest_model)
+        dest_model.objects.all().delete()
+    if verbosity:
+        widgets = [pb.Counter(), '/%d records: ' % N, pb.Percentage(), ' ', pb.RotatingMarker(), ' ', pb.Bar(),' ', pb.ETA()]
+        pbar = pb.ProgressBar(widgets=widgets, maxval=N).start()
+    i = 0
+    for obj in qs:
+        if verbosity > 2:
+            print(repr(d))
+        m = django_object_from_row(d, dest_model)
+        if verbosity:
+            pbar.update(i)
+            i += 1
+            if verbosity > 2:
+                print m
+        if not dry_run:
+            m.save()
+    if verbosity:
+        pbar.finish()
+
+
 # def import_qs(src_qs, dest_model,  batch_size=100, db_alias='default', 
 #         unique_together=('model', 'serialno'), seq_field='model_serial_seq', seq_max_field='model_serial_seq_max', 
 #         verbosity=2):

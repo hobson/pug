@@ -7,7 +7,7 @@ import views
 
 urlpatterns = patterns('',
     #url(r'^$', home, name='home'),
-    url(r'^(?:chart/)?(?:[Cc]onnect(?:ion)?s?|[Gg]raph)/(?P<edges>[^/]*)', views.connections, name='connections'),
+    #url(r'^(?:chart/)?(?:[Cc]onnect(?:ion)?s?|[Gg]raph)/(?P<edges>[^/]*)', views.connections, name='connections'),
     url(r'^$', views.home, name='home'),
     url(r'^explorer?/', views.explorer, name='explorer'),
     url(r'^lag-?(cmf|pmf|cdf|hist)?/', views.lag, name='lag'),
