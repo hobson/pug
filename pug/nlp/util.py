@@ -732,6 +732,15 @@ def tryconvert(value, desired_types=SCALAR_TYPES, default=None, empty='', strip=
 tryconvert.EMPTY = ('', None, float('nan'))
 tryconvert.SCALAR = SCALAR_TYPES
 
+import codecs
+
+def transcode(infile, outfile=None, incoding="shift-jis", outcoding="utf-8"):
+    if not outfile:
+        outfile = os.path.basename(infile) + '.utf8'
+    with codecs.open(infile, "rb", incoding) as fpin:
+        with codecs.open(outfile, "wb", outcoding) as fpout:
+            fpout.write(fpin.read())
+
 
 def read_csv(path, ext='.csv', verbose=False, format=None, delete_empty_keys=False,
              fieldnames=[], rowlimit=100000000, numbers=False, normalize_names=True, unique_names=True):

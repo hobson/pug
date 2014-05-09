@@ -674,8 +674,7 @@ def try_convert(value, datetime_to_ms=False, precise=False):
         pass
     return value
 
-
-def make_serializable(data, mutable=True):
+def make_serializable(data, mutable=True, key_stringifier=lambda x:x):
     r"""Make sure the data structure is json serializable (json.dumps-able), all they way down to scalars in nested structures.
 
     If mutable=False then return tuples for all iterables, except basestrings (strs),
@@ -695,7 +694,7 @@ def make_serializable(data, mutable=True):
         return str(data)
     #print 'nonstring type: ' + repr(type(data))
     if isinstance(data, Mapping):
-        mapping = tuple((make_serializable(k, mutable=False), make_serializable(v, mutable=mutable)) for (k, v) in data.iteritems())
+        mapping = tuple((make_serializable(k, mutable=False, key_stringifier=key_stringifier), make_serializable(v, mutable=mutable)) for (k, v) in data.iteritems())
         # print 'mapping tuple = %s' % repr(mapping)
         #print 'keys list = %s' % repr([make_serializable(k, mutable=False) for k in data])
         # this mutability business is probably unneccessary because the keys of the mapping will already be immutable... at least until python 3 MutableMappings
@@ -708,7 +707,7 @@ def make_serializable(data, mutable=True):
             return list(make_serializable(v, mutable=mutable) for v in data)
         else:
             #print tuple(make_serializable(v, mutable=mutable) for v in data)
-            return tuple(make_serializable(v, mutable=mutable) for v in data)
+            return key_stringifier(tuple(make_serializable(v, mutable=mutable) for v in data))
     if isinstance(data, (float, Decimal)):
         return float(data)
     try:

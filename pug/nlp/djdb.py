@@ -1155,8 +1155,10 @@ def load_all_csvs_to_model(path, model, field_names=None, delimiter=None, dialec
 
 
 def clean_duplicates(model, unique_together=('serial_number',), date_field='created_on',
-                     seq_field='seq', seq_max_field='seq_max', verbosity=1):
+                     seq_field='seq', seq_max_field='seq_max', ignore_existing=True, verbosity=1):
     qs = getattr(model, 'objects', model)
+    if ignore_existing:
+        qs = qs.filter(**{seq_max_field + '__isnull': True})
     qs = qs.order_by(*(util.listify(unique_together) + util.listify(date_field)))
     N = qs.count()
 
@@ -1166,11 +1168,12 @@ def clean_duplicates(model, unique_together=('serial_number',), date_field='crea
 
     i, dupes = 0, []
     if verbosity:
-        widgets = [pb.Counter(), '/%d rows: ' % N, pb.Percentage(), ' ', pb.RotatingMarker(), ' ', pb.Bar(),' ', pb.ETA()]
+        widgets = [pb.Counter(), '/%d rows: ' % N+1000, pb.Percentage(), ' ', pb.RotatingMarker(), ' ', pb.Bar(),' ', pb.ETA()]
         pbar = pb.ProgressBar(widgets=widgets, maxval=N).start()       
     for obj in qs:
         if verbosity:
             pbar.update(i)
+        dupes = []
         if i and all([getattr(obj, f, None) == getattr(dupes[0], f, None) for f in unique_together]):
             dupes += [obj]
         else:
@@ -1303,8 +1306,15 @@ def import_queryset_in_batches(qs, dest_model,  batch_size=500, clear=False, dry
         pbar.finish()
 
 
+#from django.db.models.fields.related import ForeignKey
+
 def import_queryset(qs, dest_model,  clear=False, dry_run=True, verbosity=1):
     """Given a sequence (queryset, generator, tuple, list) of dicts import them into the given model"""
+
+    # # FIXME: use this info to connect relationships, ignoring missing targets (unlike manage.py loaddata)
+    # fields = dest_model._meta.get_fields_with_model()
+    # fk_fields = [(f.name, f.related.parent_model, f.related.field) for (f, m) in fields if isinstance(f, ForeignKey)] 
+
     try:
         qs = qs.objects
     except:
@@ -1313,7 +1323,6 @@ def import_queryset(qs, dest_model,  clear=False, dry_run=True, verbosity=1):
 
     if verbosity:
         print('Loading %r records from the queryset provided...' % N)
-    qs = qs.values()
 
     if clear and not dry_run:
         if verbosity:
@@ -1323,7 +1332,8 @@ def import_queryset(qs, dest_model,  clear=False, dry_run=True, verbosity=1):
         widgets = [pb.Counter(), '/%d records: ' % N, pb.Percentage(), ' ', pb.RotatingMarker(), ' ', pb.Bar(),' ', pb.ETA()]
         pbar = pb.ProgressBar(widgets=widgets, maxval=N).start()
     i = 0
-    for obj in qs:
+    dest_model._meta.get_all
+    for d in qs.values():
         if verbosity > 2:
             print(repr(d))
         m = django_object_from_row(d, dest_model)
