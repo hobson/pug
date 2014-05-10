@@ -10,6 +10,7 @@ from django import http
 from django.utils import simplejson as json
 import os
 
+# from forms import GetLagForm
 
 from pug.nlp import parse
 #from pug.nlp.util import normalize_scientific_notation
@@ -250,4 +251,38 @@ def lag(request, *args):
             'jquery_on_ready': True,
         }
     }
+
+    # context = {}
+    # if request.method == 'POST':
+    #     f = GetCaseForm(request.POST)
+    #     context['form'] = f
+    #     if f.is_valid():
+    #         print dir(f)
+
+    #         mn = f.cleaned_data['model_number'].strip()
+    #         sn = f.cleaned_data['serial_number'].strip()
+
+    #         refurbs = SECRef.objects\
+    #                .filter(model__istartswith=mn, serialno__istartswith=sn)\
+    #                .order_by('recvdat')\
+    #                .select_related('refrepeia', 'rano')
+    #                # .filter(refrepeia__isnull=False, rano__isnull=False, rano__rano__isnull=False)\
+    #                # .exclude(refrepeia='')
+    #         #print SECRef.objects.filter(model__istartswith=mn, serialno__istartswith=sn).count()
+    #         #print list(refurbs.all())
+
+    #         context['data'] = {
+    #             'cases': list(refurbs.values())
+    #             }
+    #         for refurb, case in zip(refurbs, context['data']['cases']):
+    #             #print case
+    #             case['events'] = refurb.refrepeia_set.order_by('date_assigned').all().values()
+ 
+
+    #         print mn, sn
+    #         print context
+    #         return render(request, 'case/timeline.html', context)
+    # else:
+    #     context['form'] = GetCaseForm()
+    # return render(request, 'case/timeline.html', context)
     return render_to_response('miner/linewithfocuschart.html', data)

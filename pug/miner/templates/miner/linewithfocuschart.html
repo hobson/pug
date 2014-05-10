@@ -1,5 +1,6 @@
 {% extends 'base.html' %}
 {% load nvd3_tags %}
+{# {% load crispy_forms_tags %} #}
 
 {% block extra_head %}
     {% include_chart_jscss %}
@@ -9,6 +10,7 @@
 {% endblock %}
 
 {% block content %}
+    {% crispy form %}
     <H3>{{ title|safe }}</H3>
     <H4>{{ subtitle|safe }}</H4>
     {% include_container chartcontainer 400 '100%' %}
