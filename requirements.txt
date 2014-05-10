@@ -41,6 +41,7 @@ django-bower==4.8.1
 django-celery==3.0.23
 django-classy-tags==0.4
 django-compressor==1.3
+django-crispy-forms==1.4.0
 django-csvimport==1.0
 django-debug-toolbar==0.9.4
 django-extensions==1.2.1
@@ -82,7 +83,7 @@ pexpect==2.3
 policycoreutils-default-encoding==0.1
 progressbar==2.3
 psycopg2==2.5.2
--e git+git@github.com:hobson/pug.git@092c605141b40f77df7d29a18ef68d96bba0bbf8#egg=pug-master
+-e git+git@github.com:hobson/pug.git@16416611139522c9cae140bb2ce31379558241e6#egg=pug-master
 pyOpenSSL==0.13.1
 pycrypto==2.3
 pycryptopp==0.5.29
