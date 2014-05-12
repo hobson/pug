@@ -1,5 +1,4 @@
-
-
+# -*- coding: utf-8 -*-
 from django.shortcuts import render_to_response
 #from django.http import HttpResponse
 from django.views.generic import View  #, TemplateView
@@ -9,6 +8,9 @@ from django.http import Http404
 from django import http
 from django.utils import simplejson as json
 import os
+from sec_sharp_refurb.models import Refrefurb as SECRef
+from django.shortcuts import render
+from forms import GetLagForm
 
 # from forms import GetLagForm
 
@@ -27,7 +29,6 @@ def explorer(request, graph_uri=None):
 
 def home(request):
     """Explore the database (or any data provided by a REST service)"""
-    #return HttpResponse('Looking for template in miner/explorer.html')
     return render_to_response('miner/home.html')
 
 # def home(request, graph_uri=None):
@@ -237,7 +238,7 @@ def lag(request, *args):
         if len(v) == 1 and v[0] and len(str(v[0])):
             subtitle += [str(k) + ': ' + str(v[0])] 
 
-    data = {
+    context = {
         'title': 'Returns Lag <font color="gray">' + hist_format.upper() + '</font>',
         'subtitle': ', '.join(subtitle),
         'charttype': "lineWithFocusChart",
@@ -249,8 +250,9 @@ def lag(request, *args):
             'y_axis_format': ',.0f', # "%d %b %Y"
             'tag_script_js': True,
             'jquery_on_ready': True,
+            },
+        'form': {},
         }
-    }
 
     # context = {}
     # if request.method == 'POST':
@@ -285,4 +287,126 @@ def lag(request, *args):
     # else:
     #     context['form'] = GetCaseForm()
     # return render(request, 'case/timeline.html', context)
-    return render_to_response('miner/linewithfocuschart.html', data)
+    return render_to_response('miner/linewithfocuschart.html', context)
+
+
+
+ 
+def submit_lag_form(request, f, context, *args):
+    context['form'] = f
+    model_number = f.cleaned_data['model'].strip()
+    if model_number:
+        model_numbers = [model_number]
+
+    # refurbs = SECRef.objects\
+    #        .filter(model__istartswith=mn)\
+    #        .order_by('recvdat')\
+    #        .select_related('refrepeia', 'rano')
+    #        # .filter(refrepeia__isnull=False, rano__isnull=False, rano__rano__isnull=False)\
+    #        # .exclude(refrepeia='')
+    # #print SECRef.objects.filter(model__istartswith=mn, serialno__istartswith=sn).count()
+    # #print list(refurbs.all())
+
+    # context['data'] = {
+    #     'cases': list(refurbs.values())
+    #     }
+    # for refurb, case in zip(refurbs, context['data']['cases']):
+    #     #print case
+    #     case['events'] = refurb.refrepeia_set.order_by('date_assigned').all().values()
+    # print f
+    # print 'return'
+
+
+    hist_formats = ['hist', 'pmf', 'cdf', 'cmf']
+    hist_format = 'cmf'
+    if args and len(str(args[0])):
+        hist_format_str = str(args[0]).lower().strip()
+    if hist_format_str in hist_formats:
+        hist_format = hist_format_str
+
+    fiscal_years = request.GET.get('fy', '2011').split(',') or [2011]
+    reasons = request.GET.get('r', 'R').split(',') or ['R']
+    account_numbers = request.GET.get('an', '').split(',') or ['']
+
+    params = {
+        'FY': fiscal_years,
+        'Reason': reasons,
+        'Account #': account_numbers,
+        'Model #': model_numbers,
+        }
+
+    # print params
+    lags = tv_lags.explore_lags(fiscal_years=fiscal_years, model_numbers=model_numbers, reasons=reasons, account_numbers=account_numbers, verbosity=1)
+    hist = lags[hist_formats.index(hist_format)+1]
+
+    #print hist_formats.index(hist_format)
+    #print [max([y[1] for y in x]) for x in lags[1:]]
+
+    hist_t=[[],[],[],[]]
+    if hist and len(hist) > 1:
+        hist_t = util.transposed_matrix(hist[1:])
+
+    if hist and hist[0]:
+        #print hist[0]
+        names = hist[0][1:]
+        #print names
+        xdata = hist_t[0]
+        ydata = hist_t[1:]
+    # print names
+
+    #tooltip_date = "%d %b %Y %H:%M:%S %p"
+    extra_series = {"tooltip": {"y_start": " ", "y_end": " returns"},
+                   #"date_format": tooltip_date
+                   }
+
+    chartdata = { 'x': xdata }
+
+    for i, name in enumerate(names):
+        chartdata['name%d' % (i + 1)] = name
+        chartdata['y%d' % (i + 1)] = ydata[i]
+        chartdata['extra%d' % (i + 1)] = extra_series
+
+    subtitle = []
+
+    for k, v in params.iteritems():
+        if len(v) == 1 and v[0] and len(str(v[0])):
+            subtitle += [str(k) + ': ' + str(v[0])] 
+
+    context = {
+        'title': 'Returns Lag <font color="gray">' + hist_format.upper() + '</font>',
+        'subtitle': ', '.join(subtitle),
+        'charttype': "lineWithFocusChart",
+        'chartdata': chartdata,
+        'chartcontainer': 'linewithfocuschart_container',
+        'extra': {
+            'x_is_date': False,
+            'x_axis_format': ',.0f', # %b %Y %H',
+            'y_axis_format': ',.0f', # "%d %b %Y"
+            'tag_script_js': True,
+            'jquery_on_ready': True,
+            },
+        'form': {},
+        }
+    return render(request, 'case/timeline.html', context)
+
+
+def lag_with_form(request, *args):
+    # TODO:
+    # http://bigdata.enet.sharplabs.com:8000/timeline/?mn=LC60LE810UN&sn=005823345
+    context = {}
+    if request.method == 'POST':
+        f = GetLagForm(request.POST)
+        context['form'] = f 
+        if f.is_valid():
+            return submit_lag_form(request, f, context, *args)
+
+    elif request.method == 'GET':
+        model = request.GET.get('mn', None) or  request.GET.get('model', None)
+        initial = {'submit': 'Submit', 'model': model}
+        f = GetLagForm(data=initial) #, initial=initial)
+        context['form'] = f
+        if model and f.is_valid():
+            return submit_lag_form(request, f, context, *args)
+    f = GetLagForm()
+    context['form'] = f
+    return render(request, 'case/timeline.html', context)
