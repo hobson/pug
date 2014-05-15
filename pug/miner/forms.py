@@ -2,7 +2,7 @@
 from case.models import Case
 from django import forms
 from crispy_forms.helper import FormHelper
-#from crispy_forms.layout import Submit #, Layout, Field, Div, HTML, Button, Row
+from crispy_forms.layout import Submit #, Layout, Field, Div, HTML, Button, Row
 
 from call_center.models import Refrefurb
 
@@ -10,14 +10,16 @@ from call_center.models import Refrefurb
 class GetLagForm(forms.Form):
 
     model = forms.CharField(max_length=512, required=False,
-        initial='LC6',
-        help_text='Comma-separated list of model numbers or model-number prefixes, e.g. "LC6, LC5"')
+        label='Model Numbers',
+        initial='LC6, LC5',
+        help_text='comma-separated list of model numbers prefixes like "LC6, LC5"')
 
     fiscal_years = forms.MultipleChoiceField(
+        label='Fiscal Years',
         initial='2013', required=False, 
         choices=tuple(('%d' % i, '%d' % i) for i in range(2009, 2014)),
         widget=forms.CheckboxSelectMultiple,
-        help_text="Fiscal years to compare in a single plot.",
+        help_text="fiscal years to compare",
     )
 
     def __init__(self, *args, **kwargs):
@@ -28,7 +30,7 @@ class GetLagForm(forms.Form):
         self.helper.form_method = 'GET'
         self.helper.form_action = '/miner/lag/'
 
-        #self.helper.add_input(Submit('submit', 'Submit'))
+        self.helper.add_input(Submit('submit', 'Submit'))
         super(GetLagForm, self).__init__(*args, **kwargs)
 
     class Meta:

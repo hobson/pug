@@ -86,13 +86,13 @@ class StaticView(View):
 
 class JSONView(View):
     def get(self, request, *args, **kwargs):
-        print os.path.join('static', kwargs.get('page', '') + '.json')
-        print os.path.realpath(os.path.curdir)
-        print os.getcwd()
-        print os.path.dirname(os.path.realpath(os.path.curdir))
+        # print os.path.join('static', kwargs.get('page', '') + '.json')
+        # print os.path.realpath(os.path.curdir)
+        # print os.getcwd()
+        # print os.path.dirname(os.path.realpath(os.path.curdir))
         try:
             path = os.path.join('static', kwargs.get('page', '') + '.json')
-            print path
+            # print path
             context = json.load(path)
         except:
             raise Http404()
@@ -179,7 +179,7 @@ def submit_lag_form(request, f, context, *args):
     context['form'] = f
 
     model_numbers = [s.strip() for s in f.cleaned_data['model'].split(',')]
-    print model_numbers
+    fiscal_years = request.GET.getlist('fiscal_years')
 
     hist_formats = ['hist', 'pmf', 'cdf', 'cmf']
     hist_format = 'cmf'
@@ -187,8 +187,9 @@ def submit_lag_form(request, f, context, *args):
         hist_format_str = str(args[0]).lower().strip()
     if hist_format_str in hist_formats:
         hist_format = hist_format_str
+    
 
-    fiscal_years = request.GET.get('fy', '2011').split(',') or [2011]
+
     reasons = request.GET.get('r', 'R').split(',') or ['R']
     account_numbers = request.GET.get('an', '').split(',') or ['']
 
@@ -212,12 +213,12 @@ def submit_lag_form(request, f, context, *args):
         hist_t = util.transposed_matrix(hist[1:])
 
         if hist[0]:
-            print hist[0]
+            # print hist[0]
             names = hist[0][1:]
             #print names
             xdata = hist_t[0]
             ydata = hist_t[1:]
-    print names
+    # print names
 
     #tooltip_date = "%d %b %Y %H:%M:%S %p"
     extra_series = {"tooltip": {"y_start": " ", "y_end": " returns"},
@@ -252,12 +253,12 @@ def submit_lag_form(request, f, context, *args):
             },
         'form': {},
         }})
-    print context
+    #print context
     return render(request, 'miner/lag.html', context)
 
 
 def lag(request, *args):
-    print 'lag with form'
+    # print 'lag with form'
     context = {}
     f = GetLagForm()
     context['form'] = f
@@ -265,10 +266,10 @@ def lag(request, *args):
     if request.method == 'POST':
         f = GetLagForm(request.POST)
         context['form'] = f 
-        print 'POST'
+        # print 'POST'
         if f.is_valid():
             return submit_lag_form(request, f, context, *args)
-        print 'invalid form!'
+        # print 'invalid form!'
 
     elif request.method == 'GET':
         model = request.GET.get('mn', None) or request.GET.get('model', None)

@@ -1,29 +1,46 @@
 {# extends 'base.html' #}
 {% block topbar %}
-<div class="navbar-inner">
-    <div class="container">
-        <a class="brand" href="/">Big Data</a>
-        <ul class="nav">
-            <li><a href="{% url 'miner:home' %}" class="">Home</a></li>
-            {% comment %}
-            <li><a href="{% url 'miner.views.home_form' %}">Form</a></li>
-                <li class="dropdown">
-                    <a href="#" class="dropdown-toggle" data-toggle="dropdown">Forms<b class="caret"></b></a>
-                    <ul class="dropdown-menu">
-                        <li><a href="{% url 'demo_app.views.demo_form' %}?layout=vertical">Vertical</a></li>
-                        <li><a href="{% url 'demo_app.views.demo_form' %}?layout=horizontal">Horizontal</a></li>
-                        <li><a href="{% url 'demo_app.views.demo_form_inline' %}?layout=inline">Inline</a></li>
-                        <li><a href="{% url 'demo_app.views.demo_form_inline' %}?layout=search">Search</a></li>
-                        <li><a href="{% url 'demo_app.views.demo_form_with_template' %}?layout=horizontal">Using template</a></li>
-                    </ul>
-                </li>
-            <li><a href="{% url 'formset' %}">Formset</a></li>
-            <li><a href="{% url 'tabs' %}">Tabs &amp; Pills</a></li>
-            <li><a href="{% url 'pagination' %}">Pagination</a></li>
-            <li><a href="{% url 'buttons' %}">Buttons</a></li>
-            <li><a href="{% url 'contact' %}">Contact</a></li>
-            {% endcomment %}
-        </ul>
-    </div>
-</div>
-{% endblock %}  
+<nav class="navbar navbar-default navbar-static-top" role="navigation">
+  <div class="navbar-inner">
+    <div class="container-fluid">
+      <ul class="nav navbar-nav navbar-left">
+        <li><a class="navbar-brand" href="/">{% block brand_name %}{{ SITE_NAME }}{% endblock %}</a></li>
+        <!-- Collect the nav links, forms, and other content for toggling/collapsing -->
+        {# <div class="collapse navbar-collapse" id="bs-example-navbar-collapse-1"> #}
+        {# <li class="active"><a href="#">Link</a></li> #}
+        {# <li><a href="#">Link</a></li> #}
+        <li class="dropdown">
+          <a href="#" class="dropdown-toggle" data-toggle="dropdown">Tools <b class="caret"></b></a>
+          <ul class="dropdown-menu">
+            {% block navbar_menu_list_items %}
+            <li><a href="#">Admin</a></li>
+            <li><a href="#">REST API</a></li>
+            <li class="divider"></li>
+            <li><a href="#">Lag</a></li>
+            <li><a href="#">Timeline</a></li>
+            {% endblock navbar_menu_list_items %}
+          </ul>
+        </li>
+      </ul>  <!-- navbar-left -->
+      <ul class="nav navbar-nav navbar-right">
+        {# <li><a href="#">Link</a></li> #}
+        <li class="dropdown">
+          <a href="#" class="dropdown-toggle" data-toggle="dropdown">{% if username %}{{ username }}{% else %}Account{% endif %} <b class="caret"></b></a>
+          <ul class="dropdown-menu">
+            {% if is_logged_in %}
+            <li><a href="#">Profile</a></li>
+            <li class="divider"></li>
+            <li><a href="#">Logout</a></li>
+             {% else %}
+            <li><a href="#">Sign In</a></li>
+            <li class="divider"></li>
+            <li><a href="#">Create Account</a></li>
+            {% endif %}
+          </ul>
+        </li>
+      </ul>  <!-- navbar-right -->
+      {# </div><!-- .navbar-collapse --> #}
+    </div><!-- .container-fluid -->
+  </div><!-- .navbar-inner"> -->
+</nav>
+{% endblock topbar %}

@@ -1035,7 +1035,7 @@ def clear_model(model, clear=False, dry_run=True, verbosity=1):
     return 0
 
 
-def load_csv_to_model(path, model, field_names=None, delimiter=None, dialect=None, batch_size=10000, num_header_rows=1, strip=True,
+def load_csv_to_model(path, model, field_names=None, delimiter=None, dialect=None, batch_size=10000, num_header_rows=4, strip=True,
                       clear=False, dry_run=True, ignore_errors=True, verbosity=2):
     '''
     Bulk create database records from batches of rows in a csv file.  
@@ -1055,6 +1055,8 @@ def load_csv_to_model(path, model, field_names=None, delimiter=None, dialect=Non
             except:
                 pass
         return None
+    print 'delimiter'
+    print delimiter
     delimiter = str(delimiter)
 
     clear_model(model, clear=clear, dry_run=dry_run, verbosity=verbosity)
@@ -1065,6 +1067,8 @@ def load_csv_to_model(path, model, field_names=None, delimiter=None, dialect=Non
         header_rows = []
         for i in range(num_header_rows):
             header_rows += [reader.next()]
+        print 'header'
+        print header_rows
         if verbosity:
             N = count_lines(path) - i + 10  # + 10 fudge factor in case multiple newlines in a single csv row
             widgets = [pb.Counter(), '/%d lines: ' % N, pb.Percentage(), ' ', pb.RotatingMarker(), ' ', pb.Bar(),' ', pb.ETA()]
@@ -1103,7 +1107,7 @@ def load_csv_to_model(path, model, field_names=None, delimiter=None, dialect=Non
     return i
 
 
-def load_all_csvs_to_model(path, model, field_names=None, delimiter=None, dialect=None, batch_size=10000, num_header_rows=1, recursive=False, strip=True,
+def load_all_csvs_to_model(path, model, field_names=None, delimiter=None, dialect=None, batch_size=10000, num_header_rows=4, recursive=False, strip=True,
                            sort_files=True, clear=False, dry_run=True, ignore_errors=True, verbosity=1, ext=''):
     """Bulk create database records from all csv files found within a directory."""
     path = path or './'
