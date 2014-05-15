@@ -1,0 +1,58 @@
+{% load i18n %}
+{% load staticfiles %}
+{% load nvd3_tags %}
+{% load url from future %}
+<!DOCTYPE html>
+<!--[if lt IE 7]> <html class="no-js lt-ie9 lt-ie8 lt-ie7" lang="{{ LANGUAGE_CODE }}"> <![endif]-->
+<!--[if IE 7]>    <html class="no-js lt-ie9 lt-ie8" lang="{{ LANGUAGE_CODE }}"> <![endif]-->
+<!--[if IE 8]>    <html class="no-js lt-ie9" lang="{{ LANGUAGE_CODE }}"> <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="{{ LANGUAGE_CODE }}"> <!--<![endif]-->
+    <head>
+        {% block meta %}
+            <meta charset="utf-8">
+            <meta name="description" content="A webapp for revealing the information (and perhaps the beauty) in any database.">
+            <meta name="author" content="Hobson Lane">
+        {% endblock %}
+
+        <title>{% block title_base %}{% if SITE_NAME %}{{ SITE_NAME }} | {% endif %}{% block title %}{% endblock %}{% endblock %}</title>
+
+        {% block style_base %}{% block extra_style %}{% endblock %}{% endblock %}
+
+        {% block script_head %}
+            {# required first, because some libs, like nvd3, use the jquery on_page_load_finished callback #}
+            <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.0/jquery.min.js"></script>
+        {% endblock %}
+
+        {% block viewport %}<meta name="viewport" content="width=device-width, initial-scale=1.0">{% endblock %}
+        
+        {% block extra_head_base %}{% block extra_head %}{% endblock %}{% endblock %}
+    </head>
+
+    <body class="{% block body_class %}{% endblock %}" id="{% block body_id %}{% endblock %}">
+        <div class="{% block wrapper_class %}body-wrapper{% endblock %}">
+            {% block topbar %}{% endblock %}
+
+            <div class="container">
+                <div class="messages">
+                    {# {% bootstrap_messages %} #}
+                </div>
+
+                <div class="content">{% block content %}Nothing to see here (at call_center/base.html)... Keep moving right along.{% endblock %}</div>
+
+                <div class="extra-content">{% block extra_content %}{% endblock %}</div>
+
+                <p><hr></p>
+
+                <div class="footer"><footer class="row">{% block footer %}{% endblock %}</footer></div> 
+
+                {% block script_footer %}
+                    <link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.1.1/css/bootstrap.min.css">
+                    <link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.1.1/css/bootstrap-responsive.min.css">
+                    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.0/jquery.min.js"></script>
+                    <script src="//cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.1.1/js/bootstrap.min.js"></script>
+                {% endblock %}
+            </div> <!-- container -->
+        </div> <!-- body-wrapper -->
+
+    </body>
+</html>
