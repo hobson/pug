@@ -187,8 +187,6 @@ def submit_lag_form(request, f, context, *args):
         hist_format_str = str(args[0]).lower().strip()
     if hist_format_str in hist_formats:
         hist_format = hist_format_str
-    
-
 
     reasons = request.GET.get('r', 'R').split(',') or ['R']
     account_numbers = request.GET.get('an', '').split(',') or ['']
@@ -253,7 +251,7 @@ def submit_lag_form(request, f, context, *args):
             },
         'form': {},
         }})
-    #print context
+    print context
     return render(request, 'miner/lag.html', context)
 
 
@@ -261,22 +259,15 @@ def lag(request, *args):
     # print 'lag with form'
     context = {}
     f = GetLagForm()
-    context['form'] = f
 
     if request.method == 'POST':
         f = GetLagForm(request.POST)
-        context['form'] = f 
-        # print 'POST'
-        if f.is_valid():
-            return submit_lag_form(request, f, context, *args)
-        # print 'invalid form!'
 
     elif request.method == 'GET':
-        model = request.GET.get('mn', None) or request.GET.get('model', None)
+        model = request.GET.get('mn', "") or request.GET.get('model', "")
         initial = {'submit': 'Submit', 'model': model}
         f = GetLagForm(data=initial) #, initial=initial)
-        context['form'] = f
-        if model and f.is_valid():
-            return submit_lag_form(request, f, context, *args)
 
-    return render(request, 'miner/lag.html', context)
+    context['form'] = f
+    context['form_is_valid'] = f.is_valid()
+    return submit_lag_form(request, f, context, *args)

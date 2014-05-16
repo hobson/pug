@@ -1,33 +1,21 @@
-Django==1.6.1
-# sudo yum install -y python-devel libxml2-devel libxslt-devel
+Django==1.5.8
+MDP==3.3
 Scrapy==0.22.0
 South==0.8.4
 Twisted==13.2.0
 cssselect==0.9.1
-fuzzywuzzy==0.2
-ipython==1.1.0
+django-crispy-forms==1.4.0
 lxml==3.2.5
-nltk==2.0.4
 numpy==1.8.0
 progressbar==2.3
-# sudo yum install -y postgresql postgresql-server postgresql-libs postgresql-devel
 psycopg2==2.5.2
-#-e git+https://github.com/hobsonlane/pug.git#egg=pug-master
+-e git+git@github.com:hobson/pug.git@e19b8b11e3998f1e2a44de10ed6c8d435785978d#egg=pug-master
 pyOpenSSL==0.13.1
 python-dateutil==2.2
 pytz==2013.9
-pyzmq==14.0.1
 queuelib==1.1.1
-# sudo yum install -y gcc-gfortran python-scikit-learn
-# scipy==0.13.2
-scipy>=0.9.0
-# scikit-learn==0.14.1
 selenium==2.39.0
 six==1.5.2
-sqlparse==0.1.10
+tabulate==0.7.1
 w3lib==1.5
-wsgiref==0.1.2
 zope.interface==4.0.5
-django-celery==3.0.23
-celery==3.0.23
-progressbar==2.3
