@@ -72,12 +72,12 @@ class WikiItem(models.Model):
     def __unicode__(self):
         return db.representation(self)
 
-def import_items(item_seq, model=WikiItem,  batch_size=100, db_alias='default', verbosity=2):
+def import_items(item_seq, model=WikiItem,  batch_len=100, db_alias='default', verbosity=2):
     """Given a sequence (queryset, generator, tuple, list) of dicts import them into the given model"""
-    return generic_import_items(item_seq, dest_model=model, batch_size=batch_size, db_alias=db_alias, verbosity=verbosity)
+    return generic_import_items(item_seq, dest_model=model, batch_len=batch_len, db_alias=db_alias, verbosity=verbosity)
 
 
-def import_json(path='wikipedia_crawler_data.json', model=WikiItem, batch_size=100, db_alias='default', verbosity=2):
+def import_json(path='wikipedia_crawler_data.json', model=WikiItem, batch_len=100, db_alias='default', verbosity=2):
     """Read json file and create the appropriate records according to the given database model."""
-    return generic_import_json(path=path, model=model,  batch_size=batch_size, db_alias=db_alias, verbosity=verbosity)
+    return generic_import_json(path=path, model=model,  batch_len=batch_len, db_alias=db_alias, verbosity=verbosity)
 

@@ -16,23 +16,23 @@ import pytz
 import warnings
 from collections import Counter
 from traceback import print_exc
+import ascii
 
 #import math
 from pytz import timezone
 from collections import OrderedDict
 from collections import Mapping
 from progressbar import ProgressBar
+import numpy as np
+import scipy as sci
 
 import character_subset as chars
 import regex_patterns as rep
 
-import numpy as np
-import scipy as sci
 
 import logging
-logger = logging.getLogger('bigdata.info')
+logger = logging.getLogger('pug.nlp.util')
 
-import ascii
 
 #from django.core.exceptions import ImproperlyConfigured
 # try:
@@ -194,6 +194,7 @@ def generate_slices(sliceable_set, batch_len=1, allow_partial=True, length=None)
             length = sliceable_set.count()
         except:
             length = len(sliceable_set)
+    length = int(length)
 
     for i in range(length / batch_len + 1):
         start = i * batch_len

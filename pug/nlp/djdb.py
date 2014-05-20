@@ -1003,40 +1003,40 @@ def field_dict_from_row(row, model, field_names=None, include_id=False, strip=Tr
     return field_dict
 
 
-def count_lines(fname):
+def count_lines(fname, mode='rU'):
     '''Count the number of lines in a file
 
     Only faster way would be to utilize multiple processor cores to perform parallel reads.
     http://stackoverflow.com/q/845058/623735
     '''
 
-    with open(fname) as f:
+    with open(fname, mode) as f:
         for i, l in enumerate(f):
             pass
     return i + 1
 
 
-def clear_model(model, clear=False, dry_run=True, verbosity=1):
+def clear_model(model, dry_run=True, verbosity=1):
     '''Delete all data records in a model, obeying `clear`, `dry_run`, and `verbosity` flags
     
     If a clear was requested (dry_run or otherwise), return the number of records deleted (# before minus # after)
     '''
-    if clear:
-        N_existing = model.objects.count()
-        if dry_run:
-            print "DRY_RUN: NOT deleting %d records in %r." % (model.objects.all().count(), model)
-        if N_existing:
-            ans = 'y'
-            if verbosity and not dry_run:
-                ans = raw_input('Are you sure you want to delete all %d existing database records in %r? (y/n) ' % (N_existing, model))
-            if ans.lower().startswith('y') and not dry_run:
-                model.objects.all().delete()
-            return N_existing - model.objects.count()
+    N_existing = model.objects.count()
+    if dry_run:
+        print "DRY_RUN: NOT deleting %d records in %r." % (model.objects.all().count(), model)
+    if N_existing:
+        ans = 'y'
+        if verbosity and not dry_run:
+            ans = raw_input('Are you sure you want to delete all %d existing database records in %r? (y/n) ' % (N_existing, model))
+        if ans.lower().startswith('y') and not dry_run:
+            model.objects.all().delete()
+        return N_existing - model.objects.count()
     return 0
 
 
-def load_csv_to_model(path, model, field_names=None, delimiter=None, dialect=None, batch_size=10000, num_header_rows=4, strip=True,
-                      clear=False, dry_run=True, ignore_errors=True, verbosity=2):
+def load_csv_to_model(path, model, field_names=None, delimiter=None, batch_len=10000, 
+                      dialect=None, num_header_rows=1, mode='rUb',
+                      strip=True, clear=False, dry_run=True, ignore_errors=True, verbosity=2):
     '''
     Bulk create database records from batches of rows in a csv file.  
     '''
@@ -1051,31 +1051,50 @@ def load_csv_to_model(path, model, field_names=None, delimiter=None, dialect=Non
     if not delimiter:
         for d in ',', '|', '\t', ';':
             try:
-                return load_csv_to_model(path=path, model=model, field_names=field_names, delimiter=d, batch_size=batch_size, num_header_rows=num_header_rows, strip=strip, dry_run=dry_run, verbosity=verbosity)
+                return load_csv_to_model(path=path, model=model, field_names=field_names, delimiter=d, batch_len=batch_len,
+                                         dialect=dialect, num_header_rows=num_header_rows,
+                                         strip=strip, clear=clear, dry_run=dry_run, ignore_errors=ignore_errors, verbosity=verbosity)
             except:
                 pass
         return None
-    print 'delimiter'
-    print delimiter
     delimiter = str(delimiter)
 
-    clear_model(model, clear=clear, dry_run=dry_run, verbosity=verbosity)
+    if clear:
+        clear_model(model, dry_run=dry_run, verbosity=verbosity)
 
     M = 0
-    with open(path, 'rU') as f:
+    with open(path, mode) as f:
         reader = csv.reader(f, **reader_kwargs)
         header_rows = []
-        for i in range(num_header_rows):
-            header_rows += [reader.next()]
-        print 'header'
-        print header_rows
+        i = 0
+        while len(header_rows) < num_header_rows and i < 100:
+            row = reader.next()
+            i += 1
+            if not row or any(compiled_regex.match(row[0]) for compiled_regex in header_rows_to_ignore):
+                if verbosity > 1:
+                    print 'IGNORED: %r' % row
+            else:
+                header_rows += [row]
+        if verbosity > 2:
+            print 'HEADER: %r' % header_rows
         if verbosity:
-            N = count_lines(path) - i + 10  # + 10 fudge factor in case multiple newlines in a single csv row
+            N = count_lines(path, mode) - i + 10  # + 10 fudge factor in case multiple newlines in a single csv row
             widgets = [pb.Counter(), '/%d lines: ' % N, pb.Percentage(), ' ', pb.RotatingMarker(), ' ', pb.Bar(),' ', pb.ETA()]
-            i, pbar = 0, pb.ProgressBar(widgets=widgets, maxval=N).start()       
-        for batch_num, batch_of_rows in enumerate(util.generate_batches(reader, batch_size)):
+            i, pbar = 0, pb.ProgressBar(widgets=widgets, maxval=N).start()
+        if verbosity > 3:
+            print 'Generating all the batches before iterating may take a while...'
+        for batch_num, batch_of_rows in enumerate(util.generate_batches(reader, batch_len)):
+            if verbosity > 2:
+                print 
+                print i
             batch_of_objects = []
             for j, row in enumerate(batch_of_rows):
+                if verbosity > 3:
+                    print j, row
+                if not row or all(not el for el in row):
+                    if verbosity > 2:
+                        print 'IGNORED: %r' % row
+                    continue
                 if verbosity or not ignore_errors:
                     M = M or len(row)
                     if len(row) != M:
@@ -1105,20 +1124,25 @@ def load_csv_to_model(path, model, field_names=None, delimiter=None, dialect=Non
         if verbosity:
             pbar.finish()
     return i
+header_rows_to_ignore = [re.compile(r'^\s*[Dd]irectory\:.*$'), re.compile(r'^\s*[Nn]ame\:.*$'), re.compile(r'^\s*[-=_]+\s*$')]
 
 
-def load_all_csvs_to_model(path, model, field_names=None, delimiter=None, dialect=None, batch_size=10000, num_header_rows=4, recursive=False, strip=True,
-                           sort_files=True, clear=False, dry_run=True, ignore_errors=True, verbosity=1, ext=''):
+def load_all_csvs_to_model(path, model, field_names=None, delimiter=None, batch_len=10000,
+                           dialect=None, num_header_rows=1, mode='rUb',
+                           strip=True, clear=False, dry_run=True, 
+                           ignore_errors=True, verbosity=2,
+                           sort_files=True, recursive=False, ext=''):
     """Bulk create database records from all csv files found within a directory."""
     path = path or './'
-    batch_size = batch_size or 1000
+    batch_len = batch_len or 1000
     if verbosity:
         if dry_run:
             print 'DRY_RUN: actions will not modify the database.'
         else:
             print 'THIS IS NOT A DRY RUN, THESE ACTIONS WILL MODIFY THE DATABASE!!!!!!!!!'
 
-    clear_model(model, clear=clear, dry_run=dry_run, verbosity=verbosity)
+    if clear:
+        clear_model(model, dry_run=dry_run, verbosity=verbosity)
 
     N = 0
     files_in_queue = []
@@ -1148,7 +1172,10 @@ def load_all_csvs_to_model(path, model, field_names=None, delimiter=None, dialec
             if verbosity:
                 print
                 print 'Loading "%s"...' % file_path
-            N += load_csv_to_model(path=file_path, model=model, field_names=field_names, delimiter=delimiter, dialect=dialect, strip=strip, batch_size=batch_size, num_header_rows=num_header_rows, dry_run=dry_run, verbosity=verbosity)
+            N += load_csv_to_model(path=file_path, model=model, field_names=field_names, delimiter=delimiter, batch_len=batch_len, 
+                                   dialect=dialect, num_header_rows=num_header_rows, mode=mode,
+                                   strip=strip, clear=False, dry_run=dry_run, 
+                                   ignore_errors=ignore_errors, verbosity=verbosity)
             if verbosity:
                 file_bytes_done += file_size
                 pbar.update(file_bytes_done)
@@ -1218,7 +1245,7 @@ def hash_model_values(model, clear=True, hash_field='values_hash', hash_fun=hash
         tracking_obj.update(hash_value=h)
 
 
-def import_items(item_seq, dest_model,  batch_size=500, clear=False, dry_run=True, verbosity=1):
+def import_items(item_seq, dest_model,  batch_len=500, clear=False, dry_run=True, verbosity=1):
     """Given a sequence (queryset, generator, tuple, list) of dicts import them into the given model"""
     try:
         try:
@@ -1240,10 +1267,10 @@ def import_items(item_seq, dest_model,  batch_size=500, clear=False, dry_run=Tru
         if verbosity:
             print "WARNING: Deleting %d records from %r !!!!!!!" % (dest_model.objects.count(), dest_model)
         dest_model.objects.all().delete()
-    for batch_num, dict_batch in enumerate(util.generate_batches(item_seq, batch_size)):
+    for batch_num, dict_batch in enumerate(util.generate_batches(item_seq, batch_len)):
         if verbosity > 2:
             print(repr(dict_batch))
-            print(repr((batch_num, len(dict_batch), batch_size)))
+            print(repr((batch_num, len(dict_batch), batch_len)))
             print(type(dict_batch))
         item_batch = []
         for d in dict_batch:
@@ -1256,17 +1283,17 @@ def import_items(item_seq, dest_model,  batch_size=500, clear=False, dry_run=Tru
                 m = django_object_from_row(d, dest_model)
             item_batch += [m]
         if verbosity and verbosity < 2:
-            pbar.update(batch_num * batch_size + len(dict_batch))
+            pbar.update(batch_num * batch_len + len(dict_batch))
         elif verbosity > 1:
             print('Writing {0} items in batch {2} out of {3} batches to the {4} model...'.format(
-                len(item_batch), batch_num, int(N / float(batch_size)), dest_model))
+                len(item_batch), batch_num, int(N / float(batch_len)), dest_model))
         if not dry_run:
             dest_model.objects.bulk_create(item_batch)
     if verbosity:
         pbar.finish()
 
 
-def import_queryset_in_batches(qs, dest_model,  batch_size=500, clear=False, dry_run=True, verbosity=1):
+def import_queryset_in_batches(qs, dest_model,  batch_len=500, clear=False, dry_run=True, verbosity=1):
     """Given a sequence (queryset, generator, tuple, list) of dicts import them into the given model"""
     try:
         qs = qs.objects
@@ -1286,7 +1313,7 @@ def import_queryset_in_batches(qs, dest_model,  batch_size=500, clear=False, dry
     if verbosity:
         widgets = [pb.Counter(), '/%d records: ' % N, pb.Percentage(), ' ', pb.RotatingMarker(), ' ', pb.Bar(),' ', pb.ETA()]
         pbar = pb.ProgressBar(widgets=widgets, maxval=N).start()
-    for batch_num, dict_batch in enumerate(util.generate_batches(qs, batch_size)):
+    for batch_num, dict_batch in enumerate(util.generate_batches(qs, batch_len)):
         if verbosity > 2:
             print(repr(dict_batch))
         item_batch = []
@@ -1300,10 +1327,10 @@ def import_queryset_in_batches(qs, dest_model,  batch_size=500, clear=False, dry
                 m = django_object_from_row(d, dest_model)
             item_batch += [m]
         if verbosity and verbosity < 2:
-            pbar.update(batch_num * batch_size + len(dict_batch))
+            pbar.update(batch_num * batch_len + len(dict_batch))
         elif verbosity > 1:
             print('Writing {0} items in batch {2} out of {3} batches to the {4} model...'.format(
-                len(item_batch), batch_num, int(N / float(batch_size)), dest_model))
+                len(item_batch), batch_num, int(N / float(batch_len)), dest_model))
         if not dry_run:
             dest_model.objects.bulk_create(item_batch)
     if verbosity:
@@ -1352,7 +1379,7 @@ def import_queryset(qs, dest_model,  clear=False, dry_run=True, verbosity=1):
         pbar.finish()
 
 
-# def import_qs(src_qs, dest_model,  batch_size=100, db_alias='default', 
+# def import_qs(src_qs, dest_model,  batch_len=100, db_alias='default', 
 #         unique_together=('model', 'serialno'), seq_field='model_serial_seq', seq_max_field='model_serial_seq_max', 
 #         verbosity=2):
 #     """FIXME: Given a sequence (queryset, generator, tuple, list) of dicts import them into the given model
@@ -1386,10 +1413,10 @@ def import_queryset(qs, dest_model,  clear=False, dry_run=True, verbosity=1):
 #     if verbosity > 1:
 #         print('Loading %r records from seq provided...' % num_items)
 #     dupes = []
-#     for batch_num, dict_batch in enumerate(util.generate_batches(item_seq, batch_size)):
+#     for batch_num, dict_batch in enumerate(util.generate_batches(item_seq, batch_len)):
 #         if verbosity > 2:
 #             print(repr(dict_batch))
-#             print(repr((batch_num, len(dict_batch), batch_size)))
+#             print(repr((batch_num, len(dict_batch), batch_len)))
 #             print(type(dict_batch))
 #         item_batch = []
 #         for d in dict_batch:
@@ -1418,10 +1445,10 @@ def import_queryset(qs, dest_model,  clear=False, dry_run=True, verbosity=1):
 #             item_batch += [m]
 #         if verbosity > 1:
 #             print('Writing {0} {1} items in batch {2} out of {3} batches to the {4} database...'.format(
-#                 len(item_batch), dest_model.__name__, batch_num, int(num_items / float(batch_size)), db_alias))
+#                 len(item_batch), dest_model.__name__, batch_num, int(num_items / float(batch_len)), db_alias))
 #         dest_model.objects.bulk_create(item_batch)
 
-def import_json(path, model, batch_size=100, db_alias='default', verbosity=2):
+def import_json(path, model, batch_len=100, db_alias='default', verbosity=2):
     """Read json file (not in django fixture format) and create the appropriate records using the provided database model."""
 
     # TODO: use a generator to save memory for large json files/databases
@@ -1430,7 +1457,7 @@ def import_json(path, model, batch_size=100, db_alias='default', verbosity=2):
     item_list = json.load(open(path, 'r'))
     if verbosity:
         print('Finished reading {0} items from {1}.'.format(len(item_list), repr(path)))
-    import_items(item_list, model=model, batch_size=batch_size, db_alias=db_alias, verbosity=verbosity)
+    import_items(item_list, model=model, batch_len=batch_len, db_alias=db_alias, verbosity=verbosity)
 
 
 def fixture_from_table(table, header_rows=1):
@@ -1496,7 +1523,7 @@ def force_text(s, encoding='utf-8', strings_only=False, errors='strict'):
     return s
 
 
-def dump_json(model, batch_len=1000000):
+def dump_json(model, batch_len=200000):
     "Dump database records to a json file in Django fixture format, one file for each batch of 1M records"
     JSONSerializer = serializers.get_serializer("json")
     jser = JSONSerializer()

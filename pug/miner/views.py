@@ -251,7 +251,7 @@ def submit_lag_form(request, f, context, *args):
             },
         'form': {},
         }})
-    print context
+    #print context
     return render(request, 'miner/lag.html', context)
 
 
