@@ -969,6 +969,7 @@ def make_int(s, default='', ignore_commas=True):
     - Ignore dashes and other punctuation within a long string of digits,
        like a telephone number, partnumber, datecode or serial number.
     - Use the Decimal type to allow infinite precision
+    - Use regexes to be more robust
 
     >>> make_int('12345')
     12345

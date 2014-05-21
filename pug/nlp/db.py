@@ -619,10 +619,38 @@ def lagged_series(series, lags=1, pads=None):
     return ans
 
 
-def clean_utf8(byte_string, carefully=False):
+def replace_nonascii(s, filler=''):
+    '''Remove nonASCII characters from provided string
+
+    Based on: http://stackoverflow.com/a/2743163/623735 
+              by [Khelben](http://stackoverflow.com/users/205083/khelben)
+          and
+              http://stackoverflow.com/a/20078869/623735
+              by [Martin Pieters](http://stackoverflow.com/users/100297/martijn-pieters)
+
+    >>> replace_nonascii(u'éáé123456tgreáé@€')
+    u'123456tgre@'
+    >>> replace_nonascii('\xFE\xFF\xEF\xBB\xBF\xFF\xFE\x00\x00\x81\x9F':)
+    ''
+    '''
+    return ''.join([c if ord(c) < 128 else filler for c in s])
+
+
+def strip_nonascii(s):
+    return replace_nonascii(s, filler='')
+
+
+def clean_utf8(byte_string, carefully=False, encodings_to_try=('shift-jis', 'shift-jis-2004', 'CP-1252', 'iso-8859-1', 'utf16'), verbosity=0):
     r"""Delete any invalid symbols in a UTF-8 encoded string
 
     Returns the cleaned string.
+
+    default `encodings_to_try` = ('shift-jis', 'shift-jis-2004', 'CP-1252', 'iso-8859-1', 'utf16')
+      'shift-jis': Japanese corporations often use
+      'CP1252' : legacy microsoft windows SQLServer that seems to work for u'\xff\xfe' line terminations
+                 Japanese corporations often use 'SQL_Latin1_General_CP1_CI_AS', a case-insensitive mix of CP-1252 and UTF-8
+      'iso-8859-1' : MS SQL Server default encoding
+
     
     >>> clean_utf8('`A\xff\xffBC\x7fD\tE\r\nF~G`')
     '`A\xc3\xbf\xc3\xbfBC\x7fD\tE\r\nF~G`'
@@ -645,35 +673,28 @@ def clean_utf8(byte_string, carefully=False):
                         byte_string = byte_string[:i] + byte_string[i+1:]
                     else:
                         raise e
+            except UnicodeEncodeError:
+                return unicode(byte_string)
         return byte_string
     else:
-        # print 'not carefully'
-        diagnosis = chardet.detect(byte_string)
-        # print diagnosis
-        if diagnosis['confidence'] > 0.5:
+        diagnosis = None
+        try:
+            diagnosis = chardet.detect(byte_string)
+        except:
+            if verbosity:
+                from traceback import print_exc
+                print_exc()
+            diagnosis = {'confidence': -1}
+        if diagnosis['confidence'] > 0.25:
             try:
-                #print diagnosis
-                #print 'detected and cleaned: ' + repr(byte_string.decode(diagnosis['encoding']).encode('utf8'))
                 return str(byte_string.decode(diagnosis['encoding']).encode('utf8'))
             except:
                 pass
-        try:
-            # Japanese corporations often use 'SQL_Latin1_General_CP1_CI_AS', a case-insensitive mix of CP-1252 and UTF-8
+        for encoding in encodings_to_try:
             try:
-                # print 'CP1252'
-                #print byte_string.decode('CP-1252')
-                return str(byte_string.decode('CP-1252').encode('utf8'))
-            # MS SQL Server default encoding
+                return str(byte_string.decode(encoding).encode('utf8'))
             except:
-                return str(byte_string.decode('iso-8859-1').encode('utf8'))
-        except:
-            pass
-        try:
-            #print 'utf-16'
-            return str(byte_string.decode('utf16').encode('utf8'))
-        except:
-            pass
-    #print 'failed to clean: ' + repr(byte_string)
-    return str(byte_string)
+                pass
+        return clean_utf8(byte_string, carefully=True)
 
 
