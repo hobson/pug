@@ -1,3 +1,5 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
 
 import datetime
 import collections as collect
@@ -1462,6 +1464,44 @@ def import_queryset_in_batches(qs, dest_model,  batch_len=500, clear=False, dry_
             dest_model.objects.bulk_create(item_batch)
     if verbosity:
         pbar.finish()
+
+
+def bulk_update(object_list, ignore_errors=False, verbosity=0):
+    '''Bulk_create objects in provided list of model instances, delete database rows for the original pks in the object list.
+
+    Returns any delta in the number of rows in the database table that resulted from the update.
+    If nonzero, an error has likely occurred and database integrity is suspect.
+    '''
+    if not object_list:
+        return 0
+    model = object_list[0].__class__
+    N_before = model.objects.count()
+    pks_to_delete = set()
+    for obj in object_list:
+        pks_to_delete.add(obj.pk)
+        obj.pk = None
+    if verbosity > 1:
+        print 'Creating %d %r objects.' % (len(object_list), model)
+        print 'BEFORE: %d' % model.objects.count()
+        model.objects.bulk_create(object_list)
+        print 'Deleting %d objects with pks: %r ........' % (len(pks_to_delete), pks_to_delete)
+    objs_to_delete = model.objects.filter(pk__in=pks_to_delete)
+    num_to_delete = objs_to_delete.count()
+    if num_to_delete != len(pks_to_delete):
+        msg = 'Attempt to delete redundant pks (len %d)! Queryset has count %d. Query was `filter(pk__in=%r). Queryset = %r' % (
+            len(pks_to_delete), num_to_delete, pks_to_delete, objs_to_delete)
+        if ignore_errors:
+            if verbosity:
+                print msg
+        else:
+            raise RuntimeError(msg)
+    if verbosity > 1:
+        print 'Queryset to delete has %d objects' % num_to_delete
+    objs_to_delete.delete()
+    if verbosity > 1:
+        print 'AFTER: %d' % model.objects.count()
+    N_after = model.objects.count()
+    return N_before - N_after
 
 
 #from django.db.models.fields.related import ForeignKey

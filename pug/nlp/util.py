@@ -1,3 +1,5 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
 '''NLP utilities for use with django models and querysets and ORM (SQL)
 
 Intended only for use within a Django project (requires django.db, which itself requires settings)

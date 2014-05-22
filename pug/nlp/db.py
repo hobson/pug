@@ -1,3 +1,6 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+
 """Abtstraction of an abstraction (the Django Database ORM)
 
 Makes data processing easier:
