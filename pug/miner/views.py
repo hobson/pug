@@ -8,6 +8,10 @@ from django.http import Http404
 from django import http
 from django.utils import simplejson as json
 
+# from sec_sharp_refurb.models import Refrefurb as SECRef
+import call_center.models as SLAmodels
+
+
 import os
 from django.shortcuts import render
 from forms import GetLagForm
@@ -20,7 +24,6 @@ from pug.nlp import parse
 from pug.nlp import util
 from pug.nlp import db
 
-from Returns import tv_lags
 
 def explorer(request, graph_uri=None):
     """Explore the database (or any data provided by a REST service)"""
@@ -198,8 +201,24 @@ def submit_lag_form(request, f, context, *args):
         'Model #': model_numbers,
         }
 
+    # context['refurbs'] = []
+    # for mn in model_numbers:
+
+    #     refurbs = SLARef.objects\
+    #            .filter(model__istartswith=mn, pipesale__isnull=False)\
+    #            .order_by('recvdat')\
+    #            .select_related('refrepeia', 'rano')
+    #     # sales = PipeSale.objects\
+    #     #        .filter(material__istartswith=mn)\
+    #     #        .order_by('billing_doc_date')
+    #     # calls = CallMaster.objects\
+    #     #        .filter(model__istartswith=mn)\
+    #     #        .order_by('start_date_time').values()
+    #     context['refurbs'] += list(refurbs)
+
+
     # print params
-    lags = tv_lags.explore_lags(fiscal_years=fiscal_years, model_numbers=model_numbers, reasons=reasons, account_numbers=account_numbers, verbosity=1)
+    lags = SLAmodels.explore_lags(fiscal_years=fiscal_years, model_numbers=model_numbers, reasons=reasons, account_numbers=account_numbers, verbosity=1)
     hist = lags[hist_formats.index(hist_format)+1]
 
     #print hist_formats.index(hist_format)

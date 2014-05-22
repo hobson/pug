@@ -13,9 +13,11 @@
     <H4>{{ data.subtitle|safe }}</H4>
     {% include_container data.chartcontainer 400 '100%' %}
     <script type="text/javascript">
-    d3.select("#linewithfocuschart_container svg").selectAll(".nv-point").style("pointer-events", "all").on("click", function( e ) { console.log( JSON.stringify( e ) ); });
+    d3.select("#{{ data.chartcontainer }} svg").selectAll(".nv-point").style("pointer-events", "all").on("click", function( e ) { console.log( JSON.stringify( e ) ); });
     </script>
 {% endblock %}
+
+
 
  
 
