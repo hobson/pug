@@ -120,59 +120,6 @@ class JSONView(View):
         return json.dumps(context)
 
 
-# testcele progress bar test
-
-# #from django.shortcuts import render_to_response
-# from django.template import RequestContext
-# #from django.http import HttpResponse
-# #from django.utils import simplejson as json
-# from django.views.decorators.csrf import csrf_exempt
-
-# from celery.result import AsyncResult
-
-# from miner import tasks
-
-
-# def testcele(request):
-#     if 'task_id' in request.session.keys() and request.session['task_id']:
-#         task_id = request.session['task_id']
-#     return render_to_response('miner/testcele.html', locals(), context_instance=RequestContext(request))
-
-
-# @csrf_exempt
-# def do_task(request):
-#     """ A view the call the task and write the task id to the session """
-#     data = 'Fail'
-#     if request.is_ajax():
-#         job = tasks.create_models.delay()
-#         request.session['task_id'] = job.id
-#         data = job.id
-#     else:
-#         data = 'This is not an ajax request!'
-
-#     json_data = json.dumps(data)
-
-#     return HttpResponse(json_data, mimetype='application/json')
-
-
-# @csrf_exempt
-# def poll_state(request):
-#     """ A view to report the progress to the user """
-#     data = 'Fail'
-#     if request.is_ajax():
-#         if 'task_id' in request.POST.keys() and request.POST['task_id']:
-#            task_id = request.POST['task_id']
-#            task = AsyncResult(task_id)
-#            data = task.result or task.state
-#         else:
-#             data = 'No task_id in the request'
-#     else:
-#         data = 'This is not an ajax request'
-#     json_data = json.dumps(data)
-#     return HttpResponse(json_data, mimetype='application/json')
-
-
-
 def submit_lag_form(request, f, context, *args):
     '''Line chart with zoom and pan and "focus area" at bottom like google analytics.
     
@@ -255,11 +202,29 @@ def submit_lag_form(request, f, context, *args):
         if len(v) == 1 and v[0] and len(str(v[0])):
             subtitle += [str(k) + ': ' + str(v[0])] 
 
+
+    data0 = util.transposed_lists([
+        ['number', 'New York', 'San Francisco','Austin'],
+        [1, '63.4', '62.7', '72.2'],
+        [2, '58.0', '59.9', '67.7'],
+        [3, '53.3', '59.1', '69.4'],
+        [4, '55.7', '58.8', '68.0'],
+        [5, '64.2', '58.7', '72.4'],
+        [6, '58.8', '57.0', '77.0'],
+        [7, '57.9', '56.7', '82.3'],
+        [8, '61.8', '56.8', '78.9'],
+        [9, '69.3', '56.7', '68.8'],
+        [10, '71.2', '60.1', '68.7'],
+        [11, '68.7', '61.1', '70.3'],
+    ])
+
+
     context.update({'data': {
         'title': 'Returns Lag <font color="gray">' + hist_format.upper() + '</font>',
         'subtitle': ', '.join(subtitle),
         'charttype': "lineWithFocusChart",
         'chartdata': chartdata,
+        'd3data': json.dumps(data0),
         'chartcontainer': 'linewithfocuschart_container',
         'extra': {
             'x_is_date': False,
@@ -285,7 +250,7 @@ def lag(request, *args):
     elif request.method == 'GET':
         model = request.GET.get('mn', "") or request.GET.get('model', "")
         initial = {'submit': 'Submit', 'model': model}
-        f = GetLagForm(data=initial) #, initial=initial)
+        f = GetLagForm(data=initial)  #, initial=initial)
 
     context['form'] = f
     context['form_is_valid'] = f.is_valid()

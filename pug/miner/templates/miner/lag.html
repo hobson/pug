@@ -4,17 +4,181 @@
 
 {% block extra_head %}            
     {% include_chart_jscss %}
+    {% comment %}
     {% load_chart data.charttype data.chartdata data.chartcontainer data.extra %}
+    {% endcomment %}
 {% endblock %}
 
 {% block content %}
-    {% crispy form %}
-    <H3>{{ data.title|safe }}</H3>
-    <H4>{{ data.subtitle|safe }}</H4>
-    {% include_container data.chartcontainer 400 '100%' %}
+
+    <div class="row">
+      {% crispy form %}
+    </div>
+
+
+    {% comment %}
+    <div class="row">
+      <H3>{{ data.title|safe }}</H3>
+      <H4>{{ data.subtitle|safe }}</H4>
+      {% include_container data.chartcontainer 400 '100%' %}
+    </div>
+
+    {# DOESNT WORK, points hidden behind nv-path-# elements #}
     <script type="text/javascript">
-    d3.select("#{{ data.chartcontainer }} svg").selectAll(".nv-point").style("pointer-events", "all").on("click", function( e ) { console.log( JSON.stringify( e ) ); });
+    d3.select("#{{ data.chartcontainer }} svg").selectAll(".nv-path-36").style("pointer-events", "all").on("click", function( e ) { console.log( JSON.stringify( e ) ); });
     </script>
+    {% endcomment %} 
+
+    <script src="http://d3js.org/d3.v3.js"></script>
+
+    <div class="row">
+      <div id="graph" class="aGraph"></div>
+    </div>
+ 
+<style>
+
+body {
+  font: 10px sans-serif;
+}
+
+.axis path,
+.axis line {
+  fill: none;
+  stroke: #000;
+  shape-rendering: crispEdges;
+}
+
+.x.axis path {
+  display: none;
+}
+
+.line {
+  fill: none;
+  stroke: steelblue;
+  stroke-width: 2px;
+}
+
+</style>
+
+
+<script>
+var margin = {top: 20, right: 80, bottom: 30, left: 50},
+    width = 960 - margin.left - margin.right,
+    height = 500 - margin.top - margin.bottom;
+
+var d3data = {{ data.d3data|safe }}
+var ans = arrays_as_d3_series(d3data);
+var data = ans.data;
+var xlabel = ans.xlabel;
+
+var color = d3.scale.category10().domain(ans.ylabels);
+
+var parse_date = d3.time.format("%Y%m%d").parse;
+
+var x = d3.scale.linear().range([0, width]);
+
+if ((xlabel.substring(0, 4).toUpperCase() == "DATE") 
+    || (xlabel.substring(0, 4).toUpperCase() == "TIME")) {
+  x = d3.time.scale().range([0, width]);
+
+  console.log("x is date or time")
+  data.forEach(function(d) { d.x = parse_date(d.x); });
+}
+
+var xAxis = d3.svg.axis().scale(x).orient("bottom");
+
+var y = d3.scale.linear().range([height, 0]);
+
+
+var yAxis = d3.svg.axis().scale(y).orient("left");
+
+var line = d3.svg.line()
+    .interpolate("basis")
+    .x(function(d) { return x(d.x); })
+    .y(function(d) { return y(d.temperature); });
+
+var svg = d3.select("#graph").append("svg")
+    .attr("width", width + margin.left + margin.right)
+    .attr("height", height + margin.top + margin.bottom)
+  .append("g")
+    .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+
+
+function arrays_as_d3_series(d3data) {
+    var ans = {};
+    d3data = d3.transpose(d3data);
+    // console.log(d3data)
+    ans.data = [];
+    ans.header = d3data[0];
+    // console.log(header)
+    for (var i=1; i < d3data.length; i++) {
+        var obj = {};
+        obj.x = d3data[i][0]
+        for (var k=1; k < ans.header.length; k++) {
+            obj[ans.header[k]] = d3data[i][k];
+            }
+        // console.log(i);
+        // console.log(obj);
+        ans.data.push(obj);
+        }
+    // console.log(data);
+
+    ans.xlabel = ans.header[0];
+    ans.header.shift();
+    ans.ylabels = ans.header;
+    return ans;
+    }
+
+
+var series = color.domain().map(function(name) {
+  return { name: name, values: data.map(function(d) {
+      return {x: d.x, temperature: +d[name]};
+    })
+  };
+});
+
+x.domain(d3.extent(data, function(d) { return d.x; }));
+
+y.domain([
+  d3.min(series, function(c) { return d3.min(c.values, function(v) { return v.temperature; }); }),
+  d3.max(series, function(c) { return d3.max(c.values, function(v) { return v.temperature; }); })
+]);
+
+svg.append("g")
+    .attr("class", "x axis")
+    .attr("transform", "translate(0," + height + ")")
+    .call(xAxis);
+
+svg.append("g")
+    .attr("class", "y axis")
+    .call(yAxis)
+  .append("text")
+    .attr("transform", "rotate(-90)")
+    .attr("y", 6)
+    .attr("dy", ".71em")
+    .style("text-anchor", "end")
+    .text("Temperature (ºF)");
+
+var city = svg.selectAll(".city")
+    .data(series)
+  .enter().append("g")
+    .attr("class", "city");
+
+city.append("path")
+    .attr("class", "line")
+    .attr("d", function(d) { return line(d.values); })
+    .style("stroke", function(d) { return color(d.name); });
+
+city.append("text")
+    .datum(function(d) { return {name: d.name, value: d.values[d.values.length - 1]}; })
+    .attr("transform", function(d) { return "translate(" + x(d.value.x) + "," + y(d.value.temperature) + ")"; })
+    .attr("x", 3)
+    .attr("dy", ".35em")
+    .text(function(d) { return d.name; });
+
+</script>
+  </body>
+</html
 {% endblock %}
 
 

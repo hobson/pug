@@ -37,7 +37,11 @@
                     {# {% bootstrap_messages %} #}
                 </div>
 
-                <div class="content">{% block content %}Nothing to see here (at call_center/base.html)... Keep moving right along.{% endblock %}</div>
+                <div class="content">{% block content %}
+                    <div class="row-fluid">
+                        Nothing to see here (at call_center/base.html)... Keep moving right along.
+                    </div>{% endblock %}
+                </div>
 
                 <div class="extra-content">{% block extra_content %}{% endblock %}</div>
 
