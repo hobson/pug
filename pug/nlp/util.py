@@ -547,7 +547,7 @@ def hist_from_float_values_list(values_list, fillers=(None,), normalize=False, c
         values_list_t = transposed_matrix(values_list)
         counters = [Counter(col) for col in values_list_t]
 
-    print counters
+    #print counters
 
     if fillers:
         fillers = listify(fillers)
@@ -558,7 +558,7 @@ def hist_from_float_values_list(values_list, fillers=(None,), normalize=False, c
 
     # bin keys using int()
     intkeys_list = [OrderedDict((int(k or 0), k) for k in counts if isinstance(k, value_types)) for counts in counters]
-    print intkeys_list
+    #print intkeys_list
     try:
         min_bin = int(min_bin)
     except:
@@ -568,12 +568,12 @@ def hist_from_float_values_list(values_list, fillers=(None,), normalize=False, c
     except:
         max_bin = max(max(intkeys) for intkeys in intkeys_list)
 
-    print min_bin, max_bin
+    #print min_bin, max_bin
 
     min_bin = max(min_bin, min((min(intkeys) if intkeys else 0) for intkeys in intkeys_list))  # TODO: reuse min(intkeys)
     max_bin = min(max_bin, max((max(intkeys) if intkeys else 0) for intkeys in intkeys_list))  # TODO: reuse max(intkeys)
 
-    print min_bin, max_bin
+    #print min_bin, max_bin
 
     histograms = []
     for intkeys, counts in zip(intkeys_list, counters):
@@ -593,7 +593,7 @@ def hist_from_float_values_list(values_list, fillers=(None,), normalize=False, c
     if not histograms:
         histograms = [OrderedDict()]
 
-    print histograms
+    #print histograms
 
     # fill in the zero counts between the integer bins of the histogram
     aligned_histograms = []
@@ -605,7 +605,7 @@ def hist_from_float_values_list(values_list, fillers=(None,), normalize=False, c
         # FIXME: add header row
         return str_from_table(aligned_histograms, sep=sep, max_rows=365*2+1)
 
-    print aligned_histograms
+    #print aligned_histograms
 
     return aligned_histograms
 

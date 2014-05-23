@@ -95,7 +95,6 @@ class JSONView(View):
         # print os.path.dirname(os.path.realpath(os.path.curdir))
         try:
             path = os.path.join('static', kwargs.get('page', '') + '.json')
-            # print path
             context = json.load(path)
         except:
             raise Http404()
@@ -141,12 +140,12 @@ def submit_lag_form(request, f, context, *args):
     reasons = request.GET.get('r', 'R').split(',') or ['R']
     account_numbers = request.GET.get('an', '').split(',') or ['']
 
-    params = {
-        'FY': fiscal_years,
-        'Reason': reasons,
-        'Account #': account_numbers,
-        'Model #': model_numbers,
-        }
+    # params = {
+    #     'FY': fiscal_years,
+    #     'Reason': reasons,
+    #     'Account #': account_numbers,
+    #     'Model #': model_numbers,
+    #     }
 
     # context['refurbs'] = []
     # for mn in model_numbers:
@@ -168,79 +167,71 @@ def submit_lag_form(request, f, context, *args):
     lags = SLAmodels.explore_lags(fiscal_years=fiscal_years, model_numbers=model_numbers, reasons=reasons, account_numbers=account_numbers, verbosity=1)
     hist = lags[hist_formats.index(hist_format)+1]
 
-    #print hist_formats.index(hist_format)
-    #print [max([y[1] for y in x]) for x in lags[1:]]
+    # #print hist_formats.index(hist_format)
+    # #print [max([y[1] for y in x]) for x in lags[1:]]
 
-    hist_t=[[],[],[],[]]
-    names, xdata, ydata = [], [], []
-    if hist and len(hist) > 1:
-        hist_t = util.transposed_matrix(hist[1:])
+    # hist_t=[[],[],[],[]]
+    # names, xdata, ydata = [], [], []
+    # if hist and len(hist) > 1:
+    #     hist_t = util.transposed_matrix(hist[1:])
 
-        if hist[0]:
-            # print hist[0]
-            names = hist[0][1:]
-            #print names
-            xdata = hist_t[0]
-            ydata = hist_t[1:]
+    #     if hist[0]:
+    #         # print hist[0]
+    #         names = hist[0][1:]
+    #         #print names
+    #         xdata = hist_t[0]
+    #         ydata = hist_t[1:]
     # print names
 
     #tooltip_date = "%d %b %Y %H:%M:%S %p"
-    extra_series = {"tooltip": {"y_start": " ", "y_end": " returns"},
-                   #"date_format": tooltip_date
-                   }
 
-    chartdata = { 'x': xdata }
+    # extra_series = {"tooltip": {"y_start": " ", "y_end": " returns"},
+    #                #"date_format": tooltip_date
+    #                }
 
-    for i, name in enumerate(names):
-        chartdata['name%d' % (i + 1)] = name
-        chartdata['y%d' % (i + 1)] = ydata[i]
-        chartdata['extra%d' % (i + 1)] = extra_series
+    # chartdata = { 'x': xdata }
 
-    subtitle = []
+    # for i, name in enumerate(names):
+    #     chartdata['name%d' % (i + 1)] = name
+    #     chartdata['y%d' % (i + 1)] = ydata[i]
+    #     chartdata['extra%d' % (i + 1)] = extra_series
 
-    for k, v in params.iteritems():
-        if len(v) == 1 and v[0] and len(str(v[0])):
-            subtitle += [str(k) + ': ' + str(v[0])] 
+    # subtitle = []
 
+    # for k, v in params.iteritems():
+    #     if len(v) == 1 and v[0] and len(str(v[0])):
+    #         subtitle += [str(k) + ': ' + str(v[0])] 
 
-    data0 = util.transposed_lists([
-        ['number', 'New York', 'San Francisco','Austin'],
-        [1, '63.4', '62.7', '72.2'],
-        [2, '58.0', '59.9', '67.7'],
-        [3, '53.3', '59.1', '69.4'],
-        [4, '55.7', '58.8', '68.0'],
-        [5, '64.2', '58.7', '72.4'],
-        [6, '58.8', '57.0', '77.0'],
-        [7, '57.9', '56.7', '82.3'],
-        [8, '61.8', '56.8', '78.9'],
-        [9, '69.3', '56.7', '68.8'],
-        [10, '71.2', '60.1', '68.7'],
-        [11, '68.7', '61.1', '70.3'],
-    ])
-
+    # data = [['number', 'New York', 'San Francisco','Austin']]
+    # data0 = [['63.4', '62.7', '72.2'],['58.0', '59.9', '67.7'],['53.3', '59.1', '69.4'],
+    #          ['55.7', '58.8', '68.0'],['64.2', '58.7', '72.4'],['58.8', '57.0', '77.0'],
+    #          ['57.9', '56.7', '82.3'],['61.8', '56.8', '78.9'],['69.3', '56.7', '68.8'],
+    #     ['71.2', '60.1', '68.7'],
+    #     ['68.7', '61.1', '70.3'],
+    # ]
+    # for i in range(100):
+    #     data += [[i+1]+data0[i%len(data0)]]
 
     context.update({'data': {
         'title': 'Returns Lag <font color="gray">' + hist_format.upper() + '</font>',
-        'subtitle': ', '.join(subtitle),
-        'charttype': "lineWithFocusChart",
-        'chartdata': chartdata,
-        'd3data': json.dumps(data0),
-        'chartcontainer': 'linewithfocuschart_container',
-        'extra': {
-            'x_is_date': False,
-            'x_axis_format': ',.0f', # %b %Y %H',
-            'y_axis_format': ',.0f', # "%d %b %Y"
-            'tag_script_js': True,
-            'jquery_on_ready': True,
-            },
+        #'subtitle': ', '.join(subtitle),
+        #'charttype': "lineWithFocusChart",
+        #'chartdata': chartdata,
+        'd3data': json.dumps(util.transposed_lists(hist)),
+        #'chartcontainer': 'linewithfocuschart_container',
+        # 'extra': {
+        #     'x_is_date': False,
+        #     'x_axis_format': ',.0f', # %b %Y %H',
+        #     'y_axis_format': ',.0f', # "%d %b %Y"
+        #     'tag_script_js': True,
+        #     'jquery_on_ready': True,
+        #     },
         'form': {},
         }})
-    #print context
     return render(request, 'miner/lag.html', context)
 
 
 def lag(request, *args):
-    # print 'lag with form'
     context = {}
     f = GetLagForm()
 
