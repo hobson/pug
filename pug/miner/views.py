@@ -24,6 +24,7 @@ from pug.nlp import parse
 from pug.nlp import util
 from pug.nlp import db
 
+#from Returns import tv_lags
 
 def explorer(request, graph_uri=None):
     """Explore the database (or any data provided by a REST service)"""
@@ -140,98 +141,72 @@ def submit_lag_form(request, f, context, *args):
     reasons = request.GET.get('r', 'R').split(',') or ['R']
     account_numbers = request.GET.get('an', '').split(',') or ['']
 
-    # params = {
-    #     'FY': fiscal_years,
-    #     'Reason': reasons,
-    #     'Account #': account_numbers,
-    #     'Model #': model_numbers,
-    #     }
-
-    # context['refurbs'] = []
-    # for mn in model_numbers:
-
-    #     refurbs = SLARef.objects\
-    #            .filter(model__istartswith=mn, pipesale__isnull=False)\
-    #            .order_by('recvdat')\
-    #            .select_related('refrepeia', 'rano')
-    #     # sales = PipeSale.objects\
-    #     #        .filter(material__istartswith=mn)\
-    #     #        .order_by('billing_doc_date')
-    #     # calls = CallMaster.objects\
-    #     #        .filter(model__istartswith=mn)\
-    #     #        .order_by('start_date_time').values()
-    #     context['refurbs'] += list(refurbs)
-
+    params = {
+        'FY': fiscal_years,
+        'Reason': reasons,
+        'Account #': account_numbers,
+        'Model #': model_numbers,
+        }
 
     # print params
     lags = SLAmodels.explore_lags(fiscal_years=fiscal_years, model_numbers=model_numbers, reasons=reasons, account_numbers=account_numbers, verbosity=1)
     hist = lags[hist_formats.index(hist_format)+1]
 
-    # #print hist_formats.index(hist_format)
-    # #print [max([y[1] for y in x]) for x in lags[1:]]
+    #print hist_formats.index(hist_format)
+    #print [max([y[1] for y in x]) for x in lags[1:]]
 
-    # hist_t=[[],[],[],[]]
-    # names, xdata, ydata = [], [], []
-    # if hist and len(hist) > 1:
-    #     hist_t = util.transposed_matrix(hist[1:])
+    hist_t=[[],[],[],[]]
+    names, xdata, ydata = [], [], []
+    if hist and len(hist) > 1:
+        hist_t = util.transposed_matrix(hist[1:])
 
-    #     if hist[0]:
-    #         # print hist[0]
-    #         names = hist[0][1:]
-    #         #print names
-    #         xdata = hist_t[0]
-    #         ydata = hist_t[1:]
+        if hist[0]:
+            # print hist[0]
+            names = hist[0][1:]
+            #print names
+            xdata = hist_t[0]
+            ydata = hist_t[1:]
     # print names
 
     #tooltip_date = "%d %b %Y %H:%M:%S %p"
+    extra_series = {"tooltip": {"y_start": " ", "y_end": " returns"},
+                   #"date_format": tooltip_date
+                   }
 
-    # extra_series = {"tooltip": {"y_start": " ", "y_end": " returns"},
-    #                #"date_format": tooltip_date
-    #                }
+    chartdata = { 'x': xdata }
 
-    # chartdata = { 'x': xdata }
+    for i, name in enumerate(names):
+        chartdata['name%d' % (i + 1)] = name
+        chartdata['y%d' % (i + 1)] = ydata[i]
+        chartdata['extra%d' % (i + 1)] = extra_series
 
-    # for i, name in enumerate(names):
-    #     chartdata['name%d' % (i + 1)] = name
-    #     chartdata['y%d' % (i + 1)] = ydata[i]
-    #     chartdata['extra%d' % (i + 1)] = extra_series
+    subtitle = []
 
-    # subtitle = []
-
-    # for k, v in params.iteritems():
-    #     if len(v) == 1 and v[0] and len(str(v[0])):
-    #         subtitle += [str(k) + ': ' + str(v[0])] 
-
-    # data = [['number', 'New York', 'San Francisco','Austin']]
-    # data0 = [['63.4', '62.7', '72.2'],['58.0', '59.9', '67.7'],['53.3', '59.1', '69.4'],
-    #          ['55.7', '58.8', '68.0'],['64.2', '58.7', '72.4'],['58.8', '57.0', '77.0'],
-    #          ['57.9', '56.7', '82.3'],['61.8', '56.8', '78.9'],['69.3', '56.7', '68.8'],
-    #     ['71.2', '60.1', '68.7'],
-    #     ['68.7', '61.1', '70.3'],
-    # ]
-    # for i in range(100):
-    #     data += [[i+1]+data0[i%len(data0)]]
+    for k, v in params.iteritems():
+        if len(v) == 1 and v[0] and len(str(v[0])):
+            subtitle += [str(k) + ': ' + str(v[0])] 
 
     context.update({'data': {
         'title': 'Returns Lag <font color="gray">' + hist_format.upper() + '</font>',
-        #'subtitle': ', '.join(subtitle),
-        #'charttype': "lineWithFocusChart",
-        #'chartdata': chartdata,
-        'd3data': json.dumps(util.transposed_lists(hist)),
-        #'chartcontainer': 'linewithfocuschart_container',
-        # 'extra': {
-        #     'x_is_date': False,
-        #     'x_axis_format': ',.0f', # %b %Y %H',
-        #     'y_axis_format': ',.0f', # "%d %b %Y"
-        #     'tag_script_js': True,
-        #     'jquery_on_ready': True,
-        #     },
+        'subtitle': ', '.join(subtitle),
+        'charttype': "lineWithFocusChart",
+        'chartdata': chartdata,
+        'chartcontainer': 'linewithfocuschart_container',
+        'extra': {
+            'x_is_date': False,
+            'x_axis_format': ',.0f', # %b %Y %H',
+            'y_axis_format': ',.0f', # "%d %b %Y"
+            'tag_script_js': True,
+            'jquery_on_ready': True,
+            },
         'form': {},
         }})
+    #print context
     return render(request, 'miner/lag.html', context)
 
 
 def lag(request, *args):
+    # print 'lag with form'
     context = {}
     f = GetLagForm()
 
@@ -257,6 +232,7 @@ def hist(request, *args):
         model = request.GET.get('mn', "") or request.GET.get('model', "")
         context = {'form': GetLagForm(data={'submit': 'Submit', 'model': model},
                                       initial={'model': model})}
+    #context['form'].helper.form_action = '/miner/hist/'
 
     context['form_is_valid'] = context['form'].is_valid()
 
@@ -287,4 +263,4 @@ def hist(request, *args):
         'd3data': json.dumps(util.transposed_lists(hist)),
         'form': {},
         }})
-    return render(request, 'miner/lag.html', context)
+    return render(request, 'miner/hist.html', context)

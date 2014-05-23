@@ -28,7 +28,7 @@ class GetLagForm(forms.Form):
         self.helper.help_text_inline = True
         # self.helper.form_class = 'blueForms'
         self.helper.form_method = 'GET'
-        self.helper.form_action = '/miner/lag/'
+        self.helper.form_action = ''
 
         self.helper.add_input(Submit('submit', 'Submit'))
         super(GetLagForm, self).__init__(*args, **kwargs)
