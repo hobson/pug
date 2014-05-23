@@ -246,3 +246,45 @@ def lag(request, *args):
     context['form'] = f
     context['form_is_valid'] = f.is_valid()
     return submit_lag_form(request, f, context, *args)
+
+
+def hist(request, *args):
+    '''Multi-column table of lag vs. counts (histogram).'''
+    if request.method == 'POST':
+        # this can never happen since form only has a GET button
+        context = {'form': GetLagForm(request.POST)}
+    elif request.method == 'GET':
+        model = request.GET.get('mn', "") or request.GET.get('model', "")
+        context = {'form': GetLagForm(data={'submit': 'Submit', 'model': model},
+                                      initial={'model': model})}
+
+    context['form_is_valid'] = context['form'].is_valid()
+
+    if context['form_is_valid']:
+        model_numbers = [s.strip() for s in context['form'].cleaned_data['model'].split(',')]
+        fiscal_years = request.GET.getlist('fiscal_years')
+
+        hist_formats = ['hist', 'pmf', 'cdf', 'cmf']
+        hist_format = 'cmf'
+        if args and len(str(args[0])):
+            hist_format_str = str(args[0]).lower().strip()
+        if hist_format_str in hist_formats:
+            hist_format = hist_format_str
+
+        reasons = request.GET.get('r', 'R').split(',') or ['R']
+        account_numbers = request.GET.get('an', '').split(',') or ['']
+
+        # print params
+        lags = SLAmodels.explore_lags(fiscal_years=fiscal_years, model_numbers=model_numbers, reasons=reasons, account_numbers=account_numbers, verbosity=1)
+        hist = lags[hist_formats.index(hist_format)+1]
+    else:
+        hist = [[]]
+        hist_format = ''
+
+
+    context.update({'data': {
+        'title': 'Returns Lag <font color="gray">' + hist_format.upper() + '</font>',
+        'd3data': json.dumps(util.transposed_lists(hist)),
+        'form': {},
+        }})
+    return render(request, 'miner/lag.html', context)
