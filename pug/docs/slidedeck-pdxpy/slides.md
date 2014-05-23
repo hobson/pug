@@ -1,7 +1,7 @@
 % title: Data Science with `pug`
 % subtitle: PDX-Python
 % subtitle: <i><small>January 28, 2014</small></i>
-% author: <a href="https://hobsonlane.github.io/pug">hobsonlane.github.io/pug</a>
+% author: <a href="https://hobson.github.io/pug">hobson.github.io/pug</a>
 % thankyou: Thanks PDX-Python!
 % thankyou_details: And the open source world...
 % contact: <a href="http://python.org">Python</a>
@@ -38,7 +38,7 @@ subtitle: ETL
 * **E**xtract -- download, API, scrape
     - Scrapy
 * **T**ransform -- shuffle columns, normalize
-    - [pug](https://github.com/hobsonlane) -- `manage.py dbstats`
+    - [pug](https://github.com/hobson) -- `manage.py dbstats`
     - `manage.py inspectdb`
 * **L**oad -- `manage.py loaddata`
     - DBA (Database Administration)
@@ -167,7 +167,7 @@ title: Introducing `pug`
     $ firefox http://localhost:8001/occurrence_force_graph.html
 </pre>
 
-Do it yourself: [hobsonlane.github.io/pug](http://hobsonlane.github.io/pug)</a>
+Do it yourself: [hobson.github.io/pug](http://hobson.github.io/pug)</a>
 
 ---
 title: A More Interesting Example
@@ -205,7 +205,7 @@ $\sum_{i=0}^n P(x_i) \log_b(P(x_i))$
 
 ---
 title: What Patterns Do You See?
-subtitle: <a href="http://hobsonlane.github.io/pug/pug/miner/static/occurrence_force_graph.html">hobsonlane.github.io/pug</a>
+subtitle: <a href="http://hobson.github.io/pug/pug/miner/static/occurrence_force_graph.html">hobson.github.io/pug</a>
 
 * Outliers?
     * Documents and Words
@@ -218,7 +218,7 @@ title: Curse of Dimensionality
     - Additional pop ups and highlighting of edges would help
     - Additional dimensions as size and shape of circles
     - What about short-circuiting the documents to see word-word connections?
-* [view source](view-source:http://hobsonlane.github.io/pug/pug/miner/static/occurrence_force_graph.html)
+* [view source](view-source:http://hobson.github.io/pug/pug/miner/static/occurrence_force_graph.html)
 * Adjust charge, length, stiffness, friction -- balancing game...
     - Stability vs Structure
     - Beauty vs Complexity
@@ -228,11 +228,11 @@ title: Words Shared by Documents?
 
 Multiply the frequencies a word is used in documents linked to it to get a "total" count:
 
-**Document<-->Document** [graph](http://hobsonlane.github.io/pug/pug/miner/static/doc_force_graph.html) or [matrix](http://hobsonlane.github.io/pug/pug/miner/static/doc_cooccurrence.html)
+**Document<-->Document** [graph](http://hobson.github.io/pug/pug/miner/static/doc_force_graph.html) or [matrix](http://hobson.github.io/pug/pug/miner/static/doc_cooccurrence.html)
 
 $\mathbf O_{docs}=\mathbf O \mathbf O^T$
 
-**Word<-->Word** [graph](http://hobsonlane.github.io/pug/pug/miner/static/word_force_graph.html) or [matrix](http://hobsonlane.github.io/pug/pug/miner/static/word_cooccurrence.html)
+**Word<-->Word** [graph](http://hobson.github.io/pug/pug/miner/static/word_force_graph.html) or [matrix](http://hobson.github.io/pug/pug/miner/static/word_cooccurrence.html)
 
 $\mathbf O_{words}=\mathbf O^T \mathbf O$
 

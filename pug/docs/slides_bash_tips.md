@@ -1,6 +1,6 @@
 % title: Data Science with `pug`
 % subtitle: PDX-Python January 2014
-% author: <a href="https://github.com/hobsonlane">Hobson Lane</a>
+% author: <a href="https://github.com/hobson">Hobson Lane</a>
 % thankyou: Thanks PDX-Python!
 % thankyou_details: And all these open source contributors...
 % contact: <a href="http://djangoproject.org">Django</a>
