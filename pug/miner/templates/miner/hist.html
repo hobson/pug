@@ -1,74 +1,20 @@
 {% extends 'base.html' %}
-{% load nvd3_tags %}
+{% load i18n %}
+{% load staticfiles %}
 {% load crispy_forms_tags %}
 
-{% block extra_head %}            
-    {% include_chart_jscss %}
-    {% comment %}
-    {% load_chart data.charttype data.chartdata data.chartcontainer data.extra %}
-    {% endcomment %}
+{% block extra_head %}           
+    <script src="http://d3js.org/d3.v3.js"></script>
+    <link rel="stylesheet" href="//static/miner/css/hist.css">
 {% endblock %}
 
 {% block content %}
-
     <div class="row">
       {% crispy form %}
     </div>
-
-
-    {% comment %}
-    <div class="row">
-      <H3>{{ data.title|safe }}</H3>
-      <H4>{{ data.subtitle|safe }}</H4>
-      {% include_container data.chartcontainer 400 '100%' %}
-    </div>
-
-    {# DOESNT WORK, points hidden behind nv-path-# elements #}
-    <script type="text/javascript">
-    d3.select("#{{ data.chartcontainer }} svg").selectAll(".nv-path-36").style("pointer-events", "all").on("click", function( e ) { console.log( JSON.stringify( e ) ); });
-    </script>
-    {% endcomment %} 
-
-    <script src="http://d3js.org/d3.v3.js"></script>
-
     <div class="row">
       <div id="graph" class="aGraph"></div>
-    </div>
- 
-<style>
-
-body {
-  font: 10px sans-serif;
-}
-
-.axis path,
-.axis line {
-  fill: none;
-  stroke: #000;
-  shape-rendering: crispEdges;
-}
-
-.x.axis path {
-  display: none;
-}
-
-.line {
-  fill: none;
-  stroke: steelblue;
-  stroke-width: 2px;
-}
-
-.focus circle {
-  fill: none;
-  stroke: steelblue;
-  stroke-width: 1.5px;
-}
-
-.overlay {
-  fill: none;
-  pointer-events: all;
-}
-</style>
+    </div> 
 
 
 <script>
