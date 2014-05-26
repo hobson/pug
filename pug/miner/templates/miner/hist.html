@@ -249,9 +249,9 @@ focus.append("text")
 focus.append("foreignObject")
     .attr("width", 100)
     .attr("height", 60)
-    .attr("y", -10)
+    //.attr("y", -10)
     //.style("font", "14px 'Helvetica Neue'")
-    //  .html("<h1>before</h1>");
+      .html("<h1>before</h1>");
 
 
 var voronoiGroup = svg.append("g")
@@ -285,14 +285,19 @@ function mouseover(d) {
   focus.attr("transform", "translate(" + x(d.x) + "," + y(d.y) + ")");
   tt = d.series.name + ": " + d.x + ", " + d.y;
   focus.select("text").text(tt);
-  focus.select("ForeignObject").html("<h1>Hello</h1>");
+  focus.select("ForeignObject")
+    .attr("width", 100)
+    .attr("height", 60)
+    //.attr("y", -10)
+    //.style("font", "14px 'Helvetica Neue'")
+      .html("<h1>after</h1>");
   // tip.show(d);
 }
 
 function mouseout(d) {
   console.log(d)
   d3.select(d.series.line).classed("series-hover", false);
-  focus.attr("transform", "translate(-1000,-1000)");
+  //focus.attr("transform", "translate(-1000,-1000)");
   // tip.hide(d);
 }
 
