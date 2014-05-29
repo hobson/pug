@@ -2,6 +2,7 @@
 from django.shortcuts import render_to_response
 #from django.http import HttpResponse
 from django.views.generic import View  #, TemplateView
+from django.template import Context
 from django.template.response import TemplateResponse #, HttpResponse
 from django.template.loader import get_template
 from django.http import Http404
@@ -118,16 +119,65 @@ class JSONView(View):
         return json.dumps(context)
 
 
-def submit_lag_form(request, f, context, *args):
+def context_from_get_or_post(request, Form=GetLagForm, context=None):
+    if context is None:
+        context = Context()
+    mn = request.GET.get('mn', "") or request.GET.get('model', "") or request.GET.get('models', "") or request.GET.get('model_number', "") or request.GET.get('model_numbers', "")
+    mn = [s.strip() for s in mn.split(',')] or ['']
+    context['model_numbers'] = mn
+    sn = request.GET.get('sn', "") or request.GET.get('serial', "") or request.GET.get('serials', "") or request.GET.get('serial_number', "") or request.GET.get('serial_numbers', "")
+    sn = [s.strip() for s in sn.split(',')] or ['']   
+    context['serial_numbers'] = sn
+    fy = request.GET.get('fy', "") or request.GET.get('yr', "") or request.GET.get('year', "") or request.GET.get('years', "") or request.GET.get('fiscal_year', "") or request.GET.get('fiscal_years', "")
+    fiscal_years = [util.normalize_year(y) for y in fy.split(',')] or []
+    fiscal_years = [str(y) for y in fiscal_years if y]
+    context['fiscal_years'] = fiscal_years
+    r = request.GET.get('r', "") or request.GET.get('rc', "") or request.GET.get('rcode', "") or request.GET.get('reason', "") or request.GET.get('reasons', "")
+    r = [s.strip() for s in r.split(',')] or ['']
+    context['reasons'] = r
+    a = request.GET.get('a', "") or request.GET.get('an', "") or request.GET.get('account', "") or request.GET.get('account_number', "") or request.GET.get('account_numbers', "")
+    a = [s.strip() for s in a.split(',')] or ['']
+    context['account_numbers'] = a
+
+    series_name = request.GET.get('s', "") or request.GET.get('n', "") or request.GET.get('series', "") or request.GET.get('name', "")
+    filter_values = series_name.split(' ')
+    if filter_values and len(filter_values)==4:
+        mn = [filter_values[0].strip('*')]
+        r = [filter_values[1].strip('*')]
+        a = [filter_values[2].strip('*')]
+        fiscal_years = [filter_values[3].strip('*')]
+
+    lag_days = int(request.GET.get('lag', None) or 365)
+    lag_max = int(request.GET.get('lag_max', None) or lag_days)
+    lag_min = int(request.GET.get('lag_min', None) or (lag_days - 1))
+    initial = {'model': ', '.join(mn), 
+               'serial': ', '.join(sn),
+               'reason': ', '.join(r),
+               'account': ', '.join(a),
+               'fiscal_years': ', '.join(fiscal_years),
+               'lag_min': lag_min,
+               'lag_max': lag_max}
+
+    # this can never happen since Form only has a GET button
+    if request.method == 'POST':
+        context['form'] = Form(request.POST)
+    elif request.method == 'GET':
+        context['form'] = Form(data=util.update_dict(initial, {'submit': 'Submit'}, copy=True), initial=initial)
+
+    context['form_is_valid'] = context['form'].is_valid()
+
+    return Context(context)
+
+
+def lag(request, *args):
     '''Line chart with zoom and pan and "focus area" at bottom like google analytics.
     
     Data takes a long time to load, so you better use this to increase the timeout
     python gunicorn bigdata.wsgi:application --bind bigdata.enet.sharplabs.com:8000 --graceful-timeout=60 --timeout=60
     '''
-    context['form'] = f
+    # print 'lag with form'
+    context = context_from_get_or_post(request)
 
-    model_numbers = [s.strip() for s in f.cleaned_data['model'].split(',')]
-    fiscal_years = request.GET.getlist('fiscal_years')
 
     hist_formats = ['hist', 'pmf', 'cdf', 'cmf']
     hist_format = 'cmf'
@@ -136,17 +186,7 @@ def submit_lag_form(request, f, context, *args):
     if hist_format_str in hist_formats:
         hist_format = hist_format_str
 
-    reasons = request.GET.get('r', 'R').split(',') or ['R']
-    account_numbers = request.GET.get('an', '').split(',') or ['']
 
-    params = {
-        'FY': fiscal_years,
-        'Reason': reasons,
-        'Account #': account_numbers,
-        'Model #': model_numbers,
-        }
-
-    # print params
     lags = SLAmodels.explore_lags(fiscal_years=fiscal_years, model_numbers=model_numbers, reasons=reasons, account_numbers=account_numbers, verbosity=1)
     hist = lags[hist_formats.index(hist_format)+1]
     #refurbs = lags[-1]
@@ -181,6 +221,13 @@ def submit_lag_form(request, f, context, *args):
 
     subtitle = []
 
+    params = {
+        'FY': context['fiscal_years'],
+        'Reason': context['reasons'],
+        'Account #': context['account_numbers'],
+        'Model #': context['model_numbers'],
+        }
+
     for k, v in params.iteritems():
         if len(v) == 1 and v[0] and len(str(v[0])):
             subtitle += [str(k) + ': ' + str(v[0])] 
@@ -204,53 +251,6 @@ def submit_lag_form(request, f, context, *args):
     return render(request, 'miner/lag.html', context)
 
 
-def lag(request, *args):
-    # print 'lag with form'
-    context = {}
-    f = GetLagForm()
-
-    if request.method == 'POST':
-        f = GetLagForm(request.POST)
-
-    elif request.method == 'GET':
-        mn = request.GET.get('mn', "") or request.GET.get('model', "") or request.GET.get('models', "") or request.GET.get('model_number', "") or request.GET.get('model_numbers', "")
-        mn = [s.strip() for s in mn.split(',')] or ['']   
-        sn = request.GET.get('sn', "") or request.GET.get('serial', "") or request.GET.get('serials', "") or request.GET.get('serial_number', "") or request.GET.get('serial_numbers', "")
-        sn = [s.strip() for s in sn.split(',')] or ['']   
-        fy = request.GET.get('fy', "") or request.GET.get('yr', "") or request.GET.get('year', "") or request.GET.get('years', "") or request.GET.get('fiscal_year', "") or request.GET.get('fiscal_years', "")
-        fiscal_years = [util.normalize_year(y) for y in fy.split(',')] or []
-        fiscal_years = [str(y) for y in fiscal_years if y]
-        r = request.GET.get('r', "") or request.GET.get('rc', "") or request.GET.get('rcode', "") or request.GET.get('reason', "") or request.GET.get('reasons', "")
-        r = [s.strip() for s in r.split(',')] or ['']   
-        a = request.GET.get('a', "") or request.GET.get('an', "") or request.GET.get('account', "") or request.GET.get('account_number', "") or request.GET.get('account_numbers', "")
-        a = [s.strip() for s in a.split(',')] or ['']   
-
-        series_name = request.GET.get('s', "") or request.GET.get('n', "") or request.GET.get('series', "") or request.GET.get('name', "")
-        filter_values = series_name.split(' ')
-        if filter_values and len(filter_values)==4:
-            mn = [filter_values[0].strip('*')]
-            r = [filter_values[1].strip('*')]
-            a = [filter_values[2].strip('*')]
-            fiscal_years = [filter_values[3].strip('*')]
-
-        lag_days = int(request.GET.get('lag', None) or 365)
-        lag_max = int(request.GET.get('lag_max', None) or lag_days)
-        lag_min = int(request.GET.get('lag_min', None) or (lag_days - 1))
-        initial = {'model': ', '.join(mn), 
-                   'serial': ', '.join(sn),
-                   'reason': ', '.join(r),
-                   'account': ', '.join(a),
-                   'fiscal_years': ', '.join(fiscal_years),
-                   'lag_min': lag_min,
-                   'lag_max': lag_max}
-        data = dict(initial)
-        data['submit'] = 'Submit' 
-
-        f = GetLagForm(data=data, initial=initial)
-
-    context['form'] = f
-    context['form_is_valid'] = f.is_valid()
-    return submit_lag_form(request, f, context, *args)
 
 
 def hist(request, *args):
@@ -259,40 +259,8 @@ def hist(request, *args):
         # this can never happen since form only has a GET button
         context = {'form': GetLagForm(request.POST)}
     elif request.method == 'GET':
-        mn = request.GET.get('mn', "") or request.GET.get('model', "") or request.GET.get('models', "") or request.GET.get('model_number', "") or request.GET.get('model_numbers', "")
-        mn = [s.strip() for s in mn.split(',')] or ['']   
-        sn = request.GET.get('sn', "") or request.GET.get('serial', "") or request.GET.get('serials', "") or request.GET.get('serial_number', "") or request.GET.get('serial_numbers', "")
-        sn = [s.strip() for s in sn.split(',')] or ['']   
-        fy = request.GET.get('fy', "") or request.GET.get('yr', "") or request.GET.get('year', "") or request.GET.get('years', "") or request.GET.get('fiscal_year', "") or request.GET.get('fiscal_years', "")
-        fiscal_years = [util.normalize_year(y) for y in fy.split(',')] or []
-        fiscal_years = [str(y) for y in fiscal_years if y]
-        r = request.GET.get('r', "") or request.GET.get('rc', "") or request.GET.get('rcode', "") or request.GET.get('reason', "") or request.GET.get('reasons', "")
-        r = [s.strip() for s in r.split(',')] or ['']   
-        a = request.GET.get('a', "") or request.GET.get('an', "") or request.GET.get('account', "") or request.GET.get('account_number', "") or request.GET.get('account_numbers', "")
-        a = [s.strip() for s in a.split(',')] or ['']   
-
-        series_name = request.GET.get('s', "") or request.GET.get('n', "") or request.GET.get('series', "") or request.GET.get('name', "")
-        filter_values = series_name.split(' ')
-        if filter_values and len(filter_values)==4:
-            mn = [filter_values[0].strip('*')]
-            r = [filter_values[1].strip('*')]
-            a = [filter_values[2].strip('*')]
-            fiscal_years = [filter_values[3].strip('*')]
-
-        lag_days = int(request.GET.get('lag', None) or 365)
-        lag_max = int(request.GET.get('lag_max', None) or lag_days)
-        lag_min = int(request.GET.get('lag_min', None) or (lag_days - 1))
-        initial = {'model': ', '.join(mn), 
-                   'serial': ', '.join(sn),
-                   'reason': ', '.join(r),
-                   'account': ', '.join(a),
-                   'fiscal_years': ', '.join(fiscal_years),
-                   'lag_min': lag_min,
-                   'lag_max': lag_max}
-        data = dict(initial)
-        data['submit'] = 'Submit'
-
-        context = {'form': GetLagForm(data=data, initial=initial)}
+        initial = form_data_from_get(request)
+        context = {'form': GetLagForm(data=util.update_dict(initial, {'submit': 'Submit'}, copy=True), initial=initial)}
     #context['form'].helper.form_action = '/miner/hist/'
 
     context['form_is_valid'] = context['form'].is_valid()

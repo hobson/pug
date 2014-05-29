@@ -2,14 +2,14 @@
 """
 Compiled Regular Expression Patterns
 
->>> scientific_notation_exponent.split(' 1E10 and 1 x 10 ^23 ')
-['1', '10', '1', '23']
 >>> scientific_notation_exponent.split(' 1 x 10 ** 23 ')
 ['1', '23']
->>> scientific_notation_exponent.findall(' 1E10 and 1 x 10 ^23 ')
-['E', 'x 10 ^']
+>>> scientific_notation_exponent.split(' 1E10 and 1 x 10 ^23 ')
+[' 1', '10 and 1', '23 ']
 >>> scientific_notation_exponent.findall(' 1 x 10 ^23 ')
 ['x 10 ^']
+>>> scientific_notation_exponent.findall(' 1E10 and 1 x 10 ^23 ')
+['E', 'x 10 ^']
 """
 
 # consider using "from re import *" and renaming this module re or RE
@@ -17,6 +17,7 @@ import re
 
 nonword           = re.compile(r'[\W]')
 white_space       = re.compile(r'[\s]')
+# would be better-named as scientific_notation_base
 scientific_notation_exponent = re.compile(r'\s*(?:[xX]{1}\s*10\s*[*^]{1,2}|[eE]){1}\s*')
 not_digit_nor_sign = re.compile(r'[^0-9-+]+')
 
