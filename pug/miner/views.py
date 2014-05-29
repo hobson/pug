@@ -23,6 +23,33 @@ from pug.nlp import parse
 from pug.nlp import util
 from pug.nlp import db
 
+
+# format options for lag histograms:
+#   hist = ff = fd = Frequency Distribution/Function (histogram of counts)
+#   pmf = pdf = Probability Mass/Distribution Function (or PDF, probability distribution/density function)
+#   cmf = cdf = Cumulative Distribution/Mass Function (cumulative probability)
+#   cfd = cff = Cumulative Frequency Distribution/Function (cumulative counts)
+HIST_FORMATS = {
+                'hist': 'hist', 'ff': 'hist', 'fd': 'hist',
+                'pmf': 'pmf', 'pdf': 'pmf',
+                'cmf': 'cmf', 'cdf': 'cmf',
+                'cfd': 'cfd', 'cfd': 'cff'
+               }
+
+HIST_YLABEL = {
+                'hist': 'count',
+                'pmf': 'probability',
+                'cmf': 'cumulative probability',
+                'cfd': 'cumulative count',
+               }
+
+HIST_YLABEL = {
+                'hist': 'Lag (days)',
+                'pmf': 'Lag (days)',
+                'cmf': 'Lag (days)',
+                'cfd': 'Lag (days)',
+               }
+
 #from Returns import tv_lags
 
 def explorer(request, graph_uri=None):
@@ -119,25 +146,27 @@ class JSONView(View):
         return json.dumps(context)
 
 
-def context_from_get_or_post(request, Form=GetLagForm, context=None):
+def context_from_request(request, context=None, Form=GetLagForm):
     if context is None:
         context = Context()
+
+    context['filter'] = {}
     mn = request.GET.get('mn', "") or request.GET.get('model', "") or request.GET.get('models', "") or request.GET.get('model_number', "") or request.GET.get('model_numbers', "")
     mn = [s.strip() for s in mn.split(',')] or ['']
-    context['model_numbers'] = mn
+    context['filter']['model_numbers'] = mn
     sn = request.GET.get('sn', "") or request.GET.get('serial', "") or request.GET.get('serials', "") or request.GET.get('serial_number', "") or request.GET.get('serial_numbers', "")
     sn = [s.strip() for s in sn.split(',')] or ['']   
-    context['serial_numbers'] = sn
+    context['filter']['serial_numbers'] = sn
     fy = request.GET.get('fy', "") or request.GET.get('yr', "") or request.GET.get('year', "") or request.GET.get('years', "") or request.GET.get('fiscal_year', "") or request.GET.get('fiscal_years', "")
     fiscal_years = [util.normalize_year(y) for y in fy.split(',')] or []
     fiscal_years = [str(y) for y in fiscal_years if y]
-    context['fiscal_years'] = fiscal_years
+    context['filter']['fiscal_years'] = fiscal_years
     r = request.GET.get('r', "") or request.GET.get('rc', "") or request.GET.get('rcode', "") or request.GET.get('reason', "") or request.GET.get('reasons', "")
     r = [s.strip() for s in r.split(',')] or ['']
-    context['reasons'] = r
+    context['filter']['reasons'] = r
     a = request.GET.get('a', "") or request.GET.get('an', "") or request.GET.get('account', "") or request.GET.get('account_number', "") or request.GET.get('account_numbers', "")
     a = [s.strip() for s in a.split(',')] or ['']
-    context['account_numbers'] = a
+    context['filter']['account_numbers'] = a
 
     series_name = request.GET.get('s', "") or request.GET.get('n', "") or request.GET.get('series', "") or request.GET.get('name', "")
     filter_values = series_name.split(' ')
@@ -166,7 +195,18 @@ def context_from_get_or_post(request, Form=GetLagForm, context=None):
 
     context['form_is_valid'] = context['form'].is_valid()
 
-    return Context(context)
+    return context
+
+
+def context_from_args(args=None, context=None):
+    if context is None:
+        context = Context()
+
+    context['hist_format'] = HIST_FORMATS['cfd']
+    if args and len(str(args[0])):
+        context['hist_format'] = HIST_FORMATS.get(str(args[0]).lower().strip(), context['hist_format'])
+
+    return context
 
 
 def lag(request, *args):
@@ -176,23 +216,11 @@ def lag(request, *args):
     python gunicorn bigdata.wsgi:application --bind bigdata.enet.sharplabs.com:8000 --graceful-timeout=60 --timeout=60
     '''
     # print 'lag with form'
-    context = context_from_get_or_post(request)
+    context = context_from_request(request)
+    context = context_from_args(context=context, args=args)
 
-
-    hist_formats = ['hist', 'pmf', 'cdf', 'cmf']
-    hist_format = 'cmf'
-    if args and len(str(args[0])):
-        hist_format_str = str(args[0]).lower().strip()
-    if hist_format_str in hist_formats:
-        hist_format = hist_format_str
-
-
-    lags = SLAmodels.explore_lags(fiscal_years=fiscal_years, model_numbers=model_numbers, reasons=reasons, account_numbers=account_numbers, verbosity=1)
-    hist = lags[hist_formats.index(hist_format)+1]
-    #refurbs = lags[-1]
-
-    #print hist_formats.index(hist_format)
-    #print [max([y[1] for y in x]) for x in lags[1:]]
+    lags = SLAmodels.explore_lags(**context['filter'])
+    hist = lags[context['hist_format']]
 
     hist_t=[[],[],[],[]]
     names, xdata, ydata = [], [], []
@@ -232,64 +260,42 @@ def lag(request, *args):
         if len(v) == 1 and v[0] and len(str(v[0])):
             subtitle += [str(k) + ': ' + str(v[0])] 
 
-    context.update({'data': {
-        'title': 'Returns Lag <font color="gray">' + hist_format.upper() + '</font>',
-        'subtitle': ', '.join(subtitle),
-        'charttype': "lineWithFocusChart",
-        'chartdata': chartdata,
-        'chartcontainer': 'linewithfocuschart_container',
-        'extra': {
-            'x_is_date': False,
-            'x_axis_format': ',.0f', # %b %Y %H',
-            'y_axis_format': ',.0f', # "%d %b %Y"
-            'tag_script_js': True,
-            'jquery_on_ready': True,
-            },
-        'form': {},
-        }})
-    #print context
+    context.update({
+        'data': {
+            'title': 'Returns Lag <font color="gray">' + context['hist_format'].upper() + '</font>',
+            'd3data': json.dumps(util.transposed_lists(hist)),
+            'subtitle': ', '.join(subtitle),
+            'charttype': "lineWithFocusChart",
+            'chartdata': chartdata,
+            'chartcontainer': 'linewithfocuschart_container',
+            'extra': {
+                'x_is_date': False,
+                'x_axis_format': ',.0f', # %b %Y %H',
+                'y_axis_format': ',.0f', # "%d %b %Y"
+                'tag_script_js': True,
+                'jquery_on_ready': True,
+                },
+            }
+        })
+    print context.keys()
     return render(request, 'miner/lag.html', context)
-
-
 
 
 def hist(request, *args):
     '''Multi-column table of lag vs. counts (histogram).'''
-    if request.method == 'POST':
-        # this can never happen since form only has a GET button
-        context = {'form': GetLagForm(request.POST)}
-    elif request.method == 'GET':
-        initial = form_data_from_get(request)
-        context = {'form': GetLagForm(data=util.update_dict(initial, {'submit': 'Submit'}, copy=True), initial=initial)}
-    #context['form'].helper.form_action = '/miner/hist/'
+    context = context_from_request(context=None, request=request)
+    context = context_from_args(context=context, args=args)
 
-    context['form_is_valid'] = context['form'].is_valid()
-
-    if context['form_is_valid']:
-        model_numbers = [s.strip() for s in context['form'].cleaned_data['model'].split(',')]
-        fiscal_years = request.GET.getlist('fiscal_years')
-
-        hist_formats = ['hist', 'pmf', 'cdf', 'cmf']
-        hist_format = 'cmf'
-        if args and len(str(args[0])):
-            hist_format_str = str(args[0]).lower().strip()
-        if hist_format_str in hist_formats:
-            hist_format = hist_format_str
-
-        reasons = request.GET.get('r', 'R').split(',') or ['R']
-        account_numbers = request.GET.get('an', '').split(',') or ['']
-
-        # print params
-        lags = SLAmodels.explore_lags(fiscal_years=fiscal_years, model_numbers=model_numbers, reasons=reasons, account_numbers=account_numbers, verbosity=1)
-        hist = lags[hist_formats.index(hist_format)+1]
-    else:
-        hist = [[]]
-        hist_format = ''
-
+    # print params
+    lags = SLAmodels.explore_lags(**context['filter'])
+    hist = lags[context['hist_format']]
 
     context.update({'data': {
-        'title': 'Returns Lag <font color="gray">' + hist_format.upper() + '</font>',
+        'title': 'Returns Lag <font color="gray">' + context['hist_format'].upper() + '</font>',
+        'xlabel': 'Lag (days)',
+        'ylabel': HIST_YLABEL,
         'd3data': json.dumps(util.transposed_lists(hist)),
         'form': {},
         }})
+    print context.keys()
     return render(request, 'miner/hist.html', context)

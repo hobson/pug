@@ -209,7 +209,7 @@ function mouseover(d) {
 function mouseclick(d) {
   console.log(d);
   var url = document.URL + "&lag=" + d.x + "&series=" + d.series.name;
-  var hist_formats = ["", "-pmf", "-cdf", "-cmf"];
+  var hist_formats = ["", "-pmf", "-cmf", "-cfd"];
   hist_formats.forEach(function(hf) { 
     url = url.replace("/hist"+hf+"/", "/cases/")
   });
