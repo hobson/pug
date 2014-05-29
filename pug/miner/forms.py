@@ -38,13 +38,19 @@ class GetLagForm(forms.Form):
         initial=365*3,
         help_text='Maximum number of lag from sale to return in days to display')
 
-    fiscal_years = forms.MultipleChoiceField(
+    # fiscal_years = forms.MultipleChoiceField(
+    #     label='Fiscal Years',
+    #     initial='2013', required=False, 
+    #     choices=tuple(('%d' % i, '%d' % i) for i in range(2009, 2014)),
+    #     widget=forms.CheckboxSelectMultiple,
+    #     help_text="fiscal years to compare",
+    # )
+
+    fiscal_years = forms.CharField(max_length=256, required=False,
         label='Fiscal Years',
-        initial='2013', required=False, 
-        choices=tuple(('%d' % i, '%d' % i) for i in range(2009, 2014)),
-        widget=forms.CheckboxSelectMultiple,
-        help_text="fiscal years to compare",
-    )
+        initial='13', 
+        help_text="comma-separated list of fiscal years to compare",
+        )
 
     def __init__(self, *args, **kwargs):
         self.helper = FormHelper()

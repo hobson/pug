@@ -7,12 +7,8 @@ from datetime import datetime
 from collections import Counter
 
 from nlp.strutil import get_words, clean_wiki_datetime
+from nlp import regex_patterns as RE
 
-import re
-
-RE_WIKIPEDIA_SPECIAL = re.compile(r'.*wikipedia[.]org/wiki/[^:]+[:].*')
-
-#from time import sleep
 
 class WikiSpider(CrawlSpider):
     """Crawls wikipedia starting at the seed page. 
@@ -64,7 +60,7 @@ class WikiSpider(CrawlSpider):
     def filter_links(self, links):
         filtered_list = []
         for link in links:
-            if not RE_WIKIPEDIA_SPECIAL.match(link.url):
+            if not RE.wikipedia_special.match(link.url):
                 filtered_list += [link]
         if self.verbosity > 1:
             print '-'*20 + ' LINKS ' + '-'*20

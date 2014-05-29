@@ -8,6 +8,7 @@ from collections import Counter
 
 from pug.nlp.strutil import get_words, clean_wiki_datetime
 from pug.nlp.util import listify
+from pug.nlp import regex_patterns as RE
 
 URL_TRADEMARK_INFO_PREFIX = r'https://tsdrapi.uspto.gov/ts/cd/casestatus/sn'
 URL_RE_TRADEMARK_INFO_PREFIX = r'https\:\/\/tsdrapi\.uspto\.gov\/ts\/cd\/casestatus\/sn'
@@ -64,7 +65,7 @@ class PatentBiblioSpider(CrawlSpider):
     def filter_links(self, links):
         filtered_list = []
         for link in links:
-            if not RE_WIKIPEDIA_SPECIAL.match(link.url):
+            if not RE.wikipedia_special.match(link.url):
                 filtered_list += [link]
         if self.verbosity > 1:
             print '-'*20 + ' LINKS ' + '-'*20

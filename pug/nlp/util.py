@@ -56,11 +56,8 @@ VECTOR_TYPES = (list, tuple)
 PYTHON_NUMBER_TYPES = (float, long, int)  # bool, complex, datetime.datetime,
 PUNC = unicode(string.punctuation)
 
-RE_WORD_SPLIT_IGNORE_EXTERNAL_APOSTROPHIES = re.compile('\W*\s\'{1,3}|\'{1,3}\W+|[^-\'_.a-zA-Z0-9]+|\W+\s+')
-RE_WORD_SPLIT_PERMISSIVE = re.compile('[^-\'_.a-zA-Z0-9]+|[^\'a-zA-Z0-9]\s\W*')
-RE_SENTENCE_SPLIT = re.compile('[.?!](\W+)|$')
-RE_MONTH_NAME = re.compile('(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[acbeihmlosruty]*', re.IGNORECASE)
-RE_NON_DIGIT_LIST = re.compile(r'[^\d,]+')
+import regex_patterns as RE
+
 
 # MONTHS = ['january', 'february', 'march', 'april', 'may', 'june', 'july', 'august', 'september', 'october', 'november', 'december']
 # MONTH_PREFIXES = [m[:3] for m in MONTHS]
@@ -610,7 +607,8 @@ def hist_from_float_values_list(values_list, fillers=(None,), normalize=False, c
 
     return aligned_histograms
 
-def update_dict(d, u, depth=-1, default_map=dict, default_set=set, prefer_update_type=False):
+
+def update_dict(d, u, depth=-1, default_mapping_type=dict, prefer_update_type=False, copy=False):
     """
     Recursively merge (union or update) dict-like objects (collections.Mapping) to the specified depth.
 
@@ -620,13 +618,27 @@ def update_dict(d, u, depth=-1, default_map=dict, default_set=set, prefer_update
     OrderedDict([('k1', OrderedDict([('k2', {'k3': 3})])), ('k4', 4)])
     >>> update_dict(OrderedDict([('k1', dict([('k2', 2)]))]), {'k1': {'k2': {'k3': 3}}, 'k4': 4})
     OrderedDict([('k1', {'k2': {'k3': 3}}), ('k4', 4)])
+    >>> orig = {'orig_key': 'orig_value'}
+    >>> updated = update_dict(orig, {'new_key': 'new_value'}, copy=True)
+    >>> updated == orig
+    False
+    >>> updated2 = update_dict(orig, {'new_key2': 'new_value2'})
+    >>> updated2 == orig
+    True
     """
-    arg_types = (type(d), type(u))
-    dictish = arg_types[int(prefer_update_type) % 2] if arg_types[int(prefer_update_type) % 2] is Mapping else default_map
-    #settish = types[int(prefer_update_type) % 2] if types[int(prefer_update_type) % 2] is (set, list, tuple) else default_set
+    orig_mapping_type = type(d)
+    # Note: calling type(u) twice vs. once wastes ~10 ms
+    if prefer_update_type and isinstance(type(u), Mapping):
+        dictish = type(u)
+    elif isinstance(orig_mapping_type, Mapping):
+        dictish = orig_mapping_type
+    else:
+        dictish = default_mapping_type
+    if copy:
+        d = dictish(d)
     for k, v in u.iteritems():
         if isinstance(v, Mapping) and not depth == 0:
-            r = update_dict(d.get(k, dictish()), v, depth=max(depth - 1, -1))
+            r = update_dict(d.get(k, dictish()), v, depth=max(depth - 1, -1), copy=copy)
             d[k] = r
         elif isinstance(d, Mapping):
             d[k] = u[k]
@@ -927,7 +939,7 @@ def make_float(s, default='', ignore_commas=True):
     r"""Coerce a string into a float
 
     >>> make_float('12,345')
-    12345
+    12345.0
     >>> make_float('12.345')
     12.345
     >>> make_float('1+2')
@@ -1039,34 +1051,42 @@ def normalize_scientific_notation(s, ignore_commas=True):
     return None
 
 
-def normalize_serial_number(sn, max_length=10, left_fill='0', right_fill='', blank='', valid_chars='0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ -', invalid_chars=None, join=False):
+def normalize_serial_number(sn, max_length=10, left_fill='0', right_fill='', blank='', valid_chars=' -0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ', invalid_chars=None, strip_whitespace=True, join=False, na=RE.nones):
     r"""Make a string compatible with typical serial number requirements
 
     >>> normalize_serial_number('1C 234567890             ', valid_chars='0123456789')
     '0234567890'
     >>> normalize_serial_number('1C 234567890             ')
-    '1C 0234567890'
+    '0234567890'
+    >>> normalize_serial_number('1C 234567890             ', max_length=20)
+    '000000001C 234567890'
+    >>> normalize_serial_number('1C 234567890             ', max_length=20, left_fill='')
+    '1C 234567890'
     >>> normalize_serial_number(' \t1C\t-\t234567890 \x00\x7f', max_length=14, left_fill='0', valid_chars='0123456789ABC', invalid_chars=None, join=True)
     '0001C234567890'
     >>> normalize_serial_number('Unknown', blank=False)
     '0000000000'
-    >>> normalize_serial_number('Unknown', blank=None)
-    >>> normalize_serial_number('N/A', blank='')
-    ''
+    >>> normalize_serial_number('Unknown', blank=None, left_fill='')
+    >>> normalize_serial_number('N/A', blank='', left_fill=None)
+    'NA'
     >>> normalize_serial_number('NO SERIAL', blank='----------')  # doctest: +NORMALIZE_WHITESPACE
-    '----------' 
+    '----------'
     """
     # strip internal and external whitespace and consider only last 10 characters
     if invalid_chars is None:
         invalid_chars = (c for c in ascii.all_ if c not in valid_chars)
     invalid_chars = ''.join(invalid_chars)
     sn = str(sn).strip(invalid_chars)
+    if strip_whitespace:
+        sn = sn.strip()
     if invalid_chars:
         if join:
             sn = sn.translate(None, invalid_chars)
         else:
             sn = multisplit(sn, invalid_chars)[-1]
     sn = sn[-max_length:]
+    if strip_whitespace:
+        sn = sn.strip()
     if not sn and not (blank is False):
         return blank
     if left_fill:
@@ -1083,6 +1103,8 @@ def multisplit(s, seps=list(string.punctuation) + list(string.whitespace), blank
     ['1', '2', '3', '', '', '4', '', '']
     >>> multisplit(r'1-2?3,;.4+-', string.punctuation, blank=False)
     ['1', '2', '3', '4']
+    >>> multisplit(r'1C 234567890', '\x00\x01\x02\x03\x04\x05\x06\x07\x08\t\n' + string.punctuation)
+    ['1C 234567890']
     """
     seps = ''.join(seps)
     return [s2 for s2 in s.translate(''.join([(chr(i) if chr(i) not in seps else seps[0]) for i in range(256)])).split(seps[0]) if (blank or s2)]
@@ -1169,14 +1191,14 @@ def clean_wiki_datetime(dt, squelch=True):
 
     # deal with the absence of :'s in wikipedia datetime strings
 
-    if RE_MONTH_NAME.match(dt[0]) or RE_MONTH_NAME.match(dt[1]):
+    if RE.month_name.match(dt[0]) or RE.month_name.match(dt[1]):
         if len(dt) >= 5:
             dt = dt[:-2] + [dt[-2].strip(':') + ':' + dt[-1].strip(':')]
             return clean_wiki_datetime(' '.join(dt))
         elif len(dt) == 4 and (len(dt[3]) == 4 or len(dt[0]) == 4):
             dt[:-1] + ['00']
             return clean_wiki_datetime(' '.join(dt))
-    elif RE_MONTH_NAME.match(dt[-2]) or RE_MONTH_NAME.match(dt[-3]):
+    elif RE.month_name.match(dt[-2]) or RE.month_name.match(dt[-3]):
         if len(dt) >= 5:
             dt = [dt[0].strip(':') + ':' + dt[1].strip(':')] + dt[2:]
             return clean_wiki_datetime(' '.join(dt))
@@ -1235,14 +1257,14 @@ strip_edge_punc.lower = False
 strip_edge_punc.punc = PUNC
 
 
-def get_sentences(s, regex=RE_SENTENCE_SPLIT):
+def get_sentences(s, regex=RE.sentence_sep):
     if isinstance(regex, basestring):
         regex = re.compile(regex)
     return [sent for sent in regex.split(s) if sent]
 
 
 # this regex assumes "s' " is the end of a possessive word and not the end of an inner quotation, e.g. He said, "She called me 'Hoss'!"
-def get_words(s, splitter_regex=RE_WORD_SPLIT_IGNORE_EXTERNAL_APOSTROPHIES, 
+def get_words(s, splitter_regex=RE.word_sep_except_external_appostrophe, 
               preprocessor=strip_HTML, postprocessor=strip_edge_punc, min_len=None, max_len=None, blacklist=None, whitelist=None, lower=False, filter_fun=None, str_type=str):
     r"""Segment words (tokens), returning a list of all tokens (but not the separators/punctuation)
 
@@ -1531,7 +1553,7 @@ abbreviate.words = {'account': 'acct', 'number': 'num', 'customer': 'cust', 'mem
 
 
 def normalize_year(y):
-    y = RE_NON_DIGIT_LIST.sub('', str(y))
+    y = RE.not_digit_list.sub('', str(y))
     try:
         y = int(y)
     except:

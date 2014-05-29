@@ -213,7 +213,6 @@ def lag(request, *args):
         f = GetLagForm(request.POST)
 
     elif request.method == 'GET':
-        model = request.GET.get('mn', "") or request.GET.get('model', "")
         mn = request.GET.get('mn', "") or request.GET.get('model', "") or request.GET.get('models', "") or request.GET.get('model_number', "") or request.GET.get('model_numbers', "")
         mn = [s.strip() for s in mn.split(',')] or ['']   
         sn = request.GET.get('sn', "") or request.GET.get('serial', "") or request.GET.get('serials', "") or request.GET.get('serial_number', "") or request.GET.get('serial_numbers', "")
@@ -247,7 +246,6 @@ def lag(request, *args):
         data = dict(initial)
         data['submit'] = 'Submit' 
 
-        initial = {'submit': 'Submit', 'model': model}
         f = GetLagForm(data=data, initial=initial)
 
     context['form'] = f
@@ -261,7 +259,6 @@ def hist(request, *args):
         # this can never happen since form only has a GET button
         context = {'form': GetLagForm(request.POST)}
     elif request.method == 'GET':
-        model = request.GET.get('mn', "") or request.GET.get('model', "")
         mn = request.GET.get('mn', "") or request.GET.get('model', "") or request.GET.get('models', "") or request.GET.get('model_number', "") or request.GET.get('model_numbers', "")
         mn = [s.strip() for s in mn.split(',')] or ['']   
         sn = request.GET.get('sn', "") or request.GET.get('serial', "") or request.GET.get('serials', "") or request.GET.get('serial_number', "") or request.GET.get('serial_numbers', "")
@@ -293,10 +290,9 @@ def hist(request, *args):
                    'lag_min': lag_min,
                    'lag_max': lag_max}
         data = dict(initial)
-        data['submit'] = 'Submit' 
+        data['submit'] = 'Submit'
 
-        context = {'form': GetLagForm(data={'submit': 'Submit', 'model': model},
-                                      initial={'model': model})}
+        context = {'form': GetLagForm(data=data, initial=initial)}
     #context['form'].helper.form_action = '/miner/hist/'
 
     context['form_is_valid'] = context['form'].is_valid()
