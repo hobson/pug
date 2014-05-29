@@ -16,8 +16,6 @@ import os
 from django.shortcuts import render
 from forms import GetLagForm
 
-# from forms import GetLagForm
-
 from pug.nlp import parse
 #from pug.nlp.util import normalize_scientific_notation
 #from pug.nlp.character_subset import digits
@@ -151,6 +149,7 @@ def submit_lag_form(request, f, context, *args):
     # print params
     lags = SLAmodels.explore_lags(fiscal_years=fiscal_years, model_numbers=model_numbers, reasons=reasons, account_numbers=account_numbers, verbosity=1)
     hist = lags[hist_formats.index(hist_format)+1]
+    #refurbs = lags[-1]
 
     #print hist_formats.index(hist_format)
     #print [max([y[1] for y in x]) for x in lags[1:]]

@@ -1,8 +1,8 @@
-{% extends 'base.html' %}
+{% extends 'miner/base.html' %}
 {% load nvd3_tags %}
 {% load crispy_forms_tags %}
 
-{% block extra_head %}            
+{% block extra_head %}
     {% include_chart_jscss %}
     {% load_chart data.charttype data.chartdata data.chartcontainer data.extra %}
 {% endblock %}

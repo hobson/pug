@@ -1,11 +1,12 @@
-{% extends 'base.html' %}
+{% extends 'miner/base.html' %}
 {% load i18n %}
 {% load staticfiles %}
+{% load static %}
 {% load crispy_forms_tags %}
 
 {% block extra_head %}
-    <script src="http://d3js.org/d3.v3.min.js" charset="utf-8"></script>
-    <script src="http://labratrevenge.com/d3-tip/javascripts/d3.tip.v0.6.3.js"></script>
+    <script src="{% static "d3/d3.min.js" %}"></script>
+    <script src="{% static "d3-tip/index.js" %}"></script>
     <link rel="stylesheet" href="{% static "miner/css/hist.css" %}">
 {% endblock %}
 
@@ -16,92 +17,6 @@
     <div class="row">
       <div id="graph" class="aGraph"></div>
     </div> 
-
-<style>
-body {
-  width: 960px;
-  margin: auto;
-  position: relative;
-}
-
-svg {
-  font: 11px "Helvetica Neue", Helvetica, Arial, sans-serif;
-}
-
-.axis path,
-.axis line {
-  fill: none;
-  stroke: #000;
-  shape-rendering: crispEdges;
-}
-
-.axis--y path {
-  display: none;
-}
-
-.cities {
-  fill: none;
-  stroke: #aaa;
-  stroke-linejoin: round;
-  stroke-linecap: round;
-  stroke-width: 1.5px;
-}
-
-.series-hover {
-  stroke: #000;
-}
-
-.focus text {
-  text-anchor: middle;
-  text-shadow: 0 1px 0 #fff, 1px 0 0 #fff, 0 -1px 0 #fff, -1px 0 0 #fff;
-}
-
-.voronoi path {
-  fill: none;
-  pointer-events: all;
-}
-
-.voronoi--show path {
-  stroke: red;
-  stroke-opacity: .2;
-}
-
-#form {
-  position: absolute;
-  top: 20px;
-  right: 30px;
-}
-
-.d3-tip {
-  line-height: 1;
-  font-weight: bold;
-  padding: 12px;
-  background: rgba(0, 0, 0, 0.8);
-  color: #fff;
-  border-radius: 2px;
-}
-
-/* Creates a small triangle extender for the tooltip */
-.d3-tip:after {
-  box-sizing: border-box;
-  display: inline;
-  font-size: 10px;
-  width: 100%;
-  line-height: 1;
-  color: rgba(0, 0, 0, 0.8);
-  content: "\25BC";
-  position: absolute;
-  text-align: center;
-}
-
-/* Style northward tooltips differently */
-.d3-tip.n:after {
-  margin: -1px 0 0 0;
-  top: 100%;
-  left: 0;
-}
-
-</style>
 
 <script>
 var margin = {top: 20, right: 80, bottom: 30, left: 50},
@@ -219,7 +134,6 @@ svg.append("g")
 var series = svg.selectAll(".series")
     .data(all_series)
   .enter().append("g")
-    .attr("class", "cities")
     .attr("class", "series");
 
 series.append("path")
@@ -237,7 +151,7 @@ series.append("text")
 
 // tooltips
 var focus = svg.append("g")
-    .attr("transform", "translate(-1000,-1000)")
+    //.attr("transform", "translate(-1000,-1000)")
     .attr("class", "focus");
 
 focus.append("circle")
@@ -245,14 +159,6 @@ focus.append("circle")
 
 focus.append("text")
     .attr("y", -10);
-
-focus.append("foreignObject")
-    .attr("width", 100)
-    .attr("height", 60)
-    //.attr("y", -10)
-    //.style("font", "14px 'Helvetica Neue'")
-      .html("<h1>before</h1>");
-
 
 var voronoiGroup = svg.append("g")
     .attr("class", "voronoi");
@@ -267,38 +173,50 @@ voronoiGroup.selectAll("path")
     .attr("d", function(d) { return "M" + d.join("L") + "Z"; })
     .datum(function(d) { return d.point; })
     .on("mouseover", mouseover)
+    .on("click", mouseclick)
     .on("mouseout", mouseout);
 
 
 var tip = d3.tip()
   .attr('class', 'd3-tip')
+  //.attr("y", -10)
   .offset([-10, 0])
   .html(function(d) {
-    "<strong>" + d.series.name + "</strong><br>(" + d.x + "," + d.y + ")<br>";
-  })
+    if (d) {
+      return "<br>(" + d.x + ", " + d.y + ")<br>";
+    }
+  }
+  )
 
-svg.call(tip);
+// svg.call(tip);
+// tip.show();
 
 function mouseover(d) {
-  d3.select(d.series.line).classed("series-hover", true);
+  // displays tip at center of voronoi region instead of near point
+  // tip.show(d);
+
+  // doesn't work
   d.series.line.parentNode.appendChild(d.series.line);
+  d3.select(d.series.line).classed("series-hover", true);
+
+  // tip.attr("transform", "translate(" + x(d.x) + "," + y(d.y) + ")");
   focus.attr("transform", "translate(" + x(d.x) + "," + y(d.y) + ")");
   tt = d.series.name + ": " + d.x + ", " + d.y;
   focus.select("text").text(tt);
-  focus.select("ForeignObject")
-    .attr("width", 100)
-    .attr("height", 60)
-    //.attr("y", -10)
-    //.style("font", "14px 'Helvetica Neue'")
-      .html("<h1>after</h1>");
-  // tip.show(d);
+
+}
+
+function mouseclick(d) {
+  console.log(d)
+  var url = document.URL + "&lag=" + d.x + "&series=" + d.series.name
+  window.location = url.replace("/hist/", "/cases/")
 }
 
 function mouseout(d) {
-  console.log(d)
-  d3.select(d.series.line).classed("series-hover", false);
-  //focus.attr("transform", "translate(-1000,-1000)");
   // tip.hide(d);
+  //console.log(d)
+  d3.select(d.series.line).classed("series-hover", false);
+  focus.select("text").text("");
 }
 
 
