@@ -28,12 +28,12 @@ class GetLagForm(forms.Form):
         help_text='comma-separated list of customer account numbers',
         )
 
-    lag_min = forms.IntegerField(max_value=365*10, min_value=-60, required=False,
+    min_lag = forms.IntegerField(max_value=365*10, min_value=-60, required=False,
         label='Minimum Lag (days)',
         initial=0,
         help_text='Minimum number of lag from sale to return in days to display')
 
-    lag_max = forms.IntegerField(max_value=365*10, min_value=-60, required=False,
+    max_lag = forms.IntegerField(max_value=365*10, min_value=-60, required=False,
         label='Maximum Lag (days)',
         initial=365*3,
         help_text='Maximum number of lag from sale to return in days to display')
@@ -104,13 +104,13 @@ class GetCasesForm(forms.Form):
         help_text="comma-separated list of fiscal years to compare",
         )
 
-    lag_min = forms.IntegerField(max_value=365*3, min_value=-60, required=False,
+    min_lag = forms.IntegerField(max_value=365*3, min_value=-60, required=False,
         label='Minimum Lag (days)',
         initial=0,
         help_text='Minimum number of lag from sale to return in days to display',
         )
 
-    lag_max = forms.IntegerField(max_value=365*3, min_value=-60, required=False,
+    max_lag = forms.IntegerField(max_value=365*3, min_value=-60, required=False,
         label='Maximum Lag (days)',
         initial=0,
         help_text='Maximum number of lag from sale to return in days to display')

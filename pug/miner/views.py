@@ -177,15 +177,15 @@ def context_from_request(request, context=None, Form=GetLagForm):
         fiscal_years = [filter_values[3].strip('*')]
 
     lag_days = int(request.GET.get('lag', None) or 365)
-    lag_max = int(request.GET.get('lag_max', None) or lag_days)
-    lag_min = int(request.GET.get('lag_min', None) or (lag_days - 1))
+    max_lag = int(request.GET.get('max_lag', None) or lag_days)
+    min_lag = int(request.GET.get('min_lag', None) or (lag_days - 1))
     initial = {'model': ', '.join(mn), 
                'serial': ', '.join(sn),
                'reason': ', '.join(r),
                'account': ', '.join(a),
                'fiscal_years': ', '.join(fiscal_years),
-               'lag_min': lag_min,
-               'lag_max': lag_max}
+               'min_lag': min_lag,
+               'max_lag': max_lag}
 
     # this can never happen since Form only has a GET button
     if request.method == 'POST':
