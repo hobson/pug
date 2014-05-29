@@ -14,6 +14,20 @@ class GetLagForm(forms.Form):
         initial='LC',
         help_text='comma-separated list of model numbers')
 
+    reason = forms.CharField(required=False,
+        max_length=128,
+        label='Return Reason Codes (r-codes)',
+        initial='R',
+        help_text='comma-separated list of reason codes or reason-code prefixes',
+        )
+
+    account= forms.CharField(required=False,
+        max_length=256,
+        label='Customer Account Numbers',
+        initial='',
+        help_text='comma-separated list of customer account numbers',
+        )
+
     lag_min = forms.IntegerField(max_value=365*10, min_value=-60, required=False,
         label='Minimum Lag (days)',
         initial=0,

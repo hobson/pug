@@ -60,6 +60,7 @@ RE_WORD_SPLIT_IGNORE_EXTERNAL_APOSTROPHIES = re.compile('\W*\s\'{1,3}|\'{1,3}\W+
 RE_WORD_SPLIT_PERMISSIVE = re.compile('[^-\'_.a-zA-Z0-9]+|[^\'a-zA-Z0-9]\s\W*')
 RE_SENTENCE_SPLIT = re.compile('[.?!](\W+)|$')
 RE_MONTH_NAME = re.compile('(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[acbeihmlosruty]*', re.IGNORECASE)
+RE_NON_DIGIT_LIST = re.compile(r'[^\d,]+')
 
 # MONTHS = ['january', 'february', 'march', 'april', 'may', 'june', 'july', 'august', 'september', 'october', 'november', 'december']
 # MONTH_PREFIXES = [m[:3] for m in MONTHS]
@@ -1528,3 +1529,15 @@ def abbreviate(word):
     return abbreviate.words.get(word, word)
 abbreviate.words = {'account': 'acct', 'number': 'num', 'customer': 'cust', 'member': 'membr' }
 
+
+def normalize_year(y):
+    y = RE_NON_DIGIT_LIST.sub('', str(y))
+    try:
+        y = int(y)
+    except:
+        y = None
+    if 0 <= y < 70:
+        y += 2000
+    elif 70 <= y < 100:
+        y += 1900
+    return y

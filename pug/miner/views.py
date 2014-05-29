@@ -214,8 +214,41 @@ def lag(request, *args):
 
     elif request.method == 'GET':
         model = request.GET.get('mn', "") or request.GET.get('model', "")
+        mn = request.GET.get('mn', "") or request.GET.get('model', "") or request.GET.get('models', "") or request.GET.get('model_number', "") or request.GET.get('model_numbers', "")
+        mn = [s.strip() for s in mn.split(',')] or ['']   
+        sn = request.GET.get('sn', "") or request.GET.get('serial', "") or request.GET.get('serials', "") or request.GET.get('serial_number', "") or request.GET.get('serial_numbers', "")
+        sn = [s.strip() for s in sn.split(',')] or ['']   
+        fy = request.GET.get('fy', "") or request.GET.get('yr', "") or request.GET.get('year', "") or request.GET.get('years', "") or request.GET.get('fiscal_year', "") or request.GET.get('fiscal_years', "")
+        fiscal_years = [util.normalize_year(y) for y in fy.split(',')] or []
+        fiscal_years = [str(y) for y in fiscal_years if y]
+        r = request.GET.get('r', "") or request.GET.get('rc', "") or request.GET.get('rcode', "") or request.GET.get('reason', "") or request.GET.get('reasons', "")
+        r = [s.strip() for s in r.split(',')] or ['']   
+        a = request.GET.get('a', "") or request.GET.get('an', "") or request.GET.get('account', "") or request.GET.get('account_number', "") or request.GET.get('account_numbers', "")
+        a = [s.strip() for s in a.split(',')] or ['']   
+
+        series_name = request.GET.get('s', "") or request.GET.get('n', "") or request.GET.get('series', "") or request.GET.get('name', "")
+        filter_values = series_name.split(' ')
+        if filter_values and len(filter_values)==4:
+            mn = [filter_values[0].strip('*')]
+            r = [filter_values[1].strip('*')]
+            a = [filter_values[2].strip('*')]
+            fiscal_years = [filter_values[3].strip('*')]
+
+        lag_days = int(request.GET.get('lag', None) or 365)
+        lag_max = int(request.GET.get('lag_max', None) or lag_days)
+        lag_min = int(request.GET.get('lag_min', None) or (lag_days - 1))
+        initial = {'model': ', '.join(mn), 
+                   'serial': ', '.join(sn),
+                   'reason': ', '.join(r),
+                   'account': ', '.join(a),
+                   'fiscal_years': ', '.join(fiscal_years),
+                   'lag_min': lag_min,
+                   'lag_max': lag_max}
+        data = dict(initial)
+        data['submit'] = 'Submit' 
+
         initial = {'submit': 'Submit', 'model': model}
-        f = GetLagForm(data=initial)  #, initial=initial)
+        f = GetLagForm(data=data, initial=initial)
 
     context['form'] = f
     context['form_is_valid'] = f.is_valid()
@@ -229,6 +262,39 @@ def hist(request, *args):
         context = {'form': GetLagForm(request.POST)}
     elif request.method == 'GET':
         model = request.GET.get('mn', "") or request.GET.get('model', "")
+        mn = request.GET.get('mn', "") or request.GET.get('model', "") or request.GET.get('models', "") or request.GET.get('model_number', "") or request.GET.get('model_numbers', "")
+        mn = [s.strip() for s in mn.split(',')] or ['']   
+        sn = request.GET.get('sn', "") or request.GET.get('serial', "") or request.GET.get('serials', "") or request.GET.get('serial_number', "") or request.GET.get('serial_numbers', "")
+        sn = [s.strip() for s in sn.split(',')] or ['']   
+        fy = request.GET.get('fy', "") or request.GET.get('yr', "") or request.GET.get('year', "") or request.GET.get('years', "") or request.GET.get('fiscal_year', "") or request.GET.get('fiscal_years', "")
+        fiscal_years = [util.normalize_year(y) for y in fy.split(',')] or []
+        fiscal_years = [str(y) for y in fiscal_years if y]
+        r = request.GET.get('r', "") or request.GET.get('rc', "") or request.GET.get('rcode', "") or request.GET.get('reason', "") or request.GET.get('reasons', "")
+        r = [s.strip() for s in r.split(',')] or ['']   
+        a = request.GET.get('a', "") or request.GET.get('an', "") or request.GET.get('account', "") or request.GET.get('account_number', "") or request.GET.get('account_numbers', "")
+        a = [s.strip() for s in a.split(',')] or ['']   
+
+        series_name = request.GET.get('s', "") or request.GET.get('n', "") or request.GET.get('series', "") or request.GET.get('name', "")
+        filter_values = series_name.split(' ')
+        if filter_values and len(filter_values)==4:
+            mn = [filter_values[0].strip('*')]
+            r = [filter_values[1].strip('*')]
+            a = [filter_values[2].strip('*')]
+            fiscal_years = [filter_values[3].strip('*')]
+
+        lag_days = int(request.GET.get('lag', None) or 365)
+        lag_max = int(request.GET.get('lag_max', None) or lag_days)
+        lag_min = int(request.GET.get('lag_min', None) or (lag_days - 1))
+        initial = {'model': ', '.join(mn), 
+                   'serial': ', '.join(sn),
+                   'reason': ', '.join(r),
+                   'account': ', '.join(a),
+                   'fiscal_years': ', '.join(fiscal_years),
+                   'lag_min': lag_min,
+                   'lag_max': lag_max}
+        data = dict(initial)
+        data['submit'] = 'Submit' 
+
         context = {'form': GetLagForm(data={'submit': 'Submit', 'model': model},
                                       initial={'model': model})}
     #context['form'].helper.form_action = '/miner/hist/'
