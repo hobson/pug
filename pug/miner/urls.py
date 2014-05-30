@@ -5,13 +5,17 @@ from django.conf.urls import patterns, url  #, include
 #from views import JSONView
 import views
 
+from pug.nlp.util import HIST_NAME
+
+hist_name_re = '|'.join([name for name in HIST_NAME])
+
 urlpatterns = patterns('',
     #url(r'^$', home, name='home'),
     #url(r'^(?:chart/)?(?:[Cc]onnect(?:ion)?s?|[Gg]raph)/(?P<edges>[^/]*)', views.connections, name='connections'),
     url(r'^$', views.home, name='home'),
     url(r'^explorer?/', views.explorer, name='explorer'),
-    url(r'^lag[-]?(cmf|pmf|cdf|hist)?/', views.lag, name='lag'),
-    url(r'^hist[-]?(cmf|pmf|cdf|hist)?/', views.hist, name='hist'),
+    url(r'^lag[-]?('+ hist_name_re +r')?/', views.lag, name='lag'),
+    url(r'^hist[-]?('+ hist_name_re +r')?/', views.hist, name='hist'),
     #url(r'^static/(?P<path>.*)$', django.views.static.serve, { 'document_root': settings.STATIC_ROOT} ),
     #url(r'^media/(?P<path>.*)$', django.views.static.serve, { 'document_root': settings.MEDIA_ROOT} ),
     #url(r'^static/(?P<page>.*)\.json$', JSONView.as_view()),

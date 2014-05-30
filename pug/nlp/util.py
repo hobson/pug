@@ -59,20 +59,20 @@ PUNC = unicode(string.punctuation)
 # 4 types of "histograms" and their canonical name/label
 HIST_NAME = {
                 'hist': 'hist', 'ff':  'hist',  'fd': 'hist',
-                'pmf':  'pmf',  'pdf': 'pmf',
+                'pmf':  'pmf',  'pdf': 'pmf',   'pd': 'pmf',
                 'cmf':  'cmf',  'cdf': 'cmf',
                 'cfd':  'cfd',  'cff': 'cfd',   'cdf': 'cfd',
             }
 HIST_CONFIG = {
     'hist': { 
-        'name': 'Histogram',
+        'name': 'Histogram',  # frequency distribution, frequency function
         'kwargs': { 'normalize': False, 'cumulative': False, },
         'index': 0,
         'ylabel': 'Count',
         'xlabel': 'Bin',
         },
     'pmf': {
-        'name': 'Probability Mass Function',
+        'name': 'Probability Mass Function',   # probability distribution [function]
         'kwargs': { 'normalize': True, 'cumulative': False, },
         'index': 1,
         'xlabel': 'Bin',
@@ -81,14 +81,14 @@ HIST_CONFIG = {
     'cmf': {
         'name': 'Cumulative Probability',
         'kwargs': { 'normalize': True, 'cumulative': True, },
-        'index': 1,
+        'index': 2,
         'xlabel': 'Bin',
         'ylabel': 'Cumulative Probability',
         },
     'cfd': {
         'name': 'Cumulative Frequency Distribution',
         'kwargs': { 'normalize': False, 'cumulative': True, },
-        'index': 1,
+        'index': 3,
         'xlabel': 'Bin',
         'ylabel': 'Cumulative Count',
         },
