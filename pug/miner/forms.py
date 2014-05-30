@@ -64,15 +64,16 @@ class GetLagForm(forms.Form):
         )
 
     def __init__(self, *args, **kwargs):
-        print 'initial: %r' % kwargs.get('initial')
         self.helper = FormHelper()
         self.helper.form_id = 'id-GetLagForm'
         self.helper.help_text_inline = True
         # self.helper.form_class = 'blueForms'
         self.helper.form_method = 'GET'
-        self.helper.form_action = ''
+        self.helper.form_action = ''  # url that is triggered, carrying a GET or POST payload
 
-        self.helper.add_input(Submit('submit', 'Submit'))
+        self.helper.add_input(Submit('quick', 'Quick Table'))
+        self.helper.add_input(Submit('detail', 'Detailed Table'))
+        self.helper.add_input(Submit('plot', 'Plot'))
         super(GetLagForm, self).__init__(*args, **kwargs)
 
 

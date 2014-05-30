@@ -192,7 +192,7 @@ def context_from_request(request, context=None, Form=GetLagForm, delim=','):
     if request.method == 'POST':
         context['form'] = Form(request.POST)
     elif request.method == 'GET':
-        context['form'] = Form(data=util.update_dict(initial, {'submit': 'Submit'}, copy=True), initial=initial)
+        context['form'] = Form(data=initial, initial=initial)
 
     context['form_is_valid'] = context['form'].is_valid()
 

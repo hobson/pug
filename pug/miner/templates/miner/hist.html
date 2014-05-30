@@ -211,9 +211,9 @@ function mouseclick(d) {
   var url = document.URL + "&lag=" + d.x + "&series=" + d.series.name;
   var hist_formats = ["", "-pmf", "-cmf", "-cfd"];
   hist_formats.forEach(function(hf) { 
-    url = url.replace("/hist"+hf+"/", "/cases/")
+    url = url.replace("/hist"+hf+"/", "/cases/");
   });
-  window.location = url
+  window.location = url;
 }
 
 function mouseout(d) {
