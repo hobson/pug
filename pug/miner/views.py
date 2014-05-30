@@ -220,6 +220,7 @@ def lag(request, *args):
     # print 'lag with form'
     context = context_from_request(request)
     context = context_from_args(context=context, args=args)
+    print context
 
     lags = SLAmodels.explore_lags(**context['filter'])
     hist = lags[context['hist_format']]
@@ -253,10 +254,10 @@ def lag(request, *args):
     subtitle = []
 
     params = {
-        'FY': context['fiscal_years'],
-        'Reason': context['reasons'],
-        'Account #': context['account_numbers'],
-        'Model #': context['model_numbers'],
+        'FY': context['filter']['fiscal_years'],
+        'Reason': context['filter']['reasons'],
+        'Account #': context['filter']['account_numbers'],
+        'Model #': context['filter']['model_numbers'],
         }
 
     for k, v in params.iteritems():

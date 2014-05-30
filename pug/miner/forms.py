@@ -9,41 +9,41 @@ from crispy_forms.layout import Submit #, Layout, Field, Div, HTML, Button, Row
 
 class GetLagForm(forms.Form):
 
-    model = forms.CharField(max_length=512, required=False,
+    mn = forms.CharField(max_length=512, required=False,
         label='Model Numbers',
         initial='',
-        help_text='Comma-separated list of model numbers')
+        help_text='Comma-separated model numbers')
 
-    serial = forms.CharField(required=False,
+    sn = forms.CharField(required=False,
         max_length=2048,
         label='Serial Numbers',
         initial='',
-        help_text='Comma-separated list of serial numbers (one for each Model Number, or blank)',
+        help_text='Comma-separated serial numbers',
         )
 
-    reason = forms.CharField(required=False,
+    r = forms.CharField(required=False,
         max_length=128,
-        label='Return Reason Codes (r-codes)',
+        label='Return Reason Codes',
         initial='',
-        help_text='Comma-separated list of reason codes or reason-code prefixes',
+        help_text='Comma-separated reason codes',
         )
 
-    account= forms.CharField(required=False,
+    an= forms.CharField(required=False,
         max_length=256,
         label='Customer Account Numbers',
         initial='',
-        help_text='Comma-separated list of customer account numbers',
+        help_text="Comma-separated customer account #'s",
         )
 
     min_lag = forms.IntegerField(max_value=365*10, min_value=-60, required=False,
-        label='Minimum Lag (days)',
+        label='Minimum Lag',
         initial=0,
-        help_text='Minimum number of lag from sale to return in days')
+        help_text='Min days between sale & return')
 
     max_lag = forms.IntegerField(max_value=365*10, min_value=-60, required=False,
-        label='Maximum Lag (days)',
+        label='Maximum Lag',
         initial=365*3,
-        help_text='Maximum number of lag from sale to return in days')
+        help_text='Max days between sale & return')
 
     min_date = forms.DateField(
         required=False,
@@ -57,7 +57,7 @@ class GetLagForm(forms.Form):
         initial=datetime.date.today,
         help_text='Maximum return received date')
 
-    fiscal_years = forms.CharField(max_length=256, required=False,
+    fy = forms.CharField(max_length=256, required=False,
         label='Fiscal Years',
         initial='13', 
         help_text="Comma-separated list of fiscal years",
@@ -65,15 +65,17 @@ class GetLagForm(forms.Form):
 
     def __init__(self, *args, **kwargs):
         self.helper = FormHelper()
+        self.helper.form_class = 'form-horizontal'  # 'form-inline', 'blueForms'
         self.helper.form_id = 'id-GetLagForm'
         self.helper.help_text_inline = True
-        # self.helper.form_class = 'blueForms'
+
         self.helper.form_method = 'GET'
         self.helper.form_action = ''  # url that is triggered, carrying a GET or POST payload
 
         self.helper.add_input(Submit('quick', 'Quick Table'))
         self.helper.add_input(Submit('detail', 'Detailed Table'))
-        self.helper.add_input(Submit('plot', 'Plot'))
+        self.helper.add_input(Submit('zoom_plot', 'Zoomable Plot'))
+        self.helper.add_input(Submit('plot', 'Linked Plot'))
         super(GetLagForm, self).__init__(*args, **kwargs)
 
 
@@ -82,7 +84,7 @@ class GetCaseForm(forms.ModelForm):
     def __init__(self, *args, **kwargs):
         self.helper = FormHelper()
         self.helper.form_id = 'id-GetCaseForm'
-        self.helper.help_text_inline = True
+        self.helper.help_text_inline = False
         # self.helper.form_class = 'blueForms'
         self.helper.form_method = 'POST'
         self.helper.form_action = '/timeline/'
