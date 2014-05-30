@@ -47,7 +47,7 @@ def inspect_dbs(output_dir='.', db_names=None, db_aliases=None, alias_prefix='SE
 inspect_dbs.seds = [
     {
         'regex': re.compile(r'^from django[.]\w+\simport\smodels(\s*[#].*)?$'),
-        'after': '\nfrom pug.miner import decorators\n',
+        'after': '\nfrom pug import decorators\n',
     },
     {
         'regex': re.compile(r'^class\s+\w+\(models[.]Model\):(\s*[#].*)?$'),

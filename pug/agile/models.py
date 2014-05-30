@@ -4,7 +4,7 @@ from django.db import models
 from django.utils.translation import ugettext_lazy as _  # get_language_info, 
 from django.contrib.auth.models import User, Group, Permission
 
-from pug.miner import decorators as decorate
+from pug import decorators as decorate
 from pug.nlp import db
 
 

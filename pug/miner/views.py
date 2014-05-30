@@ -133,7 +133,7 @@ def context_from_request(request, context=None, Form=GetLagForm, delim=','):
 
     context['filter'] = {}
 
-    limit = request.GET.get('limit', "") or request.GET.get('num', "") or request.GET.get('num_rows', "") or request.GET.get('rows', "") or request.GET.get('records', "") or request.GET.get('count', "")
+    limit = request.GET.get('limit', 0) or request.GET.get('num', 0) or request.GET.get('num_rows', 0) or request.GET.get('rows', 0) or request.GET.get('records', 0) or request.GET.get('count', 0)
     context['limit'] = util.make_int(limit)
 
     mn = request.GET.get('mn', "") or request.GET.get('model', "") or request.GET.get('models', "") or request.GET.get('model_number', "") or request.GET.get('model_numbers', "")
