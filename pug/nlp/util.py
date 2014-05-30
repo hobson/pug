@@ -61,7 +61,7 @@ HIST_NAME = {
                 'hist': 'hist', 'ff': 'hist', 'fd': 'hist',
                 'pmf': 'pmf', 'pdf': 'pmf',
                 'cmf': 'cmf', 'cdf': 'cmf',
-                'cfd': 'cfd', 'cff': 'cfd'
+                'cfd': 'cfd', 'cff': 'cfd',
             }
 HIST_CONFIG = {
     'hist': { 
