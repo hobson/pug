@@ -29,33 +29,7 @@ from pug.nlp import db
 #   pmf = pdf = Probability Mass/Distribution Function (or PDF, probability distribution/density function)
 #   cmf = cdf = Cumulative Distribution/Mass Function (cumulative probability)
 #   cfd = cff = Cumulative Frequency Distribution/Function (cumulative counts)
-HIST_FORMATS = {
-                'hist': 'hist', 'ff': 'hist', 'fd': 'hist',
-                'pmf': 'pmf', 'pdf': 'pmf',
-                'cmf': 'cmf', 'cdf': 'cmf',
-                'cfd': 'cfd', 'cff': 'cfd'
-               }
 
-HIST_INDEX = {
-                'hist': 0,
-                'pmf': 1,
-                'cmf': 2,
-                'cfd': 3,
-             }
-
-HIST_YLABEL = {
-                'hist': 'count',
-                'pmf': 'probability',
-                'cmf': 'cumulative probability',
-                'cfd': 'cumulative count',
-               }
-
-HIST_YLABEL = {
-                'hist': 'Lag (days)',
-                'pmf': 'Lag (days)',
-                'cmf': 'Lag (days)',
-                'cfd': 'Lag (days)',
-               }
 
 #from Returns import tv_lags
 
@@ -226,9 +200,9 @@ def context_from_args(args=None, context=None):
     if context is None:
         context = Context()
 
-    context['hist_format'] = HIST_FORMATS['cfd']
+    context['hist_format'] = util.HIST_FORMATS['cfd']
     if args and len(str(args[0])):
-        context['hist_format'] = HIST_FORMATS.get(str(args[0]).lower().strip(), context['hist_format'])
+        context['hist_format'] = util.HIST_FORMATS.get(str(args[0]).lower().strip(), context['hist_format'])
 
     return context
 
@@ -244,7 +218,7 @@ def lag(request, *args):
     context = context_from_args(context=context, args=args)
 
     lags = SLAmodels.explore_lags(**context['filter'])
-    hist = lags[HIST_INDEX[context['hist_format']] + 1 ]
+    hist = lags[util.HIST_INDEX[context['hist_format']] + 1 ]
 
     hist_t=[[],[],[],[]]
     names, xdata, ydata = [], [], []
@@ -311,12 +285,12 @@ def hist(request, *args):
 
     # print params
     lags = SLAmodels.explore_lags(**context['filter'])
-    hist = lags[HIST_INDEX[context['hist_format']] + 1 ]
+    hist = lags[util.HIST_INDEX[context['hist_format']] + 1 ]
 
     context.update({'data': {
         'title': 'Returns Lag <font color="gray">' + context['hist_format'].upper() + '</font>',
         'xlabel': 'Lag (days)',
-        'ylabel': HIST_YLABEL,
+        'ylabel': util.HIST_YLABEL[context['hist_format']],
         'd3data': json.dumps(util.transposed_lists(hist)),
         'form': {},
         }})

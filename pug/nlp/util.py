@@ -56,8 +56,45 @@ VECTOR_TYPES = (list, tuple)
 PYTHON_NUMBER_TYPES = (float, long, int)  # bool, complex, datetime.datetime,
 PUNC = unicode(string.punctuation)
 
-import regex_patterns as RE
+# 4 types of "histograms" and their canonical name/label
+HIST_NAME = {
+                'hist': 'hist', 'ff': 'hist', 'fd': 'hist',
+                'pmf': 'pmf', 'pdf': 'pmf',
+                'cmf': 'cmf', 'cdf': 'cmf',
+                'cfd': 'cfd', 'cff': 'cfd'
+            }
+HIST_CONFIG = {
+    'hist': { 
+        'name': 'Histogram',
+        'kwargs': { 'normalize': False, 'cumulative': False, },
+        'index': 0,
+        'ylabel': 'Count',
+        'xlabel': 'Bin',
+        },
+    'pmf': {
+        'name': 'Probability Mass Function',
+        'kwargs': { 'normalize': True, 'cumulative': False, },
+        'index': 1,
+        'xlabel': 'Bin',
+        'ylabel': 'Probability',
+        },
+    'cmf': {
+        'name': 'Cumulative Probability',
+        'kwargs': { 'normalize': True, 'cumulative': True, },
+        'index': 1,
+        'xlabel': 'Bin',
+        'ylabel': 'Cumulative Probability',
+        },
+    'cdf': {
+        'name': 'Cumulative Distribution Function',
+        'kwargs': { 'normalize': False, 'cumulative': True, },
+        'index': 1,
+        'xlabel': 'Bin',
+        'ylabel': 'Cumulative Count',
+        },
+    }
 
+import regex_patterns as RE
 
 # MONTHS = ['january', 'february', 'march', 'april', 'may', 'june', 'july', 'august', 'september', 'october', 'november', 'december']
 # MONTH_PREFIXES = [m[:3] for m in MONTHS]
