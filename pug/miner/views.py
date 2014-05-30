@@ -218,8 +218,9 @@ def lag(request, *args):
     context = context_from_args(context=context, args=args)
 
     lags = SLAmodels.explore_lags(**context['filter'])
-    hist = lags[util.HIST_INDEX[context['hist_format']] + 1 ]
+    hist = lags[context['hist_format']]
 
+    # FIXME: use util.transposed_lists and make this look more like the hist() view below
     hist_t=[[],[],[],[]]
     names, xdata, ydata = [], [], []
     if hist and len(hist) > 1:
@@ -279,13 +280,13 @@ def lag(request, *args):
 
 
 def hist(request, *args):
-    '''Multi-column table of lag vs. counts (histogram).'''
+    '''Multi-column table of lag vs. counts (histogram) displayed as a line plot.'''
     context = context_from_request(context=None, request=request)
     context = context_from_args(context=context, args=args)
 
     # print params
     lags = SLAmodels.explore_lags(**context['filter'])
-    hist = lags[util.HIST_INDEX[context['hist_format']] + 1 ]
+    hist = lags[context['hist_format']]
 
     context.update({'data': {
         'title': 'Returns Lag <font color="gray">' + context['hist_format'].upper() + '</font>',
