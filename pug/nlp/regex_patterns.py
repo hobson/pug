@@ -30,7 +30,9 @@ not_digit_list = re.compile(r'[^\d,]+')
 # A permissive filter of javascript variable/function names
 #  Allows unicode and leading undercores and $ 
 #  From http://stackoverflow.com/a/2008444/623735
-js_name = re.compile(r'^[_$a-zA-Z\xA0-\uFFFF][_$a-zA-Z0-9\xA0-\uFFFF]*$')
+js_name = re.compile(ur'^[_$a-zA-Z\xA0-\uFFFF][_$a-zA-Z0-9\xA0-\uFFFF]*$')
 
 # avoids special wikipedia URLs like ambiguity resolution pages
 wikipedia_special = re.compile(r'.*wikipedia[.]org/wiki/[^:]+[:].*')
+
+nones = re.compile(r'^Unk[n]?own|unk[n]?own|UNK|Unk|UNK[N]?OWN|[.]+|[-]+|[=]+|[_]+|[*]+|[?]+|N[/]A|n[/]a|None|none|NONE|Null|null|NULL|NaN$')

@@ -1087,6 +1087,11 @@ def normalize_serial_number(sn, max_length=10, left_fill='0', right_fill='', bla
     sn = sn[-max_length:]
     if strip_whitespace:
         sn = sn.strip()
+    if na:
+        if isinstance(na, (tuple, set, dict, list)) and sn in na:
+            sn = ''
+        elif na.match(sn):
+            sn = ''
     if not sn and not (blank is False):
         return blank
     if left_fill:

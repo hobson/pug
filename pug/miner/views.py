@@ -33,8 +33,15 @@ HIST_FORMATS = {
                 'hist': 'hist', 'ff': 'hist', 'fd': 'hist',
                 'pmf': 'pmf', 'pdf': 'pmf',
                 'cmf': 'cmf', 'cdf': 'cmf',
-                'cfd': 'cfd', 'cfd': 'cff'
+                'cfd': 'cfd', 'cff': 'cfd'
                }
+
+HIST_INDEX = {
+                'hist': 0,
+                'pmf': 1,
+                'cmf': 2,
+                'cfd': 3,
+             }
 
 HIST_YLABEL = {
                 'hist': 'count',
@@ -151,22 +158,35 @@ def context_from_request(request, context=None, Form=GetLagForm):
         context = Context()
 
     context['filter'] = {}
+
     mn = request.GET.get('mn', "") or request.GET.get('model', "") or request.GET.get('models', "") or request.GET.get('model_number', "") or request.GET.get('model_numbers', "")
     mn = [s.strip() for s in mn.split(',')] or ['']
     context['filter']['model_numbers'] = mn
+
     sn = request.GET.get('sn', "") or request.GET.get('serial', "") or request.GET.get('serials', "") or request.GET.get('serial_number', "") or request.GET.get('serial_numbers', "")
     sn = [s.strip() for s in sn.split(',')] or ['']   
     context['filter']['serial_numbers'] = sn
+
     fy = request.GET.get('fy', "") or request.GET.get('yr', "") or request.GET.get('year', "") or request.GET.get('years', "") or request.GET.get('fiscal_year', "") or request.GET.get('fiscal_years', "")
     fiscal_years = [util.normalize_year(y) for y in fy.split(',')] or []
     fiscal_years = [str(y) for y in fiscal_years if y]
     context['filter']['fiscal_years'] = fiscal_years
+
     r = request.GET.get('r', "") or request.GET.get('rc', "") or request.GET.get('rcode', "") or request.GET.get('reason', "") or request.GET.get('reasons', "")
     r = [s.strip() for s in r.split(',')] or ['']
     context['filter']['reasons'] = r
+
     a = request.GET.get('a', "") or request.GET.get('an', "") or request.GET.get('account', "") or request.GET.get('account_number', "") or request.GET.get('account_numbers', "")
     a = [s.strip() for s in a.split(',')] or ['']
     context['filter']['account_numbers'] = a
+
+    min_dates = request.GET.get('min_date', "") or request.GET.get('min_dates', "")
+    min_dates = [s.strip() for s in min_dates.split(',')] or ['']
+    context['filter']['min_dates'] = min_dates
+
+    max_dates = request.GET.get('max_date', "") or request.GET.get('max_dates', "")
+    max_dates = [s.strip() for s in max_dates.split(',')] or ['']
+    context['filter']['max_dates'] = max_dates
 
     series_name = request.GET.get('s', "") or request.GET.get('n', "") or request.GET.get('series', "") or request.GET.get('name', "")
     filter_values = series_name.split(' ')
@@ -179,13 +199,17 @@ def context_from_request(request, context=None, Form=GetLagForm):
     lag_days = int(request.GET.get('lag', None) or 365)
     max_lag = int(request.GET.get('max_lag', None) or lag_days)
     min_lag = int(request.GET.get('min_lag', None) or (lag_days - 1))
-    initial = {'model': ', '.join(mn), 
-               'serial': ', '.join(sn),
-               'reason': ', '.join(r),
-               'account': ', '.join(a),
-               'fiscal_years': ', '.join(fiscal_years),
-               'min_lag': min_lag,
-               'max_lag': max_lag}
+
+    initial = {'model': ', '.join(context['filter']['model_numbers']), 
+               'serial': ', '.join(context['filter']['serial_numbers']),
+               'reason': ', '.join(context['filter']['reasons']),
+               'account': ', '.join(context['filter']['account_numbers']),
+               'fiscal_years': ', '.join(context['filter']['fiscal_years']),
+               'min_lag': str(min_lag),
+               'max_lag': str(max_lag),
+               'min_date': ', '.join(context['filter']['min_dates']),
+               'max_date': ', '.join(context['filter']['max_dates'])
+              }
 
     # this can never happen since Form only has a GET button
     if request.method == 'POST':
@@ -220,7 +244,7 @@ def lag(request, *args):
     context = context_from_args(context=context, args=args)
 
     lags = SLAmodels.explore_lags(**context['filter'])
-    hist = lags[context['hist_format']]
+    hist = lags[HIST_INDEX[context['hist_format']] + 1 ]
 
     hist_t=[[],[],[],[]]
     names, xdata, ydata = [], [], []
@@ -277,7 +301,6 @@ def lag(request, *args):
                 },
             }
         })
-    print context.keys()
     return render(request, 'miner/lag.html', context)
 
 
@@ -288,7 +311,7 @@ def hist(request, *args):
 
     # print params
     lags = SLAmodels.explore_lags(**context['filter'])
-    hist = lags[context['hist_format']]
+    hist = lags[HIST_INDEX[context['hist_format']] + 1 ]
 
     context.update({'data': {
         'title': 'Returns Lag <font color="gray">' + context['hist_format'].upper() + '</font>',
@@ -297,5 +320,4 @@ def hist(request, *args):
         'd3data': json.dumps(util.transposed_lists(hist)),
         'form': {},
         }})
-    print context.keys()
     return render(request, 'miner/hist.html', context)
