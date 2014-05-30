@@ -127,11 +127,14 @@ class JSONView(View):
         return json.dumps(context)
 
 
-def context_from_request(request, context=None, Form=GetLagForm):
+def context_from_request(request, context=None, Form=GetLagForm, delim=','):
     if context is None:
         context = Context()
 
     context['filter'] = {}
+
+    limit = request.GET.get('limit', "") or request.GET.get('num', "") or request.GET.get('num_rows', "") or request.GET.get('rows', "") or request.GET.get('records', "") or request.GET.get('count', "")
+    context['limit'] = util.make_int(limit)
 
     mn = request.GET.get('mn', "") or request.GET.get('model', "") or request.GET.get('models', "") or request.GET.get('model_number', "") or request.GET.get('model_numbers', "")
     mn = [s.strip() for s in mn.split(',')] or ['']
@@ -287,13 +290,13 @@ def hist(request, *args):
 
     # print params
     lags = SLAmodels.explore_lags(**context['filter'])
-    hist = lags[context['hist_format']]
+    hist_name = context['hist_format']
 
     context.update({'data': {
-        'title': 'Returns Lag <font color="gray">' + context['hist_format'].upper() + '</font>',
+        'title': 'Returns Lag <font color="gray">' + hist_name.upper() + '</font>',
         'xlabel': 'Lag (days)',
-        'ylabel': util.HIST_YLABEL[context['hist_format']],
-        'd3data': json.dumps(util.transposed_lists(hist)),
+        'ylabel': util.HIST_CONFIG[hist_name]['ylabel'],
+        'd3data': json.dumps(util.transposed_lists(lags[hist_name])),
         'form': {},
         }})
     return render(request, 'miner/hist.html', context)
