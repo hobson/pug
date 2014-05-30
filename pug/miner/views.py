@@ -200,9 +200,10 @@ def context_from_args(args=None, context=None):
     if context is None:
         context = Context()
 
-    context['hist_format'] = util.HIST_FORMATS['cfd']
+    context['hist_format'] = util.HIST_NAME['cfd']
     if args and len(str(args[0])):
-        context['hist_format'] = util.HIST_FORMATS.get(str(args[0]).lower().strip(), context['hist_format'])
+        context['hist_format'] = util.HIST_NAME.get(str(args[0]).lower().strip(), context['hist_format'])
+        context['hist_name'] = util.HIST_CONFIG[context['hist_format']]['name']
 
     return context
 

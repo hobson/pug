@@ -58,10 +58,10 @@ PUNC = unicode(string.punctuation)
 
 # 4 types of "histograms" and their canonical name/label
 HIST_NAME = {
-                'hist': 'hist', 'ff': 'hist', 'fd': 'hist',
-                'pmf': 'pmf', 'pdf': 'pmf',
-                'cmf': 'cmf', 'cdf': 'cmf',
-                'cfd': 'cfd', 'cff': 'cfd',
+                'hist': 'hist', 'ff':  'hist',  'fd': 'hist',
+                'pmf':  'pmf',  'pdf': 'pmf',
+                'cmf':  'cmf',  'cdf': 'cmf',
+                'cfd':  'cfd',  'cff': 'cfd',   'cdf': 'cfd',
             }
 HIST_CONFIG = {
     'hist': { 
@@ -85,8 +85,8 @@ HIST_CONFIG = {
         'xlabel': 'Bin',
         'ylabel': 'Cumulative Probability',
         },
-    'cdf': {
-        'name': 'Cumulative Distribution Function',
+    'cfd': {
+        'name': 'Cumulative Frequency Distribution',
         'kwargs': { 'normalize': False, 'cumulative': True, },
         'index': 1,
         'xlabel': 'Bin',
