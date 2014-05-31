@@ -23,37 +23,37 @@ class GetLagForm(forms.Form):
 
     r = forms.CharField(required=False,
         max_length=128,
-        label='Return Reason Codes',
+        label='R-Code',
         initial='',
         help_text='Comma-separated reason codes',
         )
 
     an= forms.CharField(required=False,
         max_length=256,
-        label='Customer Account Numbers',
+        label='Cust. Account',
         initial='',
         help_text="Comma-separated customer account #'s",
         )
 
     min_lag = forms.IntegerField(max_value=365*10, min_value=-60, required=False,
-        label='Minimum Lag',
+        label='Min Lag',
         initial=0,
         help_text='Min days between sale & return')
 
     max_lag = forms.IntegerField(max_value=365*10, min_value=-60, required=False,
-        label='Maximum Lag',
+        label='Max Lag',
         initial=365*3,
         help_text='Max days between sale & return')
 
     min_date = forms.DateField(
         required=False,
-        label='Minimum Return Date',
+        label='Min Date',
         initial=datetime.date(2012, 4, 1),
         help_text='Minimum return received date')
 
     max_date = forms.DateField(
         required=False,
-        label='Maximum Return Date',
+        label='Max Date',
         initial=datetime.date.today,
         help_text='Maximum return received date')
 

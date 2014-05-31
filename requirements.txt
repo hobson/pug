@@ -19,3 +19,4 @@ six==1.5.2
 tabulate==0.7.1
 w3lib==1.5
 zope.interface==4.0.5
+django-widget-tweaks==1.3
