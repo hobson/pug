@@ -17,7 +17,19 @@ import re
 
 nonword           = re.compile(r'[\W]')
 white_space       = re.compile(r'[\s]')
+
+
+# ASCII regexes from http://stackoverflow.com/a/20078869/623735
+# To replace sequences of nonASCII characters with a single "?" use `nonascii_sequence.sub("?", s)`
+nonascii_sequence = re.compile(r'[^\x00-\x7F]+')
+# To replace sequences of nonASCII characters with a "?" per character use `nonascii.sub("?", s)`
+nonascii = re.compile(r'[^\x00-\x7F]')
+# To replace sequences of ASCII characters with a single "?" use `ascii_sequence.sub("?", s)`
+ascii_sequence = re.compile(r'[^\x00-\x7F]+')
+# To replace sequences of ASCII characters with a "?" per character use `ascii.sub("?", s)`
+ascii = re.compile(r'[\x00-\x7F]')
 # would be better-named as scientific_notation_base
+
 scientific_notation_exponent = re.compile(r'\s*(?:[xX]{1}\s*10\s*[*^]{1,2}|[eE]){1}\s*')
 not_digit_nor_sign = re.compile(r'[^0-9-+]+')
 
@@ -36,3 +48,4 @@ js_name = re.compile(ur'^[_$a-zA-Z\xA0-\uFFFF][_$a-zA-Z0-9\xA0-\uFFFF]*$')
 wikipedia_special = re.compile(r'.*wikipedia[.]org/wiki/[^:]+[:].*')
 
 nones = re.compile(r'^Unk[n]?own|unk[n]?own|UNK|Unk|UNK[N]?OWN|[.]+|[-]+|[=]+|[_]+|[*]+|[?]+|N[/]A|n[/]a|None|none|NONE|Null|null|NULL|NaN$')
+

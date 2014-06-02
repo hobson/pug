@@ -25,7 +25,7 @@ import logging
 logger = logging.getLogger('bigdata.info')
 
 from pug.nlp import util  # import transposed_lists, sod_transposed, listify, intify
-
+from pug.nlp import regex_patterns
 
 NULL_VALUES = (None, 'None', 'none', '<None>', 'NONE', 'Null', 'null', '<Null>', 'N/A', 'n/a', 'NULL')
 NAN_VALUES = (float('inf'), 'INF', 'inf', '+inf', '+INF', float('nan'), 'nan', 'NAN', float('-inf'), '-INF', '-inf')
@@ -622,7 +622,7 @@ def lagged_series(series, lags=1, pads=None):
     return ans
 
 
-def replace_nonascii(s, filler=''):
+def replace_nonascii(s, filler='', one_for_one=False):
     '''Remove nonASCII characters from provided string
 
     Based on: http://stackoverflow.com/a/2743163/623735 
@@ -636,7 +636,9 @@ def replace_nonascii(s, filler=''):
     >>> replace_nonascii('\xFE\xFF\xEF\xBB\xBF\xFF\xFE\x00\x00\x81\x9F':)
     ''
     '''
-    return ''.join([c if ord(c) < 128 else filler for c in s])
+    if one_for_one:
+        return regex_patterns.nonascii.sub(filler, s)
+    return regex_patterns.nonascii_sequence.sub(filler, s)
 
 
 def strip_nonascii(s):

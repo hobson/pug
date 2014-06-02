@@ -128,6 +128,7 @@ class JSONView(View):
 
 
 def context_from_request(request, context=None, Form=GetLagForm, delim=','):
+    print '='*80
     if context is None:
         context = Context()
 
@@ -188,8 +189,10 @@ def context_from_request(request, context=None, Form=GetLagForm, delim=','):
                'max_date': ', '.join(context['filter']['max_dates'])
               }
 
-    # this can never happen since Form only has a GET button
+    print '------- initial ------'
+    print initial
     if request.method == 'POST':
+        # GetLagForm only has a GET button
         context['form'] = Form(request.POST)
     elif request.method == 'GET':
         context['form'] = Form(data=initial, initial=initial)

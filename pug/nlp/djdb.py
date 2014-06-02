@@ -657,8 +657,8 @@ def shared_field_names(model0, model1):
     return diff[0]
 
 
-def diff_data(model0, model1, pk_name='pk', field_names=None, ignore_related=False, strip=True, nulls=(0, 0.0, ''), clean_unicode=clean_utf8, short_circuit=False, verbosity=2):
-    nulls = set(nulls)
+def diff_data(model0, model1, pk_name='pk', field_names=None, ignore_related=False, strip=True, nulls=(0, 0.0, ''), clean_unicode=clean_utf8, short_circuit=False, ignore_field_names=None, verbosity=2, limit=10000):
+    nulls = set(nulls) if nulls else set()
     ans = {
         'count': 0,
         'multiple_returned': [],
@@ -668,13 +668,19 @@ def diff_data(model0, model1, pk_name='pk', field_names=None, ignore_related=Fal
         'unicode_warnings': [],
         'ascii_mismatches': [],
         'unicode_mismatches': [],
+        'field_names_model0': list(set(model0._meta.get_all_field_names())),
+        'field_names_model1': list(set(model1._meta.get_all_field_names())),
+        'model0': model0._meta.app_label + '.' + model0._meta.module_name,
+        'model1': model1._meta.app_label + '.' + model1._meta.module_name,
         }
     if field_names is None:
-        field_names = shared_field_names(model0, model1)
+        field_names = set(ans['field_names_model0']) - (set(ans['field_names_model0']) - set(ans['field_names_model1']))
     linked_field_names = []
-    invalid_fields = set(list(getattr(model0, '_UNLISTABLE_FIELDS', [])) + list(getattr(model1, '_UNLISTABLE_FIELDS', [])))
+    ignore_field_names = set((ignore_field_names or []) + 
+        list(getattr(model0, '_UNLISTABLE_FIELDS', [])) + 
+        list(getattr(model1, '_UNLISTABLE_FIELDS', [])))
     for name in field_names:
-        if name in invalid_fields:
+        if name in ignore_field_names:
             continue
         field = model0._meta.get_field(name)
         if isinstance(field, related.RelatedField):
@@ -682,19 +688,31 @@ def diff_data(model0, model1, pk_name='pk', field_names=None, ignore_related=Fal
                 linked_field_names += [name + '_id']
         else:
             linked_field_names += [name]
+    ans['field_names'] = list(linked_field_names)
+    ans['fields_ignored'] = list(ignore_field_names)
+    qs = model0.objects.filter(**{pk_name + '__isnull': False})
+    N = qs.count()
+    if limit and 0 < limit < N:
+        qs = qs.order_by('?')
+    else:
+        limit = N
     if verbosity:
-        N = model0.objects.count()
-        widgets = [pb.Counter(), '/%d records: ' % N, pb.Percentage(), ' ', pb.RotatingMarker(), ' ', pb.Bar(),' ', pb.ETA()]
-        i, pbar = 0, pb.ProgressBar(widgets=widgets, maxval=N).start()
+        widgets = [pb.Counter(), '/%d records: ' % limit, pb.Percentage(), ' ', pb.RotatingMarker(), ' ', pb.Bar(),' ', pb.ETA()]
+        i, pbar = 0, pb.ProgressBar(widgets=widgets, maxval=limit).start()
 
     batch_num = 0
-    for batch0 in generate_slices(model0.objects.filter(**{pk_name + '__isnull': False}), batch_len=999):
+    for batch0 in generate_slices(qs, batch_len=999):
         #batch1 = model1.objects.filter(**{pk_name + '__in': batch0.values_list(pk_name, flat=True)}).all()
         batch_num += 1
+        if i > limit:
+            break
         for obj0 in batch0:
             if verbosity:
                 pbar.update(i)
             i += 1
+            if i > limit:
+                # if model0 records are added during this loop, then some records will not be checked
+                break
             pk = getattr(obj0, pk_name)
             try:
                 obj1 = model1.objects.get(**{pk_name: pk}) # batch1.get(**{pk_name: pk})
@@ -716,6 +734,8 @@ def diff_data(model0, model1, pk_name='pk', field_names=None, ignore_related=Fal
                     if verbosity > 1:
                         print_exc()
                         ans['unicode_warnings'] += [(pk, fn)]
+                if nulls:
+                    if (val0 is None and val1 in nulls) or (val1 is None and val0 in nulls):
                         continue
                 if isinstance(val0, basestring) and isinstance(val1, basestring): 
                     if strip:
@@ -725,34 +745,36 @@ def diff_data(model0, model1, pk_name='pk', field_names=None, ignore_related=Fal
                                 continue
                         except:
                             pass
-                    if nulls:
-                        if (val0 is None and val1 in nulls) or (val1 is None and val0 in nulls):
-                            continue
                     if clean_unicode:
                         try:
-                            if clean_unicode(val0) == clean_unicode(val1):
-                                continue
-                            else:
-                                ans['unicode_mismatches'] += [pk]
+                            val0, val1 = clean_unicode(val0), clean_unicode(val1)
                         except:
                             if verbosity > 1:
                                 print_exc()
                             ans['clean_unicode_errors'] += [(pk, fn)]
-                        if replace_nonascii(val0) == replace_nonascii(val1):
+                        try:
+                            if val0 == val1:
+                                continue
+                            else:
+                                ans['unicode_mismatches'] += [(pk, fn)]
+                        except UnicodeWarning:
+                            pass
+                        val0, val1 = replace_nonascii(val0, ''), replace_nonascii(val1, '')
+                        if val0 == val1:
                             continue
                         else:
-                            ans['ascii_mismatches'] += [pk]
+                            ans['ascii_mismatches'] += [(pk, fn)]
                             if verbosity > 2:
                                 print 'ASCII MISMATCH: %r != %r' % (val0, val1)
                 if verbosity > 2:
                     print 'MISMATCH: %r != %r' % (val0, val1)
                 mismatched_fields += [fn]
-                if short_circuit or not verbosity > 1:
+                if short_circuit:
                     break
             if not mismatched_fields:
                 ans['count'] += 1
             else:
-                ans['mismatches'] += [pk]
+                ans['mismatches'] += [(pk, mismatched_fields)]
                 if verbosity > 1:
                     print '='*20 + ' ' + str(pk) + ' ' + '='*20
                     print dict([(k, (val0, val1)) for k in mismatched_fields])
