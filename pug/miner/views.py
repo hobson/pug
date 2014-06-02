@@ -178,11 +178,11 @@ def context_from_request(request, context=None, Form=GetLagForm, delim=','):
     max_lag = int(request.GET.get('max_lag', None) or lag_days)
     min_lag = int(request.GET.get('min_lag', None) or (lag_days - 1))
 
-    initial = {'model': ', '.join(context['filter']['model_numbers']), 
-               'serial': ', '.join(context['filter']['serial_numbers']),
-               'reason': ', '.join(context['filter']['reasons']),
-               'account': ', '.join(context['filter']['account_numbers']),
-               'fiscal_years': ', '.join(context['filter']['fiscal_years']),
+    initial = {'mn': ', '.join(context['filter']['model_numbers']), 
+               'sn': ', '.join(context['filter']['serial_numbers']),
+               'r': ', '.join(context['filter']['reasons']),
+               'an': ', '.join(context['filter']['account_numbers']),
+               'fy': ', '.join(context['filter']['fiscal_years']),
                'min_lag': str(min_lag),
                'max_lag': str(max_lag),
                'min_date': ', '.join(context['filter']['min_dates']),
