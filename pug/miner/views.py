@@ -134,11 +134,12 @@ def context_from_request(request, context=None, Form=GetLagForm, delim=','):
     context['filter'] = {}
 
     limit = request.GET.get('limit', 0) or request.GET.get('num', 0) or request.GET.get('num_rows', 0) or request.GET.get('rows', 0) or request.GET.get('records', 0) or request.GET.get('count', 0)
-    context['limit'] = util.make_int(limit)
 
-    table = request.GET.get('table', '') or request.GET.get('tbl', '') or request.GET.get('tble', '') or request.GET.get('tab', '') or request.GET.get('t', 'quick')
-    if table.lower().startswith('d'):
+    context['table'] = request.GET.get('table', '') or request.GET.get('tbl', '') or request.GET.get('tble', '') or request.GET.get('tab', '') or request.GET.get('t', 'quick')
+    if context['table'].lower().startswith('d'):
+        context['table'] = 'detailed'
         limit = limit or 10*1000
+    context['limit'] = util.make_int(limit)
 
     mn = request.GET.get('mn', "") or request.GET.get('model', "") or request.GET.get('models', "") or request.GET.get('model_number', "") or request.GET.get('model_numbers', "")
     mn = [s.strip() for s in mn.split(',')] or ['']
@@ -225,8 +226,15 @@ def lag(request, *args):
     context = context_from_request(request)
     context = context_from_args(context=context, args=args)
 
-    lags = SLAmodels.explore_lags(**context['filter'])
-    hist = lags[context['hist_format']]
+    # retrieve a dict {'refurbs_dict': {}, 'lags_dict': {}, 'means_dict': {}, 'hist': {}, 'pmf': {}, 'cfd': {} ...etc}
+    # each one of these dicts is a dictionary with keys for each of the series/filter definitions (which are used for the legend string)
+    lags_dict = SLAmodels.explore_lags(**context['filter'])
+    print '?'*80
+    print lags_dict.keys()
+    print context['hist_format']
+    context['means'] = lags_dict['means_dict']
+    hist = lags_dict[context['hist_format']]  # context['hist_format'] is 'cfd', 'pmf' or 'hist', etc
+
 
     # FIXME: use util.transposed_lists and make this look more like the hist() view below
     hist_t=[[],[],[],[]]
@@ -243,7 +251,8 @@ def lag(request, *args):
     # print names
 
     #tooltip_date = "%d %b %Y %H:%M:%S %p"
-    extra_series = {"tooltip": {"y_start": " ", "y_end": " returns"},
+    extra_series = {
+                    "tooltip": {"y_start": " ", "y_end": " returns"},
                    #"date_format": tooltip_date
                    }
 
@@ -293,14 +302,16 @@ def hist(request, *args):
     context = context_from_args(context=context, args=args)
 
     # print params
-    lags = SLAmodels.explore_lags(**context['filter'])
+    lags_dict = SLAmodels.explore_lags(**context['filter'])
+    context['means'] = lags_dict['means_dict']
+
     hist_name = context['hist_format']
 
     context.update({'data': {
         'title': 'Returns Lag <font color="gray">' + hist_name.upper() + '</font>',
         'xlabel': 'Lag (days)',
         'ylabel': util.HIST_CONFIG[hist_name]['ylabel'],
-        'd3data': json.dumps(util.transposed_lists(lags[hist_name])),
+        'd3data': json.dumps(util.transposed_lists(lags_dict[hist_name])),
         'form': {},
         }})
     return render(request, 'miner/hist.html', context)
