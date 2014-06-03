@@ -128,7 +128,6 @@ class JSONView(View):
 
 
 def context_from_request(request, context=None, Form=GetLagForm, delim=','):
-    print '='*80
     if context is None:
         context = Context()
 
@@ -136,6 +135,10 @@ def context_from_request(request, context=None, Form=GetLagForm, delim=','):
 
     limit = request.GET.get('limit', 0) or request.GET.get('num', 0) or request.GET.get('num_rows', 0) or request.GET.get('rows', 0) or request.GET.get('records', 0) or request.GET.get('count', 0)
     context['limit'] = util.make_int(limit)
+
+    table = request.GET.get('table', '') or request.GET.get('tbl', '') or request.GET.get('tble', '') or request.GET.get('tab', '') or request.GET.get('t', 'quick')
+    if table.lower().startswith('d'):
+        limit = limit or 10*1000
 
     mn = request.GET.get('mn', "") or request.GET.get('model', "") or request.GET.get('models', "") or request.GET.get('model_number', "") or request.GET.get('model_numbers', "")
     mn = [s.strip() for s in mn.split(',')] or ['']
@@ -189,8 +192,6 @@ def context_from_request(request, context=None, Form=GetLagForm, delim=','):
                'max_date': ', '.join(context['filter']['max_dates'])
               }
 
-    print '------- initial ------'
-    print initial
     if request.method == 'POST':
         # GetLagForm only has a GET button
         context['form'] = Form(request.POST)
@@ -223,7 +224,6 @@ def lag(request, *args):
     # print 'lag with form'
     context = context_from_request(request)
     context = context_from_args(context=context, args=args)
-    print context
 
     lags = SLAmodels.explore_lags(**context['filter'])
     hist = lags[context['hist_format']]

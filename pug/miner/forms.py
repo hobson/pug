@@ -4,7 +4,7 @@ import datetime
 from case.models import Case
 from django import forms
 from crispy_forms.helper import FormHelper
-from crispy_forms.layout import Submit #, Layout, Field, Div, HTML, Button, Row
+# from crispy_forms.layout import Submit #, Layout, Field, Div, HTML, Button, Row
 
 
 class GetLagForm(forms.Form):
@@ -59,7 +59,7 @@ class GetLagForm(forms.Form):
         label='Min Date',
         initial=datetime.date(2012, 4, 1),
         help_text='Minimum return received date',
-        #widget=forms.TextInput(attrs={'placeholder': 'e.g. 2014-04-01'}),
+        widget=forms.DateInput(), #attrs={'placeholder': 'e.g. 2014-04-01'}
         )
 
     max_date = forms.DateField(
@@ -67,7 +67,7 @@ class GetLagForm(forms.Form):
         label='Max Date',
         initial=datetime.date.today,
         help_text='Maximum return received date',
-        #widget=forms.TextInput(attrs={'placeholder': 'e.g. 2012-03-31'}),
+        widget=forms.DateInput(), #attrs={'placeholder': 'e.g. 2014-04-01'}
         )
 
     fy = forms.CharField(max_length=256, required=False,
@@ -78,20 +78,28 @@ class GetLagForm(forms.Form):
         )
 
     def __init__(self, *args, **kwargs):
-        self.helper = FormHelper()
-        # self.helper.form_class = 'form-horizontal'  # 'form-inline', 'blueForms'
-        # self.helper.form_id = 'id-GetLagForm'
-        # self.helper.help_text_inline = True
+        # self.helper = FormHelper()
+        # # self.helper.form_class = 'form-horizontal'  # 'form-inline', 'blueForms'
+        # # self.helper.form_id = 'id-GetLagForm'
+        # # self.helper.help_text_inline = True
 
-        self.helper.form_method = 'GET'
-        self.helper.form_action = ''  # url that is triggered, carrying a GET or POST payload
+        # self.helper.form_method = 'GET'
+        # self.helper.form_action = ''  # url that is triggered, carrying a GET or POST payload
 
-        self.helper.add_input(Submit('quick', 'Quick Table'))
-        self.helper.add_input(Submit('detail', 'Detailed Table'))
-        self.helper.add_input(Submit('zoom_plot', 'Zoomable Plot'))
-        self.helper.add_input(Submit('plot', 'Linked Plot'))
+        # self.helper.add_input(Submit('quick', 'Quick Table'))
+        # self.helper.add_input(Submit('detail', 'Detailed Table'))
+        # self.helper.add_input(Submit('zoomable', 'Zoomable Plot'))
+        # self.helper.add_input(Submit('linked', 'Linked Plot'))
         super(GetLagForm, self).__init__(*args, **kwargs)
 
+    # def clean(self):
+    #     if 'quick' in self.data:
+    #         return self.cleaned_data.update({'submit': 'quick'})
+    #         # return self.cleaned_data.update({'submit': 'quick'})
+    #     elif 'zoomable' in self.data:
+    #         return self.cleaned_data.update({'submit': 'zoomable'})
+    #     return self.cleaned_data
+            # do unsubscribe
 
 
 class GetCaseForm(forms.ModelForm):
