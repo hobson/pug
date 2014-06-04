@@ -145,9 +145,12 @@ def context_from_request(request, context=None, Form=GetLagForm, delim=','):
     mn = [s.strip() for s in mn.split(',')] or ['']
     context['filter']['model_numbers'] = mn
 
-    sn = request.GET.get('sn', "") or request.GET.get('serial', "") or request.GET.get('serials', "") or request.GET.get('serial_number', "") or request.GET.get('serial_numbers', "")
-    sn = [s.strip() for s in sn.split(',')] or ['']   
-    context['filter']['serial_numbers'] = sn
+    sg = request.GET.get('sg', "") or request.GET.get('group', "") or request.GET.get('sales', "") or request.GET.get('sales_group', "") or request.GET.get('sale_group_number', "")
+    sg = [s.strip() for s in sg.split(',')] or ['']   
+    # need to implement filters on sales_group (where serial_numbers was, in explore_lags, and filter_lags or lags_dict)
+    #context['filter']['sales_groups'] = sg
+    context['sales_groups'] = sg
+    context['filter']['model_numbers'] += SLAmodels.models_from_sales_groups(context['sales_groups'])
 
     fy = request.GET.get('fy', "") or request.GET.get('yr', "") or request.GET.get('year', "") or request.GET.get('years', "") or request.GET.get('fiscal_year', "") or request.GET.get('fiscal_years', "")
     fiscal_years = [util.normalize_year(y) for y in fy.split(',')] or []
@@ -171,10 +174,10 @@ def context_from_request(request, context=None, Form=GetLagForm, delim=','):
     context['filter']['max_dates'] = max_dates
 
     series_name = request.GET.get('s', "") or request.GET.get('n', "") or request.GET.get('series', "") or request.GET.get('name', "")
-    filter_values = series_name.split(' ')
+    filter_values = series_name.split(',')
     if filter_values and len(filter_values)==4:
         mn = [filter_values[0].strip('*')]
-        context['filter']['model_numbers'] = mn
+        context['filter']['model_numbers'] = SLAmodels.models_from_sales_groups(mn)
         r = [filter_values[1].strip('*')]
         context['filter']['reasons'] = r
         a = [filter_values[2].strip('*')]
@@ -182,13 +185,12 @@ def context_from_request(request, context=None, Form=GetLagForm, delim=','):
         fiscal_years = [filter_values[3].strip('*')]
         context['filter']['fiscal_years'] = fiscal_years
 
-
     lag_days = int(request.GET.get('lag', None) or 365)
     max_lag = int(request.GET.get('max_lag', None) or lag_days)
     min_lag = int(request.GET.get('min_lag', None) or (lag_days - 1))
 
     initial = {'mn': ', '.join(context['filter']['model_numbers']), 
-               'sn': ', '.join(context['filter']['serial_numbers']),
+               'sg': ', '.join(context['sales_groups']),
                'r': ', '.join(context['filter']['reasons']),
                'an': ', '.join(context['filter']['account_numbers']),
                'fy': ', '.join(context['filter']['fiscal_years']),
