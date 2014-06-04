@@ -1,6 +1,5 @@
 {% extends 'miner/base.html' %}
 {% load nvd3_tags %}
-{% load crispy_forms_tags %}
 
 {% block extra_head %}
     {% include_chart_jscss %}
@@ -8,7 +7,7 @@
 {% endblock %}
 
 {% block content %}
-    {% crispy form %}
+    {% include "case/bootstrap_case_form.html" %}
     <H3>{{ data.title|safe }}</H3>
     <H4>{{ data.subtitle|safe }}</H4>
     {% include_container data.chartcontainer 400 '100%' %}

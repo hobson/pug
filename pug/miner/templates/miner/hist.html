@@ -2,7 +2,6 @@
 {% load i18n %}
 {% load staticfiles %}
 {% load static %}
-{% load crispy_forms_tags %}
 
 {% block extra_head %}
     <script src="{% static "d3/d3.min.js" %}"></script>
@@ -11,8 +10,7 @@
 {% endblock %}
 
 {% block content %}
-    <div class="row">
-      {% crispy form %}
+    {% include "case/bootstrap_case_form.html" %}
     </div>
     <div class="row">
       <div id="graph" class="aGraph"></div>
@@ -155,6 +153,7 @@ var focus = svg.append("g")
     .attr("class", "focus");
 
 focus.append("circle")
+    .attr("href", "/");
     .attr("r", 4.5);
 
 focus.append("text")
@@ -208,12 +207,16 @@ function mouseover(d) {
 
 function mouseclick(d) {
   console.log(d);
-  var url = document.URL + "&lag=" + d.x + "&series=" + d.series.name;
-  var hist_formats = ["", "-pmf", "-cmf", "-cfd"];
-  hist_formats.forEach(function(hf) { 
-    url = url.replace("/hist"+hf+"/", "/cases/");
-  });
-  window.location = url;
+  // var url = document.URL + "&lag=" + d.x + "&series=" + d.series.name;
+  // var hist_formats = ["", "-pmf", "-cmf", "-cfd"];
+  // hist_formats.forEach(function(hf) { 
+  //   url = url.replace("/hist"+hf+"/", "/cases/");
+  // });
+  // var plot_types = ["linked", "link", "l", "zoomable", "zoom", "z"];
+  // plot_types.forEach(function(pt) { 
+  //   url = url.replace("&plot="+pt, "&table=quick");
+  // });
+  // window.location = url;
 }
 
 function mouseout(d) {

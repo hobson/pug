@@ -174,9 +174,14 @@ def context_from_request(request, context=None, Form=GetLagForm, delim=','):
     filter_values = series_name.split(' ')
     if filter_values and len(filter_values)==4:
         mn = [filter_values[0].strip('*')]
+        context['filter']['model_numbers'] = mn
         r = [filter_values[1].strip('*')]
+        context['filter']['reasons'] = r
         a = [filter_values[2].strip('*')]
+        context['filter']['account_numbers'] = a
         fiscal_years = [filter_values[3].strip('*')]
+        context['filter']['fiscal_years'] = fiscal_years
+
 
     lag_days = int(request.GET.get('lag', None) or 365)
     max_lag = int(request.GET.get('max_lag', None) or lag_days)
