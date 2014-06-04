@@ -16,13 +16,21 @@ class GetLagForm(forms.Form):
         widget=forms.TextInput(attrs={'placeholder': 'LC60E79U, LC60LE835U, ...'}),
         )
 
-    sn = forms.CharField(required=False,
-        max_length=2048,
-        label='Serial Numbers',
+    sg = forms.CharField(required=False,
+        max_length=128,
+        label='Sales Groups',
         initial='',
-        help_text='Comma-separated serial numbers',
-        widget=forms.TextInput(attrs={'placeholder': '205815430, 109840374, ...'}),
+        help_text='Sales group numbers (e.g. 117, 118, 119) associated with subsets of model numbers',
+        widget=forms.TextInput(attrs={'placeholder': '117, 118, 119 ...'}),
         )
+
+    # sn = forms.CharField(required=False,
+    #     max_length=2048,
+    #     label='Serial Numbers',
+    #     initial='',
+    #     help_text='Comma-separated serial numbers',
+    #     widget=forms.TextInput(attrs={'placeholder': '205815430, 109840374, ...'}),
+    #     )
 
     an= forms.CharField(required=False,
         max_length=256,
@@ -30,6 +38,14 @@ class GetLagForm(forms.Form):
         initial='',
         help_text="Comma-separated customer account #'s",
         widget=forms.TextInput(attrs={'placeholder': "Comma-separated customer account #'s"}),
+        )
+
+    r = forms.CharField(required=False,
+        max_length=128,
+        label='R-Code',
+        initial='',
+        help_text='Comma-separated reason codes',
+        widget=forms.TextInput(attrs={'placeholder': 'R10, R13, ...'}),
         )
 
     min_lag = forms.IntegerField(max_value=365*10, min_value=-60, required=False,
@@ -44,14 +60,6 @@ class GetLagForm(forms.Form):
         initial=365*3,
         help_text='Max days between sale & return',
         widget=forms.TextInput(attrs={'placeholder': 'Max days between sale & return'}),
-        )
-
-    r = forms.CharField(required=False,
-        max_length=128,
-        label='R-Code',
-        initial='',
-        help_text='Comma-separated reason codes',
-        widget=forms.TextInput(attrs={'placeholder': 'R10, R13, ...'}),
         )
 
     min_date = forms.DateField(
