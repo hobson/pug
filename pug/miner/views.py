@@ -174,7 +174,7 @@ def context_from_request(request, context=None, Form=GetLagForm, delim=','):
     context['filter']['max_dates'] = max_dates
 
     series_name = request.GET.get('s', "") or request.GET.get('n', "") or request.GET.get('series', "") or request.GET.get('name', "")
-    filter_values = series_name.split(',')
+    filter_values = series_name.split(' ')  # FIXME: '|'
     if filter_values and len(filter_values)==4:
         mn = [filter_values[0].strip('*')]
         context['filter']['model_numbers'] = SLAmodels.models_from_sales_groups(mn)
