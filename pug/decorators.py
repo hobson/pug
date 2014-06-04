@@ -23,20 +23,23 @@ class memoize(object):
     saving execution time.
 
     https://wiki.python.org/moin/PythonDecoratorLibrary#Memoize
+
+    hobs added kwargs per http://stackoverflow.com/a/6408175/623735
     '''
     def __init__(self, func):
         self.func = func
         self.cache = {}
-    def __call__(self, *args):
+    def __call__(self, *args, **kwargs):
         if not isinstance(args, collections.Hashable):
             # uncacheable. a list, for instance.
             # better to not cache than blow up.
-            return self.func(*args)
-        if args in self.cache:
-            return self.cache[args]
+            return self.func(*args, **kwargs)
+        cache_key = (args, frozenset(kwargs.items()))
+        if cache_key in self.cache:
+            return self.cache[cache_key]
         else:
-            value = self.func(*args)
-            self.cache[args] = value
+            value = self.func(*args, **kwargs)
+            self.cache[cache_key] = value
             return value
     def __repr__(self):
         '''Return the function's docstring.'''
