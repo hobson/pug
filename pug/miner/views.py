@@ -149,8 +149,8 @@ def context_from_request(request, context=None, Form=GetLagForm, delim=','):
     sg = [s.strip() for s in sg.split(',')] or ['']   
     # need to implement filters on sales_group (where serial_numbers was, in explore_lags, and filter_lags or lags_dict)
     #context['filter']['sales_groups'] = sg
-    context['sales_groups'] = sg
-    context['filter']['model_numbers'] += SLAmodels.models_from_sales_groups(context['sales_groups'])
+    context['filter']['sales_groups'] = sg
+    #context['filter']['model_numbers'] += SLAmodels.models_from_sales_groups(context['sales_groups'])
 
     fy = request.GET.get('fy', "") or request.GET.get('yr', "") or request.GET.get('year', "") or request.GET.get('years', "") or request.GET.get('fiscal_year', "") or request.GET.get('fiscal_years', "")
     fiscal_years = [util.normalize_year(y) for y in fy.split(',')] or []
@@ -177,7 +177,7 @@ def context_from_request(request, context=None, Form=GetLagForm, delim=','):
     filter_values = series_name.split(' ')  # FIXME: '|'
     if filter_values and len(filter_values)==4:
         mn = [filter_values[0].strip('*')]
-        context['filter']['model_numbers'] = SLAmodels.models_from_sales_groups(mn)
+        context['filter']['model_numbers'] = mn  # SLAmodels.models_from_sales_groups(mn)
         r = [filter_values[1].strip('*')]
         context['filter']['reasons'] = r
         a = [filter_values[2].strip('*')]
@@ -189,8 +189,8 @@ def context_from_request(request, context=None, Form=GetLagForm, delim=','):
     max_lag = int(request.GET.get('max_lag', None) or lag_days)
     min_lag = int(request.GET.get('min_lag', None) or (lag_days - 1))
 
-    initial = {'mn': ', '.join(context['filter']['model_numbers']), 
-               'sg': ', '.join(context['sales_groups']),
+    initial = {'mn': ', '.join(m.strip() for m in context['filter']['model_numbers'] if m.strip()), 
+               'sg': ', '.join(context['filter']['sales_groups']),
                'r': ', '.join(context['filter']['reasons']),
                'an': ', '.join(context['filter']['account_numbers']),
                'fy': ', '.join(context['filter']['fiscal_years']),
@@ -207,6 +207,12 @@ def context_from_request(request, context=None, Form=GetLagForm, delim=','):
         context['form'] = Form(data=initial, initial=initial)
 
     context['form_is_valid'] = context['form'].is_valid()
+    if not context['form_is_valid']:
+        context['form_errors'] = context['form'].errors
+        print context['form_errors']
+        #import ipdb
+        #ipdb.set_trace()
+        #raise RuntimeError('form is invalid')
 
     return context
 

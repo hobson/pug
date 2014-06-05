@@ -364,7 +364,7 @@ if __name__ == '__main__':
         print '\nMC of bse versus std'
         mc_summary(res_bse, res_rho.std(0))
     
-    # this seems trivial, because the arma model includes the current sample, so the prediciton will always match the truth
+    # this seems trivial, because the arma model includes the current sample, so the prediction will always match the truth
     import matplotlib.pyplot as plt
     N = len(arma2.x)
     forecast = arma2.forecast()

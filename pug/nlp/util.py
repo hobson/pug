@@ -19,6 +19,7 @@ import warnings
 from collections import Counter
 from traceback import print_exc
 import ascii
+import decimal
 
 #import math
 from pytz import timezone
@@ -48,12 +49,13 @@ logger = logging.getLogger('pug.nlp.util')
 
 
 
-NUMERIC_TYPES = (float, long, int)
-SCALAR_TYPES = (float, long, int, str, unicode)  # bool, complex, datetime.datetime
+ROUNDABLE_NUMERIC_TYPES = (float, long, int, decimal.Decimal, bool)
+FLOATABLE_NUMERIC_TYPES = (float, long, int, decimal.Decimal, bool)
+BASIC_NUMERIC_TYPES = (float, long, int) 
+SCALAR_TYPES = (float, long, int, decimal.Decimal, bool, complex, basestring, str, unicode)  # datetime.datetime, datetime.date
 # numpy types are derived from these so no need to include numpy.float64, numpy.int64 etc
 DICTABLE_TYPES = (Mapping, tuple, list)  # convertable to a dictionary (inherits collections.Mapping or is a list of key/value pairs)
 VECTOR_TYPES = (list, tuple)
-PYTHON_NUMBER_TYPES = (float, long, int)  # bool, complex, datetime.datetime,
 PUNC = unicode(string.punctuation)
 
 # 4 types of "histograms" and their canonical name/label
@@ -168,19 +170,18 @@ def quantify_field_dict(field_dict, precision=None, date_precision=None, cleaner
             # seconds since epoch = datetime.datetime(1969,12,31,18,0,0)
             try:
                 # around the year 2250, a float conversion of this string will lose 1 microsecond of precision, and around 22500 the loss of precision will be 10 microseconds
-                d[k] = float(d[k].strftime('%s.%f'))
-                if date_precision is not None and isinstance(d[k], NUMERIC_TYPES):
-                    d[k] = round(d[k], precision)
-                    # rounding to `precision` skipped if `date_precision` already has been applied!
+                d[k] = float(d[k].strftime('%s.%f'))  # seconds since Jan 1, 1970
+                if date_precision is not None and isinstance(d[k], ROUNDABLE_NUMERIC_TYPES):
+                    d[k] = round(d[k], date_precision)
                     continue
             except:
                 pass
-        if not isinstance(d[k], NUMERIC_TYPES):
+        if not isinstance(d[k], (int, float, long)):
             try:
                 d[k] = float(d[k])
             except:
                 pass
-        if precision is not None and isinstance(d[k], NUMERIC_TYPES):
+        if precision is not None and isinstance(d[k], ROUNDABLE_NUMERIC_TYPES):
             d[k] = round(d[k], precision)
         if isinstance(d[k], float) and d[k].is_integer():
             # `int()` will convert to a long, if value overflows an integer type
@@ -771,7 +772,7 @@ def tryconvert(value, desired_types=SCALAR_TYPES, default=None, empty='', strip=
     if len(desired_types):
         if isinstance(desired_types, (list, tuple)) and len(desired_types) and isinstance(desired_types[0], (list, tuple)):
             desired_types = desired_types[0]
-        elif isinstance(desired_types, (type)):
+        elif isinstance(desired_types, type):
             desired_types = [desired_types]
     for t in desired_types:
         try:
