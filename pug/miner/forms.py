@@ -18,9 +18,9 @@ class GetLagForm(forms.Form):
 
     sg = forms.CharField(required=False,
         max_length=128,
-        label='Sales Groups',
+        label='Product Department',
         initial='',
-        help_text='Sales group numbers (e.g. 117, 118, 119) associated with subsets of model numbers',
+        help_text='Product Department numbers (e.g. 117, 118, 119) associated with subsets of model numbers',
         widget=forms.TextInput(attrs={'placeholder': '117, 118, 119 ...'}),
         )
 
@@ -34,7 +34,7 @@ class GetLagForm(forms.Form):
 
     an= forms.CharField(required=False,
         max_length=256,
-        label='Cust. Account',
+        label='Refurb Account',
         initial='',
         help_text="Comma-separated customer account #'s",
         widget=forms.TextInput(attrs={'placeholder': "Comma-separated customer account #'s"}),
