@@ -94,16 +94,16 @@ class GetLagForm(forms.Form):
         # self.helper.form_method = 'GET'
         # self.helper.form_action = ''  # url that is triggered, carrying a GET or POST payload
 
-        # self.helper.add_input(Submit('quick', 'Quick Table'))
+        # self.helper.add_input(Submit('fast', 'Quick Table'))
         # self.helper.add_input(Submit('detail', 'Detailed Table'))
         # self.helper.add_input(Submit('zoomable', 'Zoomable Plot'))
         # self.helper.add_input(Submit('linked', 'Linked Plot'))
         super(GetLagForm, self).__init__(*args, **kwargs)
 
     # def clean(self):
-    #     if 'quick' in self.data:
-    #         return self.cleaned_data.update({'submit': 'quick'})
-    #         # return self.cleaned_data.update({'submit': 'quick'})
+    #     if 'fast' in self.data:
+    #         return self.cleaned_data.update({'submit': 'fast'})
+    #         # return self.cleaned_data.update({'submit': 'fast'})
     #     elif 'zoomable' in self.data:
     #         return self.cleaned_data.update({'submit': 'zoomable'})
     #     return self.cleaned_data
