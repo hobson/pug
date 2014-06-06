@@ -1,27 +1,25 @@
 # -*- coding: utf-8 -*-
+import os
+import csv
+
 from django.shortcuts import render_to_response
-#from django.http import HttpResponse
 from django.views.generic import View  #, TemplateView
 from django.template import Context
 from django.template.response import TemplateResponse #, HttpResponse
 from django.template.loader import get_template
-from django.http import Http404
+from django.http import Http404, HttpResponse
 from django import http
 from django.utils import simplejson as json
+from django.shortcuts import render
+
+from pug.nlp import parse
+from pug.nlp import util
+from pug.nlp import db
 
 # from sec_sharp_refurb.models import Refrefurb as SECRef
 import call_center.models as SLAmodels
-
-
-import os
-from django.shortcuts import render
 from forms import GetLagForm
 
-from pug.nlp import parse
-#from pug.nlp.util import normalize_scientific_notation
-#from pug.nlp.character_subset import digits
-from pug.nlp import util
-from pug.nlp import db
 
 
 # format options for lag histograms:
@@ -30,8 +28,6 @@ from pug.nlp import db
 #   cmf = cdf = Cumulative Distribution/Mass Function (cumulative probability)
 #   cfd = cff = Cumulative Frequency Distribution/Function (cumulative counts)
 
-
-#from Returns import tv_lags
 
 def explorer(request, graph_uri=None):
     """Explore the database (or any data provided by a REST service)"""
@@ -135,8 +131,10 @@ def context_from_request(request, context=None, Form=GetLagForm, delim=','):
 
     limit = request.GET.get('limit', 0) or request.GET.get('num', 0) or request.GET.get('num_rows', 0) or request.GET.get('rows', 0) or request.GET.get('records', 0) or request.GET.get('count', 0)
 
-    context['table'] = request.GET.get('table', '') or request.GET.get('tbl', '') or request.GET.get('tble', '') or request.GET.get('tab', '') or request.GET.get('t', 'quick')
-    if context['table'].lower().startswith('d'):
+    context['table'] = (request.GET.get('table', '') or request.GET.get('tbl', '') or request.GET.get('tble', '') 
+                        or request.GET.get('tab', '') or request.GET.get('t', 'fast')
+                        ).strip().lower()
+    if context['table'].startswith('d'):
         context['table'] = 'detailed'
         limit = limit or 10*1000
     context['limit'] = util.make_int(limit)
@@ -227,6 +225,28 @@ def context_from_args(args=None, context=None):
         context['hist_name'] = util.HIST_CONFIG[context['hist_format']]['name']
 
     return context
+
+
+def csv_response_from_context(context=None):
+
+    data = context or [[]]
+
+    if not (isinstance(data, (tuple, list))  and isinstance(data[0], (tuple, list))):       
+        data = json.loads(data.get('data', {}).get('d3data', '[[]]'))
+        return csv_response_from_context(data)
+
+    if len(data) < len(data[0]):
+        data = util.transposed_lists(data)  # list(list(row) for row in data)
+
+    # Create the HttpResponse object with the appropriate CSV header.
+    response = HttpResponse(content_type='text/csv')
+    response['Content-Disposition'] = 'attachment; filename="download_BigData.csv"'
+
+    writer = csv.writer(response)
+    for row in data:
+        writer.writerow(row)
+
+    return response
 
 
 def lag(request, *args):
