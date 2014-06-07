@@ -233,7 +233,8 @@ def csv_response_from_context(context=None):
 
     if not (isinstance(data, (tuple, list))  and isinstance(data[0], (tuple, list))):       
         data = json.loads(data.get('data', {}).get('d3data', '[[]]'))
-        return csv_response_from_context(data)
+        if not data or not any(data):
+            data = data.get('data', '[[]]')
 
     if len(data) < len(data[0]):
         data = util.transposed_lists(data)  # list(list(row) for row in data)
