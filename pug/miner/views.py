@@ -239,6 +239,23 @@ def lag_csv_view(request, *args):
     return csv_response_from_context(context)
 
 
+def table_from_list_of_instances(data, field_names=None, excluded_field_names=None, sort=True):
+    '''Return an iterator over the model instances that yeilds lists of values
+
+    This forms a table suitable for output as a csv
+
+    FIXME: allow specification of related field values with double_underscore
+    '''
+    excluded_field_names = excluded_field_names or []
+    excluded_field_names += '_state'
+    excluded_field_names = set(excluded_field_names)
+
+    for row in data:
+        if not field_names or not any(field_names):
+            field_names = [k for (k, v) in row.__dict__.iteritems() if not k in excluded_field_names]
+            yield field_names
+        yield [row.__dict__.get(k) for k in field_names]
+
 
 def csv_response_from_context(context=None):
 
@@ -247,7 +264,10 @@ def csv_response_from_context(context=None):
     if not (isinstance(data, (tuple, list))  and isinstance(data[0], (tuple, list))):       
         data = json.loads(data.get('data', {}).get('d3data', '[[]]'))
         if not data or not any(data):
-            data = data.get('data', '[[]]')
+            data = context.get('data', {}).get('cases', [[]])
+
+    if not isinstance(data, (list, tuple)) or not isinstance(data[0], (list, tuple)):
+        data = table_from_list_of_instances(data)
 
     if len(data) < len(data[0]):
         data = util.transposed_lists(data)  # list(list(row) for row in data)
