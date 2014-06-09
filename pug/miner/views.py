@@ -140,11 +140,11 @@ def context_from_request(request, context=None, Form=GetLagForm, delim=','):
     context['limit'] = util.make_int(limit)
 
     mn = request.GET.get('mn', "") or request.GET.get('model', "") or request.GET.get('models', "") or request.GET.get('model_number', "") or request.GET.get('model_numbers', "")
-    mn = [s.strip() for s in mn.split(',')] or ['']
+    mn = [s.strip().upper() for s in mn.split(',')] or ['']
     context['filter']['model_numbers'] = mn
 
     sg = request.GET.get('sg', "") or request.GET.get('group', "") or request.GET.get('sales', "") or request.GET.get('sales_group', "") or request.GET.get('sale_group_number', "")
-    sg = [s.strip() for s in sg.split(',')] or ['']   
+    sg = [s.strip().upper() for s in sg.split(',')] or ['']   
     # need to implement filters on sales_group (where serial_numbers was, in explore_lags, and filter_lags or lags_dict)
     #context['filter']['sales_groups'] = sg
     context['filter']['sales_groups'] = sg
@@ -156,11 +156,11 @@ def context_from_request(request, context=None, Form=GetLagForm, delim=','):
     context['filter']['fiscal_years'] = fiscal_years
 
     r = request.GET.get('r', "") or request.GET.get('rc', "") or request.GET.get('rcode', "") or request.GET.get('reason', "") or request.GET.get('reasons', "")
-    r = [s.strip() for s in r.split(',')] or ['']
+    r = [s.strip().upper() for s in r.split(',')] or ['']
     context['filter']['reasons'] = r
 
     a = request.GET.get('a', "") or request.GET.get('an', "") or request.GET.get('account', "") or request.GET.get('account_number', "") or request.GET.get('account_numbers', "")
-    a = [s.strip() for s in a.split(',')] or ['']
+    a = [s.strip().upper() for s in a.split(',')] or ['']
     context['filter']['account_numbers'] = a
 
     min_dates = request.GET.get('min_date', "") or request.GET.get('min_dates', "")
