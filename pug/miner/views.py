@@ -244,8 +244,15 @@ def follow_double_underscores(obj, field_name=None):
         split_fields = field_name
     else:
         split_fields = field_name.split('__')
-    if len(split_fields) == 1:
-        return getattr(obj, split_fields[0])
+    if len(split_fields) <= 1:
+        if hasattr(obj, split_fields[0]):
+            return getattr(obj, split_fields[0])
+        elif hasattr(obj, split_fields[0] + '_id'):
+            return getattr(obj, split_fields[0] + '_id')
+        elif hasattr(obj, split_fields[0] + '_set'):
+            return getattr(obj, split_fields[0] + '_set')
+        elif split_fields[0] in obj.__dict__:
+            return obj.__dict__.get(split_fields[0])
     return follow_double_underscores(getattr(obj, split_fields[0]), field_name=split_fields[1:])
 
 
@@ -260,9 +267,10 @@ def table_from_list_of_instances(data, field_names=None, excluded_field_names=No
     excluded_field_names += '_state'
     excluded_field_names = set(excluded_field_names)
 
-    for row in data:
+    for i, row in enumerate(data):
         if not field_names or not any(field_names):
             field_names = [k for (k, v) in row.__dict__.iteritems() if not k in excluded_field_names]
+        if not i:
             yield field_names
         yield [follow_double_underscores(row, k) for k in field_names]
 
