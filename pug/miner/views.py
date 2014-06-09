@@ -239,11 +239,16 @@ def lag_csv_view(request, *args):
     return csv_response_from_context(context)
 
 
+import re
+re_model_instance_dot = re.compile('__|[.]+')
+
+
 def follow_double_underscores(obj, field_name=None):
+    '''Like getattr(obj, field_name) only follows model relationships through "__" or "." as link separators'''
     if isinstance(field_name, list):
         split_fields = field_name
     else:
-        split_fields = field_name.split('__')
+        split_fields = re_model_instance_dot.split(field_name)
     if len(split_fields) <= 1:
         if hasattr(obj, split_fields[0]):
             return getattr(obj, split_fields[0])
