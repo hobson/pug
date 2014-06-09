@@ -227,6 +227,19 @@ def context_from_args(args=None, context=None):
     return context
 
 
+def lag_csv_view(request, *args):
+    '''Table of sale->return lag in days and other data (model, serial RA#, refrerence, price, sale customer, etc).
+    
+    Data takes a long time to load/download/query, so you better increase the timeout with:
+        python gunicorn bigdata.wsgi:application --bind bigdata.enet.sharplabs.com:8000 --graceful-timeout=60 --timeout=60
+    '''
+    # print 'lag with form'
+    context = context_from_request(request)
+    context = context_from_args(context=context, args=args)
+    return csv_response_from_context(context)
+
+
+
 def csv_response_from_context(context=None):
 
     data = context or [[]]
