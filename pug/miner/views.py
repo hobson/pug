@@ -257,7 +257,9 @@ def table_from_list_of_instances(data, field_names=None, excluded_field_names=No
         yield [row.__dict__.get(k) for k in field_names]
 
 
-def csv_response_from_context(context=None):
+def csv_response_from_context(context=None, filename=None, field_names=None):
+    if not filename:
+        filename = 'BigData_download.csv'
 
     data = context or [[]]
 
@@ -267,18 +269,22 @@ def csv_response_from_context(context=None):
             data = context.get('data', {}).get('cases', [[]])
 
     if not isinstance(data, (list, tuple)) or not isinstance(data[0], (list, tuple)):
-        data = table_from_list_of_instances(data)
+        data = table_from_list_of_instances(data, field_names=field_names)
 
-    if len(data) < len(data[0]):
-        data = util.transposed_lists(data)  # list(list(row) for row in data)
+    try:
+        if len(data) < len(data[0]):
+            data = util.transposed_lists(data)  # list(list(row) for row in data)
+    except TypeError:
+        # no need to transpose if a generator was provided instead of a list or tuple (anythin with a len attribute)
+        pass
 
     # Create the HttpResponse object with the appropriate CSV header.
     response = HttpResponse(content_type='text/csv')
-    response['Content-Disposition'] = 'attachment; filename="download_BigData.csv"'
+    response['Content-Disposition'] = 'attachment; filename="%s"' % filename
 
     writer = csv.writer(response)
     for row in data:
-        writer.writerow(row)
+        writer.writerow([unicode(s).encode('UTF-8') for s in row])
 
     return response
 
