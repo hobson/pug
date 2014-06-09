@@ -239,6 +239,16 @@ def lag_csv_view(request, *args):
     return csv_response_from_context(context)
 
 
+def follow_double_underscores(obj, field_name=None):
+    if isinstance(field_name, list):
+        split_fields = field_name
+    else:
+        split_fields = field_name.split('__')
+    if len(split_fields) == 1:
+        return getattr(obj, split_fields[0])
+    return follow_double_underscores(getattr(obj, split_fields[0]), field_name=split_fields[1:])
+
+
 def table_from_list_of_instances(data, field_names=None, excluded_field_names=None, sort=True):
     '''Return an iterator over the model instances that yeilds lists of values
 
@@ -254,12 +264,12 @@ def table_from_list_of_instances(data, field_names=None, excluded_field_names=No
         if not field_names or not any(field_names):
             field_names = [k for (k, v) in row.__dict__.iteritems() if not k in excluded_field_names]
             yield field_names
-        yield [row.__dict__.get(k) for k in field_names]
+        yield [follow_double_underscores(row, k) for k in field_names]
 
 
 def csv_response_from_context(context=None, filename=None, field_names=None):
-    if not filename:
-        filename = 'BigData_download.csv'
+    filename = filename or context.get('filename') or 'table_download.csv'
+    field_names = context.get('field_names')
 
     data = context or [[]]
 
