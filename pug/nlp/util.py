@@ -493,21 +493,18 @@ def hist_from_values_list(values_list, fillers=(None,), normalize=False, cumulat
     >>> hist_from_values_list(transposed_matrix([(8,),(1,3,5),(2,),(3,4,5,8)]))  # doctest: +NORMALIZE_WHITESPACE
     [(1, 0, 1, 0, 0), (2, 0, 0, 1, 0), (3, 0, 1, 0, 1), (4, 0, 0, 0, 1), (5, 0, 1, 0, 1), (6, 0, 0, 0, 0), (7, 0, 0, 0, 0), (8, 1, 0, 0, 1)]
     """
-    value_types = tuple([int] + [type(filler) for filler in fillers])
-    if all(isinstance(value, value_types) for value in values_list):
-        counters = [Counter(values_list)]
-    elif all(len(row)==1 for row in values_list) and all(isinstance(row[0], value_types) for row in values_list):
-        counters = [Counter(values[0] for values in values_list)]
-    else:
-        values_list_t = transposed_matrix(values_list)
-        counters = [Counter(col) for col in values_list_t]
+    value_types = tuple([int, float] + [type(filler) for filler in fillers])
 
-    if fillers:
-        fillers = listify(fillers)
-        for counts in counters:
-            for ig in fillers:
-                if ig in counts:
-                    del counts[ig]
+    if all(isinstance(value, value_types) for value in values_list):
+        # ignore all fillers and convert all floats to ints when doing counting
+        counters = [Counter(int(value) for value in values_list if isinstance(value, (int, float)))]
+    elif all(len(row)==1 for row in values_list) and all(isinstance(row[0], value_types) for row in values_list):
+        return hist_from_values_list([values[0] for values in values_list], fillers=fillers, normalize=normalize, cumulative=cumulative, to_str=to_str, sep=sep, min_bin=min_bin, max_bin=max_bin)
+    else:  # assume it's a row-wise table (list of rows)
+        return [
+            hist_from_values_list(col, fillers=fillers, normalize=normalize, cumulative=cumulative, to_str=to_str, sep=sep, min_bin=min_bin, max_bin=max_bin)
+            for col in transposed_matrix(values_list)
+            ]
 
     intkeys_list = [[c for c in counts if (isinstance(c, int) or (isinstance(c, float) and int(c) == c))] for counts in counters]
     try:
@@ -519,6 +516,7 @@ def hist_from_values_list(values_list, fillers=(None,), normalize=False, cumulat
     except:
         max_bin = max(max(intkeys) for intkeys in intkeys_list)
 
+    # FIXME: this looks slow and hazardous (like it's ignore min/max bin):
     min_bin = max(min_bin, min((min(intkeys) if intkeys else 0) for intkeys in intkeys_list))  # TODO: reuse min(intkeys)
     max_bin = min(max_bin, max((max(intkeys) if intkeys else 0) for intkeys in intkeys_list))  # TODO: reuse max(intkeys)
 
@@ -1028,22 +1026,25 @@ def make_int(s, default='', ignore_commas=True):
     12345
     >>> make_int('0000012345000       ')
     12345000
+    >>> make_int(' \t\n123,450,00\n')
+    12345000
     """
     if ignore_commas and isinstance(s, basestring):
         s = s.replace(',', '')
     try:
         return int(s)
     except:
+        pass
+    try:
+        return int(re.split(str(s), '[^-0-9,.Ee]')[0])
+    except ValueError:
         try:
-            return int(re.split(str(s), '[^-0-9,.Ee]')[0])
-        except ValueError:
+            return int(float(normalize_scientific_notation(str(s), ignore_commas)))
+        except (ValueError, TypeError):
             try:
-                return int(float(normalize_scientific_notation(str(s), ignore_commas)))
+                return int(first_digits(s))
             except (ValueError, TypeError):
-                try:
-                    return int(first_digits(s))
-                except (ValueError, TypeError):
-                    return default
+                return default
 
 
 # FIXME: use locale and/or check that they occur ever 3 digits (1000's places) to decide whether to ignore commas
@@ -1388,9 +1389,12 @@ def tabulate(lol, headers, eol='\n'):
         yield '| %s |' % '  |  '.join(str(c) for c in row) + eol
 
 
-def intify(obj):
-    """
-    Return an integer that is representative of a categorical object (string, dict, etc)
+def intify(obj, str_fun=str, use_ord=True, use_hash=True, use_len=True):
+    """FIXME: this is nonpythonic and does things you don't expect!
+
+    FIXME: rename to "integer_from_category"
+
+    Returns an integer representative of a categorical object (string, dict, etc)
 
     >>> intify('1.2345e10')
     12345000000
@@ -1400,20 +1404,36 @@ def intify(obj):
     (97, 98, 98)
     >>> intify(272)
     272
+    >>> intify(float('nan'), ord_first_char=False)
+    >>> intify(float('nan'))
+    110
+    >>> intify(None, ord_first_char=False)
+    >>> intify(None)
+    110
     """
     try:
         return int(float(obj))
     except:
+        pass
+    if not str_fun:
+        str_fun = lambda x:x
+    if use_ord:    
         try:
-            return ord(str(obj)[0].lower())
+            return ord(str_fun(obj)[0].lower())
         except:
-            try:
-                return len(obj)
-            except:
-                try:
-                    return hash(str(obj))
-                except:
-                    return 0
+            pass
+    if use_hash:  
+        try:
+            return hash(str_fun(obj))
+        except:
+            pass
+    if use_len:
+        try:
+            return len(obj)
+        except:
+            return len(str_fun(obj))
+    return obj
+
 
 
 def listify(values, N=1, delim=None):

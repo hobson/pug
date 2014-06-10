@@ -22,6 +22,7 @@ var margin = {top: 20, right: 80, bottom: 30, left: 50},
     height = 500 - margin.top - margin.bottom;
 
 var d3data = {{ data.d3data|safe }}
+console.log(d3data)
 var ans = arrays_as_d3_series(d3data);
 var data = ans.data;
 // console.log(data);
