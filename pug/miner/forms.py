@@ -40,6 +40,13 @@ class GetLagForm(forms.Form):
         widget=forms.TextInput(attrs={'placeholder': "Comma-separated customer account #'s"}),
         )
 
+    exclude = forms.ChoiceField(
+        #widget=forms.RadioSelect,
+        initial='I',
+        label='Exclude?',
+        choices=(('I', 'Include'), ('E', 'Exclude'))
+        )
+
     r = forms.CharField(required=False,
         max_length=128,
         label='R-Code',
@@ -86,18 +93,6 @@ class GetLagForm(forms.Form):
         )
 
     def __init__(self, *args, **kwargs):
-        # self.helper = FormHelper()
-        # # self.helper.form_class = 'form-horizontal'  # 'form-inline', 'blueForms'
-        # # self.helper.form_id = 'id-GetLagForm'
-        # # self.helper.help_text_inline = True
-
-        # self.helper.form_method = 'GET'
-        # self.helper.form_action = ''  # url that is triggered, carrying a GET or POST payload
-
-        # self.helper.add_input(Submit('fast', 'Quick Table'))
-        # self.helper.add_input(Submit('detail', 'Detailed Table'))
-        # self.helper.add_input(Submit('zoomable', 'Zoomable Plot'))
-        # self.helper.add_input(Submit('linked', 'Linked Plot'))
         super(GetLagForm, self).__init__(*args, **kwargs)
 
     # def clean(self):

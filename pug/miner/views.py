@@ -163,6 +163,9 @@ def context_from_request(request, context=None, Form=GetLagForm, delim=','):
     a = [s.strip().upper() for s in a.split(',')] or ['']
     context['filter']['account_numbers'] = a
 
+    exclude = request.GET.get('exclude', "") or request.GET.get('e', "") or request.GET.get('x', "") or request.GET.get('ex', "") or request.GET.get('excl', "I")
+    context['exclude'] = 'E' if exclude.upper().startswith('E') else 'I'
+
     min_dates = request.GET.get('min_date', "") or request.GET.get('min_dates', "")
     min_dates = [s.strip() for s in min_dates.split(',')] or ['']
     context['filter']['min_dates'] = min_dates
@@ -192,11 +195,15 @@ def context_from_request(request, context=None, Form=GetLagForm, delim=','):
                'r': ', '.join(context['filter']['reasons']),
                'an': ', '.join(context['filter']['account_numbers']),
                'fy': ', '.join(context['filter']['fiscal_years']),
+               'exclude': str(exclude),
                'min_lag': str(min_lag),
                'max_lag': str(max_lag),
                'min_date': ', '.join(context['filter']['min_dates']),
                'max_date': ', '.join(context['filter']['max_dates'])
               }
+
+    print 'initial'
+    print initial
 
     if request.method == 'POST':
         # GetLagForm only has a GET button
