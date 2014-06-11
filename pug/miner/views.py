@@ -404,7 +404,6 @@ def hist(request, *args):
     context = context_from_request(context=None, request=request)
     context = context_from_args(context=context, args=args)
 
-    # print params
     lags_dict = SLAmodels.explore_lags(**context['filter'])
     context['means'] = lags_dict['means_dict']
 
