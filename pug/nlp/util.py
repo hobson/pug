@@ -60,18 +60,18 @@ PUNC = unicode(string.punctuation)
 
 # 4 types of "histograms" and their canonical name/label
 HIST_NAME = {
-                'hist': 'hist', 'ff':  'hist',  'fd': 'hist',
+                'hist': 'hist', 'ff':  'hist',  'fd': 'hist', 'dff':  'hist', 'dfd': 'hist', 'gfd': 'hist', 'gff': 'hist', 'bfd': 'hist', 'bff': 'hist',
                 'pmf':  'pmf',  'pdf': 'pmf',   'pd': 'pmf',
                 'cmf':  'cmf',  'cdf': 'cmf',
                 'cfd':  'cfd',  'cff': 'cfd',   'cdf': 'cfd',
             }
 HIST_CONFIG = {
     'hist': { 
-        'name': 'Histogram',  # frequency distribution, frequency function
+        'name': 'Histogram',  # frequency distribution, frequency function, discrete ff/fd, grouped ff/fd, binned ff/fd
         'kwargs': { 'normalize': False, 'cumulative': False, },
         'index': 0,
-        'ylabel': 'Count',
         'xlabel': 'Bin',
+        'ylabel': 'Count',
         },
     'pmf': {
         'name': 'Probability Mass Function',   # probability distribution [function]

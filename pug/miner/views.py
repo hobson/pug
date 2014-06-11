@@ -123,7 +123,7 @@ class JSONView(View):
         return json.dumps(context)
 
 
-def context_from_request(request, context=None, Form=GetLagForm, delim=','):
+def context_from_request(request, context=None, Form=GetLagForm, delim=',', **kwargs):
     if context is None:
         context = Context()
 
@@ -131,9 +131,18 @@ def context_from_request(request, context=None, Form=GetLagForm, delim=','):
 
     limit = request.GET.get('limit', 0) or request.GET.get('num', 0) or request.GET.get('num_rows', 0) or request.GET.get('rows', 0) or request.GET.get('records', 0) or request.GET.get('count', 0)
 
-    context['table'] = (request.GET.get('table', '') or request.GET.get('tbl', '') or request.GET.get('tble', '') 
-                        or request.GET.get('tab', '') or request.GET.get('t', 'fast')
+    context['plot'] = (request.GET.get('plot', '') or request.GET.get('plt', '') or request.GET.get('p', '') 
+                        or request.GET.get('chart', '') or request.GET.get('chrt', '')
                         ).strip().lower()
+    context['plot'] = util.HIST_NAME.get(context['plot'][-3:], context['plot'])
+    context['plot_name'] = util.HIST_CONFIG[context['plot']]['name'] if context['plot'] else ''
+
+
+    context['table'] = (request.GET.get('table', '') or request.GET.get('tbl', '') or request.GET.get('tble', '') 
+                        or request.GET.get('tab', '') or request.GET.get('t', '')
+                        ).strip().lower()
+    if context['table'].startswith('f'):
+        context['table'] = 'fast'
     if context['table'].startswith('d'):
         context['table'] = 'detailed'
         limit = limit or 10*1000
@@ -214,36 +223,26 @@ def context_from_request(request, context=None, Form=GetLagForm, delim=','):
     context['form_is_valid'] = context['form'].is_valid()
     if not context['form_is_valid']:
         context['form_errors'] = context['form'].errors
+        print 'ERRORS in FORM !!!!!!!!!!!!!'
         print context['form_errors']
         #import ipdb
         #ipdb.set_trace()
         #raise RuntimeError('form is invalid')
 
+    if not context.get('field_names'):
+        if kwargs.get('field_names'):
+            context['field_names'] = kwargs.get('field_names')
+        else:
+            context['field_names'] = list(SLAmodels.Refrefurb._meta.get_all_field_names()) + [
+                'pipesale__material', 'pipesale__serial_number', 'pipesale__billing_doc_date', 'rano__rano',
+                'pipesale__net_invoice_price', 'pipesale__sold_to_party', 'pipesale__sold_to_party_name',
+                'pipesale__ship_to_party_name', 'rano__rcode', 'rano__close_date',
+                ]
+        
+    if not context.get('filename'):
+        context['filename'] = 'Refurb.csv'
+
     return context
-
-
-def context_from_args(args=None, context=None):
-    if context is None:
-        context = Context()
-
-    context['hist_format'] = util.HIST_NAME['cfd']
-    if args and len(str(args[0])):
-        context['hist_format'] = util.HIST_NAME.get(str(args[0]).lower().strip(), context['hist_format'])
-        context['hist_name'] = util.HIST_CONFIG[context['hist_format']]['name']
-
-    return context
-
-
-def lag_csv_view(request, *args):
-    '''Table of sale->return lag in days and other data (model, serial RA#, refrerence, price, sale customer, etc).
-    
-    Data takes a long time to load/download/query, so you better increase the timeout with:
-        python gunicorn bigdata.wsgi:application --bind bigdata.enet.sharplabs.com:8000 --graceful-timeout=60 --timeout=60
-    '''
-    # print 'lag with form'
-    context = context_from_request(request)
-    context = context_from_args(context=context, args=args)
-    return csv_response_from_context(context)
 
 
 import re
@@ -252,11 +251,14 @@ re_model_instance_dot = re.compile('__|[.]+')
 
 def follow_double_underscores(obj, field_name=None):
     '''Like getattr(obj, field_name) only follows model relationships through "__" or "." as link separators'''
+    if not obj:
+        return obj
     if isinstance(field_name, list):
         split_fields = field_name
     else:
         split_fields = re_model_instance_dot.split(field_name)
     if len(split_fields) <= 1:
+
         if hasattr(obj, split_fields[0]):
             return getattr(obj, split_fields[0])
         elif hasattr(obj, split_fields[0] + '_id'):
@@ -291,9 +293,9 @@ def csv_response_from_context(context=None, filename=None, field_names=None):
     filename = filename or context.get('filename') or 'table_download.csv'
     field_names = context.get('field_names')
 
-    data = context or [[]]
+    data = context
 
-    if not (isinstance(data, (tuple, list))  and isinstance(data[0], (tuple, list))):       
+    if not (isinstance(data, (tuple, list)) and isinstance(data[0], (tuple, list))):
         data = json.loads(data.get('data', {}).get('d3data', '[[]]'))
         if not data or not any(data):
             data = context.get('data', {}).get('cases', [[]])
@@ -327,16 +329,12 @@ def lag(request, *args):
     '''
     # print 'lag with form'
     context = context_from_request(request)
-    context = context_from_args(context=context, args=args)
 
     # retrieve a dict {'refurbs_dict': {}, 'lags_dict': {}, 'means_dict': {}, 'hist': {}, 'pmf': {}, 'cfd': {} ...etc}
     # each one of these dicts is a dictionary with keys for each of the series/filter definitions (which are used for the legend string)
     lags_dict = SLAmodels.explore_lags(**context['filter'])
-    print '?'*80
-    print lags_dict.keys()
-    print context['hist_format']
     context['means'] = lags_dict['means_dict']
-    hist = lags_dict[context['hist_format']]  # context['hist_format'] is 'cfd', 'pmf' or 'hist', etc
+    hist = lags_dict[context['plot']]  # context['plot'] is 'cfd', 'pmf' or 'hist', etc
 
 
     # FIXME: use util.transposed_lists and make this look more like the hist() view below
@@ -381,7 +379,7 @@ def lag(request, *args):
 
     context.update({
         'data': {
-            'title': 'Returns Lag <font color="gray">' + context['hist_format'].upper() + '</font>',
+            'title': 'Returns Lag <font color="gray">' + context['plot_name'] + '</font>',
             'd3data': json.dumps(util.transposed_lists(hist)),
             'subtitle': ', '.join(subtitle),
             'charttype': "lineWithFocusChart",
@@ -402,18 +400,17 @@ def lag(request, *args):
 def hist(request, *args):
     '''Multi-column table of lag vs. counts (histogram) displayed as a line plot.'''
     context = context_from_request(context=None, request=request)
-    context = context_from_args(context=context, args=args)
 
     lags_dict = SLAmodels.explore_lags(**context['filter'])
     context['means'] = lags_dict['means_dict']
 
-    hist_name = context['hist_format']
+    hist_type = context['plot']
 
     context.update({'data': {
-        'title': 'Returns Lag <font color="gray">' + hist_name.upper() + '</font>',
+        'title': 'Returns Lag <font color="gray">' + hist_type.upper() + '</font>',
         'xlabel': 'Lag (days)',
-        'ylabel': util.HIST_CONFIG[hist_name]['ylabel'],
-        'd3data': json.dumps(util.transposed_lists(lags_dict[hist_name])),
+        'ylabel': util.HIST_CONFIG[hist_type]['ylabel'],
+        'd3data': json.dumps(util.transposed_lists(lags_dict[hist_type])),
         'form': {},
         }})
     return render(request, 'miner/hist.html', context)

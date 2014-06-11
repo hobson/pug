@@ -15,7 +15,10 @@
     <div class="row">
       <div id="graph" class="aGraph"></div>
     </div> 
-
+{% comment %}
+    <button id="makesmooth" onclick="make_smooth()">Smooth</button>
+    <button id="makeraw" onclick="make_raw()">Make Raw</button>
+{% endcomment %}
 <script>
 var margin = {top: 20, right: 80, bottom: 30, left: 50},
     width = 960 - margin.left - margin.right,
@@ -56,9 +59,22 @@ var voronoi = d3.geom.voronoi()
     .clipExtent([[-margin.left, -margin.top], [width + margin.right, height + margin.bottom]]);
 
 var line = d3.svg.line()
-    .interpolate("basis")
     .x(function(d) { return x(d.x); })
     .y(function(d) { return y(d.y); });
+
+// function make_smooth() {
+//   line.interpolate("basis")
+//   // FIXME: need to select and update the path using this new line object
+// }
+
+// function make_raw() {
+//   line.interpolate(null)
+//   // FIXME: need to select and update the path using this new line object
+// }
+
+// d3.select("#makesmooth").on("click", make_smooth);
+// d3.select("#makeraw").on("click", make_smooth);
+
 
 var svg = d3.select("#graph").append("svg")
     .attr("width", width + margin.left + margin.right)
@@ -260,16 +276,16 @@ function mouseover(d) {
 
 function mouseclick(d) {
   console.log(d);
-  // var url = document.URL + "&lag=" + d.x + "&series=" + d.series.name;
-  // var hist_formats = ["", "-pmf", "-cmf", "-cfd"];
-  // hist_formats.forEach(function(hf) { 
-  //   url = url.replace("/hist"+hf+"/", "/cases/");
-  // });
-  // var plot_types = ["linked", "link", "l", "zoomable", "zoom", "z"];
-  // plot_types.forEach(function(pt) { 
-  //   url = url.replace("&plot="+pt, "&table=quick");
-  // });
-  // window.location = url;
+  var url = document.URL + "&lag=" + d.x + "&series=" + d.series.name;
+  var hist_formats = ["", "-pmf", "-cmf", "-cfd"];
+  hist_formats.forEach(function(hf) { 
+    url = url.replace("/hist"+hf+"/", "/cases/");
+  });
+  var plot_types = ["linked", "link", "l", "zoomable", "zoom", "z"];
+  plot_types.forEach(function(pt) { 
+    url = url.replace("&plot="+pt, "&table=quick");
+  });
+  window.location = url;
 }
 
 function mouseout(d) {
