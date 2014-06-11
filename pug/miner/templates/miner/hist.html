@@ -179,7 +179,7 @@ voronoiGroup.selectAll("path")
 
 // tooltips
 var focus = svg.append("g")
-    //.attr("transform", "translate(-1000,-1000)")
+    .attr("transform", "translate(-100,-100)")  // make sure initial tool-tip circle is located outside (upper left) of the plot (svg element)
     .attr("class", "focus");
 
 focus.append("text").attr("y", -12);
