@@ -175,11 +175,11 @@ def context_from_request(request, context=None, Form=GetLagForm, delim=',', **kw
     exclude = request.GET.get('exclude', "") or request.GET.get('e', "") or request.GET.get('x', "") or request.GET.get('ex', "") or request.GET.get('excl', "I")
     context['exclude'] = 'E' if exclude.upper().startswith('E') else 'I'
 
-    min_dates = request.GET.get('min_date', "") or request.GET.get('min_dates', "")
+    min_dates = request.GET.get('mind', "") or request.GET.get('min_date', "") or request.GET.get('min_dates', "")
     min_dates = [s.strip() for s in min_dates.split(',')] or ['']
     context['filter']['min_dates'] = min_dates
 
-    max_dates = request.GET.get('max_date', "") or request.GET.get('max_dates', "")
+    max_dates = request.GET.get('maxd', "") or request.GET.get('max_date', "") or request.GET.get('max_dates', "")
     max_dates = [s.strip() for s in max_dates.split(',')] or ['']
     context['filter']['max_dates'] = max_dates
 

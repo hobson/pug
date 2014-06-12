@@ -9,32 +9,24 @@ class GetLagForm(forms.Form):
     mn = forms.CharField(max_length=512, required=False,
         label='Model Numbers',
         initial='',
-        help_text='Comma-separated model numbers',
-        widget=forms.TextInput(attrs={'placeholder': 'LC60E79U, LC60LE835U, ...'}),
+        help_text='e.g.: "LC40, LC5, LC60E79U"',
+        #widget=forms.TextInput(attrs={'placeholder': 'LC60E79U, LC60LE835U, ...'}),
         )
 
     sg = forms.CharField(required=False,
         max_length=128,
         label='Product Department',
         initial='',
-        help_text='Product Department numbers (e.g. 117, 118, 119) associated with subsets of model numbers',
-        widget=forms.TextInput(attrs={'placeholder': '117, 118, 119 ...'}),
+        help_text='e.g.: "117, 118, 119"',
+        #widget=forms.TextInput(attrs={'placeholder': '117, 118, 119 ...'}),
         )
-
-    # sn = forms.CharField(required=False,
-    #     max_length=2048,
-    #     label='Serial Numbers',
-    #     initial='',
-    #     help_text='Comma-separated serial numbers',
-    #     widget=forms.TextInput(attrs={'placeholder': '205815430, 109840374, ...'}),
-    #     )
 
     an= forms.CharField(required=False,
         max_length=256,
         label='Refurb Account',
         initial='',
-        help_text="Comma-separated customer account #'s",
-        widget=forms.TextInput(attrs={'placeholder': "Comma-separated customer account #'s"}),
+        help_text="e.g.: 113656, 100479, 105158",
+        #widget=forms.TextInput(attrs={'placeholder': "Comma-separated customer account #'s"}),
         )
 
     exclude = forms.ChoiceField(
@@ -48,45 +40,45 @@ class GetLagForm(forms.Form):
         max_length=128,
         label='R-Code',
         initial='',
-        help_text='Comma-separated reason codes',
-        widget=forms.TextInput(attrs={'placeholder': 'R10, R13, ...'}),
+        help_text='e.g.: "R11, R12, R13"',
+        #widget=forms.TextInput(attrs={'placeholder': 'R10, R13, ...'}),
         )
 
     min_lag = forms.IntegerField(max_value=365*10, min_value=-60, required=False,
         label='Min Lag',
         initial=0,
         help_text='Min days between sale & return',
-        widget=forms.TextInput(attrs={'placeholder': 'Min days between sale & return'}),
+        #widget=forms.TextInput(attrs={'placeholder': 'Min days between sale & return'}),
         )
 
     max_lag = forms.IntegerField(max_value=365*10, min_value=-60, required=False,
         label='Max Lag',
         initial=365*3,
         help_text='Max days between sale & return',
-        widget=forms.TextInput(attrs={'placeholder': 'Max days between sale & return'}),
+        #widget=forms.TextInput(attrs={'placeholder': 'Max days between sale & return'}),
         )
 
     min_date = forms.DateField(
         required=False,
         label='Min Date',
         initial=datetime.date(2012, 4, 1),
-        help_text='Minimum return received date',
-        widget=forms.DateInput(), #attrs={'placeholder': 'e.g. 2014-04-01'}
+        help_text='e.g.: "2013-03-31"',
+        #widget=forms.DateInput(), #attrs={'placeholder': 'e.g. 2014-04-01'}
         )
 
     max_date = forms.DateField(
         required=False,
         label='Max Date',
         initial=datetime.date.today,
-        help_text='Maximum return received date',
-        widget=forms.DateInput(), #attrs={'placeholder': 'e.g. 2014-04-01'}
+        help_text='e.g.: "2014-04-01"',
+        #widget=forms.DateInput(), #attrs={'placeholder': 'e.g. 2014-04-01'}
         )
 
     fy = forms.CharField(max_length=256, required=False,
         label='Fiscal Years',
         initial='13', 
-        help_text="Comma-separated list of fiscal years",
-        widget=forms.TextInput(attrs={'placeholder': '12, 2013, 14, ...'}),
+        help_text='e.g.: 12, \'13, 2014',
+        # widget=forms.TextInput(attrs={'placeholder': '12, 2013, 14, ...'}),
         )
 
     def __init__(self, *args, **kwargs):
