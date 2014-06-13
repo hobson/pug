@@ -13,7 +13,9 @@
     {% include "case/bootstrap_case_form.html" %}
     </div>
     <div class="row">
+    {% if not errors and data.d3data %}
       <div id="graph" class="aGraph"></div>
+    {% endif %}
     </div> 
 {% comment %}
     <button id="makesmooth" onclick="make_smooth()">Smooth</button>

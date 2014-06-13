@@ -127,6 +127,7 @@ def context_from_request(request, context=None, Form=GetLagForm, delim=',', **kw
     if context is None:
         context = Context()
 
+    context['errors'] = []
     context['filter'] = {}
 
     limit = request.GET.get('limit', 0) or request.GET.get('num', 0) or request.GET.get('num_rows', 0) or request.GET.get('rows', 0) or request.GET.get('records', 0) or request.GET.get('count', 0)
@@ -195,10 +196,16 @@ def context_from_request(request, context=None, Form=GetLagForm, delim=',', **kw
         fiscal_years = [filter_values[3].strip('*')]
         context['filter']['fiscal_years'] = fiscal_years
 
-    lag_days = int(request.GET.get('lag', None) or 365)
-    max_lag = int(request.GET.get('max_lag', None) or lag_days)
-    min_lag = int(request.GET.get('min_lag', None) or (lag_days - 1))
-
+    lag_days = request.GET.get('lag', None)
+    max_lag = request.GET.get('max_lag', None)
+    min_lag = request.GET.get('min_lag', None)
+    try:
+        min_lag = int(lag_days) - 7
+        max_lag = int(lag_days)
+    except:
+        min_lag = int(min_lag or 0)
+        max_lag = int(max_lag or 180)
+    
     initial = {'mn': ', '.join(m.strip() for m in context['filter']['model_numbers'] if m.strip()), 
                'sg': ', '.join(context['filter']['sales_groups']),
                'r': ', '.join(context['filter']['reasons']),

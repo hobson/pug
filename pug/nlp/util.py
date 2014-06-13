@@ -506,6 +506,9 @@ def hist_from_values_list(values_list, fillers=(None,), normalize=False, cumulat
             for col in transposed_matrix(values_list)
             ]
 
+    if not values_list:
+        return []
+
     intkeys_list = [[c for c in counts if (isinstance(c, int) or (isinstance(c, float) and int(c) == c))] for counts in counters]
     try:
         min_bin = int(min_bin)
