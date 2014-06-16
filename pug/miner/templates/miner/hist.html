@@ -269,7 +269,7 @@ function mouseover(d) {
   focus.select("text").text(tt);
 
   query_obj.min_lag = d.x-1
-  query_obj.max_lag = d.x
+  query_obj.max_lag = d.x+1
 
   focus.select("a").attr("xlink:href", "?"+obj2query(query_obj));
 
