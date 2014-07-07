@@ -4,13 +4,13 @@ import csv
 
 from django.shortcuts import render_to_response
 from django.views.generic import View  #, TemplateView
-from django.template import Context
+from django.template import RequestContext
 from django.template.response import TemplateResponse #, HttpResponse
 from django.template.loader import get_template
 from django.http import Http404, HttpResponse
 from django import http
 from django.utils import simplejson as json
-from django.shortcuts import render
+# from django.shortcuts import render
 
 from pug.nlp import parse
 from pug.nlp import util
@@ -122,10 +122,9 @@ class JSONView(View):
         # -- can be serialized as JSON.
         return json.dumps(context)
 
-
+   
 def context_from_request(request, context=None, Form=GetLagForm, delim=',', **kwargs):
-    if context is None:
-        context = Context()
+    context = context or RequestContext(request)
 
     context['errors'] = []
     context['filter'] = {}
@@ -328,96 +327,96 @@ def csv_response_from_context(context=None, filename=None, field_names=None):
     return response
 
 
-def lag(request, *args):
-    '''Line chart with zoom and pan and "focus area" at bottom like google analytics.
+# def lag(request, *args):
+#     '''Line chart with zoom and pan and "focus area" at bottom like google analytics.
     
-    Data takes a long time to load, so you better use this to increase the timeout
-    python gunicorn bigdata.wsgi:application --bind bigdata.enet.sharplabs.com:8000 --graceful-timeout=60 --timeout=60
-    '''
-    # print 'lag with form'
-    context = context_from_request(request)
+#     Data takes a long time to load, so you better use this to increase the timeout
+#     python gunicorn bigdata.wsgi:application --bind bigdata.enet.sharplabs.com:8000 --graceful-timeout=60 --timeout=60
+#     '''
+#     # print 'lag with form'
+#     context = context_from_request(request)
 
-    # retrieve a dict {'refurbs_dict': {}, 'lags_dict': {}, 'means_dict': {}, 'hist': {}, 'pmf': {}, 'cfd': {} ...etc}
-    # each one of these dicts is a dictionary with keys for each of the series/filter definitions (which are used for the legend string)
-    lags_dict = SLAmodels.explore_lags(**context['filter'])
-    context['means'] = lags_dict['means_dict']
-    hist = lags_dict[context['plot']]  # context['plot'] is 'cfd', 'pmf' or 'hist', etc
-
-
-    # FIXME: use util.transposed_lists and make this look more like the hist() view below
-    hist_t=[[],[],[],[]]
-    names, xdata, ydata = [], [], []
-    if hist and len(hist) > 1:
-        hist_t = util.transposed_matrix(hist[1:])
-
-        if hist[0]:
-            # print hist[0]
-            names = hist[0][1:]
-            #print names
-            xdata = hist_t[0]
-            ydata = hist_t[1:]
-    # print names
-
-    #tooltip_date = "%d %b %Y %H:%M:%S %p"
-    extra_series = {
-                    "tooltip": {"y_start": " ", "y_end": " returns"},
-                   #"date_format": tooltip_date
-                   }
-
-    chartdata = { 'x': xdata }
-
-    for i, name in enumerate(names):
-        chartdata['name%d' % (i + 1)] = name
-        chartdata['y%d' % (i + 1)] = ydata[i]
-        chartdata['extra%d' % (i + 1)] = extra_series
-
-    subtitle = []
-
-    params = {
-        'FY': context['filter']['fiscal_years'],
-        'Reason': context['filter']['reasons'],
-        'Account #': context['filter']['account_numbers'],
-        'Model #': context['filter']['model_numbers'],
-        }
-
-    for k, v in params.iteritems():
-        if len(v) == 1 and v[0] and len(str(v[0])):
-            subtitle += [str(k) + ': ' + str(v[0])] 
-
-    context.update({
-        'data': {
-            'title': 'Returns Lag <font color="gray">' + context['plot_name'] + '</font>',
-            'd3data': json.dumps(util.transposed_lists(hist)),
-            'subtitle': ', '.join(subtitle),
-            'charttype': "lineWithFocusChart",
-            'chartdata': chartdata,
-            'chartcontainer': 'linewithfocuschart_container',
-            'extra': {
-                'x_is_date': False,
-                'x_axis_format': ',.0f', # %b %Y %H',
-                'y_axis_format': ',.0f', # "%d %b %Y"
-                'tag_script_js': True,
-                'jquery_on_ready': True,
-                },
-            }
-        })
-    return render(request, 'miner/lag.html', context)
+#     # retrieve a dict {'refurbs_dict': {}, 'lags_dict': {}, 'means_dict': {}, 'hist': {}, 'pmf': {}, 'cfd': {} ...etc}
+#     # each one of these dicts is a dictionary with keys for each of the series/filter definitions (which are used for the legend string)
+#     lags_dict = SLAmodels.explore_lags(**context['filter'])
+#     context['means'] = lags_dict['means_dict']
+#     hist = lags_dict[context['plot']]  # context['plot'] is 'cfd', 'pmf' or 'hist', etc
 
 
-def hist(request, *args):
-    '''Multi-column table of lag vs. counts (histogram) displayed as a line plot.'''
-    context = context_from_request(context=None, request=request)
+#     # FIXME: use util.transposed_lists and make this look more like the hist() view below
+#     hist_t=[[],[],[],[]]
+#     names, xdata, ydata = [], [], []
+#     if hist and len(hist) > 1:
+#         hist_t = util.transposed_matrix(hist[1:])
 
-    lags_dict = SLAmodels.explore_lags(**context['filter'])
-    context['means'] = lags_dict['means_dict']
+#         if hist[0]:
+#             # print hist[0]
+#             names = hist[0][1:]
+#             #print names
+#             xdata = hist_t[0]
+#             ydata = hist_t[1:]
+#     # print names
 
-    hist_type = context['plot']
+#     #tooltip_date = "%d %b %Y %H:%M:%S %p"
+#     extra_series = {
+#                     "tooltip": {"y_start": " ", "y_end": " returns"},
+#                    #"date_format": tooltip_date
+#                    }
 
-    context.update({'data': {
-        'title': 'Returns Lag <font color="gray">' + hist_type.upper() + '</font>',
-        'xlabel': 'Lag (days)',
-        'ylabel': util.HIST_CONFIG[hist_type]['ylabel'],
-        'd3data': json.dumps(util.transposed_lists(lags_dict[hist_type])),
-        'form': {},
-        }})
-    return render(request, 'miner/hist.html', context)
+#     chartdata = { 'x': xdata }
+
+#     for i, name in enumerate(names):
+#         chartdata['name%d' % (i + 1)] = name
+#         chartdata['y%d' % (i + 1)] = ydata[i]
+#         chartdata['extra%d' % (i + 1)] = extra_series
+
+#     subtitle = []
+
+#     params = {
+#         'FY': context['filter']['fiscal_years'],
+#         'Reason': context['filter']['reasons'],
+#         'Account #': context['filter']['account_numbers'],
+#         'Model #': context['filter']['model_numbers'],
+#         }
+
+#     for k, v in params.iteritems():
+#         if len(v) == 1 and v[0] and len(str(v[0])):
+#             subtitle += [str(k) + ': ' + str(v[0])] 
+
+#     context.update({
+#         'data': {
+#             'title': 'Returns Lag <font color="gray">' + context['plot_name'] + '</font>',
+#             'd3data': json.dumps(util.transposed_lists(hist)),
+#             'subtitle': ', '.join(subtitle),
+#             'charttype': "lineWithFocusChart",
+#             'chartdata': chartdata,
+#             'chartcontainer': 'linewithfocuschart_container',
+#             'extra': {
+#                 'x_is_date': False,
+#                 'x_axis_format': ',.0f', # %b %Y %H',
+#                 'y_axis_format': ',.0f', # "%d %b %Y"
+#                 'tag_script_js': True,
+#                 'jquery_on_ready': True,
+#                 },
+#             }
+#         })
+#     return render(request, 'miner/lag.html', context)
+
+
+# def hist(request, *args):
+#     '''Multi-column table of lag vs. counts (histogram) displayed as a line plot.'''
+#     context = context_from_request(context=None, request=request)
+
+#     lags_dict = SLAmodels.explore_lags(**context['filter'])
+#     context['means'] = lags_dict['means_dict']
+
+#     hist_type = context['plot']
+
+#     context.update({'data': {
+#         'title': 'Returns Lag <font color="gray">' + hist_type.upper() + '</font>',
+#         'xlabel': 'Lag (days)',
+#         'ylabel': util.HIST_CONFIG[hist_type]['ylabel'],
+#         'd3data': json.dumps(util.transposed_lists(lags_dict[hist_type])),
+#         'form': {},
+#         }})
+#     return render(request, 'miner/hist.html', context)

@@ -472,6 +472,48 @@ def transposed_matrix(matrix, filler=None, row_type=list, matrix_type=list, valu
     return matrix_type([row_type(row) for row in ans])
 
 
+def hist_from_counts(counts, normalize=False, cumulative=False, to_str=False, sep=',', min_bin=None, max_bin=None):
+    """Compute an emprical histogram, PMF or CDF in a list of lists
+
+    TESTME: compare results to hist_from_values_list and hist_from_float_values_list
+    """
+    counters = [dict((i, c)for i, c in enumerate(counts))]
+
+
+    intkeys_list = [[c for c in counts_dict if (isinstance(c, int) or (isinstance(c, float) and int(c) == c))] for counts_dict in counters]
+    min_bin, max_bin = min_bin or 0, max_bin or len(counts) - 1 
+
+    histograms = []
+    for intkeys, counts in zip(intkeys_list, counters):
+        histograms += [OrderedDict()]
+        if not intkeys:
+            continue
+        if normalize:
+            N = sum(counts[c] for c in intkeys)
+            for c in intkeys:
+                counts[c] = float(counts[c]) / N
+        if cumulative:
+            for i in xrange(min_bin, max_bin + 1):
+                histograms[-1][i] = counts.get(i, 0) + histograms[-1].get(i-1, 0)
+        else:
+            for i in xrange(min_bin, max_bin + 1):
+                histograms[-1][i] = counts.get(i, 0)
+    if not histograms:
+        histograms = [OrderedDict()]
+
+    # fill in the zero counts between the integer bins of the histogram
+    aligned_histograms = []
+
+    for i in range(min_bin, max_bin + 1):
+        aligned_histograms += [tuple([i] + [hist.get(i, 0) for hist in histograms])]
+
+    if to_str:
+        # FIXME: add header row
+        return str_from_table(aligned_histograms, sep=sep, max_rows=365*2+1)
+
+    return aligned_histograms
+
+
 def hist_from_values_list(values_list, fillers=(None,), normalize=False, cumulative=False, to_str=False, sep=',', min_bin=None, max_bin=None):
     """Compute an emprical histogram, PMF or CDF in a list of lists or a csv string
 

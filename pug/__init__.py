@@ -21,6 +21,6 @@
 
 __version__ = '0.0.4'
 __authors__ = [
-    'Hobson Lane <hobsonlane@totalgood.com>'
+    'Hobson <hobson@totalgood.com>'
     ]
-__github_url__ = "https://github.com/hobsonlane/%s" % (__name__)
+__github_url__ = "https://github.com/hobson/%s" % (__name__)
