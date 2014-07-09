@@ -20,6 +20,7 @@ from collections import Counter
 from traceback import print_exc
 import ascii
 import decimal
+import random
 
 #import math
 from pytz import timezone
@@ -57,6 +58,12 @@ SCALAR_TYPES = (float, long, int, decimal.Decimal, bool, complex, basestring, st
 DICTABLE_TYPES = (Mapping, tuple, list)  # convertable to a dictionary (inherits collections.Mapping or is a list of key/value pairs)
 VECTOR_TYPES = (list, tuple)
 PUNC = unicode(string.punctuation)
+
+
+def fedora_password_salt(length=8, alphabet=string.letters + string.digits + './'):
+    """Generate a random salt for use in `crypt.crypt(password, salt)`"""
+    return ''.join(random.choice(alphabet) for position in range(length))
+
 
 # 4 types of "histograms" and their canonical name/label
 HIST_NAME = {
