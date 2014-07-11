@@ -696,7 +696,7 @@ def hist_from_float_values_list(values_list, fillers=(None,), normalize=False, c
     return aligned_histograms
 
 
-def update_dict(d, u, depth=-1, default_mapping_type=dict, prefer_update_type=False, copy=False):
+def update_dict(d, u, depth=-1, take_new=True, default_mapping_type=dict, prefer_update_type=False, copy=False):
     """
     Recursively merge (union or update) dict-like objects (collections.Mapping) to the specified depth.
 
@@ -713,24 +713,29 @@ def update_dict(d, u, depth=-1, default_mapping_type=dict, prefer_update_type=Fa
     >>> updated2 = update_dict(orig, {'new_key2': 'new_value2'})
     >>> updated2 == orig
     True
+    >>> update_dict({'k1': {'k2': {'k3': 3}}, 'k4': 4}, {'k1': {'k2': 2}}, depth=1, take_new=False)
+    {'k1': {'k2': 2}, 'k4': 4}
+    >>> # FIXME: this result is unexpected the same as for `take_new=False`
+    >>> update_dict({'k1': {'k2': {'k3': 3}}, 'k4': 4}, {'k1': {'k2': 2}}, depth=1, take_new=True)
+    {'k1': {'k2': 2}, 'k4': 4}
     """
     orig_mapping_type = type(d)
-    # Note: calling type(u) twice vs. once wastes ~10 ms
-    if prefer_update_type and isinstance(type(u), Mapping):
+    if prefer_update_type and isinstance(u, Mapping):
         dictish = type(u)
-    elif isinstance(orig_mapping_type, Mapping):
+    elif isinstance(d, Mapping):
         dictish = orig_mapping_type
     else:
         dictish = default_mapping_type
     if copy:
         d = dictish(d)
     for k, v in u.iteritems():
-        if isinstance(v, Mapping) and not depth == 0:
-            r = update_dict(d.get(k, dictish()), v, depth=max(depth - 1, -1), copy=copy)
-            d[k] = r
-        elif isinstance(d, Mapping):
-            d[k] = u[k]
-        else:
+        if isinstance(d, Mapping):
+            if isinstance(v, Mapping) and not depth == 0:
+                r = update_dict(d.get(k, dictish()), v, depth=max(depth - 1, -1), copy=copy)
+                d[k] = r
+            elif take_new:
+                d[k] = u[k]
+        elif take_new:
             d = dictish([(k, u[k])])
     return d
 
