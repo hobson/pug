@@ -1417,13 +1417,13 @@ def delete_in_batches(queryset, batch_size=1000, verbosity=1):
     N = queryset.count()
 
     if verbosity:
-        print('Deleting %r records from %r...' % (N, queryset))
+        print('Deleting %r records from %r...' % (N, queryset.model))
         widgets = [pb.Counter(), '/%d records: ' % N, pb.Percentage(), ' ', pb.RotatingMarker(), ' ', pb.Bar(),' ', pb.ETA()]
         i, pbar = 0, pb.ProgressBar(widgets=widgets, maxval=N).start()
 
     for j in range(int(N/float(batch_size)) + 1):
         if i + batch_size < N:
-            pk = queryset.order_by('pk').all()[batch_size]
+            pk = queryset.order_by('pk').values_list('pk', flat=True).all()[batch_size]
         else:
             pk = None
         pbar.update(i)
