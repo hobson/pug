@@ -1413,6 +1413,31 @@ def hash_model_values(model, clear=True, hash_field='values_hash', hash_fun=hash
         tracking_obj.update(hash_value=h)
 
 
+def delete_in_batches(queryset, batch_size=1000, verbosity=1):
+    N = queryset.count()
+
+    if verbosity:
+        print('Deleting %r records from %r...' % (N, queryset))
+        widgets = [pb.Counter(), '/%d records: ' % N, pb.Percentage(), ' ', pb.RotatingMarker(), ' ', pb.Bar(),' ', pb.ETA()]
+        i, pbar = 0, pb.ProgressBar(widgets=widgets, maxval=N).start()
+
+    for j in range(int(N/float(batch_size)) + 1):
+        if i + batch_size < N:
+            pk = queryset.order_by('pk').all()[batch_size]
+        else:
+            pk = None
+        pbar.update(i)
+        if pk:
+            queryset.filter(pk__lt=pk).delete()
+            i += batch_size
+        else:
+            i += queryset.count()
+            queryset.all().delete()
+            break
+    pbar.finish()
+    return i
+
+
 def import_items(item_seq, dest_model,  batch_len=500, clear=False, dry_run=True, verbosity=1):
     """Given a sequence (queryset, generator, tuple, list) of dicts import them into the given model"""
     try:
@@ -1434,7 +1459,9 @@ def import_items(item_seq, dest_model,  batch_len=500, clear=False, dry_run=True
     if clear and not dry_run:
         if verbosity:
             print "WARNING: Deleting %d records from %r !!!!!!!" % (dest_model.objects.count(), dest_model)
-        dest_model.objects.all().delete()
+        num_deleted = delete_in_batches(dest_model.objects.all())
+        if verbosity:
+            print "Finished deleting %d records in %r." % (num_deleted, dest_model)
     for batch_num, dict_batch in enumerate(util.generate_batches(item_seq, batch_len)):
         if verbosity > 2:
             print(repr(dict_batch))
