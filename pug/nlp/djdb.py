@@ -1197,6 +1197,8 @@ def load_csv_to_model(path, model, field_names=None, delimiter=None, batch_len=1
         reader_kwargs['dialect'] = dialect or 'excel'
         if delimiter:
             reader_kwargs['delimiter'] = delimiter
+    reader_kwargs['delimiter'] = str(reader_kwargs['delimiter'][0])
+    delimiter = reader_kwargs['delimiter']
 
     path = path or './'
     if not delimiter:
@@ -1208,7 +1210,6 @@ def load_csv_to_model(path, model, field_names=None, delimiter=None, batch_len=1
             except:
                 pass
         return None
-    delimiter = str(delimiter)
 
     if clear:
         clear_model(model, dry_run=dry_run, verbosity=verbosity)
@@ -1249,7 +1250,10 @@ def load_csv_to_model(path, model, field_names=None, delimiter=None, batch_len=1
                 if verbosity or not ignore_errors:
                     M = M or len(row)
                     if len(row) != M:
-                        print 'ERROR importing row #%d which had %d columns, but previous rows had %d.' % (i + j + 1, len(row), M)
+                        print 'ERROR importing row #%d in batch_num=%d which is row #%d overall. The row had %d columns, but previous rows had %d.' % (j + 1, batch_num + 1, i + j + 1, len(row), M)
+                        print 'Erroneously parsed row:'
+                        print repr(row)
+                        
                         if not ignore_errors:
                             raise ValueError('ERROR importing row #%d which had %d columns, but previous rows had %d.' % (i + j + 1, len(row), M))
                 try:

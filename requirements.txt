@@ -9,7 +9,7 @@ lxml==3.2.5
 numpy==1.8.0
 progressbar==2.3
 psycopg2==2.5.2
--e git+git@github.com:hobson/pug.git@e19b8b11e3998f1e2a44de10ed6c8d435785978d#egg=pug-master
+# -e git+git@github.com:hobson/pug.git@e19b8b11e3998f1e2a44de10ed6c8d435785978d#egg=pug-master
 pyOpenSSL==0.13.1
 python-dateutil==2.2
 pytz==2013.9

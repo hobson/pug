@@ -1105,7 +1105,7 @@ def make_int(s, default='', ignore_commas=True):
 
 
 # FIXME: use locale and/or check that they occur ever 3 digits (1000's places) to decide whether to ignore commas
-def normalize_scientific_notation(s, ignore_commas=True):
+def normalize_scientific_notation(s, ignore_commas=True, verbosity=1):
     """Produce a string convertable with float(s), if possible, fixing some common scientific notations
 
     Deletes commas and allows addition.
@@ -1129,9 +1129,10 @@ def normalize_scientific_notation(s, ignore_commas=True):
     if not s:
         return None
     try:
-        s = str(eval(s))
+        s = str(eval(s.strip().lstrip('0')))
     except:
-        print 'Unable to evaluate %s' % repr(s)
+        if verbosity > 1:
+            print 'Unable to evaluate %s' % repr(s)
         try:
             s = str(float(s))
         except:
