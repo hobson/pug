@@ -248,6 +248,19 @@ def get_model(model=DEFAULT_MODEL, app=DEFAULT_APP):
         return models.get_model(app.__package__.split('.')[-1], fuzzy.extractOne(str(model), model_names)[0])
 
 
+def get_queryset(qs=None, app=DEFAULT_APP):
+    """
+    >>> from django.db import connection
+    >>> connection.close() 
+    >>> get_queryset('WikiI').count() > 0
+    True
+    """
+    # print 'get_model' + repr(model) + ' app ' + repr(app)
+    if isinstance(qs, (models.Manager, models.query.QuerySet)):
+        return qs.all()
+    return get_model(qs, app=app).objects.all()
+
+
 def get_db_alias(app=DEFAULT_APP):
     if app:
         if isinstance(app, basestring) and str(app).strip():
@@ -1723,3 +1736,56 @@ def dump_json(model, batch_len=200000):
     for i, partial_qs in enumerate(util.generate_slices(model.objects.all(), batch_len=batch_len)):
         with open(model._meta.app_label + '--' + model._meta.object_name + '--%04d.json' % i, 'w') as fpout:
             jser.serialize(partial_qs, indent=1, stream=fpout)
+
+
+
+def load_queryset(model, queryset, model_app=None, batch_len=1000, verbosity=1):
+    import re
+
+    model = get_model(model, app=model_app)
+    if not model_app:
+        model_app = model.__module__.split('.')[0].lower()
+    model_name = model.__name__.lower()
+
+    queryset = get_queryset(queryset, app=model_app)
+    query_app = queryset.model.__module__.split('.')[0].lower()
+    query_model_name = queryset.model.__name__.lower()
+
+    # to change the model in a json fixture file:
+    # sed -e 's/^\ \"pk\"\:\ \".*\"\,/"pk": null,/g' -i '' *.json
+    # sed -e 's/^\ \"model\"\:\ \"sec_sharp_refurb\.refrefurb\"\,/\ \"model\"\:\ "call_center\.refrefurb\"\,/g' -i '' *.json
+
+    re_pk = re.compile(r'^[ ]*"pk"\:\ .*,[ ]*$', re.MULTILINE)
+    re_model = re.compile(r'^[ ]*"model"\:\ "'+ query_app +r'\.' + query_model_name + r'\",[ ]*$', re.MULTILINE)
+
+    JSONSerializer = serializers.get_serializer("json")
+    jser = JSONSerializer()
+
+    try:
+        N = queryset.count()
+    except:
+        N = len(queryset)
+
+    if verbosity:
+        widgets = [pb.Counter(), '/%d records: ' % N, pb.Percentage(), ' ', pb.RotatingMarker(), ' ', pb.Bar(),' ', pb.ETA()]
+        i, pbar = 0, pb.ProgressBar(widgets=widgets, maxval=N).start()
+
+    for j, partial_qs in enumerate(util.generate_slices(queryset.all(), batch_len=batch_len)):
+        js = jser.serialize(partial_qs, indent=1)
+        js = re_pk.sub(' "pk": null,', js)
+        js = re_model.sub(' "model": "%s.%s",' % (model_app, model_name), js)
+        new_objects = serializers.deserialize("json", js)
+        for obj in new_objects:
+            obj.pk = i + 1
+            i += 1
+        model.objects.bulk_create(new_objects)
+
+        # # If you get AttributeError: DeserializedObject has no attrribute "pk"
+        # for obj in new_objects:
+        #     i += 1
+        #     obj.save()
+
+        pbar.update(i)
+
+    pbar.finish()
+
