@@ -1124,12 +1124,12 @@ def field_dict_from_row(row, model, field_names=None, include_id=False, strip=Tr
     for field_name, field_class, value in zip(field_names, field_classes, row):
         if verbosity >= 3:
             print field_name, field_class, value 
-        if not value:
+        if isinstance(value, basestring) and not value:
             if isinstance(field_class, related.RelatedField):
                 if verbosity > 3:
                     print 'setting value to None'
                 value = None
-            elif blank_none and isinstance(value, basestring) and (
+            elif blank_none and (
                 not isinstance(field_class, related.RelatedField) or field_class.blank or not field_class.null):
                 try:
                     if isinstance(field_class.to_python(''), basestring):
@@ -1141,13 +1141,8 @@ def field_dict_from_row(row, model, field_names=None, include_id=False, strip=Tr
             else:
                 value = None
         try:
-            if not value and isinstance(field_class.to_python, related.RelatedField):
-                if verbosity > 3:
-                    print 'setting clean_value to None'
-                clean_value = None
-            else:
             # get a clean python value from a string, etc
-                clean_value = field_class.to_python(value)
+            clean_value = field_class.to_python(value)
         except:  # ValidationError
             try:
                 clean_value = str(field_class.to_python(util.clean_wiki_datetime(value)))
