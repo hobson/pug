@@ -1118,9 +1118,13 @@ def field_dict_from_row(row, model, field_names=None, include_id=False, strip=Tr
         if verbosity >= 3:
             print field_name, field_class, value 
         if not value:
-            if blank_none and isinstance(value, basestring):
+            if blank_none and isinstance(value, basestring) and (
+                not isinstance(field_class.to_python, related.RelatedField) or field_class.blank or not field_class.null):
                 try:
-                    value = '' if isinstance(field_class.to_python(''), basestring) else None
+                    if isinstance(field_class.to_python(''), basestring):
+                        value = ''
+                    else:
+                        value = None
                 except:
                     value = None
             else:
@@ -1136,7 +1140,7 @@ def field_dict_from_row(row, model, field_names=None, include_id=False, strip=Tr
                     clean_value = field_class.to_python(util.make_float(value))
                 except:
                     try:
-                        clean_value = field_class.to_python(value)
+                        clean_value = field_class.to_python(value)  # FIXME: this has already been tried!
                     except:
                         if verbosity:
                             print
@@ -1451,17 +1455,19 @@ def import_items(item_seq, dest_model,  batch_len=500, clear=False, dry_run=True
         print_exc()
         N = len(item_seq)
 
+
+    if clear and not dry_run:
+        if verbosity:
+            print "WARNING: Deleting %d records from %r to make room for %d new records !!!!!!!" % (dest_model.objects.count(), dest_model, N)
+        num_deleted = delete_in_batches(dest_model.objects.all())
+        if verbosity:
+            print "Finished deleting %d records in %r." % (num_deleted, dest_model)
+
     if verbosity:
         print('Loading %r records from sequence provided...' % N)
         widgets = [pb.Counter(), '/%d records: ' % N, pb.Percentage(), ' ', pb.RotatingMarker(), ' ', pb.Bar(),' ', pb.ETA()]
         pbar = pb.ProgressBar(widgets=widgets, maxval=N).start()
 
-    if clear and not dry_run:
-        if verbosity:
-            print "WARNING: Deleting %d records from %r !!!!!!!" % (dest_model.objects.count(), dest_model)
-        num_deleted = delete_in_batches(dest_model.objects.all())
-        if verbosity:
-            print "Finished deleting %d records in %r." % (num_deleted, dest_model)
     for batch_num, dict_batch in enumerate(util.generate_batches(item_seq, batch_len)):
         if verbosity > 2:
             print(repr(dict_batch))
