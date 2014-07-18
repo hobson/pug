@@ -1105,7 +1105,8 @@ def fixture_record_from_row():
 def django_object_from_row(row, model, field_names=None, include_id=False, strip=True, ignore_errors=True, verbosity=0):
     field_dict = field_dict_from_row(row, model, field_names=field_names, include_id=include_id, strip=strip,
                                      ignore_errors=ignore_errors, verbosity=verbosity)
-    print field_dict
+    if verbosity >= 3:
+        print 'field_dict = %r' % field_dict
     try:
         return model(**field_dict)
     except:
@@ -1119,16 +1120,17 @@ def field_dict_from_row(row, model, field_names=None, include_id=False, strip=Tr
         field_names = [f.name for f in field_classes if (include_id or f.name != 'id')]
     field_dict = {}
     if isinstance(row, collect.Mapping):
-        row = [row.get(field_name, '') for field_name in field_names]
+        row = [row.get(field_name, None) for field_name in field_names]
     for field_name, field_class, value in zip(field_names, field_classes, row):
         if verbosity >= 3:
             print field_name, field_class, value 
         if not value:
-            if isinstance(field_class.to_python, related.RelatedField):
-                print 'None'
+            if isinstance(field_class, related.RelatedField):
+                if verbosity > 3:
+                    print 'setting value to None'
                 value = None
             elif blank_none and isinstance(value, basestring) and (
-                not isinstance(field_class.to_python, related.RelatedField) or field_class.blank or not field_class.null):
+                not isinstance(field_class, related.RelatedField) or field_class.blank or not field_class.null):
                 try:
                     if isinstance(field_class.to_python(''), basestring):
                         value = ''
@@ -1140,7 +1142,8 @@ def field_dict_from_row(row, model, field_names=None, include_id=False, strip=Tr
                 value = None
         try:
             if not value and isinstance(field_class.to_python, related.RelatedField):
-                print 'clean None'
+                if verbosity > 3:
+                    print 'setting clean_value to None'
                 clean_value = None
             else:
             # get a clean python value from a string, etc
@@ -1502,7 +1505,7 @@ def import_items(item_seq, dest_model,  batch_len=500, clear=False, dry_run=True
         if verbosity and verbosity < 2:
             pbar.update(batch_num * batch_len + len(dict_batch))
         elif verbosity > 1:
-            print('Writing {0} items in batch {2} out of {3} batches to the {4} model...'.format(
+            print('Writing {0} items in batch {1} out of {2} batches to the {3} model...'.format(
                 len(item_batch), batch_num, int(N / float(batch_len)), dest_model))
         if not dry_run:
             dest_model.objects.bulk_create(item_batch)
