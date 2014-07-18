@@ -1103,8 +1103,14 @@ def fixture_record_from_row():
 
 
 def django_object_from_row(row, model, field_names=None, include_id=False, strip=True, ignore_errors=True, verbosity=0):
-    return model(**field_dict_from_row(row, model, field_names=field_names, include_id=include_id, strip=strip,
-                                       ignore_errors=ignore_errors, verbosity=verbosity))
+    field_dict = field_dict_from_row(row, model, field_names=field_names, include_id=include_id, strip=strip,
+                                     ignore_errors=ignore_errors, verbosity=verbosity)
+    print field_dict
+    try:
+        return model(**field_dict)
+    except:
+        print_exc()
+        raise ValueError('Unable to coerce the dict = %r into a %r object' % (field_dict, model))
 
 
 def field_dict_from_row(row, model, field_names=None, include_id=False, strip=True, blank_none=True, ignore_field_nones=True, ignore_errors=True, verbosity=0):
