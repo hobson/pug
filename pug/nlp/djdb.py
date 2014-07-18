@@ -1107,7 +1107,7 @@ def django_object_from_row(row, model, field_names=None, include_id=False, strip
                                        ignore_errors=ignore_errors, verbosity=verbosity))
 
 
-def field_dict_from_row(row, model, field_names=None, include_id=False, strip=True, blank_none=True, ignore_errors=True, verbosity=0):
+def field_dict_from_row(row, model, field_names=None, include_id=False, strip=True, blank_none=True, ignore_field_nones=True, ignore_errors=True, verbosity=0):
     field_classes = [f for f in model._meta._fields() if (include_id or f.name != 'id')]
     if not field_names:
         field_names = [f.name for f in field_classes if (include_id or f.name != 'id')]
@@ -1118,7 +1118,10 @@ def field_dict_from_row(row, model, field_names=None, include_id=False, strip=Tr
         if verbosity >= 3:
             print field_name, field_class, value 
         if not value:
-            if blank_none and isinstance(value, basestring) and (
+            if isinstance(field_class.to_python, related.RelatedField):
+                print 'None'
+                value = None
+            elif blank_none and isinstance(value, basestring) and (
                 not isinstance(field_class.to_python, related.RelatedField) or field_class.blank or not field_class.null):
                 try:
                     if isinstance(field_class.to_python(''), basestring):
@@ -1130,8 +1133,12 @@ def field_dict_from_row(row, model, field_names=None, include_id=False, strip=Tr
             else:
                 value = None
         try:
+            if not value and isinstance(field_class.to_python, related.RelatedField):
+                print 'clean None'
+                clean_value = None
+            else:
             # get a clean python value from a string, etc
-            clean_value = field_class.to_python(value)
+                clean_value = field_class.to_python(value)
         except:  # ValidationError
             try:
                 clean_value = str(field_class.to_python(util.clean_wiki_datetime(value)))
@@ -1166,8 +1173,9 @@ def field_dict_from_row(row, model, field_names=None, include_id=False, strip=Tr
                         print_exc()
                     clean_value = clean_value[:max_length]
                     if not ignore_errors:
-                        raise
-        field_dict[field_name] = clean_value
+                        raise  
+        if not ignore_field_nones or clean_value != None:
+            field_dict[field_name] = clean_value
     return field_dict
 
 
