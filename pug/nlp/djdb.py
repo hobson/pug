@@ -1417,8 +1417,10 @@ def hash_model_values(model, clear=True, hash_field='values_hash', hash_fun=hash
         tracking_obj.update(hash_value=h)
 
 
-def delete_in_batches(queryset, batch_size=1000, verbosity=1):
+def delete_in_batches(queryset, batch_size=10000, verbosity=1):
     N = queryset.count()
+    if not N:
+        return N
 
     if verbosity:
         print('Deleting %r records from %r...' % (N, queryset.model))
