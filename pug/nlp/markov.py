@@ -233,7 +233,7 @@ def SVDScore(Nt, Data):
 
     return(score)   
     
-def OptimalScore(Nt, Data):
+def OptimalScore(Nt, Data, dim=4):
 
 # The best score function
     W1= [[0.4,0.3,0.2,0.1],[0.1,0.4,0.3,0.2],[0.2,0.1,0.4,0.3],[0.3,0.2,0.1,0.4]]
@@ -259,7 +259,7 @@ def OptimalScore(Nt, Data):
    
     return(score)
 
-def Top3Score(Nt, Data):
+def Top3Score(Nt, Data, dim=4):
     
     NTop = 6  # the number of top scores to be calculated
     
@@ -346,46 +346,44 @@ def Top3Score(Nt, Data):
         score[i]= np.sum([Us[j,0]*scorearray[j,i] for j in range(NTop)])
         # take inner product to the first eigenvector 
 
-    return(score) 
-if(__name__=="__main__"):
-    
-    dim=4   
-    
-# write 'GaussianData' to store a Gaussian Markov data file
-#    GaussianDataFile()
-#    SimpleSVD('GaussianData')   
+    return(score)
 
-# generage mixed Markov data, uncomment to generate a new one
-# comment out for repeating on the same data
+
+def test():
+      
+    dim = 4
+    # write 'GaussianData' to store a Gaussian Markov data file
+    #    GaussianDataFile()
+    #    SimpleSVD('GaussianData')   
+
+    # generage mixed Markov data, uncomment to generate a new one
+    # comment out for repeating on the same data
     MarkovDataFile()
 
-# read data in any data file    
+    # read data in any data file    
     [n,k, Nt, Data] = ReadDataFile('MarkovData')
 
-# randomly pick a score function based on two adjacent samples    
-#    score =RandomScore(Nt, Data)
-#    CheckClasses(score, Data)
-    
+    # randomly pick a score function based on two adjacent samples    
+    #    score =RandomScore(Nt, Data)
+    #    CheckClasses(score, Data)
+
  
-# Compute SVD w.r.t. a noisy observation and score with it
- 
+    # Compute SVD w.r.t. a noisy observation and score with it
     score = SVDScore(Nt, Data)
     print(" SVD Scores:\n ")
     CheckClasses(score, Data)
 
-# Compute the best metric from log likelihood, and score with it
-
-    score = OptimalScore(Nt, Data)    
+    # Compute the best metric from log likelihood, and score with it
+    score = OptimalScore(Nt, Data, dim=dim)    
     print(" Optimal Scores: \n")
     CheckClasses(score, Data)
     
-# Compute the top 3 scores from SVD and then do a 3-D PCA
+    # Compute the top 3 scores from SVD and then do a 3-D PCA
     score = Top3Score(Nt, Data)
     print(" Top 3 Score PCA :\n")
     CheckClasses(score, Data)
    
-   
-   
+
     Alpha = np.ones((dim, dim))   # Alpha is the coefficients of dPx12 w.r.t. Vt[i]\otimes Vt[j]
     
     for i in range(dim):
@@ -409,3 +407,7 @@ if(__name__=="__main__"):
 #        for j in range(4):
 #            sum1+=Alpha[i][j]**2
 #            sum2+= dPx12[i][j]**2
+
+
+if __name__ == "__main__":
+    test()
