@@ -46,11 +46,6 @@ from .util import listify, generate_slices
 from .db import sort_prefix, consolidated_counts, sorted_dict_of_lists, clean_utf8, replace_nonascii, lagged_seq, NULL_VALUES, NAN_VALUES, BLANK_VALUES
 from pug.miner.models import ChangeLog
 
-#from pug.nlp.util import make_int, dos_from_table  #, sod_transposed
-#from pug.db.explore import count_unique, make_serializable
-#from pug.nlp import util
-#from pug.nlp import djdb
-
 
 class QueryTimer(object):
     """Based on https://github.com/jfalkner/Efficient-Django-QuerySet-Use
@@ -92,7 +87,15 @@ class QueryTimer(object):
         return '%s(time=%s, num_queries=%s)' % (self.__class__.__name__, self.time, self.num_queries)
 
 
-def normalize_values_queryset(values_queryset, model=None, app=None):
+def normalize_values_queryset(values_queryset, model=None, app=None, verbosity=1):
+    '''Shoehorn the values from one database table into another
+
+    * Remove padding (leading/trailing spaces) from `CharField` and `TextField` values
+    * Truncate all `CharField`s to the max_length of the destination `model`
+    * Subsititue blanks ('') for any None values destined for `null=False` fields
+
+    Returns a list of unsaved Model objects rather than a queryset
+    '''
     model = model or values_queryset.model
     app = app or DEFAULT_APP
     new_list = []
@@ -111,8 +114,9 @@ def normalize_values_queryset(values_queryset, model=None, app=None):
                     v = unicode(v).strip()
             if isinstance(field_class, models.fields.CharField):
                 if len(v) > getattr(field_class, 'max_length', 0):
-                    print k, v, len(v), '>', field_class.max_length
-                    print 'string = %s' % repr(v)
+                    if verbosity:
+                        print k, v, len(v), '>', field_class.max_length
+                        print 'string = %s' % repr(v)
                     # truncate strings that are too long for the database field
                     v = v[:getattr(field_class, 'max_length', 0)]
             new_record[field_name] = v
@@ -120,7 +124,8 @@ def normalize_values_queryset(values_queryset, model=None, app=None):
             #     pass
             if (v is None or new_record[field_name] is None) and not getattr(field_class, 'null'):
                 new_record[field_name] = ''
-        print new_record
+        if verbosity > 1:
+            print new_record
         new_list += [new_record]
     return new_list
 
@@ -129,6 +134,11 @@ def normalize_values_queryset(values_queryset, model=None, app=None):
 # TODO: modularize in separate function that finds CHOICES appropriate to a value key
 def normalize_choices(db_values, field_name, app=DEFAULT_APP, model_name='', human_readable=True, none_value='Null', 
                       blank_value='Unknown', missing_value='Unknown DB Code'):
+    '''Output the human-readable strings associated with the list database values for a model field.
+
+    Uses the translation dictionary `CHOICES_<FIELD_NAME>` attribute for the given `model_name`.
+    In addition, translate `None` into 'Null', or whatever string is indicated by `none_value`.
+    '''
     if app and isinstance(app, basestring):
         app = get_app(app)
     if not db_values:
@@ -1383,8 +1393,8 @@ def clean_duplicates(model, unique_together=('serial_number',), date_field='crea
 
     i, dupes = 0, []
     if verbosity:
-        widgets = [pb.Counter(), '/%d rows: ' % N+1000, pb.Percentage(), ' ', pb.RotatingMarker(), ' ', pb.Bar(),' ', pb.ETA()]
-        pbar = pb.ProgressBar(widgets=widgets, maxval=N).start()       
+        widgets = [pb.Counter(), '/%d rows: ' % N, pb.Percentage(), ' ', pb.RotatingMarker(), ' ', pb.Bar(),' ', pb.ETA()]
+        pbar = pb.ProgressBar(widgets=widgets, maxval=N+1000).start()       
     for obj in qs:
         if verbosity:
             pbar.update(i)
@@ -1569,7 +1579,8 @@ def bulk_update(object_list, ignore_errors=False, verbosity=0):
     if verbosity > 1:
         print 'Creating %d %r objects.' % (len(object_list), model)
         print 'BEFORE: %d' % model.objects.count()
-        model.objects.bulk_create(object_list)
+    model.objects.bulk_create(object_list)
+    if verbosity:
         print 'Deleting %d objects with pks: %r ........' % (len(pks_to_delete), pks_to_delete)
     objs_to_delete = model.objects.filter(pk__in=pks_to_delete)
     num_to_delete = objs_to_delete.count()
@@ -1582,11 +1593,19 @@ def bulk_update(object_list, ignore_errors=False, verbosity=0):
         else:
             raise RuntimeError(msg)
     if verbosity > 1:
-        print 'Queryset to delete has %d objects' % num_to_delete
+        print 'Queryset to delete has %d objects' % objs_to_delete.count()
     objs_to_delete.delete()
     if verbosity > 1:
         print 'AFTER: %d' % model.objects.count()
     N_after = model.objects.count()
+    if ignore_errors:
+        if verbosity > 1:
+            print 'AFTER: %d' % N_after
+    else:
+        if N_after != N_before:
+            print 'Number of records in %r changed by %d during bulk_create of %r.\n ' % (model, N_after - N_before, object_list)
+            msg = 'Records before and after bulk_create are not equal!!! Before=%d, After=%d' % (N_before, N_after)
+            raise RuntimeError(msg)
     return N_before - N_after
 
 
@@ -1777,7 +1796,10 @@ def force_text(s, encoding='utf-8', strings_only=False, errors='strict'):
 
 
 def dump_json(model, batch_len=200000):
-    "Dump database records to a json file in Django fixture format, one file for each batch of 1M records"
+    """Dump database records to .json Django fixture file, one file for each batch of `batch_len` records
+
+    Files are suitable for loading with "python manage.py loaddata folder_name_containing_files/*".
+    """
     JSONSerializer = serializers.get_serializer("json")
     jser = JSONSerializer()
     for i, partial_qs in enumerate(util.generate_slices(model.objects.all(), batch_len=batch_len)):
@@ -1786,18 +1808,45 @@ def dump_json(model, batch_len=200000):
 
 
 
-def load_queryset(model, queryset, model_app=None, batch_len=1000, verbosity=1):
+def load_queryset(dest_model, queryset, model_app=None, nullify_pk=True, batch_len=1000, verbosity=1, clear=False, dry_run=False):
+    """Load the data from one model into another
+
+    `import_items()` is more than 2x faster, but uses much more RAM (all records loaded into RAM at once?)
+
+    Similar to `manage.py loaddata`, but loads records in batches using `bulk_create()` rather than `.save()`
+    `batch_len argument limits the number of records loaded into RAM at once (reducing RAM footprint)
+    Each batch typically causes a new query to be issued to the database, thus spreading the CPU load among cores
+    `queryset` may be a model name string, a model class, or a queryset returned from by a query
+
+    TODO: allow dest_model to be a queryset of objects to be deleted before the new objects are loaded!
+    WARNING: will fail if the primary key field name is different in the source and destination models
+    """
     import re
 
-    model = get_model(model, app=model_app)
+    dest_model = get_model(dest_model, app=model_app)
     if not model_app:
-        model_app = model.__module__.split('.')[0].lower()
-    model_name = model.__name__.lower()
+        model_app = dest_model.__module__.split('.')[0].lower()
+    model_name = dest_model.__name__.lower()
 
     queryset = get_queryset(queryset, app=model_app)
     query_app = queryset.model.__module__.split('.')[0].lower()
     query_model_name = queryset.model.__name__.lower()
 
+    try:
+        N = queryset.count()
+    except:
+        N = len(queryset)
+
+    if clear and not dry_run:
+        if verbosity:
+            print "WARNING: Deleting %d records from %r to make room for %d new records !!!!!!!" % (dest_model.objects.count(), dest_model, N)
+        num_deleted = delete_in_batches(dest_model.objects.all())
+        if verbosity:
+            print "Finished deleting %d records in %r." % (num_deleted, dest_model)
+
+
+    if verbosity:
+        print 'Loading %d objects from %r into %r ...' % (queryset.count(), queryset.model, dest_model)
     # to change the model in a json fixture file:
     # sed -e 's/^\ \"pk\"\:\ \".*\"\,/"pk": null,/g' -i '' *.json
     # sed -e 's/^\ \"model\"\:\ \"sec_sharp_refurb\.refrefurb\"\,/\ \"model\"\:\ "call_center\.refrefurb\"\,/g' -i '' *.json
@@ -1808,10 +1857,6 @@ def load_queryset(model, queryset, model_app=None, batch_len=1000, verbosity=1):
     JSONSerializer = serializers.get_serializer("json")
     jser = JSONSerializer()
 
-    try:
-        N = queryset.count()
-    except:
-        N = len(queryset)
 
     if verbosity:
         widgets = [pb.Counter(), '/%d records: ' % N, pb.Percentage(), ' ', pb.RotatingMarker(), ' ', pb.Bar(),' ', pb.ETA()]
@@ -1819,13 +1864,30 @@ def load_queryset(model, queryset, model_app=None, batch_len=1000, verbosity=1):
 
     for j, partial_qs in enumerate(util.generate_slices(queryset.all(), batch_len=batch_len)):
         js = jser.serialize(partial_qs, indent=1)
-        js = re_pk.sub(' "pk": null,', js)
+        if verbosity > 1:
+            print '---------- SOURCE FIXTURE ----------------'
+            print js
+        if nullify_pk:
+            js = re_pk.sub(' "pk": null,', js)
+            # FIXME: add the pk values back in as a normal (nonpk) fields within the JSON or the DeserializedObject list
         js = re_model.sub(' "model": "%s.%s",' % (model_app, model_name), js)
-        new_objects = serializers.deserialize("json", js)
+        if verbosity > 1:
+            print '---------- DESTINATION FIXTURE ----------------'
+            print js
+
+        # manage.py loaddata does: 
+        # objects = serializers.deserialize('json', <fixture_file_pointer>, using=<database_dbname_from_settings>, ignorenonexistent=ignore)
+        # for obj in objects: obj.save()
+        new_objects = list(serializers.deserialize("json", js))
+        if verbosity:
+            print '---------- DESTINATION OBJECTS ----------------'
+            print new_objects
         for obj in new_objects:
             obj.pk = i + 1
             i += 1
-        model.objects.bulk_create(new_objects)
+        dest_model.objects.bulk_create(new_objects)
+        if verbosity:
+            print '%d objects created. %d total.' % (len(new_objects), dest_model.objects.count())
 
         # # If you get AttributeError: DeserializedObject has no attrribute "pk"
         # for obj in new_objects:
