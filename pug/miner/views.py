@@ -240,9 +240,9 @@ def context_from_request(request, context=None, Form=GetLagForm, delim=',', **kw
             context['field_names'] = kwargs.get('field_names')
         else:
             context['field_names'] = list(SLAmodels.Refrefurb._meta.get_all_field_names()) + [
-                'pipesale__material', 'pipesale__serial_number', 'pipesale__billing_doc_date', 'rano__rano',
-                'pipesale__net_invoice_price', 'pipesale__sold_to_party', 'pipesale__sold_to_party_name',
-                'pipesale__ship_to_party_name', 'rano__rcode', 'rano__close_date',
+                'sale__material', 'sale__serial_number', 'sale__billing_doc_date', 'rano__rano',
+                'sale__net_invoice_price', 'sale__sold_to_party', 'sale__sold_to_party_name',
+                'sale__ship_to_party_name', 'rano__rcode', 'rano__close_date',
                 ]
         
     if not context.get('filename'):
