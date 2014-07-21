@@ -1466,6 +1466,32 @@ def delete_in_batches(queryset, batch_size=10000, verbosity=1):
     return i
 
 
+def generate_queryset_batches(queryset, batch_size=10000, verbosity=1):
+    """Filter a queryset by the pk in such a way that no batch is larger than the requested batch_size"""
+    N = queryset.count()
+    if not N:
+        raise StopIteration("Queryset is empty!")
+    N_batches = int(N/float(batch_size)) + 1
+    if verbosity:
+        print('Splitting %r records from %r into %d querysets of size %d or smaller...' % (N, queryset.model, N_batches, batch_size))
+        widgets = [pb.Counter(), '/%d records: ' % N, pb.Percentage(), ' ', pb.RotatingMarker(), ' ', pb.Bar(),' ', pb.ETA()]
+        i, pbar = 0, pb.ProgressBar(widgets=widgets, maxval=N).start()
+    pk_queryset = queryset.order_by('pk').values_list('pk', flat=True).all()
+    pk_list = [pk_queryset[0]]
+    for j in range(N_batches - 1):
+        pk_list += [pk_queryset[(j+1)*batch_size - 1]]
+    last_batch_size = N - (N_batches - 1) * batch_size
+    pk_list += [pk_queryset[N-1]]
+    for j in range(N_batches):
+        if j < N_batches - 1:
+            i += batch_size
+        else:
+            i += last_batch_size
+        pbar.update(i*batch_size)
+        yield queryset.filter(pk__gte=pk_list[j], pk__lte=pk_list[j+1])
+    pbar.finish()
+
+
 def import_items(item_seq, dest_model,  batch_len=500, clear=False, dry_run=True, verbosity=1):
     """Given a sequence (queryset, generator, tuple, list) of dicts import them into the given model"""
     try:
