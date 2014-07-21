@@ -17,6 +17,9 @@ import dateutil
 import pytz
 import warnings
 from collections import Counter
+from collections import OrderedDict
+from collections import Mapping
+from progressbar import ProgressBar
 from traceback import print_exc
 import ascii
 import decimal
@@ -24,15 +27,11 @@ import random
 
 #import math
 from pytz import timezone
-from collections import OrderedDict
-from collections import Mapping
-from progressbar import ProgressBar
 import numpy as np
 import scipy as sci
 
 import character_subset as chars
-import regex_patterns as rep
-
+import regex_patterns as RE
 
 import logging
 logger = logging.getLogger('pug.nlp.util')
@@ -102,8 +101,6 @@ HIST_CONFIG = {
         'ylabel': 'Cumulative Count',
         },
     }
-
-import regex_patterns as RE
 
 # MONTHS = ['january', 'february', 'march', 'april', 'may', 'june', 'july', 'august', 'september', 'october', 'november', 'december']
 # MONTH_PREFIXES = [m[:3] for m in MONTHS]
@@ -1120,10 +1117,10 @@ def normalize_scientific_notation(s, ignore_commas=True, verbosity=1):
     s = s.rstrip(chars.not_digits)
     #print s
     # TODO: substitute ** for ^ and just eval the expression rather than insisting on a base-10 representation
-    num_strings = rep.scientific_notation_exponent.split(s, maxsplit=2)
+    num_strings = RE.scientific_notation_exponent.split(s, maxsplit=2)
     #print num_strings
     # get rid of commas
-    s = rep.re.sub(r"[^.0-9-+" + "," * int(not ignore_commas) + r"]+", '', num_strings[0])
+    s = RE.re.sub(r"[^.0-9-+" + "," * int(not ignore_commas) + r"]+", '', num_strings[0])
     #print s
     # if this value gets so large that it requires an exponential notation, this will break the conversion
     if not s:
@@ -1142,10 +1139,44 @@ def normalize_scientific_notation(s, ignore_commas=True, verbosity=1):
     if len(num_strings) > 1:
         if not s:
             s = '1'
-        s += 'e' + rep.re.sub(r'[^.0-9-+]+', '', num_strings[1])
+        s += 'e' + RE.re.sub(r'[^.0-9-+]+', '', num_strings[1])
     if s:
         return s
     return None
+
+
+def string_stats(strs, valid_chars='012346789', left_pad='0', right_pad='', strip=True):
+    """Count the occurrence of a category of valid characters within an iterable of serial numbers, model numbers, or other strings"""
+    if left_pad == None:
+        left_pad = ''.join(c for c in RE.ASCII_CHARACTERS if c not in valid_chars)
+    if right_pad == None:
+        right_pad = ''.join(c for c in RE.ASCII_CHARACTERS if c not in valid_chars)
+
+    def normalize(s):
+        if strip:
+            s = s.strip()
+        s = s.lstrip(left_pad)
+        s = s.rstrip(right_pad)
+        return s
+
+    # should probably check to make sure memory not exceeded
+    strs = [normalize(s) for s in strs]
+    lengths = Counter(len(s) for s in strs)
+    counts = {}
+    max_length = max(lengths.keys())
+
+    for i in range(max_length):
+        print i
+        for s in strs:
+            if i < len(s):
+                counts[ i]   = counts.get( i  , 0) + int(s[ i  ] in valid_chars)
+                counts[-i-1] = counts.get(-i-1, 0) + int(s[-i-1] in valid_chars)
+        long_enough_strings = float(sum(c for l, c in lengths.items() if l >= i))
+        counts[i] = counts[i] / long_enough_strings
+        counts[-i-1] = counts[-i-1] / long_enough_strings
+
+    return counts
+
 
 
 def normalize_serial_number(sn, max_length=10, left_fill='0', right_fill='', blank='', valid_chars=' -0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ', invalid_chars=None, strip_whitespace=True, join=False, na=RE.nones):
