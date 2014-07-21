@@ -12,6 +12,8 @@ Compiled Regular Expression Patterns
 ['E', 'x 10 ^']
 """
 
+ASCII_CHARACTERS = ''.join([chr(i) for i in range(128)])
+
 # consider using "from re import *" and renaming this module re or RE
 import re
 
