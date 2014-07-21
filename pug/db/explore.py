@@ -401,10 +401,6 @@ def index_with_dupes(values_list, unique_together=2, model_number_i=0, serial_nu
 
 def index_model_field(model, field, value_field='pk', key_formatter=str.strip, value_formatter=str.strip, batch_len=10000, limit=10000000, verbosity=1):
     '''Create dict {obj.<field>: obj.pk} for all field_values in a model or queryset.
-
-    Default N (number of columns assumbed to be "unique_together") is 2.
-    >>> index_with_dupes([(1,2,3), (5,6,7), (5,6,8), (2,1,3)]) == ({(1, 2): (1, 2, 3), (2, 1): (2, 1, 3), (5, 6): (5, 6, 7)}, {(5, 6): [(5, 6, 7), (5, 6, 8)]})
-    True
     '''
     try:
         qs = model.objects
@@ -413,7 +409,7 @@ def index_model_field(model, field, value_field='pk', key_formatter=str.strip, v
 
     N = qs.count()
     if verbosity:
-        print 'Indexing %d rows (database records) to aid in finding record %r values using the field %r.' % (N, value_field, field)
+        print 'Indexing %d rows to aid in finding %s.%s values using %s.%s.' % (N, qs.model.__name__, value_field, qs.model.__name__, field)
 
     index, dupes, rownum = {}, {}, 0
 
@@ -458,9 +454,6 @@ def index_model_field(model, field, value_field='pk', key_formatter=str.strip, v
 def index_model_field_batches(model, field, value_field='pk', key_formatter=str.strip, value_formatter=str.strip, batch_len=10000, limit=10000000, verbosity=1):
     '''Like index_model_field except uses 50x less memory and 10x more processing cycles
 
-        Default N (number of columns assumbed to be "unique_together") is 2.
-    >>> index_with_dupes([(1,2,3), (5,6,7), (5,6,8), (2,1,3)]) == ({(1, 2): (1, 2, 3), (2, 1): (2, 1, 3), (5, 6): (5, 6, 7)}, {(5, 6): [(5, 6, 7), (5, 6, 8)]})
-    True
     '''
 
     try:
@@ -596,14 +589,15 @@ def meta_to_indexes(meta, table_name=None, model_name=None):
 
 
 def get_relations(cursor, table_name, app=DEFAULT_APP_NAME, db_alias=None):
-    #meta = get_db_meta(app=app, db_alias=db_alias, table=table_name, verbosity=0)
-    return {}
+    # meta = get_db_meta(app=app, db_alias=db_alias, table=table_name, verbosity=0)
+    raise NotImplementedError("Not implemented: Find DB fields that appear to be related to fields elsewhere in the same DB (due to being a subset of a unique=True column in another table)")
+
 
 def get_indexes(cursor, table_name, app=DEFAULT_APP_NAME, db_alias=None, verbosity=0):
     meta = get_db_meta(app=app, db_alias=db_alias, table=table_name, verbosity=0)
     if verbosity > 1:
         print meta
-    return {}
+    raise NotImplementedError("Not implemented: Find columns in a database table that appear to be usable as an index (satisfy unique=True constraint)")
 
 
 def try_convert(value, datetime_to_ms=False, precise=False):
