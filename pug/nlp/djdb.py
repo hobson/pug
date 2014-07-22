@@ -40,9 +40,8 @@ except ImproperlyConfigured:
     print '         Though the module was imported, some of its functions may raise exceptions.'
 
 
-import util  # import transposed_lists #, sod_transposed, dos_from_table
+from pug.nlp import util  # import listify, generate_slices, transposed_lists #, sod_transposed, dos_from_table
 from .words import synonyms
-from .util import listify, generate_slices
 from .db import sort_prefix, consolidated_counts, sorted_dict_of_lists, clean_utf8, replace_nonascii, lagged_seq, NULL_VALUES, NAN_VALUES, BLANK_VALUES
 from pug.miner.models import ChangeLog
 
@@ -339,7 +338,7 @@ def querysets_from_title_prefix(title_prefix=None, model=DEFAULT_MODEL, app=DEFA
     elif isinstance(title_prefix, dict):
         filter_dicts = [title_prefix]
     elif isinstance(title_prefix, (list, tuple)):
-        filter_dicts = listify(title_prefix)
+        filter_dicts = util.listify(title_prefix)
     
     model = get_model(model, app)
 
@@ -368,7 +367,7 @@ def values(fields=None, filter_dict=None, model=DEFAULT_MODEL, app=DEFAULT_APP, 
     if filter_dict and not fields:
         fields = [field.split('_')[0] for field in filter_dict] 
     qs = queryset_from_filter_dict(filter_dict, model, app)
-    qs = qs.objects.values(*listify(fields))
+    qs = qs.objects.values(*util.listify(fields))
     qs = [[rec[k] for k in rec] for rec in qs]
     if transpose:
         return util.transposed_lists(qs)
@@ -519,7 +518,7 @@ def sum_in_date(x='date', y='net_sales', filter_dict=None, model='WikiItem', app
         return objects[x], objects['y']
 
 def sequence_from_filter_spec(field_names, filter_dict=None, model=DEFAULT_MODEL, app=DEFAULT_APP, sort=None, limit=5000):
-    field_names = listify(field_names)
+    field_names = util.listify(field_names)
     # TODO: enable +1 to mean increasing order on 1st column
     sort_char = sort_prefix(sort)
     model = get_model(model, app)
@@ -547,7 +546,7 @@ def find_fields(fields, model=DEFAULT_MODEL, app=DEFAULT_APP, score_cutoff=50, p
     >>> find_fields(['date_time', 'title_prefix', 'sales'], model='WikiItem')
     ['date', 'model', 'net_sales']
     """
-    fields = listify(fields)
+    fields = util.listify(fields)
     model = get_model(model, app)
     available_field_names = model._meta.get_all_field_names()
     matched_fields = []
@@ -569,7 +568,7 @@ def find_synonymous_field(field, model=DEFAULT_MODEL, app=DEFAULT_APP, score_cut
     >>> find_synonymous_field('time', model='WikiItem')
     'date_time'
     """
-    fields = listify(field) + list(synonyms(field))
+    fields = util.listify(field) + list(synonyms(field))
     model = get_model(model, app)
     available_field_names = model._meta.get_all_field_names()
     best_match, best_ratio = None, None
@@ -637,11 +636,11 @@ def get_column(field, model, filter_dict, app):
 
 
 def get_columns(fields, models, filter_dicts, apps):
-    fields = listify(fields)
+    fields = util.listify(fields)
     N = len(fields)
-    models = listify(models, N) or [None] * N
-    filter_dicts= listify(filter_dicts, N) or [{}] * N
-    apps = listify(apps, N) or [None] * N
+    models = util.listify(models, N) or [None] * N
+    filter_dicts= util.listify(filter_dicts, N) or [{}] * N
+    apps = util.listify(apps, N) or [None] * N
     columns = []
     for field, model, app, filter_dict in zip(fields, models, filter_dicts, apps):
         columns += [get_column(field, model, filter_dict, app)]
@@ -724,7 +723,7 @@ def diff_data(model0, model1, pk_name='pk', field_names=None, ignore_related=Fal
         i, pbar = 0, pb.ProgressBar(widgets=widgets, maxval=limit).start()
 
     batch_num = 0
-    for batch0 in generate_slices(qs, batch_len=999):
+    for batch0 in util.generate_slices(qs, batch_len=999):
         #batch1 = model1.objects.filter(**{pk_name + '__in': batch0.values_list(pk_name, flat=True)}).all()
         batch_num += 1
         if i > limit:
@@ -830,15 +829,15 @@ class Columns(collect.OrderedDict):
     len_column = None
 
     def __init__(self, *args, **kwargs):
-        fields = listify(kwargs.get('fields', None), N=self.len_column)
-        filters = listify(kwargs.get('filters', None), N=self.len_column)
-        tables = listify(kwargs.get('tables', None), N=self.len_column)
-        apps = listify(kwargs.get('apps', None), N=self.len_column)
+        fields = util.listify(kwargs.get('fields', None), N=self.len_column)
+        filters = util.listify(kwargs.get('filters', None), N=self.len_column)
+        tables = util.listify(kwargs.get('tables', None), N=self.len_column)
+        apps = util.listify(kwargs.get('apps', None), N=self.len_column)
 
         super(Columns, self).__init__()
         # TODO: DRY up the redundancy
         for arg_name in ('fields', 'filters', 'tables', 'apps'):
-            locals()[arg_name] = listify(locals()[arg_name], N=self.len_column)
+            locals()[arg_name] = util.listify(locals()[arg_name], N=self.len_column)
             self.len_column = max(self.len_column, len(locals()[arg_name]))
 
         kwargs = self.process_kwargs(kwargs, prefix='default_', delete=True)
@@ -849,10 +848,10 @@ class Columns(collect.OrderedDict):
 
         for i, arg_name in enumerate(('apps', 'tables', 'fields')):
             if not locals()[arg_name]:
-                locals()[arg_name] = listify((sf[min(i, len(sf) - 1)] for sf in split_fields), N=self.len_column)
+                locals()[arg_name] = util.listify((sf[min(i, len(sf) - 1)] for sf in split_fields), N=self.len_column)
         
         if not apps or not apps[0] or apps[0].strip() == '.':
-            apps = listify(self.default_app, self.len_column)
+            apps = util.listify(self.default_app, self.len_column)
         self.default_app = apps[0]
 
         self.db_fields = collect.OrderedDict((fields[i], (apps[i], tables[i], fields[i], filters[i])) for i in range(self.len_column))
@@ -1381,7 +1380,6 @@ def load_all_csvs_to_model(path, model, field_names=None, delimiter=None, batch_
 
 def clean_duplicates(model, unique_together=('serial_number',), date_field='created_on',
                      seq_field='seq', seq_max_field='seq_max', ignore_existing=True, verbosity=1):
-    raise NotImplementedError('Does Nothing!')
     qs = getattr(model, 'objects', model)
     if ignore_existing:
         qs = qs.filter(**{seq_max_field + '__isnull': True})
@@ -1439,7 +1437,7 @@ def hash_model_values(model, clear=True, hash_field='values_hash', hash_fun=hash
         tracking_obj.update(hash_value=h)
 
 
-def delete_in_batches(queryset, batch_size=10000, verbosity=1):
+def delete_in_batches(queryset, batch_len=10000, verbosity=1):
     N = queryset.count()
     if not N:
         return N
@@ -1449,15 +1447,15 @@ def delete_in_batches(queryset, batch_size=10000, verbosity=1):
         widgets = [pb.Counter(), '/%d records: ' % N, pb.Percentage(), ' ', pb.RotatingMarker(), ' ', pb.Bar(),' ', pb.ETA()]
         i, pbar = 0, pb.ProgressBar(widgets=widgets, maxval=N).start()
 
-    for j in range(int(N/float(batch_size)) + 1):
-        if i + batch_size < N:
-            pk = queryset.order_by('pk').values_list('pk', flat=True).all()[batch_size]
+    for j in range(int(N/float(batch_len)) + 1):
+        if i + batch_len < N:
+            pk = queryset.order_by('pk').values_list('pk', flat=True).all()[batch_len]
         else:
             pk = None
         pbar.update(i)
         if pk:
             queryset.filter(pk__lt=pk).delete()
-            i += batch_size
+            i += batch_len
         else:
             i += queryset.count()
             queryset.all().delete()
@@ -1832,30 +1830,43 @@ def bulk_update(object_list, ignore_errors=False, verbosity=0):
     return N_before - N_after
 
 
-def generate_queryset_batches(queryset, batch_size=10000, verbosity=1):
-    """Filter a queryset by the pk in such a way that no batch is larger than the requested batch_size"""
+def generate_queryset_batches(queryset, batch_len=10000, verbosity=1):
+    """Filter a queryset by the pk in such a way that no batch is larger than the requested batch_len
+
+    SEE ALSO: pug.nlp.util.generate_slices
+
+    >>> from miner.models import TestModel
+    >>> sum(len(list(batch)) for batch in generate_queryset_batches(TestModel, batch_len=7)) == TestModel.objects.count()
+    True
+    """
     N = queryset.count()
+
     if not N:
         raise StopIteration("Queryset is empty!")
-    N_batches = int(N/float(batch_size)) + 1
+    N_batches = int(N/float(batch_len)) + 1
+
     if verbosity:
-        print('Splitting %r records from %r into %d querysets of size %d or smaller...' % (N, queryset.model, N_batches, batch_size))
+        print('Splitting %r records from %r into %d querysets of size %d or smaller...' % (N, queryset.model, N_batches, batch_len))
         widgets = [pb.Counter(), '/%d records: ' % N, pb.Percentage(), ' ', pb.RotatingMarker(), ' ', pb.Bar(),' ', pb.ETA()]
         i, pbar = 0, pb.ProgressBar(widgets=widgets, maxval=N).start()
     pk_queryset = queryset.order_by('pk').values_list('pk', flat=True).all()
-    pk_list = [pk_queryset[0]]
+    pk_list = []
+
     for j in range(N_batches - 1):
-        pk_list += [pk_queryset[(j+1)*batch_size - 1]]
-    last_batch_size = N - (N_batches - 1) * batch_size
-    pk_list += [pk_queryset[N-1]]
+        pk_list += [(pk_queryset[j*batch_len], pk_queryset[(j+1)*batch_len - 1])]
+    last_batch_len = N - (N_batches-1) * batch_len
+    pk_list += [(pk_queryset[(N_batches-1) * batch_len], pk_queryset[N-1])]
+
     for j in range(N_batches):
+        if verbosity:
+            pbar.update(i)
         if j < N_batches - 1:
-            i += batch_size
+            i += batch_len
         else:
-            i += last_batch_size
-        pbar.update(i*batch_size)
-        yield queryset.filter(pk__gte=pk_list[j], pk__lte=pk_list[j+1])
-    pbar.finish()
+            i += last_batch_len
+        yield queryset.filter(pk__gte=pk_list[j][0], pk__lte=pk_list[j][1])
+    if verbosity:
+        pbar.finish()
 
 
 def fixture_from_table(table, header_rows=1):

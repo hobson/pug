@@ -8,7 +8,7 @@ import datetime
 import numpy as np
 import matplotlib.pyplot as plt
 from dateutil import parser
-from progressbar import ProgressBar, Bar, Percentage, ETA, RotatingMarker
+import progressbar as pb  # import ProgressBar, Bar, Percentage, ETA, RotatingMarker
 
 from django.core.exceptions import ImproperlyConfigured
 from django.db import DatabaseError
@@ -372,8 +372,8 @@ def index_with_dupes(values_list, unique_together=2, model_number_i=0, serial_nu
     index, dupes = {}, {}
     pbar = None
     if verbosity and N > min(1000000, max(0, 100000**(1./verbosity))):
-        widgets = ['%d rows: ' % N, Percentage(), ' ', RotatingMarker(), ' ', Bar(),' ', ETA()]
-        pbar = ProgressBar(widgets=widgets, maxval=N).start()
+        widgets = [pb.Counter(), '%d rows: ' % N, pb.Percentage(), ' ', pb.RotatingMarker(), ' ', pb.Bar(),' ', pb.ETA()]
+        pbar = pb.ProgressBar(widgets=widgets, maxval=N).start()
     rownum = 0
     for row in values_list:
         normalized_key = [str(row[model_number_i]).strip(), str(row[serial_number_i]).strip()]
@@ -415,8 +415,8 @@ def index_model_field(model, field, value_field='pk', key_formatter=str.strip, v
 
     pbar, rownum = None, 0
     if verbosity and N > min(1000000, max(0, 100000**(1./verbosity))):
-        widgets = ['%d rows: ' % N, Percentage(), ' ', RotatingMarker(), ' ', Bar(),' ', ETA()]
-        pbar = ProgressBar(widgets=widgets, maxval=N).start()
+        widgets = [pb.Counter(), '/%d rows: ' % N, pb.Percentage(), ' ', pb.RotatingMarker(), ' ', pb.Bar(),' ', pb.ETA()]
+        pbar = pb.ProgressBar(widgets=widgets, maxval=N).start()
 
     # to determine the type of the field value and decide whether to strip() or normalize in any way
     #obj0 = qs.filter(**{field + '__isnull': False}).all()[0]
@@ -451,59 +451,60 @@ def index_model_field(model, field, value_field='pk', key_formatter=str.strip, v
     return index, dupes
 
 
-def index_model_field_batches(model, field, value_field='pk', key_formatter=str.strip, value_formatter=str.strip, batch_len=10000, limit=10000000, verbosity=1):
+def index_model_field_batches(model_or_queryset, key_fields=['model_number', 'serial_number'], value_fields=['pk'], key_formatter=lambda x: str.lstrip(str.strip(str(x or '')), '0'), value_formatter=lambda x: str.strip(str(x)), batch_len=10000, limit=10000000, verbosity=1):
     '''Like index_model_field except uses 50x less memory and 10x more processing cycles
 
     '''
 
-    try:
-        qs = model.objects
-    except:
-        qs = model
+    qs = djdb.get_queryset(model_or_queryset)
 
     N = qs.count()
     if verbosity:
-        print 'Indexing %d rows (database records) to aid in finding record %r values using the field %r.' % (N, value_field, field)
+        print 'Indexing %d rows (database records) to aid in finding record %r values using the field %r.' % (N, value_fields, key_fields)
 
     index, dupes, rownum = {}, {}, 0
 
     pbar, rownum = None, 0
     if verbosity and N > min(1000000, max(0, 100000**(1./verbosity))):
-        widgets = ['%d rows: ' % N, Percentage(), ' ', RotatingMarker(), ' ', Bar(),' ', ETA()]
-        pbar = ProgressBar(widgets=widgets, maxval=N).start()
+        widgets = [pb.Counter(), '/%d rows: ' % N, pb.Percentage(), ' ', pb.RotatingMarker(), ' ', pb.Bar(),' ', pb.ETA()]
+        pbar = pb.ProgressBar(widgets=widgets, maxval=N).start()
 
 
     # to determine the type of the field value and decide whether to strip() or normalize in any way
     #obj0 = qs.filter(**{field + '__isnull': False}).all()[0]
 
-    for batch in util.generate_slices(qs.all()):
+    value_fields = util.listify(value_fields)
+    key_fields = util.listify(key_fields)
+
+    for batch in djdb.generate_queryset_batches(qs, batch_len=batch_len):
         for obj in batch:
-            field_value = getattr(obj, field)
-            try:
-                field_value = key_formatter(field_value)
-            except:
-                pass
-            if value_field:
-                entry_value = getattr(obj, value_field)
+            # print obj
+            # normalize the key
+            keys = []
+            for kf in key_fields:
+                k = getattr(obj, kf)
+                keys += [key_formatter(k or '')]
+            values = []
+            keys = tuple(keys)
+            for vf in value_fields:
+                v = getattr(obj, vf)
+                values += [value_formatter(v or '')]
+            values = tuple(values)           
+
+            if keys in index:
+                dupes[keys] = dupes.get(keys, []) + [values]
             else:
-                entry_value = obj
-            try:
-                entry_value = value_formatter(entry_value)
-            except:
-                pass
-            if field_value in index:
-                dupes[field_value] = dupes.get(field_value, []) + [entry_value]
-            else:
-                index[field_value] = entry_value
+                index[keys] = values
+            # print rownum  / float(N)
+            if pbar:
+                pbar.update(rownum)
             rownum += 1
             if rownum >= limit:
                 break
-            if pbar:
-                pbar.update(rownum)
     if pbar:
         pbar.finish()
     if verbosity:
-        print 'Found %d duplicate %s values among the %d records or %g%%' % (len(dupes), field, len(index), len(dupes)*100./(len(index) or 1.))
+        print 'Found %d duplicate %s values among the %d records or %g%%' % (len(dupes), key_fields, len(index), len(dupes)*100./(len(index) or 1.))
     return index, dupes
 
 

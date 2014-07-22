@@ -227,7 +227,10 @@ def generate_batches(sequence, batch_len=1, allow_partial=True, ignore_errors=Tr
 def generate_slices(sliceable_set, batch_len=1, allow_partial=True, length=None):
     """Iterate through a sequence (or generator) in batches of length `batch_len`
 
-    http://stackoverflow.com/a/761125/623735
+    SEE ALSO: pug.nlp.util.generate_queryset_batches
+
+    BASED ON: http://stackoverflow.com/a/761125/623735
+
     >>> [batch for batch in generate_batches(range(7), 3)]
     [[0, 1, 2], [3, 4, 5], [6]]
     """
@@ -1553,14 +1556,15 @@ def listify(values, N=1, delim=None):
     >>> listify(False, 2)
     [False, False]
     """
+    print values
     ans = [] if values is None else values
 
     # convert non-string non-list iterables into a list
-    if hasattr(ans, '__iter__') and not isinstance(values, basestring):
+    if hasattr(ans, '__iter__') and not isinstance(ans, basestring):
         ans = list(ans)
     else:
         # split the string (if possible)
-        if isinstance(delim, basestring):
+        if isinstance(delim, basestring) and isinstance(ans, basestring):
             try:
                 ans = ans.split(delim)
             except:
