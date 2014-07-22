@@ -1381,6 +1381,7 @@ def load_all_csvs_to_model(path, model, field_names=None, delimiter=None, batch_
 
 def clean_duplicates(model, unique_together=('serial_number',), date_field='created_on',
                      seq_field='seq', seq_max_field='seq_max', ignore_existing=True, verbosity=1):
+    raise NotImplementedError('Does Nothing!')
     qs = getattr(model, 'objects', model)
     if ignore_existing:
         qs = qs.filter(**{seq_max_field + '__isnull': True})
@@ -1398,7 +1399,6 @@ def clean_duplicates(model, unique_together=('serial_number',), date_field='crea
     for obj in qs:
         if verbosity:
             pbar.update(i)
-        dupes = []
         if i and all([getattr(obj, f, None) == getattr(dupes[0], f, None) for f in unique_together]):
             dupes += [obj]
         else:
@@ -1466,31 +1466,10 @@ def delete_in_batches(queryset, batch_size=10000, verbosity=1):
     return i
 
 
-def generate_queryset_batches(queryset, batch_size=10000, verbosity=1):
-    """Filter a queryset by the pk in such a way that no batch is larger than the requested batch_size"""
-    N = queryset.count()
-    if not N:
-        raise StopIteration("Queryset is empty!")
-    N_batches = int(N/float(batch_size)) + 1
-    if verbosity:
-        print('Splitting %r records from %r into %d querysets of size %d or smaller...' % (N, queryset.model, N_batches, batch_size))
-        widgets = [pb.Counter(), '/%d records: ' % N, pb.Percentage(), ' ', pb.RotatingMarker(), ' ', pb.Bar(),' ', pb.ETA()]
-        i, pbar = 0, pb.ProgressBar(widgets=widgets, maxval=N).start()
-    pk_queryset = queryset.order_by('pk').values_list('pk', flat=True).all()
-    pk_list = [pk_queryset[0]]
-    for j in range(N_batches - 1):
-        pk_list += [pk_queryset[(j+1)*batch_size - 1]]
-    last_batch_size = N - (N_batches - 1) * batch_size
-    pk_list += [pk_queryset[N-1]]
-    for j in range(N_batches):
-        if j < N_batches - 1:
-            i += batch_size
-        else:
-            i += last_batch_size
-        pbar.update(i*batch_size)
-        yield queryset.filter(pk__gte=pk_list[j], pk__lte=pk_list[j+1])
-    pbar.finish()
 
+
+##############################################################
+# These import_* functions attempt to import data from one model into another
 
 def import_items(item_seq, dest_model,  batch_len=500, clear=False, dry_run=True, verbosity=1):
     """Given a sequence (queryset, generator, tuple, list) of dicts import them into the given model"""
@@ -1587,54 +1566,6 @@ def import_queryset_in_batches(qs, dest_model,  batch_len=500, clear=False, dry_
     if verbosity:
         pbar.finish()
 
-
-def bulk_update(object_list, ignore_errors=False, verbosity=0):
-    '''Bulk_create objects in provided list of model instances, delete database rows for the original pks in the object list.
-
-    Returns any delta in the number of rows in the database table that resulted from the update.
-    If nonzero, an error has likely occurred and database integrity is suspect.
-    '''
-    if not object_list:
-        return 0
-    model = object_list[0].__class__
-    N_before = model.objects.count()
-    pks_to_delete = set()
-    for obj in object_list:
-        pks_to_delete.add(obj.pk)
-        obj.pk = None
-    if verbosity > 1:
-        print 'Creating %d %r objects.' % (len(object_list), model)
-        print 'BEFORE: %d' % model.objects.count()
-    model.objects.bulk_create(object_list)
-    if verbosity:
-        print 'Deleting %d objects with pks: %r ........' % (len(pks_to_delete), pks_to_delete)
-    objs_to_delete = model.objects.filter(pk__in=pks_to_delete)
-    num_to_delete = objs_to_delete.count()
-    if num_to_delete != len(pks_to_delete):
-        msg = 'Attempt to delete redundant pks (len %d)! Queryset has count %d. Query was `filter(pk__in=%r). Queryset = %r' % (
-            len(pks_to_delete), num_to_delete, pks_to_delete, objs_to_delete)
-        if ignore_errors:
-            if verbosity:
-                print msg
-        else:
-            raise RuntimeError(msg)
-    if verbosity > 1:
-        print 'Queryset to delete has %d objects' % objs_to_delete.count()
-    objs_to_delete.delete()
-    if verbosity > 1:
-        print 'AFTER: %d' % model.objects.count()
-    N_after = model.objects.count()
-    if ignore_errors:
-        if verbosity > 1:
-            print 'AFTER: %d' % N_after
-    else:
-        if N_after != N_before:
-            print 'Number of records in %r changed by %d during bulk_create of %r.\n ' % (model, N_after - N_before, object_list)
-            msg = 'Records before and after bulk_create are not equal!!! Before=%d, After=%d' % (N_before, N_after)
-            raise RuntimeError(msg)
-    return N_before - N_after
-
-
 #from django.db.models.fields.related import ForeignKey
 
 def import_queryset(qs, dest_model,  clear=False, dry_run=True, verbosity=1):
@@ -1677,165 +1608,8 @@ def import_queryset(qs, dest_model,  clear=False, dry_run=True, verbosity=1):
         pbar.finish()
 
 
-# def import_qs(src_qs, dest_model,  batch_len=100, db_alias='default', 
-#         unique_together=('model', 'serialno'), seq_field='model_serial_seq', seq_max_field='model_serial_seq_max', 
-#         verbosity=2):
-#     """FIXME: Given a sequence (queryset, generator, tuple, list) of dicts import them into the given model
-
-#     Efficiently count duplicates of the index formed from the fields listed in unique_together.
-#     Store this count in the new model in the field indicated by the `seq_max_field` argument.
-#     Store a sequence number in `seq_field`, starting at 0 and ending at the value stored in `seq_max_field`
-#     """
-#     num_items = None
-#     src_qs = None
-#     try:
-#         src_qs = src_qs.objects.all()
-#     except:
-#         src_qs = src_qs.all()
-
-#     index_uniques = False
-#     if index_uniques and hasattr(dest_model, seq_field) and hasattr(dest_model, seq_max_field):
-#         try:
-#             src_qs = src_qs.order_by(*unique_together)
-#             index_uniques = True
-#         except:
-#             print_exc()
-
-#     try:
-#         item_seq = src_qs.values()
-#     except:
-#         print_exc()
-
-#     num_items = src_qs.count()
-
-#     if verbosity > 1:
-#         print('Loading %r records from seq provided...' % num_items)
-#     dupes = []
-#     for batch_num, dict_batch in enumerate(util.generate_batches(item_seq, batch_len)):
-#         if verbosity > 2:
-#             print(repr(dict_batch))
-#             print(repr((batch_num, len(dict_batch), batch_len)))
-#             print(type(dict_batch))
-#         item_batch = []
-#         for d in dict_batch:
-#             if verbosity > 2:
-#                 print(repr(d))
-#             m = dest_model()
-#             try:
-#                 m.import_item(d, verbosity=verbosity)
-#             except:
-#                 m = django_object_from_row(d, dest_model)
-#             if index_uniques:
-#                 if dupes:
-#                     try:
-#                         if all([getattr(dupes[0], f) == getattr(m, f) for f in unique_together]):
-#                             setattr(m, seq_field, getattr(dupes[-1], seq_field) + 1)
-#                             dupes += [m]
-#                         else:
-#                             for j in range(len(dupes)):
-#                                 setattr(dupes[j], seq_max_field, len(dupes) - 1) 
-#                             dupes = [m]
-#                     except:
-#                         pass # FIXME
-#                 else:
-#                     dupes = [m]
-
-#             item_batch += [m]
-#         if verbosity > 1:
-#             print('Writing {0} {1} items in batch {2} out of {3} batches to the {4} database...'.format(
-#                 len(item_batch), dest_model.__name__, batch_num, int(num_items / float(batch_len)), db_alias))
-#         dest_model.objects.bulk_create(item_batch)
-
-def import_json(path, model, batch_len=100, db_alias='default', verbosity=2):
-    """Read json file (not in django fixture format) and create the appropriate records using the provided database model."""
-
-    # TODO: use a generator to save memory for large json files/databases
-    if verbosity:
-        print('Reading json records (dictionaries) from {0}.'.format(repr(path)))
-    item_list = json.load(open(path, 'r'))
-    if verbosity:
-        print('Finished reading {0} items from {1}.'.format(len(item_list), repr(path)))
-    import_items(item_list, model=model, batch_len=batch_len, db_alias=db_alias, verbosity=verbosity)
-
-
-def fixture_from_table(table, header_rows=1):
-    """JSON string that represents a valid Django fixture for the data in a table"""
-    yield '[\n'
-    for i in range(header_rows, len(table)):
-        s = fixture_record_from_row(table[i])
-        if i == header_rows:
-            yield s + '\n'
-        else:
-            yield ',\n' + s + '\n'
-    yield ']\n'
-
-
-def force_text(s, encoding='utf-8', strings_only=False, errors='strict'):
-    """
-    A monkey-patch for django.utils.encoding.force_text to robustly handle UTF16
-    and latin encodings from non-compliant drivers (myodbc, FreeTDS, some camera EXIF tags).
-    Uses pug.nlp.db.clean_utf8 when all other attempts using `six` fail.
- 
-    Similar to smart_text, except that lazy instances are resolved to
-    strings, rather than kept as lazy objects.
-
-    If strings_only is True, don't convert (some) non-string-like objects.
-    """
-    # Handle the common case first, saves 30-40% when s is an instance of
-    # six.text_type. This function gets called often in that setting.
-    if isinstance(s, six.text_type):
-        return s
-    if strings_only and is_protected_type(s):
-        return s
-    try:
-        if not isinstance(s, six.string_types):
-            if hasattr(s, '__unicode__'):
-                s = s.__unicode__()
-            else:
-                if six.PY3:
-                    if isinstance(s, bytes):
-                        s = six.text_type(s, encoding, errors)
-                    else:
-                        s = six.text_type(s)
-                else:
-                    s = six.text_type(bytes(s), encoding, errors)
-        else:
-            # Note: We use .decode() here, instead of six.text_type(s, encoding,
-            # errors), so that if s is a SafeBytes, it ends up being a
-            # SafeText at the end.
-            s = s.decode(encoding, errors)
-    except UnicodeDecodeError as e:
-        if not isinstance(s, Exception):
-            try:
-                s = clean_utf8(s)
-            except:
-                raise DjangoUnicodeDecodeError(s, *e.args)
-        else:
-            # If we get to here, the caller has passed in an Exception
-            # subclass populated with non-ASCII bytestring data without a
-            # working unicode method. Try to handle this without raising a
-            # further exception by individually forcing the exception args
-            # to unicode.
-            s = ' '.join([force_text(arg, encoding, strings_only,
-                    errors) for arg in s])
-    return s
-
-
-def dump_json(model, batch_len=200000):
-    """Dump database records to .json Django fixture file, one file for each batch of `batch_len` records
-
-    Files are suitable for loading with "python manage.py loaddata folder_name_containing_files/*".
-    """
-    JSONSerializer = serializers.get_serializer("json")
-    jser = JSONSerializer()
-    for i, partial_qs in enumerate(util.generate_slices(model.objects.all(), batch_len=batch_len)):
-        with open(model._meta.app_label + '--' + model._meta.object_name + '--%04d.json' % i, 'w') as fpout:
-            jser.serialize(partial_qs, indent=1, stream=fpout)
-
-
-
-def load_queryset(dest_model, queryset, model_app=None, nullify_pk=True, batch_len=1000, verbosity=1, clear=False, dry_run=False):
-    """Load the data from one model into another
+def import_queryset_untested(dest_model, queryset, model_app=None, nullify_pk=True, batch_len=1000, verbosity=1, clear=False, dry_run=False):
+    """Import data from one model (queryset) into a different model
 
     `import_items()` is more than 2x faster, but uses much more RAM (all records loaded into RAM at once?)
 
@@ -1923,4 +1697,240 @@ def load_queryset(dest_model, queryset, model_app=None, nullify_pk=True, batch_l
         pbar.update(i)
 
     pbar.finish()
+
+
+
+# def import_qs(src_qs, dest_model,  batch_len=100, db_alias='default', 
+#         unique_together=('model', 'serialno'), seq_field='model_serial_seq', seq_max_field='model_serial_seq_max', 
+#         verbosity=2):
+#     """FIXME: Given a sequence (queryset, generator, tuple, list) of dicts import them into the given model
+
+#     Efficiently count duplicates of the index formed from the fields listed in unique_together.
+#     Store this count in the new model in the field indicated by the `seq_max_field` argument.
+#     Store a sequence number in `seq_field`, starting at 0 and ending at the value stored in `seq_max_field`
+#     """
+#     num_items = None
+#     src_qs = None
+#     try:
+#         src_qs = src_qs.objects.all()
+#     except:
+#         src_qs = src_qs.all()
+
+#     index_uniques = False
+#     if index_uniques and hasattr(dest_model, seq_field) and hasattr(dest_model, seq_max_field):
+#         try:
+#             src_qs = src_qs.order_by(*unique_together)
+#             index_uniques = True
+#         except:
+#             print_exc()
+
+#     try:
+#         item_seq = src_qs.values()
+#     except:
+#         print_exc()
+
+#     num_items = src_qs.count()
+
+#     if verbosity > 1:
+#         print('Loading %r records from seq provided...' % num_items)
+#     dupes = []
+#     for batch_num, dict_batch in enumerate(util.generate_batches(item_seq, batch_len)):
+#         if verbosity > 2:
+#             print(repr(dict_batch))
+#             print(repr((batch_num, len(dict_batch), batch_len)))
+#             print(type(dict_batch))
+#         item_batch = []
+#         for d in dict_batch:
+#             if verbosity > 2:
+#                 print(repr(d))
+#             m = dest_model()
+#             try:
+#                 m.import_item(d, verbosity=verbosity)
+#             except:
+#                 m = django_object_from_row(d, dest_model)
+#             if index_uniques:
+#                 if dupes:
+#                     try:
+#                         if all([getattr(dupes[0], f) == getattr(m, f) for f in unique_together]):
+#                             setattr(m, seq_field, getattr(dupes[-1], seq_field) + 1)
+#                             dupes += [m]
+#                         else:
+#                             for j in range(len(dupes)):
+#                                 setattr(dupes[j], seq_max_field, len(dupes) - 1) 
+#                             dupes = [m]
+#                     except:
+#                         pass # FIXME
+#                 else:
+#                     dupes = [m]
+
+#             item_batch += [m]
+#         if verbosity > 1:
+#             print('Writing {0} {1} items in batch {2} out of {3} batches to the {4} database...'.format(
+#                 len(item_batch), dest_model.__name__, batch_num, int(num_items / float(batch_len)), db_alias))
+#         dest_model.objects.bulk_create(item_batch)
+
+def import_json(path, model, batch_len=100, db_alias='default', verbosity=2):
+    """Read json file (not in django fixture format) and create the appropriate records using the provided database model."""
+
+    # TODO: use a generator to save memory for large json files/databases
+    if verbosity:
+        print('Reading json records (dictionaries) from {0}.'.format(repr(path)))
+    item_list = json.load(open(path, 'r'))
+    if verbosity:
+        print('Finished reading {0} items from {1}.'.format(len(item_list), repr(path)))
+    import_items(item_list, model=model, batch_len=batch_len, db_alias=db_alias, verbosity=verbosity)
+
+
+################################################
+# These attempt to speed data inserts using bulk_create
+
+
+def bulk_update(object_list, ignore_errors=False, verbosity=0):
+    '''Bulk_create objects in provided list of model instances, delete database rows for the original pks in the object list.
+
+    Returns any delta in the number of rows in the database table that resulted from the update.
+    If nonzero, an error has likely occurred and database integrity is suspect.
+    '''
+    if not object_list:
+        return 0
+    model = object_list[0].__class__
+    N_before = model.objects.count()
+    pks_to_delete = set()
+    for obj in object_list:
+        pks_to_delete.add(obj.pk)
+        obj.pk = None
+    if verbosity > 1:
+        print 'Creating %d %r objects.' % (len(object_list), model)
+        print 'BEFORE: %d' % model.objects.count()
+    model.objects.bulk_create(object_list)
+    if verbosity:
+        print 'Deleting %d objects with pks: %r ........' % (len(pks_to_delete), pks_to_delete)
+    objs_to_delete = model.objects.filter(pk__in=pks_to_delete)
+    num_to_delete = objs_to_delete.count()
+    if num_to_delete != len(pks_to_delete):
+        msg = 'Attempt to delete redundant pks (len %d)! Queryset has count %d. Query was `filter(pk__in=%r). Queryset = %r' % (
+            len(pks_to_delete), num_to_delete, pks_to_delete, objs_to_delete)
+        if ignore_errors:
+            if verbosity:
+                print msg
+        else:
+            raise RuntimeError(msg)
+    if verbosity > 1:
+        print 'Queryset to delete has %d objects' % objs_to_delete.count()
+    objs_to_delete.delete()
+    if verbosity > 1:
+        print 'AFTER: %d' % model.objects.count()
+    N_after = model.objects.count()
+    if ignore_errors:
+        if verbosity > 1:
+            print 'AFTER: %d' % N_after
+    else:
+        if N_after != N_before:
+            print 'Number of records in %r changed by %d during bulk_create of %r.\n ' % (model, N_after - N_before, object_list)
+            msg = 'Records before and after bulk_create are not equal!!! Before=%d, After=%d' % (N_before, N_after)
+            raise RuntimeError(msg)
+    return N_before - N_after
+
+
+def generate_queryset_batches(queryset, batch_size=10000, verbosity=1):
+    """Filter a queryset by the pk in such a way that no batch is larger than the requested batch_size"""
+    N = queryset.count()
+    if not N:
+        raise StopIteration("Queryset is empty!")
+    N_batches = int(N/float(batch_size)) + 1
+    if verbosity:
+        print('Splitting %r records from %r into %d querysets of size %d or smaller...' % (N, queryset.model, N_batches, batch_size))
+        widgets = [pb.Counter(), '/%d records: ' % N, pb.Percentage(), ' ', pb.RotatingMarker(), ' ', pb.Bar(),' ', pb.ETA()]
+        i, pbar = 0, pb.ProgressBar(widgets=widgets, maxval=N).start()
+    pk_queryset = queryset.order_by('pk').values_list('pk', flat=True).all()
+    pk_list = [pk_queryset[0]]
+    for j in range(N_batches - 1):
+        pk_list += [pk_queryset[(j+1)*batch_size - 1]]
+    last_batch_size = N - (N_batches - 1) * batch_size
+    pk_list += [pk_queryset[N-1]]
+    for j in range(N_batches):
+        if j < N_batches - 1:
+            i += batch_size
+        else:
+            i += last_batch_size
+        pbar.update(i*batch_size)
+        yield queryset.filter(pk__gte=pk_list[j], pk__lte=pk_list[j+1])
+    pbar.finish()
+
+
+def fixture_from_table(table, header_rows=1):
+    """JSON string that represents a valid Django fixture for the data in a table"""
+    yield '[\n'
+    for i in range(header_rows, len(table)):
+        s = fixture_record_from_row(table[i])
+        if i == header_rows:
+            yield s + '\n'
+        else:
+            yield ',\n' + s + '\n'
+    yield ']\n'
+
+
+def force_text(s, encoding='utf-8', strings_only=False, errors='strict'):
+    """
+    A monkey-patch for django.utils.encoding.force_text to robustly handle UTF16
+    and latin encodings from non-compliant drivers (myodbc, FreeTDS, some camera EXIF tags).
+    Uses pug.nlp.db.clean_utf8 when all other attempts using `six` fail.
+ 
+    Similar to smart_text, except that lazy instances are resolved to
+    strings, rather than kept as lazy objects.
+
+    If strings_only is True, don't convert (some) non-string-like objects.
+    """
+    # Handle the common case first, saves 30-40% when s is an instance of
+    # six.text_type. This function gets called often in that setting.
+    if isinstance(s, six.text_type):
+        return s
+    if strings_only and is_protected_type(s):
+        return s
+    try:
+        if not isinstance(s, six.string_types):
+            if hasattr(s, '__unicode__'):
+                s = s.__unicode__()
+            else:
+                if six.PY3:
+                    if isinstance(s, bytes):
+                        s = six.text_type(s, encoding, errors)
+                    else:
+                        s = six.text_type(s)
+                else:
+                    s = six.text_type(bytes(s), encoding, errors)
+        else:
+            # Note: We use .decode() here, instead of six.text_type(s, encoding,
+            # errors), so that if s is a SafeBytes, it ends up being a
+            # SafeText at the end.
+            s = s.decode(encoding, errors)
+    except UnicodeDecodeError as e:
+        if not isinstance(s, Exception):
+            try:
+                s = clean_utf8(s)
+            except:
+                raise DjangoUnicodeDecodeError(s, *e.args)
+        else:
+            # If we get to here, the caller has passed in an Exception
+            # subclass populated with non-ASCII bytestring data without a
+            # working unicode method. Try to handle this without raising a
+            # further exception by individually forcing the exception args
+            # to unicode.
+            s = ' '.join([force_text(arg, encoding, strings_only,
+                    errors) for arg in s])
+    return s
+
+
+def dump_json(model, batch_len=200000):
+    """Dump database records to .json Django fixture file, one file for each batch of `batch_len` records
+
+    Files are suitable for loading with "python manage.py loaddata folder_name_containing_files/*".
+    """
+    JSONSerializer = serializers.get_serializer("json")
+    jser = JSONSerializer()
+    for i, partial_qs in enumerate(util.generate_slices(model.objects.all(), batch_len=batch_len)):
+        with open(model._meta.app_label + '--' + model._meta.object_name + '--%04d.json' % i, 'w') as fpout:
+            jser.serialize(partial_qs, indent=1, stream=fpout)
+
+
 
