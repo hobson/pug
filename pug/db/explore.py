@@ -16,7 +16,7 @@ from django.core.exceptions import FieldError
 from django.db.models import FieldDoesNotExist
 
 from pug.nlp import djdb  # FIXME: confusing name (too similar to common `import as` for django.db)
-from pug.nlp import db
+from pug.nlp import db  # FIXME: too similar to pug.db
 from pug.nlp import util
 
 import sqlserver as sql
@@ -451,7 +451,10 @@ def index_model_field(model, field, value_field='pk', key_formatter=str.strip, v
     return index, dupes
 
 
-def index_model_field_batches(model_or_queryset, key_fields=['model_number', 'serial_number'], value_fields=['pk'], key_formatter=lambda x: str.lstrip(str.strip(str(x or '')), '0'), value_formatter=lambda x: str.strip(str(x)), batch_len=10000, limit=10000000, verbosity=1):
+def index_model_field_batches(model_or_queryset, key_fields=['model_number', 'serial_number'], value_fields=['pk'], 
+    key_formatter=lambda x: str.lstrip(str.strip(str(x or '')), '0'), 
+    value_formatter=lambda x: str.strip(str(x)), batch_len=10000,
+    limit=100000000, verbosity=1):
     '''Like index_model_field except uses 50x less memory and 10x more processing cycles
 
     '''
@@ -476,7 +479,7 @@ def index_model_field_batches(model_or_queryset, key_fields=['model_number', 'se
     value_fields = util.listify(value_fields)
     key_fields = util.listify(key_fields)
 
-    for batch in djdb.generate_queryset_batches(qs, batch_len=batch_len):
+    for batch in djdb.generate_queryset_batches(qs, batch_len=batch_len, verbosity=verbosity):
         for obj in batch:
             # print obj
             # normalize the key

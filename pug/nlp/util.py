@@ -1181,9 +1181,14 @@ def string_stats(strs, valid_chars='012346789', left_pad='0', right_pad='', stri
     return counts
 
 
-
-def normalize_serial_number(sn, max_length=10, left_fill='0', right_fill='', blank='', valid_chars=' -0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ', invalid_chars=None, strip_whitespace=True, join=False, na=RE.nones):
+def normalize_serial_number(sn, 
+                            max_length=None, left_fill='0', right_fill='', blank='', 
+                            valid_chars=' -0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ', 
+                            invalid_chars=None, 
+                            strip_whitespace=True, join=False, na=RE.nones):
     r"""Make a string compatible with typical serial number requirements
+
+    # Default configuration strips internal and external whitespaces and retains only the last 10 characters
 
     >>> normalize_serial_number('1C 234567890             ', valid_chars='0123456789')
     '0234567890'
@@ -1203,7 +1208,44 @@ def normalize_serial_number(sn, max_length=10, left_fill='0', right_fill='', bla
     >>> normalize_serial_number('NO SERIAL', blank='----------')  # doctest: +NORMALIZE_WHITESPACE
     '----------'
     """
-    # strip internal and external whitespace and consider only last 10 characters
+    # All 9 kwargs have persistent default values stored as attributes of the funcion instance
+    if max_length is None:
+        max_length = normalize_serial_number.max_length
+    else:
+        normalize_serial_number.max_length = max_length
+    if left_fill is None:
+        left_fill = normalize_serial_number.left_fill
+    else:
+        normalize_serial_number.left_fill = left_fill
+    if right_fill is None:
+        right_fill = normalize_serial_number.right_fill
+    else:
+        normalize_serial_number.right_fill = right_fill
+    if blank is None:
+        blank = normalize_serial_number.blank
+    else:
+        normalize_serial_number.blank = blank
+    if valid_chars is None:
+        valid_chars = normalize_serial_number.valid_chars
+    else:
+        normalize_serial_number.valid_chars = valid_chars
+    if invalid_chars is None:
+        invalid_chars = normalize_serial_number.invalid_chars
+    else:
+        normalize_serial_number.invalid_chars = invalid_chars
+    if strip_whitespace is None:
+        strip_whitespace = normalize_serial_number.strip_whitespace
+    else:
+        normalize_serial_number.strip_whitespace = strip_whitespace
+    if join is None:
+        join = normalize_serial_number.join
+    else:
+        normalize_serial_number.join = join
+    if na is None:
+        na = normalize_serial_number.na
+    else:
+        normalize_serial_number.na = na
+
     if invalid_chars is None:
         invalid_chars = (c for c in ascii.all_ if c not in valid_chars)
     invalid_chars = ''.join(invalid_chars)
@@ -1230,6 +1272,20 @@ def normalize_serial_number(sn, max_length=10, left_fill='0', right_fill='', bla
     if right_fill:
         sn = sn + right_fill * (max_length - len(sn)/len(right_fill))
     return sn
+normalize_serial_number.max_length=None
+normalize_serial_number.left_fill='0'
+normalize_serial_number.right_fill=''
+normalize_serial_number.blank=''
+normalize_serial_number.valid_chars=' -0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ' 
+normalize_serial_number.invalid_chars=None
+normalize_serial_number.strip_whitespace=True
+normalize_serial_number.join=False
+normalize_serial_number.na=RE.nones
+invalid_chars=None
+strip_whitespace=True
+join=False
+na=RE.nones
+
 
 
 def multisplit(s, seps=list(string.punctuation) + list(string.whitespace), blank=True):

@@ -1444,7 +1444,7 @@ def delete_in_batches(queryset, batch_len=10000, verbosity=1):
 
     if verbosity:
         print('Deleting %r records from %r...' % (N, queryset.model))
-        widgets = [pb.Counter(), '/%d records: ' % N, pb.Percentage(), ' ', pb.RotatingMarker(), ' ', pb.Bar(),' ', pb.ETA()]
+        widgets = [pb.Counter(), '/%d rows: ' % N, pb.Percentage(), ' ', pb.RotatingMarker(), ' ', pb.Bar(),' ', pb.ETA()]
         i, pbar = 0, pb.ProgressBar(widgets=widgets, maxval=N).start()
 
     for j in range(int(N/float(batch_len)) + 1):
@@ -1492,7 +1492,7 @@ def import_items(item_seq, dest_model,  batch_len=500, clear=False, dry_run=True
 
     if verbosity:
         print('Loading %r records from sequence provided...' % N)
-        widgets = [pb.Counter(), '/%d records: ' % N, pb.Percentage(), ' ', pb.RotatingMarker(), ' ', pb.Bar(),' ', pb.ETA()]
+        widgets = [pb.Counter(), '/%d rows: ' % N, pb.Percentage(), ' ', pb.RotatingMarker(), ' ', pb.Bar(),' ', pb.ETA()]
         pbar = pb.ProgressBar(widgets=widgets, maxval=N).start()
 
     for batch_num, dict_batch in enumerate(util.generate_batches(item_seq, batch_len)):
@@ -1539,7 +1539,7 @@ def import_queryset_in_batches(qs, dest_model,  batch_len=500, clear=False, dry_
             print "WARNING: Deleting %d records from %r !!!!!!!" % (dest_model.objects.count(), dest_model)
         dest_model.objects.all().delete()
     if verbosity:
-        widgets = [pb.Counter(), '/%d records: ' % N, pb.Percentage(), ' ', pb.RotatingMarker(), ' ', pb.Bar(),' ', pb.ETA()]
+        widgets = [pb.Counter(), '/%d rows: ' % N, pb.Percentage(), ' ', pb.RotatingMarker(), ' ', pb.Bar(),' ', pb.ETA()]
         pbar = pb.ProgressBar(widgets=widgets, maxval=N).start()
     for batch_num, dict_batch in enumerate(util.generate_batches(qs, batch_len)):
         if verbosity > 2:
@@ -1587,7 +1587,7 @@ def import_queryset(qs, dest_model,  clear=False, dry_run=True, verbosity=1):
             print "WARNING: Deleting %d records from %r !!!!!!!" % (dest_model.objects.count(), dest_model)
         dest_model.objects.all().delete()
     if verbosity:
-        widgets = [pb.Counter(), '/%d records: ' % N, pb.Percentage(), ' ', pb.RotatingMarker(), ' ', pb.Bar(),' ', pb.ETA()]
+        widgets = [pb.Counter(), '/%d rows: ' % N, pb.Percentage(), ' ', pb.RotatingMarker(), ' ', pb.Bar(),' ', pb.ETA()]
         pbar = pb.ProgressBar(widgets=widgets, maxval=N).start()
     i = 0
     dest_model._meta.get_all
@@ -1657,7 +1657,7 @@ def import_queryset_untested(dest_model, queryset, model_app=None, nullify_pk=Tr
 
 
     if verbosity:
-        widgets = [pb.Counter(), '/%d records: ' % N, pb.Percentage(), ' ', pb.RotatingMarker(), ' ', pb.Bar(),' ', pb.ETA()]
+        widgets = [pb.Counter(), '/%d rows: ' % N, pb.Percentage(), ' ', pb.RotatingMarker(), ' ', pb.Bar(),' ', pb.ETA()]
         i, pbar = 0, pb.ProgressBar(widgets=widgets, maxval=N).start()
 
     for j, partial_qs in enumerate(util.generate_slices(queryset.all(), batch_len=batch_len)):
@@ -1847,7 +1847,7 @@ def generate_queryset_batches(queryset, batch_len=10000, verbosity=1):
 
     if verbosity:
         print('Splitting %r records from %r into %d querysets of size %d or smaller...' % (N, queryset.model, N_batches, batch_len))
-        widgets = [pb.Counter(), '/%d records: ' % N, pb.Percentage(), ' ', pb.RotatingMarker(), ' ', pb.Bar(),' ', pb.ETA()]
+        widgets = [pb.Counter(), '/%d rows: ' % N, pb.Percentage(), ' ', pb.RotatingMarker(), ' ', pb.Bar(),' ', pb.ETA()]
         i, pbar = 0, pb.ProgressBar(widgets=widgets, maxval=N).start()
     pk_queryset = queryset.order_by('pk').values_list('pk', flat=True).all()
     pk_list = []
