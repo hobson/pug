@@ -1830,7 +1830,7 @@ def bulk_update(object_list, ignore_errors=False, verbosity=0):
     return N_before - N_after
 
 
-def generate_queryset_batches(queryset, batch_len=10000, verbosity=1):
+def generate_queryset_batches(queryset, batch_len=1000, verbosity=1):
     """Filter a queryset by the pk in such a way that no batch is larger than the requested batch_len
 
     SEE ALSO: pug.nlp.util.generate_slices
@@ -1849,13 +1849,17 @@ def generate_queryset_batches(queryset, batch_len=10000, verbosity=1):
         print('Splitting %r records from %r into %d querysets of size %d or smaller...' % (N, queryset.model, N_batches, batch_len))
         widgets = [pb.Counter(), '/%d rows: ' % N, pb.Percentage(), ' ', pb.RotatingMarker(), ' ', pb.Bar(),' ', pb.ETA()]
         i, pbar = 0, pb.ProgressBar(widgets=widgets, maxval=N).start()
-    pk_queryset = queryset.order_by('pk').values_list('pk', flat=True).all()
+    pk_queryset = queryset.filter(pk__isnull=False).values_list('pk', flat=True).order_by('pk')
+
+    if verbosity > 1:
+        print 'Attempting to load all nonnull %d pks into memory. This could take a while...' % pk_queryset.count()
+    nonnull_pk_list = tuple(pk_queryset)
     pk_list = []
 
     for j in range(N_batches - 1):
-        pk_list += [(pk_queryset[j*batch_len], pk_queryset[(j+1)*batch_len - 1])]
+        pk_list += [(nonnull_pk_list[j*batch_len], nonnull_pk_list[(j+1)*batch_len - 1])]
     last_batch_len = N - (N_batches-1) * batch_len
-    pk_list += [(pk_queryset[(N_batches-1) * batch_len], pk_queryset[N-1])]
+    pk_list += [(nonnull_pk_list[(N_batches-1) * batch_len], nonnull_pk_list[N-1])]
 
     for j in range(N_batches):
         if verbosity:
