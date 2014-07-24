@@ -1843,24 +1843,30 @@ def generate_queryset_batches(queryset, batch_len=1000, verbosity=1):
 
     if not N:
         raise StopIteration("Queryset is empty!")
-    N_batches = int(N/float(batch_len)) + 1
 
     if verbosity:
-        print('Splitting %r records from %r into %d querysets of size %d or smaller...' % (N, queryset.model, N_batches, batch_len))
         widgets = [pb.Counter(), '/%d rows: ' % N, pb.Percentage(), ' ', pb.RotatingMarker(), ' ', pb.Bar(),' ', pb.ETA()]
         i, pbar = 0, pb.ProgressBar(widgets=widgets, maxval=N).start()
     pk_queryset = queryset.filter(pk__isnull=False).values_list('pk', flat=True).order_by('pk')
 
+    N_nonnull = pk_queryset.count()
+    N_batches = int(N_nonnull/float(batch_len)) + 1
+    
     if verbosity > 1:
-        print 'Attempting to load all nonnull %d pks into memory. This could take a while...' % pk_queryset.count()
+        print 'Splitting %d primary_key values (%d nonnull) from %r into %d querysets of size %d or smaller. First loading pks into RAM...' % (N, N_nonnull, queryset.model, N_batches, batch_len)
     nonnull_pk_list = tuple(pk_queryset)
     pk_list = []
 
+    if verbosity > 1:
+        print 'Extracting the %d dividing (fencepost) primary keys for use in splitting the querysets with filter queries...' % (N_batches + 1)
     for j in range(N_batches - 1):
         pk_list += [(nonnull_pk_list[j*batch_len], nonnull_pk_list[(j+1)*batch_len - 1])]
-    last_batch_len = N - (N_batches-1) * batch_len
+    last_batch_len = N_nonnull - (N_batches-1) * batch_len
     pk_list += [(nonnull_pk_list[(N_batches-1) * batch_len], nonnull_pk_list[N-1])]
 
+    if verbosity > 1:
+        del(nonnull_pk_list)
+        print 'Yielding the %d batches according to the %d dividing (fencepost) primary keys...' % (N_batches, len(pk_list))
     for j in range(N_batches):
         if verbosity:
             pbar.update(i)
@@ -1868,6 +1874,7 @@ def generate_queryset_batches(queryset, batch_len=1000, verbosity=1):
             i += batch_len
         else:
             i += last_batch_len
+        # inclusive inequality ensures that even if PKs are repeated they will all be included in the queryset returned
         yield queryset.filter(pk__gte=pk_list[j][0], pk__lte=pk_list[j][1])
     if verbosity:
         pbar.finish()
