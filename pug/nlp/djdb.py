@@ -318,23 +318,17 @@ def copy_field(source_field, destination_field_or_model, src_pk_field=None, dest
     dest_pk_field = dest_pk_field or get_primary_key(destination_field.model)
 
     dest = destination_field.model.objects.filter(pk__isnull=False)
-    print dest.count()
-    print
     if not overwrite_null:
         dest=dest.filter(**{destination_field.name + '__isnull': True})
     src = source_field.model.objects.filter(pk__isnull=False)
     if skip_null:
         src=src.filter(**{source_field.name + '__isnull': False})
-    print src.count()
-    print
     N = src.count()
     if verbosity:
         widgets = [pb.Counter(), '/%d records: ' % (N,), pb.Percentage(), ' ', pb.RotatingMarker(), ' ', pb.Bar(),' ', pb.ETA()]
         i, pbar = 0, pb.ProgressBar(widgets=widgets, maxval=N).start()
 
     for batch_num, batch in enumerate(generate_queryset_batches(src, verbosity=verbosity)):
-        if batch_num < 2000:
-            continue
         updated_objects = []
         for obj in batch:
             if verbosity:
@@ -343,7 +337,7 @@ def copy_field(source_field, destination_field_or_model, src_pk_field=None, dest
             try:
                 new_obj = dest.get(**{dest_pk_field: getattr(obj, src_pk_field)})
             except dest.model.DoesNotExist:
-                if verbosity > 1:
+                if verbosity > 2:
                     print '%r.get(**{%r: %r})' % (dest.model, dest_pk_field, getattr(obj, src_pk_field))
                 continue
             new_value = getattr(obj, source_field.name, None)
