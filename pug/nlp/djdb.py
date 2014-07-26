@@ -284,6 +284,84 @@ def get_db_alias(app=DEFAULT_APP):
         return DEFAULT_DB
 
 
+def get_field(field):
+    """Return a field object based on a dot-delimited app.model.field name"""
+    if isinstance(field, models.fields.Field):
+        return field
+    elif isinstance(field, basestring):
+        field = field.split('.')
+        if len(field) == 3:
+            model = get_model(app=field[0], model=field[1])
+        elif len(field) == 2:
+            model = get_model(app=DEFAULT_APP, model=field[0])
+        else:
+            return None
+            raise NotImplementedError("Unknown default model name. Don't know where to look for field %s" % '.'.join(field)) 
+        field = model._meta.get_field(field[-1])
+    return field
+
+
+def get_primary_key(model):
+    """Get the name of the field in a model that has primary_key=True"""
+    model = get_model(model)
+    return (field.name for field in model._meta.fields if field.primary_key).next()
+
+
+def copy_field(source_field, destination_field_or_model, src_pk_field=None, dest_pk_field=None, overwrite_null=False, skip_null=True, verbosity=1):
+    source_field = get_field(source_field)
+    destination_field = get_field(destination_field_or_model
+                                  or get_model(destination_field_or_model)._meta.get_field())
+    max_length = getattr(destination_field, 'max_length', float('inf'))
+    src_pk_field = src_pk_field or get_primary_key(source_field.model)
+    if not dest_pk_field and src_pk_field in [field.name for field in destination_field.model._meta.fields]:
+        dest_pk_field = src_pk_field
+    dest_pk_field = dest_pk_field or get_primary_key(destination_field.model)
+
+    dest = destination_field.model.objects.filter(pk__isnull=False)
+    print dest.count()
+    print
+    if not overwrite_null:
+        dest=dest.filter(**{destination_field.name + '__isnull': True})
+    src = source_field.model.objects.filter(pk__isnull=False)
+    if skip_null:
+        src=src.filter(**{source_field.name + '__isnull': False})
+    print src.count()
+    print
+    N = src.count()
+    if verbosity:
+        widgets = [pb.Counter(), '/%d records: ' % (N,), pb.Percentage(), ' ', pb.RotatingMarker(), ' ', pb.Bar(),' ', pb.ETA()]
+        i, pbar = 0, pb.ProgressBar(widgets=widgets, maxval=N).start()
+
+    for batch_num, batch in enumerate(generate_queryset_batches(src, verbosity=verbosity)):
+        if batch_num < 2000:
+            continue
+        updated_objects = []
+        for obj in batch:
+            if verbosity:
+                pbar.update(i)
+                i += 1
+            try:
+                new_obj = dest.get(**{dest_pk_field: getattr(obj, src_pk_field)})
+            except dest.model.DoesNotExist:
+                if verbosity > 1:
+                    print '%r.get(**{%r: %r})' % (dest.model, dest_pk_field, getattr(obj, src_pk_field))
+                continue
+            new_value = getattr(obj, source_field.name, None)
+            if isinstance(new_value, basestring):
+                new_value = str.strip(new_value)
+                if len(new_value) >  max_length:
+                    new_value = new_value[:max_length]
+            if new_value:
+                setattr(new_obj, destination_field.name, new_value)
+                updated_objects += [new_obj]
+        if verbosity > 1:
+            print 'Fraction of objects that have been updated: %g / %d' % (sum(1 for o in updated_objects if o.rano), len(updated_objects) )
+        bulk_update(updated_objects)
+
+    if verbosity:
+        pbar.finish()
+
+
 def field_cov(fields, models, apps):
     columns = util.get_columns(fields, models, apps)
     columns = util.make_real(columns)
