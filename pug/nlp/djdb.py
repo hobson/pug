@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 import datetime
-import collections as collect
+import collections
 import re
 from types import ModuleType
 import sqlparse
@@ -226,7 +226,7 @@ def get_app(app=None, verbosity=0):
 get_app.default = DEFAULT_APP
 
 
-def get_model(model=DEFAULT_MODEL, app=DEFAULT_APP):
+def get_model(model=DEFAULT_MODEL, app=None):
     """
     >>> from django.db import connection
     >>> connection.close() 
@@ -242,7 +242,18 @@ def get_model(model=DEFAULT_MODEL, app=DEFAULT_APP):
     # print 'get_model' + repr(model) + ' app ' + repr(app)
     if isinstance(model, models.base.ModelBase):
         return model
-    app = get_app(app)
+    elif isinstance(model, (models.base.Manager, models.query.QuerySet)):
+        return model.model
+    try:
+        app = get_app(app)
+    except:
+        try:
+            app = get_app(model.app_label)
+        except:
+            try:
+                app = get_app(model._meta.app_label)
+            except:
+                app = get_app(DEFAULT_APP)
     try:
         model_object = models.get_model(app, model)
         if model_object:
@@ -878,19 +889,19 @@ def diff_data(model0, model1, pk_name='pk', field_names=None, ignore_related=Fal
     return ans
 
 
-class Columns(collect.OrderedDict):
-    """An collect.OrderedDict of named columns of data
-         `collect.OrderedDict([('name1', [x11, x21, ..., xM1]), ... ('nameM', [x1, ... objNM])]`
+class Columns(collections.OrderedDict):
+    """An collections.OrderedDict of named columns of data
+         `collections.OrderedDict([('name1', [x11, x21, ..., xM1]), ... ('nameM', [x1, ... objNM])]`
           similar to a Pandas `DataFrame`, but with the added convenience functions for DB I/O
           and numpy data processing
 
-    keys of collect.OrderedDict are the column (db field) names
+    keys of collections.OrderedDict are the column (db field) names
         prefixed with the app and and table name if ambiguous
-    The attribute `Columns.db_fields` is an collect.OrderedDict which stores a list of tuples 
+    The attribute `Columns.db_fields` is an collections.OrderedDict which stores a list of tuples 
         `(app_name, table_name, column_name, db_filter_dict)` 
-        using the same keys as the Columns collect.OrderedDict data container
+        using the same keys as the Columns collections.OrderedDict data container
 
-    values of the collect.OrderedDict
+    values of the collections.OrderedDict
     """
     default_app = DEFAULT_APP
     default_table = DEFAULT_MODEL
@@ -926,13 +937,13 @@ class Columns(collect.OrderedDict):
             apps = util.listify(self.default_app, self.len_column)
         self.default_app = apps[0]
 
-        self.db_fields = collect.OrderedDict((fields[i], (apps[i], tables[i], fields[i], filters[i])) for i in range(self.len_column))
+        self.db_fields = collections.OrderedDict((fields[i], (apps[i], tables[i], fields[i], filters[i])) for i in range(self.len_column))
 
         if len(args) == 1:
             if isinstance(args[0], basestring):
                 self.from_string(args[0])
             elif isinstance(args[0], models.query.ValuesQuerySet) or hasattr(args[0], '__iter__'):
-                if isinstance(iter(args[0]).next(), collect.Mapping):
+                if isinstance(iter(args[0]).next(), collections.Mapping):
                     self.from_valuesqueryset(args[0])
                 else:
                     self.from_row_wise_lists(args[0], **kwargs)
@@ -998,7 +1009,7 @@ class Columns(collect.OrderedDict):
                 self.clear()
                 for name in d:
                     self[name] = []
-                if not isinstance(d, collect.Mapping):
+                if not isinstance(d, collections.Mapping):
                     if not all(isinstance(name, basestring) for name in self):
                         for name in self:
                             del(self[name])
@@ -1007,7 +1018,7 @@ class Columns(collect.OrderedDict):
                     names = list(self)
                     # the first row has already been processed (as either column names or column values), so move right along
                     continue
-            if not isinstance(d, collect.Mapping):
+            if not isinstance(d, collections.Mapping):
                 for j, value in enumerate(d):
                     try:
                         self[names[j]] += [value]
@@ -1200,17 +1211,29 @@ def field_dict_from_row(row, model, field_names=None, include_id=False, strip=Tr
     if not field_names:
         field_names = [f.name for f in field_classes if (include_id or f.name != 'id')]
     field_dict = {}
-    if isinstance(row, collect.Mapping):
+    if isinstance(row, collections.Mapping):
         row = [row.get(field_name, None) for field_name in field_names]
+    # if most of the destination field names exist in the source object then 
+    elif sum(hasattr(row, field_name) for field_name in field_names) / (len(field_names) / 2. + 1):
+        row = [getattr(row, field_name, None) for field_name in field_names]
     for field_name, field_class, value in zip(field_names, field_classes, row):
+        clean_value = None
         if verbosity >= 3:
-            print field_name, field_class, value 
+            print field_name, field_class, value
+        if isinstance(field_class, related.RelatedField):
+            try:
+                clean_value = field_class.related.parent_model.objects.get(value)
+            except:
+                try:
+                    clean_value = field_class.related.parent_model.objects.get_by_natural_key(value)
+                except:
+                    if verbosity > 2:
+                        print 'Unable to connect related field %r using value %r' % (field_class, value)
         if isinstance(value, basestring) and not value:
-            if isinstance(field_class, related.RelatedField):
-                if verbosity > 3:
-                    print 'setting value to None'
-                value = None
-            elif blank_none and (
+            if verbosity > 3:
+                print 'Related field %r setting value %r to None' % (field_class, value)
+            value = None
+            if blank_none and (
                 not isinstance(field_class, related.RelatedField) or field_class.blank or not field_class.null):
                 try:
                     if isinstance(field_class.to_python(''), basestring):
@@ -1221,27 +1244,28 @@ def field_dict_from_row(row, model, field_names=None, include_id=False, strip=Tr
                     value = None
             else:
                 value = None
-        try:
-            # get a clean python value from a string, etc
-            clean_value = field_class.to_python(value)
-        except:  # ValidationError
+        if not clean_value:
             try:
-                clean_value = str(field_class.to_python(util.clean_wiki_datetime(value)))
-            except:
+                # get a clean python value from a string, etc
+                clean_value = field_class.to_python(value)
+            except:  # ValidationError
                 try:
-                    clean_value = field_class.to_python(util.make_float(value))
+                    clean_value = str(field_class.to_python(util.clean_wiki_datetime(value)))
                 except:
                     try:
-                        clean_value = field_class.to_python(value)  # FIXME: this has already been tried!
+                        clean_value = field_class.to_python(util.make_float(value))
                     except:
-                        if verbosity:
-                            print
-                            print "The row below has a value (%r) that can't be coerced by %r:" % (value, field_class.to_python)
-                            print row
-                            print_exc()
-                        clean_value = None
-                        if not ignore_errors:
-                            raise
+                        try:
+                            clean_value = field_class.to_python(value)  # FIXME: this has already been tried!
+                        except:
+                            if verbosity:
+                                print
+                                print "The row below has a value (%r) that can't be coerced by %r:" % (value, field_class.to_python)
+                                print row
+                                print_exc()
+                            clean_value = None
+                            if not ignore_errors:
+                                raise
         if isinstance(clean_value, basestring):
             if strip:
                 clean_value = clean_value.strip()
@@ -1593,12 +1617,17 @@ def import_items(item_seq, dest_model,  batch_len=500, clear=False, dry_run=True
         pbar.finish()
 
 
-def import_queryset_in_batches(qs, dest_model,  batch_len=500, clear=False, dry_run=True, verbosity=1):
-    """Given a sequence (queryset, generator, tuple, list) of dicts import them into the given model"""
-    try:
-        qs = qs.objects
-    except:
-        pass
+def import_queryset_batches(qs, dest_qs,  batch_len=500, clear=None, dry_run=True, verbosity=1):
+    """Given a sequence (queryset, generator, tuple, list) of dicts import them into the given model
+
+    clear = model or queryset to be deleted/cleared 
+        False: do not clear/delete anything
+        None: clear/delete the dest_qs
+        True: clear all records in dest_qs.model (e.g. dest_qs.model.objects.all().delete())
+    """
+    qs = get_queryset(qs)
+    dest_qs = get_queryset(dest_qs)
+    dest_model = get_model(dest_qs)
 
     N = qs.count()
 
@@ -1606,14 +1635,18 @@ def import_queryset_in_batches(qs, dest_model,  batch_len=500, clear=False, dry_
         print('Loading %r records from the queryset provided...' % N)
     qs = qs.values()
 
+    if clear is None:
+        clear
     if clear and not dry_run:
+        if clear == True:
+            clear = dest_model.objects.all()
         if verbosity:
-            print "WARNING: Deleting %d records from %r !!!!!!!" % (dest_model.objects.count(), dest_model)
-        dest_model.objects.all().delete()
+            print "WARNING: Deleting %d records from %r !!!!!!!" % (clear.count(), clear.model)
+        clear.delete()
     if verbosity:
         widgets = [pb.Counter(), '/%d rows: ' % N, pb.Percentage(), ' ', pb.RotatingMarker(), ' ', pb.Bar(),' ', pb.ETA()]
         pbar = pb.ProgressBar(widgets=widgets, maxval=N).start()
-    for batch_num, dict_batch in enumerate(util.generate_batches(qs, batch_len)):
+    for batch_num, dict_batch in enumerate(generate_queryset_batches(qs, batch_len)):
         if verbosity > 2:
             print(repr(dict_batch))
         item_batch = []
