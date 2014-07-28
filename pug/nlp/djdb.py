@@ -242,7 +242,7 @@ def get_model(model=DEFAULT_MODEL, app=None):
     # print 'get_model' + repr(model) + ' app ' + repr(app)
     if isinstance(model, models.base.ModelBase):
         return model
-    elif isinstance(model, (models.base.Manager, models.query.QuerySet)):
+    elif isinstance(model, (models.Manager, models.query.QuerySet)):
         return model.model
     try:
         app = get_app(app)
@@ -1662,7 +1662,7 @@ def import_queryset_batches(qs, dest_qs,  batch_len=500, clear=None, dry_run=Tru
         if verbosity and verbosity < 2:
             pbar.update(batch_num * batch_len + len(dict_batch))
         elif verbosity > 1:
-            print('Writing {0} items in batch {2} out of {3} batches to the {4} model...'.format(
+            print('Writing {0} items in batch {1} out of {2} batches to the {3} model...'.format(
                 len(item_batch), batch_num, int(N / float(batch_len)), dest_model))
         if not dry_run:
             dest_model.objects.bulk_create(item_batch)
