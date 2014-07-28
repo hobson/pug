@@ -325,7 +325,7 @@ def copy_field(source_field, destination_field_or_model, src_pk_field=None, dest
         src=src.filter(**{source_field.name + '__isnull': False})
     N = src.count()
     if verbosity:
-        widgets = [pb.Counter(), '/%d records: ' % (N,), pb.Percentage(), ' ', pb.RotatingMarker(), ' ', pb.Bar(),' ', pb.ETA()]
+        widgets = [pb.Counter(), '/%d rows: ' % (N,), pb.Percentage(), ' ', pb.RotatingMarker(), ' ', pb.Bar(),' ', pb.ETA()]
         i, pbar = 0, pb.ProgressBar(widgets=widgets, maxval=N).start()
 
     for batch_num, batch in enumerate(generate_queryset_batches(src, verbosity=verbosity)):
