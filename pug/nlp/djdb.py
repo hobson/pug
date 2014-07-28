@@ -1662,7 +1662,7 @@ def import_queryset_batches(qs, dest_qs,  batch_len=500, clear=None, dry_run=Tru
         if verbosity and verbosity < 2:
             pbar.update(batch_num * batch_len + len(dict_batch))
         elif verbosity > 1:
-            print('Writing {0} items in batch {1} out of {2} batches to the {3} model...'.format(
+            print(('DRYRUN:  ' if dry_run else '') + 'Writing {0} items in batch {1} out of {2} batches to the {3} model...'.format(
                 len(item_batch), batch_num, int(N / float(batch_len)), dest_model))
         if not dry_run:
             dest_model.objects.bulk_create(item_batch)
