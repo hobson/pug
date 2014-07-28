@@ -154,7 +154,7 @@ def context_from_request(request, context=None, Form=GetLagForm, delim=',', **kw
 
     sg = request.GET.get('sg', "") or request.GET.get('group', "") or request.GET.get('sales', "") or request.GET.get('sales_group', "") or request.GET.get('sale_group_number', "")
     sg = [s.strip().upper() for s in sg.split(',')] or ['']   
-    # need to implement filters on sales_group (where serial_numbers was, in explore_lags, and filter_lags or lags_dict)
+    # need to implement filters on sales_group (where serial_numbers was, in explore_lags, and filter_sla_lags or lags_dict)
     #context['filter']['sales_groups'] = sg
     context['filter']['sales_groups'] = sg
     #context['filter']['model_numbers'] += SLAmodels.models_from_sales_groups(context['sales_groups'])
@@ -240,9 +240,9 @@ def context_from_request(request, context=None, Form=GetLagForm, delim=',', **kw
             context['field_names'] = kwargs.get('field_names')
         else:
             context['field_names'] = list(SLAmodels.Refrefurb._meta.get_all_field_names()) + [
-                'sale__material', 'sale__serial_number', 'sale__billing_doc_date', 'rano__rano',
+                'sale__material', 'sale__serial_number', 'sale__billing_doc_date', 'ra__rano',
                 'sale__net_invoice_price', 'sale__sold_to_party', 'sale__sold_to_party_name',
-                'sale__ship_to_party_name', 'rano__rcode', 'rano__close_date',
+                'sale__ship_to_party_name', 'ra__rcode', 'ra__close_date',
                 ]
         
     if not context.get('filename'):

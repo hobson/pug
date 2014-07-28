@@ -14,8 +14,8 @@ try:
     requirements = list(parse_requirements('requirements.txt'))
 except:
     requirements = []
-install_requires=[req.name for req in requirements if req.req and not req.url]
-dependency_links=[line.url for line in requirements if line.url]
+install_requires=[str(req) for req in requirements if req.req and not req.url]
+dependency_links=[req.url for req in requirements if req.url]
 
 
 setup(
