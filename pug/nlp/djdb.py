@@ -1624,6 +1624,17 @@ def import_queryset_batches(qs, dest_qs,  batch_len=500, clear=None, dry_run=Tru
         False: do not clear/delete anything
         None: clear/delete the dest_qs
         True: clear all records in dest_qs.model (e.g. dest_qs.model.objects.all().delete())
+
+    Typical Usage:
+    
+    >> from src_app.models import SrcModel
+    >> from dest_app.models import DestModel
+    >> filter_dict={"model__startswith": "LC", "recvdat__gt":'2013-03-31'}
+    >> dest = DestModel.objects.filter(**filter_dict)
+    >> src = SrcModel.objects.filter(**filter_dict)
+    >> src.count(), dest.count()
+    >> from pug.nlp import djdb
+    >> djdb.import_queryset_batches(src, dest, batch_len=1000, clear=dest, dry_run=False, verbosity=2)
     """
     qs = get_queryset(qs)
     dest_qs = get_queryset(dest_qs)
@@ -1636,7 +1647,7 @@ def import_queryset_batches(qs, dest_qs,  batch_len=500, clear=None, dry_run=Tru
     qs = qs.values()
 
     if clear is None:
-        clear
+        clear = dest_qs
     if clear and not dry_run:
         if clear == True:
             clear = dest_model.objects.all()
