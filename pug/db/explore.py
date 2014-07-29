@@ -457,6 +457,10 @@ def index_model_field_batches(model_or_queryset, key_fields=['model_number', 'se
     limit=100000000, verbosity=1):
     '''Like index_model_field except uses 50x less memory and 10x more processing cycles
 
+    Returns 2 dicts where both the keys and values are tuples:
+
+    target_index = {(<key_fields[0]>, <key_fields[1]>, ...): (<value_fields[0]>,)} for all distinct model-serial pairs in the Sales queryset
+    target_dupes = {(<key_fields[0]>, <key_fields[1]>, ...): [(<value_fields[1]>,), (<value_fields[2]>,), ...]}  with all the duplicates except the first pk already listed above
     '''
 
     qs = djdb.get_queryset(model_or_queryset)

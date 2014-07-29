@@ -124,6 +124,32 @@ class JSONView(View):
 
    
 def context_from_request(request, context=None, Form=GetLagForm, delim=',', **kwargs):
+    """Process GET query request to normalize
+
+    TODO: Generalize this for any list of API variables/strings and separators for lists
+
+    Rturns context dict with these updated elements:
+    context['form']                a Form object populated with the normalized form field values from the GET query
+    context['form_is_valid']       True  or False
+    context['errors']              list of validation error messages to be displayed at top of form
+    context['plot']                normalized acronym for one of 4 histogram type: 'hist', 'pmf', 'cmf', or 'cfd'
+    contexxt['plot_name']          descriptive name for the plot type: 'Histogram', 'Probability Mass Function' ...
+    context['table']               'fast' or 'detailed'
+    context['limit']               int indicating the maximum number of rows (for speeding the query for a detailed table)
+    context['filter']              dict for use in a Django queryset filter:
+    {
+        'model_numbers': mn.split(',')  #    list of strings for ?mn=
+        'sales_groups': sg.split(',')  #     list of strings for ?sg=
+        'fiscal_years': sn.split(',')  #     list of strings for ?fy=
+        'reasons': sn.split(',')  #          list of strings for ?r=
+        'account_numbers': sn.split(',')  #  list of strings for ?an=
+        'min_dates': sn.split(',')  #        list of strings for ?min_date=
+        'max_dates': sn.split(',')  #        list of strings for ?max_date=
+        'min_lag': sn.split(',')  #          list of strings for ?min_lag=
+        'max_lag': sn.split(',')  #          list of strings for ?max_lag=
+        'exclude': sn.split(',')  #          "E" or "I" (include or exclude account numbers)
+    }
+    """
     context = context or RequestContext(request)
 
     context['errors'] = []
@@ -217,8 +243,7 @@ def context_from_request(request, context=None, Form=GetLagForm, delim=',', **kw
                'max_date': ', '.join(context['filter']['max_dates'])
               }
 
-    print 'initial'
-    print initial
+    print 'normalized GET query parameters: %r' % initial
 
     if request.method == 'POST':
         # GetLagForm only has a GET button
