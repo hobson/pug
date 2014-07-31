@@ -29,6 +29,7 @@ import random
 from pytz import timezone
 import numpy as np
 import scipy as sci
+from fuzzywuzzy import process as fuzzy
 
 import character_subset as chars
 import regex_patterns as RE
@@ -284,6 +285,28 @@ def get_key_for_value(dict_obj, value, default=None):
         if v == value:
             return k
     return default
+
+
+def fuzzy_get(dict_obj, approximate_key, dict_keys=None, key_and_value=False, threshold=0.5, default=None):
+    """Find the closest matching key and/or value in a dictionary (must have all string keys!)"""
+    if approximate_key in dict_obj:
+        fuzzy_key, value = approximate_key, dict_obj[approximate_key]
+    else:
+        dict_keys = set(dict_keys if dict_keys else dict_obj)
+        strkey = str(approximate_key)
+        if strkey in dict_keys:
+            fuzzy_key, value = strkey, dict_obj[strkey]
+        else:
+            strkey = strkey.strip()
+            if strkey in dict_keys:
+                fuzzy_key, value = strkey, dict_obj[strkey]
+            else:
+                fuzzy_key, fuzzy_score = fuzzy.extractOne(str(approximate_key), dict_keys)
+                value = dict_obj[fuzzy_key]
+    if key_and_value:
+        return fuzzy_key, value
+    else:
+        return value
 
 
 def sod_transposed(seq_of_dicts, align=True, fill=True, filler=None):

@@ -268,7 +268,7 @@ def get_model(model=DEFAULT_MODEL, app=None):
         return models.get_model(app.__package__.split('.')[-1], fuzzy.extractOne(str(model), model_names)[0])
 
 
-def get_queryset(qs=None, app=DEFAULT_APP):
+def get_queryset(qs=None, app=DEFAULT_APP, db_alias=None):
     """
     >>> from django.db import connection
     >>> connection.close() 
@@ -277,8 +277,14 @@ def get_queryset(qs=None, app=DEFAULT_APP):
     """
     # print 'get_model' + repr(model) + ' app ' + repr(app)
     if isinstance(qs, (models.Manager, models.query.QuerySet)):
-        return qs.all()
-    return get_model(qs, app=app).objects.all()
+        qs = qs.all()
+    else:
+        qs = get_model(qs, app=app).objects.all()
+    if db_alias:
+        return qs.using(db_alias)
+    else:
+        return qs  # .using(router.db_for_read(model))
+
 
 
 def get_db_alias(app=DEFAULT_APP):

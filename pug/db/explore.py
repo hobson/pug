@@ -208,7 +208,7 @@ def get_db_meta(app=DEFAULT_APP_NAME, db_alias=None, table=None, verbosity=0, co
             meta[model_name]['Meta']['primary_key'] = db_primary_keys[0]
 
         # augment model_meta with additional stats, but only if there are enough rows to get statistics
-        model_meta = augment_model_meta(model, model_db_alias, model_meta, column_name_filter=column, count=count, verbosity=verbosity)
+        model_meta = augment_model_meta(model, model_db_alias, model_meta, column_name_filters=column, count=count, verbosity=verbosity)
 
         if verbosity > 1:
             print model_meta
@@ -216,9 +216,62 @@ def get_db_meta(app=DEFAULT_APP_NAME, db_alias=None, table=None, verbosity=0, co
     return meta
 
 
-def augment_model_meta(model, db_alias, model_meta, column_name_filter=None, count=0, verbosity=0):
+def get_model_meta(model, app=DEFAULT_APP_NAME, db_alias=None, column_name_filter=None, verbosity=0):
+    if settings.DEBUG and verbosity > 1:
+        print
+        print '*'*100
+        print 'get_model_meta'
+        print
+
+    model = djdb.get_model(model, app=app)
+    model_name = model._meta.name
+    queryset = djdb.get_queryset(model, db_alias=db_alias)
+    db_alias = db_alias or router.db_for_read(model)
+
+    meta, count = {}, None
+    try:
+        if verbosity > 1:
+            print 'Trying to count records in model %r and db_alias %r' % (model, db_alias)
+        count = queryset.count()
+    except DatabaseError as e:
+        if verbosity:
+            print_exc()
+            print "DatabaseError: Unable to count records for model '%s' (%s) because of %s." % (model.__name__, repr(model), e)
+        connection.close()
+    except:
+        print_exc()
+        print 'Connection doesnt exist?'
+
+    meta[model.__name__] = OrderedDict()
+    meta[model.__name__]['Meta'] = OrderedDict()
+    meta[model.__name__]['Meta']['primary_key'] = None
+    meta[model.__name__]['Meta']['count'] = count
+    meta[model.__name__]['Meta']['db_table'] = model._meta.db_table
+    
+    if verbosity > 1:
+        print '%s.Meta = %r' % (model.__name__, meta[model.__name__]['Meta'])
+    
+    # inspectdb uses: connection.introspection.get_table_description(cursor, table_name)
+    properties_of_fields = sql.get_meta_dicts(cursor=db_alias, table=meta[model_name]['Meta']['db_table'], verbosity=verbosity)
+    model_meta = OrderedDict((field['name'], field) for field in properties_of_fields)
+    if verbosity > 1:
+        print '-' * 20 + model_name + '-' * 20
+    db_primary_keys = [field['name'] for field in properties_of_fields if field['primary_key']]
+    if len(db_primary_keys) == 1:
+        meta[model_name]['Meta']['primary_key'] = db_primary_keys[0]
+
+    # augment model_meta with additional stats, but only if there are enough rows to get statistics
+    model_meta = augment_model_meta(model, db_alias, model_meta, column_name_filter=column_name_filter, count=count, verbosity=verbosity)
+
+
+def augment_model_meta(model, db_alias, model_meta, column_name_filters=None, count=0, verbosity=0):
     """Fields are keyed by their db_column name rather than field name (like model_meta)"""
-    queryset = model.objects
+    if settings.DEBUG and verbosity > 2:
+        print 'Augmenting model meta data for %r...' % model
+
+    column_name_filters = util.listify(column_name_filters)
+    queryset = djdb.get_queryset(model)
+
     if db_alias:
         queryset = queryset.using(db_alias)
     for field_name in model._meta.get_all_field_names():
@@ -232,7 +285,7 @@ def augment_model_meta(model, db_alias, model_meta, column_name_filter=None, cou
             db_column = None
         if not field:
             if verbosity:
-                print "WARNING: Skipped 'phantom' field named '%s'. No field found in the model '%s' for database '%s'." % (field_name, model.__name__, db_alias)
+                print "WARNING: Skipped 'phantom' field named '%s'.  This is likely because of a ForeignKey relationship elsewhere back to this model (%r). No field found in the model '%s' for database '%s'." % (field_name, model, model.__name__, db_alias)
             continue
         if not db_column:
             if field.name in model_meta:
@@ -245,22 +298,18 @@ def augment_model_meta(model, db_alias, model_meta, column_name_filter=None, cou
             if verbosity:
                 print "WARNING: Skipped field named '%s'. No column found in the database.table '%s.%s'." % (field.name, db_alias, model.__name__)
             continue
-        if column_name_filter is not None and isinstance(column_name_filter, basestring):
-            if db_column != column_name_filter:
-                # if verbosity>1:
-                #     print 'Skipped field named %s.%s with db column name %s.%s.' % (model_name, field.name, model._meta.db_table, db_column)
-                continue
-        elif callable(column_name_filter):
-            if not column_name_filter(db_column):
-                # if verbosity>1:
-                #     print 'Skipped field named %s.%s with db column name %s.%s.' % (model_name, field.name, model._meta.db_table, db_column)
+        if column_name_filters:
+            if not any(((callable(cnf) and cnf(db_column)) or (db_column == cnf)) for cnf in column_name_filters):
+                if verbosity:
+                    print "WARNING: Skipped field named '%s' for table '%s.%s' because it didn't match any filters: %r." % (field.name, db_alias, model.__name__, column_name_filters)
                 continue
         if (field.name == 'id' and isinstance(field, models.fields.AutoField)
                 and field.primary_key and (not model_meta[db_column]['primary_key'])):
+            print "WARNING: Skipped field named '%s' for table '%s.%s' because it is an AutoField and no primary_key is defined for this table." % (field.name, db_alias, model.__name__)
             continue
 
         model_meta[db_column] = augment_field_meta(field, queryset, model_meta[db_column], count=count, verbosity=verbosity)
-        if verbosity > 2:
+        if verbosity > 1:
             print '%s (%s of type %s) has %s / %s (%3.1f%%) distinct values between %s and %s, excluding %s nulls.' % (field.name, db_column, 
                                                         model_meta[db_column]['type'],
                                                         model_meta[db_column]['num_distinct'], 
@@ -298,6 +347,8 @@ def augment_field_meta(field, queryset, field_properties, verbosity=0, count=0):
          b. blank
          c. whitespace or other strings signifying null ('NULL', 'None', 'N/A', 'NaN', 'Not provided')
     """
+    if settings.DEBUG and verbosity > 3:
+        print 'Augmenting field meta data for %r...' % field
     # Calculate the fraction of values in a column that are distinct (unique).
     #   For columns that aren't populated with 100% distinct values, the fraction may help identify columns that are part of a  "unique-together" compound key
     #   Necessary constraint for col1 and col2 to be compound key: col1_uniqueness + col2_uniqueness >= 1.0 (100%)
