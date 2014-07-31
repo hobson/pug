@@ -15,7 +15,9 @@ try:
 except:
     requirements = []
 install_requires=[str(req) for req in requirements if req.req and not req.url]
+print 'requires: %r' % install_requires
 dependency_links=[req.url for req in requirements if req.url]
+print 'dependcies: %r' % dependency_links
 
 
 setup(
