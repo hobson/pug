@@ -353,9 +353,9 @@ def augment_field_meta(field, queryset, field_properties, verbosity=0, count=0):
     #   For columns that aren't populated with 100% distinct values, the fraction may help identify columns that are part of a  "unique-together" compound key
     #   Necessary constraint for col1 and col2 to be compound key: col1_uniqueness + col2_uniqueness >= 1.0 (100%)
     # TODO: check for other clues about primary_keyness besides just uniqueness 
-    field_properties['num_distinct'] = count
-    field_properties['num_null'] = count
-    field_properties['fraction_distinct'] = count
+    field_properties['num_distinct'] = -1
+    field_properties['num_null'] = -1
+    field_properties['fraction_distinct'] = -1
     typ = field_properties.get('type')
     if typ and typ not in types_not_countable and count:
         try:

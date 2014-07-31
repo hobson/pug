@@ -20,8 +20,8 @@ class Connection(models.Model):
 
 class Database(models.Model):
     """Metadata about a Database (postgres or Microsoft SQL "USE" argument)"""
-    name = models.CharField(max_length=128, null=False)
-    date = models.DateTimeField(help_text='Timestamp when the metadata was calculated', null=False)
+    name = models.CharField(max_length=128, null=False, default='')
+    date = models.DateTimeField(help_text='Timestamp when the metadata was calculated', auto_now_add=True, default=datetime.datetime.now, null=False)
     connection = models.ForeignKey(Connection)
 
     __unicode__ = db.representation
@@ -30,11 +30,11 @@ class Database(models.Model):
 class Table(models.Model):
     # _important_fields = ('table_name', 'model_name')
     app          = models.CharField(max_length=256, default='', null=False, blank=True)
-    database     = models.ForeignKey(Database)
-    db_table     = models.CharField(max_length=256, null=False)
-    django_model = models.CharField(max_length=256, null=True)
-    primary_key  = models.OneToOneField('Field')
-    count        = models.IntegerField(null=False)
+    database     = models.ForeignKey(Database, default=None)
+    db_table     = models.CharField(max_length=256, null=True)
+    django_model = models.CharField(max_length=256, null=True, default=None)
+    primary_key  = models.OneToOneField('Field', null=True, default=None)
+    count        = models.IntegerField(null=True, default=None)
 
     __unicode__ = db.representation
 
@@ -147,7 +147,7 @@ class Field(models.Model):
 
     type = models.ForeignKey(Type, null=False)
     scale = models.IntegerField(null=True) 
-    db_column = models.CharField(max_length=255, null=False, blank=False) 
+    db_column = models.CharField(max_length=255, null=False, default='', blank=True) 
     display_size = models.IntegerField(null=True) 
     min = models.TextField(help_text='Python string representation (repr) of the minimum value', null=True)   # repr() of minimum value
     max = models.TextField(help_text='Python string representation (repr) of the maximum value', null=True)   # repr() of minimum value
