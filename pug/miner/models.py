@@ -3,6 +3,7 @@ import datetime
 from django.db import models
 
 from pug.nlp import db
+import pug
 
 
 class Connection(models.Model):
@@ -82,13 +83,17 @@ class Type(models.Model):
         'boolean': 'NullBooleanField',
         'decimal': 'DecimalField',
         'Decimal': 'DecimalField',
+        'DECIMAL': 'DecimalField',
         'VARCHAR': 'CharField', 
         'NCHAR': 'CharField', 
         'NVARCHAR': 'CharField',
         'SMALLINT': 'IntegerField',
         'REAL': 'FloatField',
         'DOUBLE PRECISION': 'FloatField',
-        'NUMERIC': 'DecimalField',
+        'NUMERIC': 'FloatField',
+        'numeric': 'FloatField',
+        'NUMBER': 'FloatField',
+        'number': 'FloatField',
         'DATE': 'DateField',
         'TIME': 'TimeField',
         'datetime': 'DateTimeField',
@@ -145,7 +150,9 @@ class Field(models.Model):
     blank = models.BooleanField()
     choices = models.TextField(null=True)
 
-    type = models.ForeignKey(Type, null=False)
+    django_type = models.ForeignKey(Type, null=False)
+
+    type = models.CharField(max_length=32, null=False, blank=True, default='')
     scale = models.IntegerField(null=True) 
     db_column = models.CharField(max_length=255, null=False, default='', blank=True) 
     display_size = models.IntegerField(null=True) 
@@ -186,8 +193,7 @@ class Correlation(models.Model):
 
 
 
-
-def import_meta(db_meta, db_name, db_date=None):
+def import_meta(db_meta, db_name, db_date=None, verbosity=1):
     db_obj = Database(name=db_name, db_date=datetime.now())
     db_obj.save()
     for table_meta in db_meta:
@@ -199,3 +205,14 @@ def import_meta(db_meta, db_name, db_date=None):
                 continue  
             field_obj = Field(table=table_obj, **field_meta)
             field_obj.save()
+
+
+def explore_app(app_name='call_center', verbosity=1):
+    db_meta = pug.db.explore.get_db_meta(app_name, verbosity=verbosity)
+    try:
+        print '&'*100
+        print db_meta
+        print '&'*100
+        return import_meta(db_meta, db_name=app_name)
+    except:
+        return db_meta
