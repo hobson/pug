@@ -16,16 +16,15 @@ import datetime
 import dateutil
 import pytz
 import warnings
-from collections import Counter
+import collections
 from collections import OrderedDict
-from collections import Mapping
-from progressbar import ProgressBar
 from traceback import print_exc
 import ascii
 import decimal
 import random
-
 #import math
+
+from progressbar import ProgressBar
 from pytz import timezone
 import numpy as np
 import scipy as sci
@@ -55,7 +54,7 @@ FLOATABLE_NUMERIC_TYPES = (float, long, int, decimal.Decimal, bool)
 BASIC_NUMERIC_TYPES = (float, long, int) 
 SCALAR_TYPES = (float, long, int, decimal.Decimal, bool, complex, basestring, str, unicode)  # datetime.datetime, datetime.date
 # numpy types are derived from these so no need to include numpy.float64, numpy.int64 etc
-DICTABLE_TYPES = (Mapping, tuple, list)  # convertable to a dictionary (inherits collections.Mapping or is a list of key/value pairs)
+DICTABLE_TYPES = (collections.Mapping, tuple, list)  # convertable to a dictionary (inherits collections.Mapping or is a list of key/value pairs)
 VECTOR_TYPES = (list, tuple)
 PUNC = unicode(string.punctuation)
 
@@ -318,7 +317,7 @@ def sod_transposed(seq_of_dicts, align=True, fill=True, filler=None):
     [('c', [1, 1, 1]), ('cm', [u'P', 6, u'Q']), ('cn', [u'MUS', u'ROM']), ('ct', [2])]
     """
     result = {}
-    if isinstance(seq_of_dicts, Mapping):
+    if isinstance(seq_of_dicts, collections.Mapping):
         seq_of_dicts = [seq_of_dicts]
     it = iter(seq_of_dicts)
     # if you don't need to align and/or fill, then just loop through and return
@@ -569,7 +568,7 @@ def hist_from_values_list(values_list, fillers=(None,), normalize=False, cumulat
 
     if all(isinstance(value, value_types) for value in values_list):
         # ignore all fillers and convert all floats to ints when doing counting
-        counters = [Counter(int(value) for value in values_list if isinstance(value, (int, float)))]
+        counters = [collections.Counter(int(value) for value in values_list if isinstance(value, (int, float)))]
     elif all(len(row)==1 for row in values_list) and all(isinstance(row[0], value_types) for row in values_list):
         return hist_from_values_list([values[0] for values in values_list], fillers=fillers, normalize=normalize, cumulative=cumulative, to_str=to_str, sep=sep, min_bin=min_bin, max_bin=max_bin)
     else:  # assume it's a row-wise table (list of rows)
@@ -649,12 +648,12 @@ def hist_from_float_values_list(values_list, fillers=(None,), normalize=False, c
     """
     value_types = tuple([int, float, datetime.timedelta] + [type(filler) for filler in fillers])
     if all(isinstance(value, value_types) for value in values_list):
-        counters = [Counter(values_list)]
+        counters = [collections.Counter(values_list)]
     elif all(len(row)==1 for row in values_list) and all(isinstance(row[0], value_types) for row in values_list):
-        counters = [Counter(values[0] for values in values_list)]
+        counters = [collections.Counter(values[0] for values in values_list)]
     else:
         values_list_t = transposed_matrix(values_list)
-        counters = [Counter(col) for col in values_list_t]
+        counters = [collections.Counter(col) for col in values_list_t]
 
     #print counters
 
@@ -743,17 +742,17 @@ def update_dict(d, u, depth=-1, take_new=True, default_mapping_type=dict, prefer
     {'k1': {'k2': 2}, 'k4': 4}
     """
     orig_mapping_type = type(d)
-    if prefer_update_type and isinstance(u, Mapping):
+    if prefer_update_type and isinstance(u, collections.Mapping):
         dictish = type(u)
-    elif isinstance(d, Mapping):
+    elif isinstance(d, collections.Mapping):
         dictish = orig_mapping_type
     else:
         dictish = default_mapping_type
     if copy:
         d = dictish(d)
     for k, v in u.iteritems():
-        if isinstance(d, Mapping):
-            if isinstance(v, Mapping) and not depth == 0:
+        if isinstance(d, collections.Mapping):
+            if isinstance(v, collections.Mapping) and not depth == 0:
                 r = update_dict(d.get(k, dictish()), v, depth=max(depth - 1, -1), copy=copy)
                 d[k] = r
             elif take_new:
@@ -1187,7 +1186,7 @@ def string_stats(strs, valid_chars='012346789', left_pad='0', right_pad='', stri
 
     # should probably check to make sure memory not exceeded
     strs = [normalize(s) for s in strs]
-    lengths = Counter(len(s) for s in strs)
+    lengths = collections.Counter(len(s) for s in strs)
     counts = {}
     max_length = max(lengths.keys())
 
@@ -1722,7 +1721,7 @@ def strip_keys(d, nones=False, depth=0):
     if int(depth) > strip_keys.MAX_DEPTH:
         warnings.warn(RuntimeWarning("Maximum recursion depth allowance (%r) exceeded." % strip_keys.MAX_DEPTH))
     for k, v in ans.iteritems():
-        if isinstance(v, Mapping):
+        if isinstance(v, collections.Mapping):
             ans[k] = strip_keys(v, nones=nones, depth=int(depth)-1)
     return ans
 strip_keys.MAX_DEPTH = 1e6
@@ -1798,3 +1797,150 @@ def normalize_year(y):
     elif 70 <= y < 100:
         y += 1900
     return y
+
+
+def generate_kmers(seq, k=4):
+    """Return a generator of all the unique substrings (k-mer or q-gram strings) within a sequence/string
+
+    Not effiicent for large k and long strings.
+    Doesn't form substrings that are shorter than k, only exactly k-mers
+
+    Used for algorithms like UniqTag for genome unique identifier locality sensitive hashing.
+
+    jellyfish is a C implementation of k-mer counting
+
+    If seq is a string generate a sequence of k-mer string
+    If seq is a sequence of strings then generate a sequence of generators or sequences of k-mer strings
+    If seq is a sequence of sequences of strings generate a sequence of sequence of generators ...
+
+    Default k = 4 because that's the length of a gene base-pair?
+
+    >>> ' '.join(generate_kmers('AGATAGATAGACACAGAAATGGGACCACAC'))
+    'AGAT GATA ATAG TAGA AGAT GATA ATAG TAGA AGAC GACA ACAC CACA ACAG CAGA AGAA GAAA AAAT AATG ATGG TGGG GGGA GGAC GACC ACCA CCAC CACA ACAC'
+    """
+    if isinstance(seq, basestring):
+        for i in range(len(seq) - k + 1):
+           yield seq[i:i+k]
+    elif isinstance(seq, (int, float, decimal.Decimal)):
+        for s in generate_kmers(str(seq)):
+            yield s
+    else:
+        for s in seq:
+            yield generate_kmers(s, k)
+
+
+def kmer_tuple(seq, k=4):
+    """Return a generator of all the unique substrings (k-mer or q-gram strings) within a sequence/string
+
+    Not effiicent for large k and long strings.
+    Doesn't form substrings that are shorter than k, only exactly k-mers
+
+    Used for algorithms like UniqTag for genome unique identifier locality sensitive hashing.
+
+    jellyfish is a C implementation of k-mer counting
+
+    If seq is a string generate a sequence of k-mer string
+    If seq is a sequence of strings then generate a sequence of generators or sequences of k-mer strings
+    If seq is a sequence of sequences of strings generate a sequence of sequence of generators ...
+
+    Default k = 4 because that's the length of a gene base-pair?
+
+    >>> ' '.join(kmer_tuple('AGATAGATAGACACAGAAATGGGACCACAC'))
+    'AGAT GATA ATAG TAGA AGAT GATA ATAG TAGA AGAC GACA ACAC CACA ACAG CAGA AGAA GAAA AAAT AATG ATGG TGGG GGGA GGAC GACC ACCA CCAC CACA ACAC'
+    >>> kmer_tuple(['AGATAGATAG', 'ACACAGAAAT', 'GGGACCACAC'], k=4)
+    (('AGAT', 'GATA', 'ATAG', 'TAGA', 'AGAT', 'GATA', 'ATAG'),
+     ('ACAC', 'CACA', 'ACAG', 'CAGA', 'AGAA', 'GAAA', 'AAAT'),
+     ('GGGA', 'GGAC', 'GACC', 'ACCA', 'CCAC', 'CACA', 'ACAC'))
+    """
+    raise NotImplementedError("Untested")
+    # FIXME: this seems overly-complicated/recursive and is untested
+    if isinstance(seq, basestring):
+        return seq
+    elif isinstance(seq, types.GeneratorType):
+        return tuple(seq)
+    return tuple(s for s in generate_kmers(seq, k))
+
+
+def kmer_counter(seq, k=4):
+    """Return a sequence of all the unique substrings (k-mer or q-gram) within a short (<128 symbol) string
+
+    Used for algorithms like UniqTag for genome unique identifier locality sensitive hashing.
+
+    jellyfish is a C implementation of k-mer counting
+
+    If seq is a string generate a sequence of k-mer string
+    If seq is a sequence of strings then generate a sequence of generators or sequences of k-mer strings
+    If seq is a sequence of sequences of strings generate a sequence of sequence of generators ...
+
+    Default k = 4 because that's the length of a gene base-pair?
+
+    >>> kmer_counter('AGATAGATAGACACAGAAATGGGACCACAC') == collections.Counter({'ACAC': 2, 'ATAG': 2, 'CACA': 2, 'TAGA': 2, 'AGAT': 2, 'GATA': 2, 'AGAC': 1, 'ACAG': 1, 'AGAA': 1, 'AAAT': 1, 'TGGG': 1, 'ATGG': 1, 'ACCA': 1, 'GGAC': 1, 'CCAC': 1, 'CAGA': 1, 'GAAA': 1, 'GGGA': 1, 'GACA': 1, 'GACC': 1, 'AATG': 1})
+    True
+    """
+    if isinstance(seq, basestring):
+        return collections.Counter(generate_kmers(seq, k))
+
+
+def kmer_set(seq, k=4):
+    """Return the set of unique k-length substrings within a the sequence/string `seq`
+
+    Implements formula:
+    C_k(s) = C(s) ∩ Σ^k 
+    from http://biorxiv.org/content/early/2014/08/01/007583
+
+    >>> kmer_set('AGATAGATAGACACAGAAATGGGACCACAC')
+    {'AAAT', 'AATG', 'ACAC', 'ACAG', 'ACCA', 'AGAA', 'AGAC', 'AGAT', 'ATAG', 'ATGG', 'CACA', 'CAGA', 'CCAC', 'GAAA', 'GACA', 'GACC', 'GATA', 'GGAC', 'GGGA', 'TAGA', 'TGGG'}
+    """
+    if isinstance(seq, basestring):
+        return set(generate_kmers(seq, k))
+
+
+def kmer_frequency(seq_of_seq, km=None):
+    """Count the number of sequences in seq_of_seq that contain a given kmer `km`
+
+    From http://biorxiv.org/content/early/2014/08/01/007583, implements the formula:
+    f(t, S) = |{s | t ∈ C^k(s) ∧ s ∈ S}|
+    where:
+    t = km
+    S = seq_of_seq
+    >>> kmer_frequency(['AGATAGATAG', 'ACACAGAAAT', 'GGGACCACAC'], km=4)
+    
+    """
+    if km and isinstance(km, basestring):
+        return sum(km in counter for counter in kmer_counter(seq_of_seq, len(km)))
+    km = int(km)
+    counter = collections.Counter()
+    counter += collections.Counter(set(kmer_counter(seq, km)) for seq in seq_of_seq)
+    return counter
+
+
+def uniq_tag(seq, k=4, other_strings=None):
+    """Hash that is the same for similar strings and can server as an abbreviation for a string
+
+    Based on UniqTag:
+    http://biorxiv.org/content/early/2014/08/01/007583
+    Which was inspired by MinHasH:
+    http://en.wikipedia.org/wiki/MinHash
+
+    t_u = min arg min t ∈ C k(s) f(t, S)
+    uk(s, S) = min (arg_min((t ∈ C^k(s)), f(t, S))
+
+    uk(s, S) = "the UniqTag, the lexicographically minimal k-mer of those k-mers of s that are least frequent in S."
+
+    the "k-mers of s" can be found with kmer_set()
+    the frequencies of those k-mers in other_stirngs, S, should be provided by kmer_frequency(other_strings, km) for km in kmer_set(s)
+    """
+    # FIXME: UNTESTED!
+    if not other_strings:
+        if isinstance(seq, basestring):
+            other_strings = (seq,)
+        else:
+            other_strings = tuple(seq)
+        return uniq_tag(other_strings[0], other_strings)
+    other_strings = set(other_strings)
+    if isinstance(seq, basestring):
+        kms = kmer_set(seq)
+        km_frequencies = ((sum(km in kmer_set(s, k), s) for s in other_strings) for km in kms)
+        print min(km_frequencies)
+        return min(km_frequencies)[1]
+    return tuple(uniq_tag(s, other_strings) for s in seq)
