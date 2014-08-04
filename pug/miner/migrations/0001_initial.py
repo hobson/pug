@@ -23,8 +23,9 @@ class Migration(SchemaMigration):
         # Adding model 'Database'
         db.create_table(u'miner_database', (
             (u'id', self.gf('django.db.models.fields.AutoField')(primary_key=True)),
-            ('name', self.gf('django.db.models.fields.CharField')(max_length=128)),
-            ('connection', self.gf('django.db.models.fields.related.ForeignKey')(to=orm['miner.Connection'])),
+            ('name', self.gf('django.db.models.fields.CharField')(default='', max_length=128)),
+            ('date', self.gf('django.db.models.fields.DateTimeField')(default=datetime.datetime.now, auto_now_add=True, blank=True)),
+            ('connection', self.gf('django.db.models.fields.related.ForeignKey')(default=None, to=orm['miner.Connection'], null=True)),
         ))
         db.send_create_signal(u'miner', ['Database'])
 
@@ -32,10 +33,11 @@ class Migration(SchemaMigration):
         db.create_table(u'miner_table', (
             (u'id', self.gf('django.db.models.fields.AutoField')(primary_key=True)),
             ('app', self.gf('django.db.models.fields.CharField')(default='', max_length=256, blank=True)),
-            ('database', self.gf('django.db.models.fields.related.ForeignKey')(to=orm['miner.Database'])),
-            ('name', self.gf('django.db.models.fields.CharField')(max_length=256)),
-            ('django_model', self.gf('django.db.models.fields.CharField')(max_length=256, null=True)),
-            ('primary_key', self.gf('django.db.models.fields.related.OneToOneField')(to=orm['miner.Field'], unique=True)),
+            ('database', self.gf('django.db.models.fields.related.ForeignKey')(default=None, to=orm['miner.Database'])),
+            ('db_table', self.gf('django.db.models.fields.CharField')(max_length=256, null=True)),
+            ('django_model', self.gf('django.db.models.fields.CharField')(default=None, max_length=256, null=True)),
+            ('primary_key', self.gf('django.db.models.fields.related.OneToOneField')(default=None, to=orm['miner.Field'], unique=True, null=True)),
+            ('count', self.gf('django.db.models.fields.IntegerField')(default=None, null=True)),
         ))
         db.send_create_signal(u'miner', ['Table'])
 
@@ -52,7 +54,7 @@ class Migration(SchemaMigration):
         # Adding model 'Type'
         db.create_table(u'miner_type', (
             (u'id', self.gf('django.db.models.fields.AutoField')(primary_key=True)),
-            ('django_type', self.gf('django.db.models.fields.CharField')(max_length=20)),
+            ('django_type', self.gf('django.db.models.fields.CharField')(default=None, max_length=20, null=True)),
             ('ansi_type', self.gf('django.db.models.fields.CharField')(max_length=20, null=True)),
         ))
         db.send_create_signal(u'miner', ['Type'])
@@ -61,15 +63,23 @@ class Migration(SchemaMigration):
         db.create_table(u'miner_field', (
             (u'id', self.gf('django.db.models.fields.AutoField')(primary_key=True)),
             ('table_stats', self.gf('django.db.models.fields.related.ForeignKey')(to=orm['miner.Table'])),
-            ('type', self.gf('django.db.models.fields.related.ForeignKey')(to=orm['miner.Type'])),
             ('max_length', self.gf('django.db.models.fields.IntegerField')(null=True)),
-            ('null', self.gf('django.db.models.fields.BooleanField')(default=False)),
             ('blank', self.gf('django.db.models.fields.BooleanField')(default=False)),
             ('choices', self.gf('django.db.models.fields.TextField')(null=True)),
-            ('num_distinct', self.gf('django.db.models.fields.IntegerField')()),
+            ('django_type', self.gf('django.db.models.fields.related.ForeignKey')(default=None, to=orm['miner.Type'], null=True)),
+            ('type', self.gf('django.db.models.fields.CharField')(default='', max_length=32, blank=True)),
+            ('scale', self.gf('django.db.models.fields.IntegerField')(null=True)),
+            ('db_column', self.gf('django.db.models.fields.CharField')(default='', max_length=255, blank=True)),
+            ('display_size', self.gf('django.db.models.fields.IntegerField')(null=True)),
             ('min', self.gf('django.db.models.fields.TextField')(null=True)),
             ('max', self.gf('django.db.models.fields.TextField')(null=True)),
-            ('num_null', self.gf('django.db.models.fields.IntegerField')()),
+            ('num_distinct', self.gf('django.db.models.fields.IntegerField')(default=None, null=True)),
+            ('num_null', self.gf('django.db.models.fields.IntegerField')(default=None, null=True)),
+            ('precision', self.gf('django.db.models.fields.IntegerField')(default=None, null=True)),
+            ('fraction_distinct', self.gf('django.db.models.fields.FloatField')(default=None, null=True)),
+            ('internal_size', self.gf('django.db.models.fields.IntegerField')(default=None, null=True)),
+            ('null_ok', self.gf('django.db.models.fields.NullBooleanField')(default=None, null=True, blank=True)),
+            ('primary_key', self.gf('django.db.models.fields.NullBooleanField')(default=None, null=True, blank=True)),
             ('relative', self.gf('django.db.models.fields.related.ForeignKey')(related_name='relative_source', null=True, to=orm['miner.Field'])),
             ('relative_type', self.gf('django.db.models.fields.CharField')(max_length=20)),
         ))
@@ -146,40 +156,50 @@ class Migration(SchemaMigration):
         },
         u'miner.database': {
             'Meta': {'object_name': 'Database'},
-            'connection': ('django.db.models.fields.related.ForeignKey', [], {'to': u"orm['miner.Connection']"}),
+            'connection': ('django.db.models.fields.related.ForeignKey', [], {'default': 'None', 'to': u"orm['miner.Connection']", 'null': 'True'}),
+            'date': ('django.db.models.fields.DateTimeField', [], {'default': 'datetime.datetime.now', 'auto_now_add': 'True', 'blank': 'True'}),
             u'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
-            'name': ('django.db.models.fields.CharField', [], {'max_length': '128'})
+            'name': ('django.db.models.fields.CharField', [], {'default': "''", 'max_length': '128'})
         },
         u'miner.field': {
             'Meta': {'object_name': 'Field'},
             'blank': ('django.db.models.fields.BooleanField', [], {'default': 'False'}),
             'choices': ('django.db.models.fields.TextField', [], {'null': 'True'}),
+            'db_column': ('django.db.models.fields.CharField', [], {'default': "''", 'max_length': '255', 'blank': 'True'}),
+            'display_size': ('django.db.models.fields.IntegerField', [], {'null': 'True'}),
+            'django_type': ('django.db.models.fields.related.ForeignKey', [], {'default': 'None', 'to': u"orm['miner.Type']", 'null': 'True'}),
+            'fraction_distinct': ('django.db.models.fields.FloatField', [], {'default': 'None', 'null': 'True'}),
             u'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
+            'internal_size': ('django.db.models.fields.IntegerField', [], {'default': 'None', 'null': 'True'}),
             'max': ('django.db.models.fields.TextField', [], {'null': 'True'}),
             'max_length': ('django.db.models.fields.IntegerField', [], {'null': 'True'}),
             'min': ('django.db.models.fields.TextField', [], {'null': 'True'}),
-            'null': ('django.db.models.fields.BooleanField', [], {'default': 'False'}),
-            'num_distinct': ('django.db.models.fields.IntegerField', [], {}),
-            'num_null': ('django.db.models.fields.IntegerField', [], {}),
+            'null_ok': ('django.db.models.fields.NullBooleanField', [], {'default': 'None', 'null': 'True', 'blank': 'True'}),
+            'num_distinct': ('django.db.models.fields.IntegerField', [], {'default': 'None', 'null': 'True'}),
+            'num_null': ('django.db.models.fields.IntegerField', [], {'default': 'None', 'null': 'True'}),
             'peer': ('django.db.models.fields.related.ManyToManyField', [], {'to': u"orm['miner.Field']", 'through': u"orm['miner.Correlation']", 'symmetrical': 'False'}),
+            'precision': ('django.db.models.fields.IntegerField', [], {'default': 'None', 'null': 'True'}),
+            'primary_key': ('django.db.models.fields.NullBooleanField', [], {'default': 'None', 'null': 'True', 'blank': 'True'}),
             'relative': ('django.db.models.fields.related.ForeignKey', [], {'related_name': "'relative_source'", 'null': 'True', 'to': u"orm['miner.Field']"}),
             'relative_type': ('django.db.models.fields.CharField', [], {'max_length': '20'}),
+            'scale': ('django.db.models.fields.IntegerField', [], {'null': 'True'}),
             'table_stats': ('django.db.models.fields.related.ForeignKey', [], {'to': u"orm['miner.Table']"}),
-            'type': ('django.db.models.fields.related.ForeignKey', [], {'to': u"orm['miner.Type']"})
+            'type': ('django.db.models.fields.CharField', [], {'default': "''", 'max_length': '32', 'blank': 'True'})
         },
         u'miner.table': {
             'Meta': {'object_name': 'Table'},
             'app': ('django.db.models.fields.CharField', [], {'default': "''", 'max_length': '256', 'blank': 'True'}),
-            'database': ('django.db.models.fields.related.ForeignKey', [], {'to': u"orm['miner.Database']"}),
-            'django_model': ('django.db.models.fields.CharField', [], {'max_length': '256', 'null': 'True'}),
+            'count': ('django.db.models.fields.IntegerField', [], {'default': 'None', 'null': 'True'}),
+            'database': ('django.db.models.fields.related.ForeignKey', [], {'default': 'None', 'to': u"orm['miner.Database']"}),
+            'db_table': ('django.db.models.fields.CharField', [], {'max_length': '256', 'null': 'True'}),
+            'django_model': ('django.db.models.fields.CharField', [], {'default': 'None', 'max_length': '256', 'null': 'True'}),
             u'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
-            'name': ('django.db.models.fields.CharField', [], {'max_length': '256'}),
-            'primary_key': ('django.db.models.fields.related.OneToOneField', [], {'to': u"orm['miner.Field']", 'unique': 'True'})
+            'primary_key': ('django.db.models.fields.related.OneToOneField', [], {'default': 'None', 'to': u"orm['miner.Field']", 'unique': 'True', 'null': 'True'})
         },
         u'miner.type': {
             'Meta': {'object_name': 'Type'},
             'ansi_type': ('django.db.models.fields.CharField', [], {'max_length': '20', 'null': 'True'}),
-            'django_type': ('django.db.models.fields.CharField', [], {'max_length': '20'}),
+            'django_type': ('django.db.models.fields.CharField', [], {'default': 'None', 'max_length': '20', 'null': 'True'}),
             u'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'})
         }
     }

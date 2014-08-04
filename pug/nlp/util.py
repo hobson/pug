@@ -1294,7 +1294,7 @@ def normalize_serial_number(sn,
     if right_fill:
         sn = sn + right_fill * (max_length - len(sn)/len(right_fill))
     return sn
-normalize_serial_number.max_length=None
+normalize_serial_number.max_length=10
 normalize_serial_number.left_fill='0'
 normalize_serial_number.right_fill=''
 normalize_serial_number.blank=''

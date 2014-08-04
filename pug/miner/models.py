@@ -23,7 +23,7 @@ class Database(models.Model):
     """Metadata about a Database (postgres or Microsoft SQL "USE" argument)"""
     name = models.CharField(max_length=128, null=False, default='')
     date = models.DateTimeField(help_text='Timestamp when the metadata was calculated', auto_now_add=True, default=datetime.datetime.now, null=False)
-    connection = models.ForeignKey(Connection)
+    connection = models.ForeignKey(Connection, null=True, default=None)
 
     __unicode__ = db.representation
 
@@ -124,6 +124,7 @@ class Type(models.Model):
         ('TIMESTAMPTZ', 'A date and time value with timezone, typically with precision of 1 "tick" or 100 nanoseconds, e.g. 1970-12-25 06:01:02'),
         )
     CHOICES_DJANGO_TYPE = (
+        (None, 'Null'),
         ('FloatField', 'FloatField'),
         ('ForeignKey', 'ForeignKey'),  # inspectdb produces this
         ('CharField', 'CharField'),  # inspectdb produces this
@@ -137,7 +138,7 @@ class Type(models.Model):
         ('TextField', 'TextField'),  # inspectdb produces this
         ('DecimalField', 'DecimalField'),  # inspectdb produces this
         )
-    django_type = models.CharField(choices=CHOICES_DJANGO_TYPE, max_length=20, null=False)
+    django_type = models.CharField(choices=CHOICES_DJANGO_TYPE, default=None, max_length=20, null=True)
     ansi_type = models.CharField(choices=CHOICES_ANSI_TYPE, max_length=20, null=True)
 
     __unicode__ = db.representation
@@ -150,7 +151,7 @@ class Field(models.Model):
     blank = models.BooleanField()
     choices = models.TextField(null=True)
 
-    django_type = models.ForeignKey(Type, null=False)
+    django_type = models.ForeignKey(Type, null=True, default=None)
 
     type = models.CharField(max_length=32, null=False, blank=True, default='')
     scale = models.IntegerField(null=True) 
@@ -194,7 +195,7 @@ class Correlation(models.Model):
 
 
 def import_meta(db_meta, db_name, db_date=None, verbosity=1):
-    db_obj = Database(name=db_name, db_date=datetime.now())
+    db_obj = Database(name=db_name, date=datetime.datetime.now())
     db_obj.save()
     for table_meta in db_meta:
         table_obj, created = Table(database=db_obj, **table_meta['Meta'])
