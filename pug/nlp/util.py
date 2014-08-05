@@ -291,6 +291,10 @@ def fuzzy_get(dict_obj, approximate_key, dict_keys=None, key_and_value=False, th
     if approximate_key in dict_obj:
         fuzzy_key, value = approximate_key, dict_obj[approximate_key]
     else:
+        if any(isinstance(k, (tuple, list)) for k in dict_obj):
+            dict_obj = dict(('|'.join(str(k2) for k2 in k), v) for (k, v) in dict_obj.iteritems())
+            if isinstance(approximate_key, (tuple, list)):
+                approximate_key = '|'.join(approximate_key)
         dict_keys = set(dict_keys if dict_keys else dict_obj)
         strkey = str(approximate_key)
         if strkey in dict_keys:
@@ -306,6 +310,13 @@ def fuzzy_get(dict_obj, approximate_key, dict_keys=None, key_and_value=False, th
         return fuzzy_key, value
     else:
         return value
+
+
+def fuzzy_get_tuple(dict_obj, approximate_key, dict_keys=None, key_and_value=False, threshold=0.5, default=None):
+    """Find the closest matching key and/or value in a dictionary (must have all string keys!)"""
+    return fuzzy_get(dict(('|'.join(str(k2) for k2 in k), v) for (k, v) in dict_obj.iteritems()), 
+                     '|'.join(str(k) for k in approximate_key), dict_keys=dict_keys, key_and_value=key_and_value, threshold=threshold, default=default)
+
 
 
 def sod_transposed(seq_of_dicts, align=True, fill=True, filler=None):

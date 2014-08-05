@@ -265,6 +265,7 @@ def context_from_request(request, context=None, Form=GetLagForm, delim=',', **kw
             context['field_names'] = kwargs.get('field_names')
         else:
             context['field_names'] = list(SLAmodels.Refrefurb._meta.get_all_field_names()) + [
+                'lag', 'lag_days',
                 'sale__material', 'sale__serial_number', 'sale__billing_doc_date', 'ra__rano',
                 'sale__net_invoice_price', 'sale__sold_to_party', 'sale__sold_to_party_name',
                 'sale__ship_to_party_name', 'ra__rcode', 'ra__close_date',
