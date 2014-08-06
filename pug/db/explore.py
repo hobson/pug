@@ -356,6 +356,7 @@ def augment_field_meta(field, queryset, field_properties, verbosity=0, count=0):
     field_properties['num_distinct'] = -1
     field_properties['num_null'] = -1
     field_properties['fraction_distinct'] = -1
+
     typ = field_properties.get('type')
     if typ and typ not in types_not_countable and count:
         try:
@@ -385,6 +386,8 @@ def augment_field_meta(field, queryset, field_properties, verbosity=0, count=0):
 
     field_properties['max'] = None
     field_properties['min'] = None
+    field_properties['longest'] = None
+    field_properties['shortest'] = None
     # check field_properties['num_null'] for all Null first?
     if count and typ and typ not in types_not_aggregatable:
         connection.close()
@@ -404,6 +407,11 @@ def augment_field_meta(field, queryset, field_properties, verbosity=0, count=0):
         # validate values that might be invalid strings do to db encoding/decoding errors (make sure they are UTF-8
         for k in ('min', 'max'):
             db.clean_utf8(field_properties.get(k))
+
+        length_name = field.name + '___' + 'bytelength'
+        qs = queryset.extra(select={length_name: "LENGTH(%s)"}, select_params=(field.name,)).order_by(length_name)
+        field_properties['shortest'] = db.clean_utf8(getattr(qs.first(), length_name, None))
+        field_properties['longest'] =  db.clean_utf8(getattr(qs.last(), length_name, None))
     return field_properties
 
 
