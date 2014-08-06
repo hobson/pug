@@ -2,6 +2,8 @@ import datetime
 
 from django.db import models
 
+from django_hstore import hstore
+
 from pug.nlp import db
 import pug
 
@@ -29,7 +31,8 @@ class Database(models.Model):
 
 
 class Table(models.Model):
-    # _important_fields = ('table_name', 'model_name')
+    _important_fields = ('django_model', 'db_table', 'app')
+
     app          = models.CharField(max_length=256, default='', null=False, blank=True)
     database     = models.ForeignKey(Database, default=None)
     db_table     = models.CharField(max_length=256, null=True)
@@ -145,7 +148,10 @@ class Type(models.Model):
 
 
 class Field(models.Model):
+    objects = hstore.HStoreManager()
+
     table_stats = models.ForeignKey(Table)
+    django_field = models.CharField(max_length=255, null=False, default='', blank=True) 
 
     max_length = models.IntegerField(null=True)
     blank = models.BooleanField()
@@ -159,6 +165,8 @@ class Field(models.Model):
     display_size = models.IntegerField(null=True) 
     min = models.TextField(help_text='Python string representation (repr) of the minimum value', null=True)   # repr() of minimum value
     max = models.TextField(help_text='Python string representation (repr) of the maximum value', null=True)   # repr() of minimum value
+    shortest = models.TextField(help_text='Shortest string among the field values', null=True)
+    longest = models.TextField(help_text='Longest string among the field values', null=True)
     num_distinct = models.IntegerField(help_text="count of distinct (different) discrete values within the column",
         null=True, default=None)
     num_null = models.IntegerField(null=True, default=None)
@@ -173,8 +181,7 @@ class Field(models.Model):
     relative_type = models.CharField(choices=(('ForeignKey', 'ForeignKey'), ('OneToOneField', 'OneToOneField'), ('ManyToManyField', 'ManyToManyField')), max_length=20)
     peer = models.ManyToManyField('Field', through='Correlation', help_text='A field statistically related to this one in some way other than as a foreign key')
 
-
-
+    most_frequent = hstore.DictionaryField(db_index=True, default=None, null=True)
 
     __unicode__ = db.representation
 
@@ -193,19 +200,30 @@ class Correlation(models.Model):
     __unicode__ = db.representation
 
 
-
 def import_meta(db_meta, db_name, db_date=None, verbosity=1):
-    db_obj = Database(name=db_name, date=datetime.datetime.now())
-    db_obj.save()
-    for table_meta in db_meta:
-        table_obj, created = Table(database=db_obj, **table_meta['Meta'])
-        table_obj.save()
-        for field_name, field_meta in table_meta.iteritems():
-            if field_name == "Meta":
+    db_obj, db_created = Database.objects.get_or_create(name=db_name, date=datetime.datetime.now())
+    for django_model, table_meta in db_meta.iteritems():
+        pk = table_meta['Meta'].get('primary_key', None)
+        if pk:
+            del(table_meta['Meta']['primary_key'])
+        table_obj, table_created = Table.objects.get_or_create(database=db_obj, django_model=django_model, **table_meta['Meta'])
+        for django_field, field_meta in table_meta.iteritems():
+            if django_field == "Meta":
                 # The table "Meta" has already been imported when Table object was created
-                continue  
-            field_obj = Field(table=table_obj, **field_meta)
-            field_obj.save()
+                continue
+            if verbosity > 1:
+                print django_field
+            if 'name' in field_meta and field_meta['name'] == django_field:
+                del(field_meta['name'])
+            if 'most_frequent' in field_meta:
+                field_meta['most_frequent'] = dict((str(k), '%016d' % v) for (k, v) in field_meta['most_frequent'])
+                #print field_meta['most_frequent']
+                del(field_meta['most_frequent'])  # DatabaseError: can't adapt type 'HStoreDict'       
+            field_obj, field_created = Field.objects.get_or_create(table_stats=table_obj, django_field=django_field, **field_meta)
+        if pk and pk in table_meta:
+            field_obj = Field.objects.get(table_stats=table_obj, django_field=pk, **table_meta[pk])
+            table_obj.django_field = field_obj
+            table_obj.save()
 
 
 def explore_app(app_name='call_center', verbosity=1):
