@@ -37,6 +37,8 @@ TRUE_VALUES = (True, 'True', 'true', 'TRUE', 'T')
 NO_VALUES = ('No', 'no', 'N')
 YES_VALUES = ('Yes', 'yes', 'Y')
 
+from django.db.models.base import ModelBase
+
 
 class RobustEncoder(json.JSONEncoder):
     """A more robust JSON serializer (handles any object with a __str__ method).
@@ -51,9 +53,11 @@ class RobustEncoder(json.JSONEncoder):
     def default(self, obj):
         # if isinstance(obj, (datetime.datetime, Decimal)):
         #     obj = str(obj)
-        if not isinstance(obj, (list, dict, tuple, int, float, basestring, bool, type(None))):
-            return str(obj)
-        return super(RobustEncoder, self).default(self, obj)
+        if isinstance(obj, (list, dict, tuple, int, float, basestring, bool, type(None))):
+            return super(RobustEncoder, self).default(obj)
+        if isinstance(obj, ModelBase):
+            return str(getattr(obj, 'pk', '') or None)
+        return str(obj)
 
 
 def has_suffix(model, suffixes=('Orig',)):
