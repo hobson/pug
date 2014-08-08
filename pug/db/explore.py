@@ -410,8 +410,10 @@ def augment_field_meta(field, queryset, field_properties, verbosity=0, count=0):
 
         length_name = field.name + '___' + 'bytelength'
         qs = queryset.extra(select={length_name: "LENGTH(%s)"}, select_params=(field.name,)).order_by(length_name)
-        field_properties['shortest'] = db.clean_utf8(getattr(qs.first(), length_name, None))
-        field_properties['longest'] =  db.clean_utf8(getattr(qs.last(), length_name, None))
+        if qs.exists():
+            # first() and last() aren't possible in Django 1.5
+            field_properties['shortest'] = db.clean_utf8(getattr(qs.all()[0], length_name, None))
+            field_properties['longest'] =  db.clean_utf8(getattr(qs.order_by('-'+length_name).all()[0], length_name, None))
     return field_properties
 
 
