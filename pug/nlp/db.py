@@ -689,8 +689,10 @@ def clean_utf8(byte_string, carefully=False, encodings_to_try=('shift-jis', 'shi
                         raise e
             except UnicodeEncodeError:
                 if verbosity:
-                    'cleaned carefully and came up with: %r' % unicode(byte_string)
+                    'cleaned carefully and got UnicodeEncodeError, left with: %r' % unicode(byte_string)
                 return unicode(byte_string)
+        if verbosity:
+            'cleaned carefully and came up with: %r' % unicode(byte_string)
         return byte_string
     else:
         diagnosis = None
@@ -703,6 +705,7 @@ def clean_utf8(byte_string, carefully=False, encodings_to_try=('shift-jis', 'shi
             diagnosis = {'confidence': -1}
         if diagnosis['confidence'] > 0.25:
             try:
+                # FIXME: should this be unicode instead of str?
                 return str(byte_string.decode(diagnosis['encoding']).encode('utf8'))
             except:
                 pass
