@@ -1577,11 +1577,11 @@ def import_items(item_seq, dest_model,  batch_len=500, clear=False, dry_run=True
     try:
         try:
             src_qs = item_seq.objects.all()
-        except:
+        except AttributeError:
             src_qs = item_seq.all()
         N = src_qs.count()
         item_seq = iter(src_qs.values())
-    except:
+    except AttributeError:
         print_exc()
         N = len(item_seq)
 
