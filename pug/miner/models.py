@@ -10,6 +10,8 @@ import pug
 
 class Connection(models.Model):
     "The username, password, IP Address or URL required to access a database"
+    _IMPORTANT_FIELDS = ('pk', 'uri', 'user')
+
     ip = models.CharField(max_length=15, null=True)
     uri =  models.CharField(max_length=256, null=True)
     fqdn = models.CharField(max_length=128, null=True)
@@ -23,6 +25,8 @@ class Connection(models.Model):
 
 class Database(models.Model):
     """Metadata about a Database (postgres or Microsoft SQL "USE" argument)"""
+    _IMPORTANT_FIELDS = ('pk', 'name', 'date')
+
     name = models.CharField(max_length=128, null=False, default='')
     date = models.DateTimeField(help_text='Timestamp when the metadata was calculated', auto_now_add=True, default=datetime.datetime.now, null=False)
     connection = models.ForeignKey(Connection, null=True, default=None)
@@ -31,7 +35,8 @@ class Database(models.Model):
 
 
 class Table(models.Model):
-    _important_fields = ('django_model', 'db_table', 'app')
+    """Metadata about a Database table and its Django model"""
+    _IMPORTANT_FIELDS = ('pk', 'django_model', 'db_table', 'count')
 
     app          = models.CharField(max_length=256, default='', null=False, blank=True)
     database     = models.ForeignKey(Database, default=None)
@@ -148,6 +153,9 @@ class Type(models.Model):
 
 
 class Field(models.Model):
+    """Metadata about a Database field and its Django Field"""
+    _IMPORTANT_FIELDS = ('pk', 'db_column', 'db_table', 'type', 'fraction_distinct')
+
     objects = hstore.HStoreManager()
 
     table_stats = models.ForeignKey(Table)
