@@ -1586,6 +1586,11 @@ def import_items(item_seq, dest_model,  batch_len=500, clear=False, dry_run=True
         N = len(item_seq)
 
 
+    if not N:
+        if verbosity:
+            print 'No records found in %r' % src_qs
+        return N
+
     if clear and not dry_run:
         if verbosity:
             print "WARNING: Deleting %d records from %r to make room for %d new records !!!!!!!" % (dest_model.objects.count(), dest_model, N)
@@ -1595,11 +1600,13 @@ def import_items(item_seq, dest_model,  batch_len=500, clear=False, dry_run=True
 
     if verbosity:
         print('Loading %r records from sequence provided...' % N)
-        widgets = [pb.Counter(), '/%d rows: ' % N, pb.Percentage(), ' ', pb.RotatingMarker(), ' ', pb.Bar(),' ', pb.ETA()]
+        widgets = [pb.Counter(), '/%d rows: ' % N or 1, pb.Percentage(), ' ', pb.RotatingMarker(), ' ', pb.Bar(),' ', pb.ETA()]
         pbar = pb.ProgressBar(widgets=widgets, maxval=N).start()
 
     for batch_num, dict_batch in enumerate(util.generate_batches(item_seq, batch_len)):
         if batch_num < start_batch or (end_batch and (batch_num > end_batch)):
+            if verbosity > 1:
+                print('skipping batch {0} because not between {1} and {2}'.format(batch_num, start_batch, end_batch))
             continue
         if verbosity > 2:
             print(repr(dict_batch))
@@ -1619,8 +1626,8 @@ def import_items(item_seq, dest_model,  batch_len=500, clear=False, dry_run=True
         if verbosity and verbosity < 2:
             pbar.update(batch_num * batch_len + len(dict_batch))
         elif verbosity > 1:
-            print('Writing {0} items in batch {1} out of {2} batches to the {3} model...'.format(
-                len(item_batch), batch_num, int(N / float(batch_len)), dest_model))
+            print('Writing {0} items in batch {1} between batch {2} and batch {3} and {4} batches to the {5} model...'.format(
+                len(item_batch), batch_num, start_batch, end_batch, int(N / float(batch_len)), dest_model))
         if not dry_run:
             try:
                 dest_model.objects.bulk_create(item_batch)
