@@ -85,7 +85,7 @@ def representation(model, field_names=None):
     if field_names is None:
         all_names = model._meta.get_all_field_names()
         field_names = None
-        for field_names_name in ('IMPORTANT_FIELDS', '_important_fields', 'REPR_FIELDS', '_repr_fields'):  #, 'SECURE_FIELDS', '_secure_fields'):
+        for field_names_name in ('IMPORTANT_FIELDS', '_IMPORTANT_FIELDS', '_important_fields', 'REPR_FIELDS', '_REPR_FIELDS', '_repr_fields'):  #, 'SECURE_FIELDS', '_secure_fields'):
             field_names = getattr(model, field_names_name, None)  # or getattr(getattr(model, '_meta', None), field_names_name, None) # ticket 5793 wont fix, custom Meta.* not allowed 
             if field_names:
                 break
@@ -663,8 +663,11 @@ def clean_utf8(byte_string, carefully=False, encodings_to_try=('shift-jis', 'shi
     
     >>> clean_utf8('`A\xff\xffBC\x7fD\tE\r\nF~G`')
     '`A\xc3\xbf\xc3\xbfBC\x7fD\tE\r\nF~G`'
+    >>> clean_utf8('`A\xff\xffBC\x7fD\tE\r\nF~G`').decode('UTF8')
+    u'`A\xff\xffBC\x7fD\tE\r\nF~G`'
     >>> clean_utf8('`A\xff\xffBC\x7fD\tE\r\nF~G`', carefully=True)
     '`ABC\x7fD\tE\r\nF~G`'
+    >>> clean_utf8('U\xc2\xa0\xc2\xa0\xc2\xa0\xc2\xa0\xc2').decode('UTF8')
     """
     #print 'cleaning: ' + repr(byte_string)
     if not isinstance(byte_string, basestring):
@@ -676,6 +679,8 @@ def clean_utf8(byte_string, carefully=False, encodings_to_try=('shift-jis', 'shi
                 # json.dumps(byte_string)
                 break
             except UnicodeDecodeError as e:
+                    if verbosity:
+                        print 'UnicodeDecodeError: %s' % str(e)
                     m = re.match(r".*can't[ ]decode[ ]byte[ ]0x[0-9a-fA-F]{2}[ ]in[ ]position[ ](\d+)[ :.].*", str(e))
                     if m and m.group(1):
                         i = int(m.group(1))
@@ -683,6 +688,8 @@ def clean_utf8(byte_string, carefully=False, encodings_to_try=('shift-jis', 'shi
                     else:
                         raise e
             except UnicodeEncodeError:
+                if verbosity:
+                    'cleaned carefully and came up with: %r' % unicode(byte_string)
                 return unicode(byte_string)
         return byte_string
     else:
