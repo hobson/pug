@@ -41,8 +41,8 @@ except ImproperlyConfigured:
 
 
 from pug.nlp import util  # import listify, generate_slices, transposed_lists #, sod_transposed, dos_from_table
-from .words import synonyms
-from .db import sort_prefix, consolidated_counts, sorted_dict_of_lists, clean_utf8, replace_nonascii, lagged_seq, NULL_VALUES, NAN_VALUES, BLANK_VALUES
+from pug.nlp.words import synonyms
+from pug.nlp.db import sort_prefix, consolidated_counts, sorted_dict_of_lists, clean_utf8, replace_nonascii, lagged_seq, NULL_VALUES, NAN_VALUES, BLANK_VALUES
 from pug.miner.models import ChangeLog
 
 
@@ -1237,7 +1237,7 @@ def field_dict_from_row(row, model, field_names=None, include_id=False, strip=Tr
                         print 'Unable to connect related field %r using value %r' % (field_class, value)
         if isinstance(value, basestring) and not value:
             if verbosity > 3:
-                print 'Related field %r setting value %r to None' % (field_class, value)
+                print 'String field %r setting value %r to None' % (field_class, value)
             value = None
             if blank_none and (
                 not isinstance(field_class, related.RelatedField) or field_class.blank or not field_class.null):
@@ -1275,7 +1275,8 @@ def field_dict_from_row(row, model, field_names=None, include_id=False, strip=Tr
         if isinstance(clean_value, basestring):
             if strip:
                 clean_value = clean_value.strip()
-            clean_value = clean_utf8(clean_value)
+            # don't forget to decode the utf8 before doing a max_length truncation!
+            clean_value = clean_utf8(clean_value).decode('utf8')
             max_length = getattr(field_class, 'max_length')
             if max_length:
                 try:
@@ -1571,7 +1572,7 @@ def delete_in_batches(queryset, batch_len=10000, verbosity=1):
 ##############################################################
 # These import_* functions attempt to import data from one model into another
 
-def import_items(item_seq, dest_model,  batch_len=500, clear=False, dry_run=True, verbosity=1):
+def import_items(item_seq, dest_model,  batch_len=500, clear=False, dry_run=True, start_batch=0, end_batch=None, ignore_errors=False, verbosity=1):
     """Given a sequence (queryset, generator, tuple, list) of dicts import them into the given model"""
     try:
         try:
@@ -1598,6 +1599,8 @@ def import_items(item_seq, dest_model,  batch_len=500, clear=False, dry_run=True
         pbar = pb.ProgressBar(widgets=widgets, maxval=N).start()
 
     for batch_num, dict_batch in enumerate(util.generate_batches(item_seq, batch_len)):
+        if batch_num < start_batch or (end_batch and (batch_num > end_batch)):
+            continue
         if verbosity > 2:
             print(repr(dict_batch))
             print(repr((batch_num, len(dict_batch), batch_len)))
@@ -1608,6 +1611,7 @@ def import_items(item_seq, dest_model,  batch_len=500, clear=False, dry_run=True
                 print(repr(d))
             m = dest_model()
             try:
+                # if the model has an import_item method then use it
                 m.import_item(d, verbosity=verbosity)
             except:
                 m = django_object_from_row(d, dest_model)
@@ -1618,7 +1622,17 @@ def import_items(item_seq, dest_model,  batch_len=500, clear=False, dry_run=True
             print('Writing {0} items in batch {1} out of {2} batches to the {3} model...'.format(
                 len(item_batch), batch_num, int(N / float(batch_len)), dest_model))
         if not dry_run:
-            dest_model.objects.bulk_create(item_batch)
+            try:
+                dest_model.objects.bulk_create(item_batch)
+            except UnicodeDecodeError:
+                for obj in item_batch:
+                    'UnicodeDecodeError: re-attempting save...'
+                    print '\n'.join(str(obj) for obj in item_batch)
+                    print '\n'.join(repr(obj.__dict__) for obj in item_batch)
+                    obj.save()
+                if not ignore_errors:
+                    print_exc()
+                    raise
     if verbosity:
         pbar.finish()
 
@@ -1889,7 +1903,7 @@ def import_queryset_untested(dest_model, queryset, model_app=None, nullify_pk=Tr
 #                 len(item_batch), dest_model.__name__, batch_num, int(num_items / float(batch_len)), db_alias))
 #         dest_model.objects.bulk_create(item_batch)
 
-def import_json(path, model, batch_len=100, db_alias='default', verbosity=2):
+def import_json(path, model, batch_len=100, db_alias='default', start_batch=0, end_batch=None, ignore_errors=False, verbosity=2):
     """Read json file (not in django fixture format) and create the appropriate records using the provided database model."""
 
     # TODO: use a generator to save memory for large json files/databases
@@ -1898,7 +1912,7 @@ def import_json(path, model, batch_len=100, db_alias='default', verbosity=2):
     item_list = json.load(open(path, 'r'))
     if verbosity:
         print('Finished reading {0} items from {1}.'.format(len(item_list), repr(path)))
-    import_items(item_list, model=model, batch_len=batch_len, db_alias=db_alias, verbosity=verbosity)
+    import_items(item_list, model=model, batch_len=batch_len, db_alias=db_alias, start_batch=start_batch, end_batch=end_batch, ignore_errors=ignore_errors, verbosity=verbosity)
 
 
 ################################################
