@@ -2,15 +2,15 @@ from __future__ import print_function
 from django.db import models
 #import json
 
-from pug.nlp import db, util
+from pug.nlp import db, util, djdb
+
 
 def datetime_parser(s, default=None):
     if s:
         return util.clean_wiki_datetime(s)
     return default
 
-from pug.nlp.djdb import import_items as generic_import_items
-from pug.nlp.djdb import import_json as generic_import_json
+
 
 
 class WikiItem(models.Model):
@@ -72,12 +72,12 @@ class WikiItem(models.Model):
     def __unicode__(self):
         return db.representation(self)
 
-def import_items(item_seq, model=WikiItem,  batch_len=100, db_alias='default', verbosity=2):
-    """Given a sequence (queryset, generator, tuple, list) of dicts import them into the given model"""
-    return generic_import_items(item_seq, dest_model=model, batch_len=batch_len, db_alias=db_alias, verbosity=verbosity)
+def import_wiki_items(item_seq, model=WikiItem,  batch_len=100, db_alias='default', verbosity=2):
+    """Import a sequence (queryset, generator, tuple, list) of dicts or django ORM objects into the indicated model"""
+    return djdb.import_items(item_seq, dest_model=model, batch_len=batch_len, db_alias=db_alias, verbosity=verbosity)
 
 
-def import_json(path='wikipedia_crawler_data.json', model=WikiItem, batch_len=100, db_alias='default', verbosity=2):
+def import_wiki_json(path='wikipedia_crawler_data.json', model=WikiItem, batch_len=100, db_alias='default', verbosity=2):
     """Read json file and create the appropriate records according to the given database model."""
-    return generic_import_json(path=path, model=model,  batch_len=batch_len, db_alias=db_alias, verbosity=verbosity)
+    return djdb.import_json(path=path, model=model,  batch_len=batch_len, db_alias=db_alias, verbosity=verbosity)
 
