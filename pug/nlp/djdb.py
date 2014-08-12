@@ -244,6 +244,11 @@ def get_model(model=DEFAULT_MODEL, app=None):
         return model
     elif isinstance(model, (models.Manager, models.query.QuerySet)):
         return model.model
+    if not app and isinstance(model, basestring):
+        try:
+            app, model = model.split('.')
+        except:
+            model = model.split('.')[-1]
     try:
         app = get_app(app)
     except:
@@ -2086,16 +2091,29 @@ def force_text(s, encoding='utf-8', strings_only=False, errors='strict'):
     return s
 
 
-def dump_json(model, batch_len=200000):
+def dump_json(model, batch_len=200000, use_natural_keys=True, verbosity=1):
     """Dump database records to .json Django fixture file, one file for each batch of `batch_len` records
 
     Files are suitable for loading with "python manage.py loaddata folder_name_containing_files/*".
     """
+    model = get_model(model)
+
+    N = model.objects.count()
+
+    if verbosity:
+        widgets = [pb.Counter(), '/%d rows: ' % (N,), pb.Percentage(), ' ', pb.RotatingMarker(), ' ', pb.Bar(),' ', pb.ETA()]
+        i, pbar = 0, pb.ProgressBar(widgets=widgets, maxval=N).start()
+
     JSONSerializer = serializers.get_serializer("json")
     jser = JSONSerializer()
+
+    if verbosity:
+        pbar.update(0)
     for i, partial_qs in enumerate(util.generate_slices(model.objects.all(), batch_len=batch_len)):
-        with open(model._meta.app_label + '--' + model._meta.object_name + '--%04d.json' % i, 'w') as fpout:
-            jser.serialize(partial_qs, indent=1, stream=fpout)
-
-
+        with open(model._meta.app_label.lower() + '--' + model._meta.object_name.lower() + '--%04d.json' % i, 'w') as fpout:
+            if verbosity:
+                pbar.update(i*batch_len)
+            jser.serialize(partial_qs, indent=1, stream=fpout, use_natural_keys=use_natural_keys)
+    if verbosity:
+        pbar.finish()
 
