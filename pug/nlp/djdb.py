@@ -1206,18 +1206,20 @@ def fixture_record_from_row():
 
 
 def django_object_from_row(row, model, field_names=None, include_id=False, strip=True, ignore_errors=True, verbosity=0):
-    field_dict = field_dict_from_row(row, model, field_names=field_names, include_id=include_id, strip=strip,
+    field_dict, errors = field_dict_from_row(row, model, field_names=field_names, include_id=include_id, strip=strip,
                                      ignore_errors=ignore_errors, verbosity=verbosity)
+    errors = collections.Counter()
     if verbosity >= 3:
         print 'field_dict = %r' % field_dict
     try:
-        return model(**field_dict)
+        return model(**field_dict), errors
     except:
         print_exc()
         raise ValueError('Unable to coerce the dict = %r into a %r object' % (field_dict, model))
 
 
 def field_dict_from_row(row, model, field_names=None, include_id=False, strip=True, blank_none=True, ignore_field_nones=True, ignore_errors=True, verbosity=0):
+    errors = collections.Counter()
     field_classes = [f for f in model._meta._fields() if (include_id or f.name != 'id')]
     if not field_names:
         field_names = [f.name for f in field_classes if (include_id or f.name != 'id')]
@@ -1238,10 +1240,12 @@ def field_dict_from_row(row, model, field_names=None, include_id=False, strip=Tr
                 try:
                     clean_value = field_class.related.parent_model.objects.get_by_natural_key(value)
                 except:
-                    if verbosity > 2:
+                    errors += collections.Counter(['num_unlinked_fks'])
+                    if verbosity > 1:
                         print 'Unable to connect related field %r using value %r' % (field_class, value)
+        # FIXME: lots of redundancy and potential for error here and below
         if isinstance(value, basestring) and not value:
-            if verbosity > 3:
+            if verbosity >= 3:
                 print 'String field %r setting value %r to None' % (field_class, value)
             value = None
             if blank_none and (
@@ -1275,6 +1279,7 @@ def field_dict_from_row(row, model, field_names=None, include_id=False, strip=Tr
                                 print row
                                 print_exc()
                             clean_value = None
+                            errors += collections.Counter(['num_uncoercible'])
                             if not ignore_errors:
                                 raise
         if isinstance(clean_value, basestring):
@@ -1292,12 +1297,13 @@ def field_dict_from_row(row, model, field_names=None, include_id=False, strip=Tr
                         print "The row below has a string (%r) that is too long (> %d):" % (clean_value, max_length)
                         print row
                         print_exc()
+                        errors += collections.Counter(['num_truncated'])
                     clean_value = clean_value[:max_length]
                     if not ignore_errors:
                         raise  
         if not ignore_field_nones or clean_value != None:
             field_dict[field_name] = clean_value
-    return field_dict
+    return field_dict, errors
 
 
 def count_lines(fname, mode='rU'):
@@ -1339,6 +1345,7 @@ def load_csv_to_model(path, model, field_names=None, delimiter=None, batch_len=1
     '''
 
     reader_kwargs = {}
+    errors = collections.Counter()
     if delimiter or dialect:
         reader_kwargs['dialect'] = dialect or 'excel'
         if delimiter:
@@ -1403,7 +1410,9 @@ def load_csv_to_model(path, model, field_names=None, delimiter=None, batch_len=1
                         if not ignore_errors:
                             raise ValueError('ERROR importing row #%d which had %d columns, but previous rows had %d.' % (i + j + 1, len(row), M))
                 try:
-                    batch_of_objects += [django_object_from_row(row, model=model, field_names=field_names, strip=strip)]
+                    obj, row_errors = django_object_from_row(row, model=model, field_names=field_names, strip=strip)
+                    batch_of_objects += [obj]
+                    errors += row_errors
                 except:
                     if verbosity:
                         print 'Error importing row #%d' % (i + j + 1)
@@ -1579,6 +1588,7 @@ def delete_in_batches(queryset, batch_len=10000, verbosity=1):
 
 def import_items(item_seq, dest_model,  batch_len=500, clear=False, dry_run=True, start_batch=0, end_batch=None, ignore_errors=False, verbosity=1):
     """Given a sequence (queryset, generator, tuple, list) of dicts import them into the given model"""
+    stats = collections.Counter()
     try:
         try:
             src_qs = item_seq.objects.all()
@@ -1621,13 +1631,14 @@ def import_items(item_seq, dest_model,  batch_len=500, clear=False, dry_run=True
         for d in dict_batch:
             if verbosity > 2:
                 print(repr(d))
-            m = dest_model()
+            obj = dest_model()
             try:
                 # if the model has an import_item method then use it
-                m.import_item(d, verbosity=verbosity)
+                obj.import_item(d, verbosity=verbosity)
             except:
-                m = django_object_from_row(d, dest_model)
-            item_batch += [m]
+                obj, row_errors = django_object_from_row(d, dest_model)
+            item_batch += [obj]
+            stats += row_errors
         if verbosity and verbosity < 2:
             pbar.update(batch_num * batch_len + len(dict_batch))
         elif verbosity > 1:
@@ -1638,15 +1649,19 @@ def import_items(item_seq, dest_model,  batch_len=500, clear=False, dry_run=True
                 dest_model.objects.bulk_create(item_batch)
             except UnicodeDecodeError:
                 for obj in item_batch:
-                    'UnicodeDecodeError: re-attempting save...'
-                    print '\n'.join(str(obj) for obj in item_batch)
-                    print '\n'.join(repr(obj.__dict__) for obj in item_batch)
+                    if verbosity:
+                        print 'UnicodeDecodeError: re-attempting save of objects one at a time instead of as batch...'
+                    if verbosity >= 2:
+                        print '\n'.join(str(obj) for obj in item_batch)
+                        print '\n'.join(repr(obj.__dict__) for obj in item_batch)
                     obj.save()
+                    stats += collections.Counter(['batch_UnicodeDecodeError(s)'])
                 if not ignore_errors:
                     print_exc()
                     raise
     if verbosity:
         pbar.finish()
+    return stats
 
 
 def import_queryset_batches(qs, dest_qs,  batch_len=500, clear=None, dry_run=True, verbosity=1):
