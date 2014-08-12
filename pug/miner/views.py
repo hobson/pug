@@ -123,8 +123,8 @@ class JSONView(View):
         return json.dumps(context)
 
    
-def context_from_request(request, context=None, Form=GetLagForm, delim=',', **kwargs):
-    """Process GET query request to normalize
+def context_from_request(request, context=None, Form=GetLagForm, delim=',', verbosity=0, **kwargs):
+    """Process GET query request to normalize query arguments (split lists, etc)
 
     TODO: Generalize this for any list of API variables/strings and separators for lists
 
@@ -243,7 +243,8 @@ def context_from_request(request, context=None, Form=GetLagForm, delim=',', **kw
                'max_date': ', '.join(context['filter']['max_dates'])
               }
 
-    print 'normalized GET query parameters: %r' % initial
+    if verbosity > 1:
+        print 'normalized GET query parameters: %r' % initial
 
     if request.method == 'POST':
         # GetLagForm only has a GET button
@@ -254,8 +255,9 @@ def context_from_request(request, context=None, Form=GetLagForm, delim=',', **kw
     context['form_is_valid'] = context['form'].is_valid()
     if not context['form_is_valid']:
         context['form_errors'] = context['form'].errors
-        print 'ERRORS in FORM !!!!!!!!!!!!!'
-        print context['form_errors']
+        if verbosity:
+            print 'ERRORS in FORM !!!!!!!!!!!!!'
+            print context['form_errors']
         #import ipdb
         #ipdb.set_trace()
         #raise RuntimeError('form is invalid')
