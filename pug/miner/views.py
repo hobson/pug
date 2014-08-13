@@ -265,16 +265,9 @@ def context_from_request(request, context=None, Form=GetLagForm, delim=',', verb
 
     if not context.get('field_names'):
         if kwargs.get('field_names'):
-            context['field_names'] = kwargs.get('field_names')
+            context['field_names'] = kwargs.get('field_names', [])
         else:
-            context['field_names'] = list(SLAmodels.Refrefurb._meta.get_all_field_names()) + [
-                'lag', 'lag_days',
-                #'sec_cac.CaseHdtvComments.case_number'
-                'sale__material', 'sale__serial_number', 'sale__billing_doc_date', 'ra__rano',
-                'sale__net_invoice_price', 'sale__sold_to_party', 'sale__sold_to_party_name',
-                'sale__ship_to_party_name', 'ra__rcode', 'ra__close_date',
-                'case_number', 'case__model', 'case__status', 'case__call_type', 
-                ] 
+            context['field_names'] = list(SLAmodels.Refrefurb._meta.get_all_field_names())
         
     if not context.get('filename'):
         context['filename'] = 'Refurb.csv'
@@ -332,6 +325,7 @@ def csv_response_from_context(context=None, filename=None, field_names=None):
 
     data = context
 
+    # find the data table within the context dict. should be named 'data.cases' or 'data.d3data'
     if not (isinstance(data, (tuple, list)) and isinstance(data[0], (tuple, list))):
         data = json.loads(data.get('data', {}).get('d3data', '[[]]'))
         if not data or not any(data):
