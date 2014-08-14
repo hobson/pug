@@ -1637,6 +1637,10 @@ def import_items(item_seq, dest_model,  batch_len=500, clear=False, dry_run=True
                 obj.import_item(d, verbosity=verbosity)
             except:
                 obj, row_errors = django_object_from_row(d, dest_model)
+            try:
+                obj._link_rels(save=False, overwrite=False)
+            except:
+                pass
             item_batch += [obj]
             stats += row_errors
         if verbosity and verbosity < 2:
@@ -1647,18 +1651,37 @@ def import_items(item_seq, dest_model,  batch_len=500, clear=False, dry_run=True
         if not dry_run:
             try:
                 dest_model.objects.bulk_create(item_batch)
-            except UnicodeDecodeError:
+            except UnicodeDecodeError as err:
                 for obj in item_batch:
                     if verbosity:
-                        print 'UnicodeDecodeError: re-attempting save of objects one at a time instead of as batch...'
-                    if verbosity >= 2:
-                        print '\n'.join(str(obj) for obj in item_batch)
-                        print '\n'.join(repr(obj.__dict__) for obj in item_batch)
+                        print '%s' % err
+                        print 'No attempting tp save objects one at a time instead of as a batch...'
+                        print str(obj)
+                        print repr(obj.__dict__)
                     obj.save()
-                    stats += collections.Counter(['batch_UnicodeDecodeError(s)'])
+                    stats += collections.Counter(['batch_UnicodeDecodeError'])
                 if not ignore_errors:
                     print_exc()
                     raise
+            except Exception as err:
+                for obj in item_batch:
+                    if verbosity:
+                        print '%s' % err
+                        print 'No attempting tp save objects one at a time instead of as a batch...'
+                        print str(obj)
+                        print repr(obj.__dict__)
+                    try:
+                        obj.save()
+                        stats += collections.Counter(['batch_Error'])
+                    except:
+                        stats += collections.Counter(['save_Error'])
+                        if not ignore_errors:
+                            print_exc()
+                            raise
+                if not ignore_errors:
+                    print_exc()
+                    raise
+
     if verbosity:
         pbar.finish()
     return stats
