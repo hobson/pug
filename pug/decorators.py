@@ -206,6 +206,20 @@ def represent(cls):
     setattr(cls, '__unicode__', representation)
     return cls
 
+def _link_rels(obj, fields=(), save=False, overwrite=False):
+    for field in fields:
+        if not overwrite and getattr(obj, field.lower(), None):
+            continue
+        if hasattr(obj, field):
+            setattr(obj, field, getattr(obj, '_' + field, None))
+    if save:
+        obj.save()
+
+def add_link_rels(cls):
+    setattr(cls, '_link_rel', _link_rels)
+    setattr(cls, '_link_rels', _link_rels)
+    return cls
+
 
 # class dbname(object):
 #     'Decorator to add _db_name and _db_alias attributes to a class definition'

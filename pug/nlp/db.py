@@ -98,6 +98,21 @@ representation.max_fields = 10
 representation.default_fields = 3
 
 
+def _link_rels(model, fields=None, save=False, overwrite=False):
+    """Excercise all the hidden relationship-linking methods of the self model instance"""
+    if fields is None:  # allow an empty tuple for the case where you don't want to search for any hidden link_rel functions
+        fields = model._meta.get_all_field_names()
+    # TODO: filter out all fields that aren't fields of type `Related`
+    #       Except that this would ignore fields like case_number Integer that needs to be populated using _case_number just like the case_master FK
+    for field in fields:
+        if not overwrite and getattr(model, field.lower(), None):
+            continue
+        if hasattr(model, field):
+            setattr(model, field, getattr(model, '_' + field, None))
+    if save:
+        model.save()
+
+
 def best_scale_factor(x, y):
     """Maximum distance from zero for one variable relative to another
 
