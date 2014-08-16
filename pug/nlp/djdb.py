@@ -14,6 +14,7 @@ from traceback import print_exc
 
 from django.core import serializers
 from django.db.models import related
+from django.db import connection
 
 import progressbar as pb  # import ProgressBar, Percentage, RotatingMarker, Bar, ETA
 from fuzzywuzzy import process as fuzzy
@@ -1621,7 +1622,7 @@ def import_items(item_seq, dest_model,  batch_len=500, clear=False, dry_run=True
     for batch_num, dict_batch in enumerate(util.generate_batches(item_seq, batch_len)):
         if batch_num < start_batch or (end_batch and (batch_num > end_batch)):
             if verbosity > 1:
-                print('skipping batch {0} because not between {1} and {2}'.format(batch_num, start_batch, end_batch))
+                print('Skipping batch {0} because not between {1} and {2}'.format(batch_num, start_batch, end_batch))
             continue
         if verbosity > 2:
             print(repr(dict_batch))
@@ -1652,32 +1653,41 @@ def import_items(item_seq, dest_model,  batch_len=500, clear=False, dry_run=True
             try:
                 dest_model.objects.bulk_create(item_batch)
             except UnicodeDecodeError as err:
+                from django.db import connection
+                connection._rollback()
+                if verbosity:
+                    print '%s' % err
+                    print 'Now attempting tp save objects one at a time instead of as a batch...'
                 for obj in item_batch:
-                    if verbosity:
-                        print '%s' % err
-                        print 'No attempting tp save objects one at a time instead of as a batch...'
+                    try:
+                        obj.save()
+                        stats += collections.Counter(['batch_UnicodeDecodeError'])
+                    except:
+                        from django.db import connection
+                        connection._rollback()
+                        stats += collections.Counter(['save_UnicodeDecodeError'])
                         print str(obj)
                         print repr(obj.__dict__)
-                    obj.save()
-                    stats += collections.Counter(['batch_UnicodeDecodeError'])
                 if not ignore_errors:
                     print_exc()
                     raise
             except Exception as err:
+                from django.db import connection
+                connection._rollback()
+                if verbosity:
+                    print '%s' % err
+                    print 'Now attempting tp save objects one at a time instead of as a batch...'
                 for obj in item_batch:
-                    if verbosity:
-                        print '%s' % err
-                        print 'No attempting tp save objects one at a time instead of as a batch...'
-                        print str(obj)
-                        print repr(obj.__dict__)
                     try:
                         obj.save()
                         stats += collections.Counter(['batch_Error'])
                     except:
+                        from django.db import connection
+                        connection._rollback()
+                        print str(obj)
+                        print repr(obj.__dict__)
+                        print_exc()
                         stats += collections.Counter(['save_Error'])
-                        if not ignore_errors:
-                            print_exc()
-                            raise
                 if not ignore_errors:
                     print_exc()
                     raise
