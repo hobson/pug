@@ -325,7 +325,7 @@ def table_from_list_of_instances(data, field_names=None, excluded_field_names=No
             field_names = [k for (k, v) in row.__dict__.iteritems() if not k in excluded_field_names]
         if not i:
             yield field_names
-        yield [follow_double_underscores(row, k, excel_dialect=True) for k in field_names]
+        yield [follow_double_underscores(row, field_name=k, excel_dialect=True) for k in field_names]
 
 
 def csv_response_from_context(context=None, filename=None, field_names=None):
