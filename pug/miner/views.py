@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 import os
 import csv
+import datetime
 
 from django.shortcuts import render_to_response
 from django.views.generic import View  #, TemplateView
@@ -279,7 +280,7 @@ import re
 re_model_instance_dot = re.compile('__|[.]+')
 
 
-def follow_double_underscores(obj, field_name=None):
+def follow_double_underscores(obj, excel_dialect=True, field_name=None):
     '''Like getattr(obj, field_name) only follows model relationships through "__" or "." as link separators'''
     if not obj:
         return obj
@@ -290,17 +291,25 @@ def follow_double_underscores(obj, field_name=None):
     if len(split_fields) <= 1:
 
         if hasattr(obj, split_fields[0]):
-            return getattr(obj, split_fields[0])
+            value = getattr(obj, split_fields[0])
         elif hasattr(obj, split_fields[0] + '_id'):
-            return getattr(obj, split_fields[0] + '_id')
+            value = getattr(obj, split_fields[0] + '_id')
         elif hasattr(obj, split_fields[0] + '_set'):
-            return getattr(obj, split_fields[0] + '_set')
+            value = getattr(obj, split_fields[0] + '_set')
         elif split_fields[0] in obj.__dict__:
-            return obj.__dict__.get(split_fields[0])
+            value = obj.__dict__.get(split_fields[0])
+        else:
+            return follow_double_underscores(getattr(obj, split_fields[0]), field_name=split_fields[1:])
+        if excel_dialect:
+            if isinstance(value, datetime.datetime):
+                value = str(value)
+            if value.endswith('+00:00'):
+                value = value[:-6]
+        return value
     return follow_double_underscores(getattr(obj, split_fields[0]), field_name=split_fields[1:])
 
 
-def table_from_list_of_instances(data, field_names=None, excluded_field_names=None, sort=True):
+def table_from_list_of_instances(data, field_names=None, excluded_field_names=None, sort=True, excel_dialect=True):
     '''Return an iterator over the model instances that yeilds lists of values
 
     This forms a table suitable for output as a csv
@@ -316,7 +325,7 @@ def table_from_list_of_instances(data, field_names=None, excluded_field_names=No
             field_names = [k for (k, v) in row.__dict__.iteritems() if not k in excluded_field_names]
         if not i:
             yield field_names
-        yield [follow_double_underscores(row, k) for k in field_names]
+        yield [follow_double_underscores(row, k, excel_dialect=True) for k in field_names]
 
 
 def csv_response_from_context(context=None, filename=None, field_names=None):
