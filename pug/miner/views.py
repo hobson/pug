@@ -303,7 +303,7 @@ def follow_double_underscores(obj, field_name=None, excel_dialect=True):
         if excel_dialect:
             if isinstance(value, datetime.datetime):
                 value = str(value)
-            if value.endswith('+00:00'):
+            if isinstance(value, basestring) and value.endswith('+00:00'):
                 value = value[:-6]
         return value
     return follow_double_underscores(getattr(obj, split_fields[0]), field_name=split_fields[1:])
