@@ -280,7 +280,7 @@ import re
 re_model_instance_dot = re.compile('__|[.]+')
 
 
-def follow_double_underscores(obj, excel_dialect=True, field_name=None):
+def follow_double_underscores(obj, field_name=None, excel_dialect=True):
     '''Like getattr(obj, field_name) only follows model relationships through "__" or "." as link separators'''
     if not obj:
         return obj
