@@ -2035,10 +2035,14 @@ def generate_queryset_batches(queryset, batch_len=1000, verbosity=1):
     >>> sum(len(list(batch)) for batch in generate_queryset_batches(TestModel, batch_len=7)) == TestModel.objects.count()
     True
     """
+    if batch_len == 1:
+        return (obj for obj in queryset)
+
     N = queryset.count()
 
     if not N:
         raise StopIteration("Queryset is empty!")
+
 
     if verbosity:
         widgets = [pb.Counter(), '/%d rows: ' % N, pb.Percentage(), ' ', pb.RotatingMarker(), ' ', pb.Bar(),' ', pb.ETA()]
