@@ -51,11 +51,11 @@ def gini_impurity(qs, field):
 
 
 def entropy(qs, field, num_categories=2):
-    """Total entropy for all the categorizations assigned
+    """Total entropy (in nats, base e bits) for all the categorizations assigned
 
     sum(p(x) * log(p(x)) for x in count_unique(qs, field)
 
-    Which measures how different each categorization is from the others
+    Which measures how different each categorization (segmentation) is from the others
     """
     from math import log
     counts = count_unique(qs, field)
@@ -69,9 +69,11 @@ def entropy(qs, field, num_categories=2):
 
 
 def entropy_and_impurity(qs, field, num_categories=2):
-    """Gini impurity evaluation of predictions
+    """Gini impurity evaluation of predicted segmentation/categorization
 
-    Returns the probability [0, 1], that the wrong category/prediction has been assigned.
+    Returns a tuple of the entropy (in nats, base e bits) and the impurity ( a probability between 0 and 1 inclusive)
+
+    Impurity is the probability or frequency with which the *wrong* category or prediction is assigned to an element.
 
     >>> entropy_and_impurity(tobes_data, -1)  # doctest: +ELLIPSIS
     (1.50524..., 0.6328125)
@@ -95,6 +97,12 @@ def entropy_and_impurity(qs, field, num_categories=2):
 
 
 def impure_entropy(qs, field=-1):
+    """Product of entropy and impurity (probability), in nats (log base e).
+
+    >>> -0.0001 < entropy_and_impurity(tobes_data, -1) - 1.50524 * 0.632813 < 0.0001 # doctest: +ELLIPSIS
+    True
+    """
+
     e, i = entropy_and_impurity(qs, field)
     return e * i
 
