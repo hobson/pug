@@ -2036,13 +2036,18 @@ def generate_queryset_batches(queryset, batch_len=1000, verbosity=1):
     True
     """
     if batch_len == 1:
-        return (obj for obj in queryset)
+        for obj in queryset:
+            yield obj
 
     N = queryset.count()
 
     if not N:
         raise StopIteration("Queryset is empty!")
 
+
+    if N == 1:
+        for obj in queryset:
+            yield obj
 
     if verbosity:
         widgets = [pb.Counter(), '/%d rows: ' % N, pb.Percentage(), ' ', pb.RotatingMarker(), ' ', pb.Bar(),' ', pb.ETA()]
