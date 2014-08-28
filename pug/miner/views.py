@@ -326,7 +326,7 @@ def table_from_list_of_instances(data, field_names=None, excluded_field_names=No
         yield [follow_double_underscores(row, field_name=k, excel_dialect=True) for k in field_names]
 
 
-def csv_response_from_context(context=None, filename=None, field_names=None):
+def csv_response_from_context(context=None, filename=None, field_names=None, null_string=''):
     filename = filename or context.get('filename') or 'table_download.csv'
     field_names = context.get('field_names')
 
@@ -354,7 +354,7 @@ def csv_response_from_context(context=None, filename=None, field_names=None):
 
     writer = csv.writer(response)
     for row in data:
-        writer.writerow([unicode(s).encode('UTF-8') for s in row])
+        writer.writerow([unicode(s if not s == None else null_string).encode('UTF-8') for s in row])
 
     return response
 
