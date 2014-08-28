@@ -1,4 +1,4 @@
---editable git://github.com/mdp-toolkit/mdp-toolkit#egg=mdp
+--editable=git://github.com/mdp-toolkit/mdp-toolkit#egg=mdp
 Django==1.5.8
 Scrapy==0.22.2
 South==0.8.4
