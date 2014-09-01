@@ -247,7 +247,7 @@ def context_from_request(request, context=None, Form=GetLagForm, delim=',', verb
                 'max_lag': str(max_lag),
                 'min_date': ', '.join(context['filter']['min_dates']),
                 'max_date': ', '.join(context['filter']['max_dates']),
-                'regex': ', '.context['regex'],
+                'regex': context['regex'],
               }
 
     if verbosity > 1:
