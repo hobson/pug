@@ -236,16 +236,18 @@ def context_from_request(request, context=None, Form=GetLagForm, delim=',', verb
         min_lag = int(min_lag or 0)
         max_lag = int(max_lag or 180)
     
-    initial = {'mn': ', '.join(m.strip() for m in context['filter']['model_numbers'] if m.strip()), 
-               'sg': ', '.join(context['filter']['sales_groups']),
-               'r': ', '.join(context['filter']['reasons']),
-               'an': ', '.join(context['filter']['account_numbers']),
-               'fy': ', '.join(context['filter']['fiscal_years']),
-               'exclude': str(exclude),
-               'min_lag': str(min_lag),
-               'max_lag': str(max_lag),
-               'min_date': ', '.join(context['filter']['min_dates']),
-               'max_date': ', '.join(context['filter']['max_dates'])
+    initial = {
+                'mn': ', '.join(m.strip() for m in context['filter']['model_numbers'] if m.strip()), 
+                'sg': ', '.join(context['filter']['sales_groups']),
+                'r': ', '.join(context['filter']['reasons']),
+                'an': ', '.join(context['filter']['account_numbers']),
+                'fy': ', '.join(context['filter']['fiscal_years']),
+                'exclude': str(exclude),
+                'min_lag': str(min_lag),
+                'max_lag': str(max_lag),
+                'min_date': ', '.join(context['filter']['min_dates']),
+                'max_date': ', '.join(context['filter']['max_dates']),
+                'regex': ', '.context['regex'],
               }
 
     if verbosity > 1:
