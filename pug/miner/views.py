@@ -129,7 +129,7 @@ def context_from_request(request, context=None, Form=GetLagForm, delim=',', verb
 
     TODO: Generalize this for any list of API variables/strings and separators for lists
 
-    Rturns context dict with these updated elements:
+    Returns context dict with these updated elements:
     context['form']                a Form object populated with the normalized form field values from the GET query
     context['form_is_valid']       True  or False
     context['errors']              list of validation error messages to be displayed at top of form
@@ -137,6 +137,7 @@ def context_from_request(request, context=None, Form=GetLagForm, delim=',', verb
     contexxt['plot_name']          descriptive name for the plot type: 'Histogram', 'Probability Mass Function' ...
     context['table']               'fast' or 'detailed'
     context['limit']               int indicating the maximum number of rows (for speeding the query for a detailed table)
+    context['regex']               regular expression string to test whether inspection notes and comments match
     context['filter']              dict for use in a Django queryset filter:
     {
         'model_numbers': mn.split(',')  #    list of strings for ?mn=
@@ -180,10 +181,11 @@ def context_from_request(request, context=None, Form=GetLagForm, delim=',', verb
     context['filter']['model_numbers'] = mn
 
     sg = request.GET.get('sg', "") or request.GET.get('group', "") or request.GET.get('sales', "") or request.GET.get('sales_group', "") or request.GET.get('sale_group_number', "")
-    sg = [s.strip().upper() for s in sg.split(',')] or ['']   
+    sg = [s.strip().upper() for s in sg.split(',')] or ['']
     # need to implement filters on sales_group (where serial_numbers was, in explore_lags, and filter_sla_lags or lags_dict)
     #context['filter']['sales_groups'] = sg
     context['filter']['sales_groups'] = sg
+
     #context['filter']['model_numbers'] += SLAmodels.models_from_sales_groups(context['sales_groups'])
 
     fy = request.GET.get('fy', "") or request.GET.get('yr', "") or request.GET.get('year', "") or request.GET.get('years', "") or request.GET.get('fiscal_year', "") or request.GET.get('fiscal_years', "")
@@ -209,6 +211,8 @@ def context_from_request(request, context=None, Form=GetLagForm, delim=',', verb
     max_dates = request.GET.get('maxd', "") or request.GET.get('max_date', "") or request.GET.get('max_dates', "")
     max_dates = [s.strip() for s in max_dates.split(',')] or ['']
     context['filter']['max_dates'] = max_dates
+
+    context['regex'] = request.GET.get('re', "") or request.GET.get('regex', "") or request.GET.get('word', "") or request.GET.get('search', "") or request.GET.get('find', "")
 
     series_name = request.GET.get('s', "") or request.GET.get('n', "") or request.GET.get('series', "") or request.GET.get('name', "")
     filter_values = series_name.split(' ')  # FIXME: '|'
