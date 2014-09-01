@@ -1,4 +1,5 @@
---editable=git://github.com/mdp-toolkit/mdp-toolkit#egg=mdp
+pip==1.4.1
+--editable=git://github.com/mdp-toolkit/mdp-toolkit#egg=mdp --exists-action=w
 setuptools==5.7
 cffi==0.8.6
 cryptography==0.4
