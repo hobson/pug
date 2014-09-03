@@ -337,7 +337,7 @@ def table_from_list_of_instances(data, field_names=None, excluded_field_names=No
 
 def csv_response_from_context(context=None, filename=None, field_names=None, null_string=''):
     filename = filename or context.get('filename') or 'table_download.csv'
-    field_names = field_names or context.get('columns', []) or context.get('field_names', [])
+    field_names = field_names or [s.strip() for s in context.get('columns', '').split(',')] or context.get('field_names', [])
 
     data = context
 
