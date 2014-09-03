@@ -2,6 +2,9 @@
 import os
 import csv
 import datetime
+import math
+import collections
+import re
 
 from django.shortcuts import render_to_response
 from django.views.generic import View  #, TemplateView
@@ -214,7 +217,9 @@ def context_from_request(request, context=None, Form=GetLagForm, delim=',', verb
     context['filter']['max_dates'] = max_dates
 
     context['regex'] = request.GET.get('re', "") or request.GET.get('regex', "") or request.GET.get('word', "") or request.GET.get('search', "") or request.GET.get('find', "")
+
     context['columns'] = request.GET.get('col', "") or request.GET.get('cols', "") or request.GET.get('column', "") or request.GET.get('columns', "")
+    context['columns'] = [s.strip() for s in context['columns'].split(',')] or []
 
     series_name = request.GET.get('s', "") or request.GET.get('n', "") or request.GET.get('series', "") or request.GET.get('name', "")
     filter_values = series_name.split(' ')  # FIXME: '|'
@@ -284,20 +289,28 @@ def context_from_request(request, context=None, Form=GetLagForm, delim=',', verb
     return context
 
 
-import re
 re_model_instance_dot = re.compile('__|[.]+')
-
+    
 
 def follow_double_underscores(obj, field_name=None, excel_dialect=True):
-    '''Like getattr(obj, field_name) only follows model relationships through "__" or "." as link separators'''
+    '''Like getattr(obj, field_name) only follows model relationships through "__" or "." as link separators
+
+    >>> from django.contrib.auth import Permission
+    >>> import math
+    >>> p = Permission.objects.all()[0]
+    >>> follow_double_underscores(p, 'math.sqrt(len(obj.content_type.name))') == math.sqrt(len(p.content_type.name))
+    '''
     if not obj:
         return obj
     if isinstance(field_name, list):
         split_fields = field_name
     else:
         split_fields = re_model_instance_dot.split(field_name)
+    try:
+        return str(eval(field_name, {'datetime': datetime, 'math': math, 'collections': collections}, {'obj': obj}))
+    except:
+        pass
     if len(split_fields) <= 1:
-
         if hasattr(obj, split_fields[0]):
             value = getattr(obj, split_fields[0])
         elif hasattr(obj, split_fields[0] + '_id'):
@@ -307,10 +320,9 @@ def follow_double_underscores(obj, field_name=None, excel_dialect=True):
         elif split_fields[0] in obj.__dict__:
             value = obj.__dict__.get(split_fields[0])
         else:
-            return follow_double_underscores(getattr(obj, split_fields[0]), field_name=split_fields[1:])
-        if excel_dialect:
-            if isinstance(value, datetime.datetime):
-                value = value.strftime('%Y-%m-%d %H:%M:%S')
+            value = eval('obj.' + split_fields[0])
+        if value and excel_dialect and isinstance(value, datetime.datetime):
+            value = value.strftime('%Y-%m-%d %H:%M:%S')
         return value
     return follow_double_underscores(getattr(obj, split_fields[0]), field_name=split_fields[1:])
 
