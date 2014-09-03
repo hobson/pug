@@ -138,6 +138,7 @@ def context_from_request(request, context=None, Form=GetLagForm, delim=',', verb
     context['table']               'fast' or 'detailed'
     context['limit']               int indicating the maximum number of rows (for speeding the query for a detailed table)
     context['regex']               regular expression string to test whether inspection notes and comments match
+    context['columns']             columns to display in quicktable and csv
     context['filter']              dict for use in a Django queryset filter:
     {
         'model_numbers': mn.split(',')  #    list of strings for ?mn=
@@ -213,6 +214,7 @@ def context_from_request(request, context=None, Form=GetLagForm, delim=',', verb
     context['filter']['max_dates'] = max_dates
 
     context['regex'] = request.GET.get('re', "") or request.GET.get('regex', "") or request.GET.get('word', "") or request.GET.get('search', "") or request.GET.get('find', "")
+    context['columns'] = request.GET.get('col', "") or request.GET.get('cols', "") or request.GET.get('column', "") or request.GET.get('columns', "")
 
     series_name = request.GET.get('s', "") or request.GET.get('n', "") or request.GET.get('series', "") or request.GET.get('name', "")
     filter_values = series_name.split(' ')  # FIXME: '|'
@@ -334,7 +336,7 @@ def table_from_list_of_instances(data, field_names=None, excluded_field_names=No
 
 def csv_response_from_context(context=None, filename=None, field_names=None, null_string=''):
     filename = filename or context.get('filename') or 'table_download.csv'
-    field_names = context.get('field_names')
+    field_names = field_names or context.get('columns') or context.get('field_names')
 
     data = context
 

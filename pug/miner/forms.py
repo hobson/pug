@@ -88,6 +88,12 @@ class GetLagForm(forms.Form):
         # widget=forms.TextInput(attrs={'placeholder': '12, 2013, 14, ...'}),
         )
 
+    columns = forms.CharField(max_length=256, required=False,
+        label='Columns',
+        initial='', 
+        help_text='e.g. model, inspnote, recvnotes, repanote',
+        # widget=forms.TextInput(attrs={'placeholder': '12, 2013, 14, ...'}),
+        )
 
     def __init__(self, *args, **kwargs):
         super(GetLagForm, self).__init__(*args, **kwargs)
