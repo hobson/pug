@@ -295,10 +295,13 @@ re_model_instance_dot = re.compile('__|[.]+')
 def follow_double_underscores(obj, field_name=None, excel_dialect=True):
     '''Like getattr(obj, field_name) only follows model relationships through "__" or "." as link separators
 
-    >>> from django.contrib.auth import Permission
+    >>> from django.contrib.auth.models import Permission
     >>> import math
     >>> p = Permission.objects.all()[0]
+    >>> follow_double_underscores(p, 'content_type__name') == p.content_type.name
+    True
     >>> follow_double_underscores(p, 'math.sqrt(len(obj.content_type.name))') == math.sqrt(len(p.content_type.name))
+    True
     '''
     if not obj:
         return obj
@@ -307,7 +310,7 @@ def follow_double_underscores(obj, field_name=None, excel_dialect=True):
     else:
         split_fields = re_model_instance_dot.split(field_name)
     try:
-        return str(eval(field_name, {'datetime': datetime, 'math': math, 'collections': collections}, {'obj': obj}))
+        return eval(field_name, {'datetime': datetime, 'math': math, 'collections': collections}, {'obj': obj})
     except:
         pass
     if len(split_fields) <= 1:
@@ -327,18 +330,41 @@ def follow_double_underscores(obj, field_name=None, excel_dialect=True):
     return follow_double_underscores(getattr(obj, split_fields[0]), field_name=split_fields[1:])
 
 
-def table_from_list_of_instances(data, field_names=None, excluded_field_names=None, sort=True, excel_dialect=True):
+def table_generator_from_list_of_instances(data, field_names=None, excluded_field_names=None, sort=True, excel_dialect=True):
     '''Return an iterator over the model instances that yeilds lists of values
 
     This forms a table suitable for output as a csv
 
     FIXME: allow specification of related field values with double_underscore
+
+    >>> from django.contrib.auth.models import Permission
+    >>> from django.db.models.base import ModelState
+    >>> t = table_generator_from_list_of_instances(list(Permission.objects.all()))
+    >>> import types
+    >>> isinstance(t, types.GeneratorType)
+    True
+    >>> t = list(t)
+    >>> len(t) > 3
+    True
+    >>> len(t[0])
+    5
+    >>> isinstance(t[0][0], basestring)
+    True
+    >>> isinstance(t[0][-1], basestring)
+    True
+    >>> isinstance(t[1][0], int)
+    True
+    >>> isinstance(t[0][2], basestring)
+    True
+    >>> isinstance(t[1][2], ModelState)
+    True
+    >>> isinstance(t[-1][2], ModelState)
+    True
     '''
     excluded_field_names = excluded_field_names or []
     excluded_field_names += '_state'
     excluded_field_names = set(excluded_field_names)
 
-    print 'field_names=%r' % field_names
     for i, row in enumerate(data):
         if not field_names or not any(field_names):
             field_names = [k for (k, v) in row.__dict__.iteritems() if not k in excluded_field_names]
@@ -360,7 +386,7 @@ def csv_response_from_context(context=None, filename=None, field_names=None, nul
             data = context.get('data', {}).get('cases', [[]])
 
     if not isinstance(data, (list, tuple)) or not isinstance(data[0], (list, tuple)):
-        data = table_from_list_of_instances(data, field_names=field_names)
+        data = list(table_generator_from_list_of_instances(data, field_names=field_names))
 
     try:
         if len(data) < len(data[0]):
