@@ -313,6 +313,8 @@ def follow_double_underscores(obj, field_name=None, excel_dialect=True):
         split_fields = re_model_instance_dot.split(field_name)
     try:
         return eval(field_name, {'datetime': datetime, 'math': math, 'collections': collections}, {'obj': obj})
+    except IndexError:
+        return None
     except:
         pass
     if len(split_fields) <= 1:
