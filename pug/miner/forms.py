@@ -82,16 +82,16 @@ class GetLagForm(forms.Form):
         )
 
     regex = forms.CharField(max_length=256, required=False,
-        label='Search Pattern',
+        label='Repair Note Search Pattern',
         initial='MURA|HORIZ', 
         help_text='e.g. MURA|HORIZ',
         # widget=forms.TextInput(attrs={'placeholder': '12, 2013, 14, ...'}),
         )
 
     columns = forms.CharField(max_length=256, required=False,
-        label='Columns',
+        label='CSV Columns (semicolon-separated)',
         initial='', 
-        help_text='e.g. model, inspnote, recvnotes, repanote',
+        help_text='e.g. model; inspnote; recvnotes; repanote; ',
         # widget=forms.TextInput(attrs={'placeholder': '12, 2013, 14, ...'}),
         )
 
