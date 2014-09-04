@@ -82,7 +82,7 @@ class GetLagForm(forms.Form):
         )
 
     regex = forms.CharField(max_length=256, required=False,
-        label='Repair Note Search Pattern',
+        label='Comments Search Pattern (<a href="https://www.icewarp.com/support/online_help/203030104.htm">regex</a>)',
         initial='MURA|HORIZ', 
         help_text='e.g. MURA|HORIZ',
         # widget=forms.TextInput(attrs={'placeholder': '12, 2013, 14, ...'}),
@@ -94,6 +94,7 @@ class GetLagForm(forms.Form):
         help_text='e.g. model; inspnote; recvnotes; repanote; ',
         # widget=forms.TextInput(attrs={'placeholder': '12, 2013, 14, ...'}),
         )
+
 
     def __init__(self, *args, **kwargs):
         super(GetLagForm, self).__init__(*args, **kwargs)
