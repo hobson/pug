@@ -154,6 +154,7 @@ def context_from_request(request, context=None, Form=GetLagForm, delim=',', verb
         'min_lag': sn.split(',')  #          list of strings for ?min_lag=
         'max_lag': sn.split(',')  #          list of strings for ?max_lag=
         'exclude': sn.split(',')  #          "E" or "I" (include or exclude account numbers)
+        'columns': sn.split(';')  #          list of strings for ?max_lag=
     }
     """
     context = context or RequestContext(request)
@@ -219,7 +220,7 @@ def context_from_request(request, context=None, Form=GetLagForm, delim=',', verb
     context['regex'] = request.GET.get('re', "") or request.GET.get('regex', "") or request.GET.get('word', "") or request.GET.get('search', "") or request.GET.get('find', "")
 
     context['columns'] = request.GET.get('col', "") or request.GET.get('cols', "") or request.GET.get('column', "") or request.GET.get('columns', "")
-    context['columns'] = [s.strip() for s in context['columns'].split(',')] or []
+    context['columns'] = [s.strip() for s in context['columns'].split(';')] or []
 
     series_name = request.GET.get('s', "") or request.GET.get('n', "") or request.GET.get('series', "") or request.GET.get('name', "")
     filter_values = series_name.split(' ')  # FIXME: '|'
