@@ -335,7 +335,7 @@ def follow_double_underscores(obj, field_name=None, excel_dialect=True):
 
 
 def table_generator_from_list_of_instances(data, field_names=None, excluded_field_names=None, sort=True, excel_dialect=True):
-    '''Return an iterator over the model instances that yeilds lists of values
+    '''Return an iterator over the model instances (or queryset) that yeilds lists of values
 
     This forms a table suitable for output as a csv
 
@@ -378,6 +378,17 @@ def table_generator_from_list_of_instances(data, field_names=None, excluded_fiel
 
 
 def csv_response_from_context(context=None, filename=None, field_names=None, null_string=''):
+    """Generate the response for a Download CSV button from data within the context dict
+
+    The CSV data must be in one of these places/formats:
+
+    * context as a list of lists of python values (strings for headers in first list)
+    * context['data']['d3data'] as a string in json format (python) for a list of lists of repr(python_value)s
+    * context['data']['cases'] as a list of lists of python values (strings for headers in first list)
+    * context['data']['d3data'] as a django queryset or iterable of model instances (list, tuple, generator)
+
+    If the input data is a list of lists (table) that has more columns that rows it will be trasposed before being processed
+    """
     filename = filename or context.get('filename') or 'table_download.csv'
     field_names = field_names or context.get('columns', []) or context.get('field_names', [])
 
@@ -396,7 +407,7 @@ def csv_response_from_context(context=None, filename=None, field_names=None, nul
         if len(data) < len(data[0]):
             data = util.transposed_lists(data)  # list(list(row) for row in data)
     except TypeError:
-        # no need to transpose if a generator was provided instead of a list or tuple (anythin with a len attribute)
+        # no need to transpose if a generator was provided instead of a list or tuple (anything with a len attribute)
         pass
 
     # Create the HttpResponse object with the appropriate CSV header.
