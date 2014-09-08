@@ -155,7 +155,7 @@ def context_from_request(request, context=None, Form=GetLagForm, delim=',', verb
         'min_lag': sn.split(',')  #          list of strings for ?min_lag=
         'max_lag': sn.split(',')  #          list of strings for ?max_lag=
         'exclude': sn.split(',')  #          "E" or "I" (include or exclude account numbers)
-        'columns': sn.split(';')  #          list of strings for ?max_lag=
+        'columns': columns.split(';')  #          list of fields for columns of CSV
     }
     """
     context = context or RequestContext(request)
@@ -319,6 +319,7 @@ def follow_double_underscores(obj, field_name=None, excel_dialect=True, eval_pyt
             return index_error_value
         except:
             pass
+
     if len(split_fields) <= 1:
         if hasattr(obj, split_fields[0]):
             value = getattr(obj, split_fields[0])
@@ -333,7 +334,7 @@ def follow_double_underscores(obj, field_name=None, excel_dialect=True, eval_pyt
         if value and excel_dialect and isinstance(value, datetime.datetime):
             value = value.strftime('%Y-%m-%d %H:%M:%S')
         return value
-    return follow_double_underscores(getattr(obj, split_fields[0]), field_name=split_fields[1:], eval_python=eval_python)
+    return follow_double_underscores(getattr(obj, split_fields[0]), field_name=split_fields[1:], eval_python=eval_python, index_error_value=index_error_value)
 
 
 def table_generator_from_list_of_instances(data, field_names=None, excluded_field_names=None, sort=True, excel_dialect=True, eval_python=False):
