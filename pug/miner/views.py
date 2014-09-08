@@ -330,9 +330,10 @@ def follow_double_underscores(obj, field_name=None, excel_dialect=True, eval_pyt
         elif split_fields[0] in obj.__dict__:
             value = obj.__dict__.get(split_fields[0])
         else:
-            value = eval('obj.' + split_fields[0])
-        if value and excel_dialect and isinstance(value, datetime.datetime):
-            value = value.strftime('%Y-%m-%d %H:%M:%S')
+            return follow_double_underscores(getattr(obj, split_fields[0]), field_name=split_fields[1:])
+        if excel_dialect:
+            if isinstance(value, datetime.datetime):
+                value = value.strftime('%Y-%m-%d %H:%M:%S')
         return value
     return follow_double_underscores(getattr(obj, split_fields[0]), field_name=split_fields[1:], eval_python=eval_python, index_error_value=index_error_value)
 
@@ -343,30 +344,6 @@ def table_generator_from_list_of_instances(data, field_names=None, excluded_fiel
     This forms a table suitable for output as a csv
 
     FIXME: allow specification of related field values with double_underscore
-
-    >>> from django.contrib.auth.models import Permission
-    >>> from django.db.models.base import ModelState
-    >>> t = table_generator_from_list_of_instances(list(Permission.objects.all()))
-    >>> import types
-    >>> isinstance(t, types.GeneratorType)
-    True
-    >>> t = list(t)
-    >>> len(t) > 3
-    True
-    >>> len(t[0])
-    5
-    >>> isinstance(t[0][0], basestring)
-    True
-    >>> isinstance(t[0][-1], basestring)
-    True
-    >>> isinstance(t[1][0], int)
-    True
-    >>> isinstance(t[0][2], basestring)
-    True
-    >>> isinstance(t[1][2], ModelState)
-    True
-    >>> isinstance(t[-1][2], ModelState)
-    True
     '''
     excluded_field_names = excluded_field_names or []
     excluded_field_names += '_state'
@@ -377,26 +354,12 @@ def table_generator_from_list_of_instances(data, field_names=None, excluded_fiel
             field_names = [k for (k, v) in row.__dict__.iteritems() if not k in excluded_field_names]
         if not i:
             yield field_names
-        yield [follow_double_underscores(row, field_name=k, excel_dialect=True, eval_python=eval_python) for k in field_names]
+        yield [follow_double_underscores(row, field_name=k, excel_dialect=True) for k in field_names]
 
 
-def csv_response_from_context(context=None, filename=None, field_names=None, null_string='', eval_python=True):
-    """Generate the response for a Download CSV button from data within the context dict
-
-    The CSV data must be in one of these places/formats:
-
-    * context as a list of lists of python values (strings for headers in first list)
-    * context['data']['d3data'] as a string in json format (python) for a list of lists of repr(python_value)s
-    * context['data']['cases'] as a list of lists of python values (strings for headers in first list)
-    * context['data']['d3data'] as a django queryset or iterable of model instances (list, tuple, generator)
-
-    If the input data is a list of lists (table) that has more columns that rows it will be trasposed before being processed
-    """
+def csv_response_from_context(context=None, filename=None, field_names=None, null_string='', eval_python=False):
     filename = filename or context.get('filename') or 'table_download.csv'
-    field_names = field_names or context.get('columns', []) or context.get('field_names', [])
-    # FIXME: too slow!
-    if context.get('field_names', []) and not any(context.get('columns', [])) and not all(all(c in (string.letters+string.digits+'_'+'.') for c in s) for s in field_names):
-        eval_python=False
+    field_names = context.get('field_names')
 
     data = context
 
@@ -407,7 +370,7 @@ def csv_response_from_context(context=None, filename=None, field_names=None, nul
             data = context.get('data', {}).get('cases', [[]])
 
     if not isinstance(data, (list, tuple)) or not isinstance(data[0], (list, tuple)):
-        data = list(table_generator_from_list_of_instances(data, field_names=field_names, eval_python=eval_python))
+        data = table_generator_from_list_of_instances(data, field_names=field_names, eval_python=eval_python)
 
     try:
         if len(data) < len(data[0]):
