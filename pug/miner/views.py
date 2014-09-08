@@ -283,12 +283,11 @@ def context_from_request(request, context=None, Form=GetLagForm, delim=',', verb
 
     return context
 
-
 import re
 re_model_instance_dot = re.compile('__|[.]+')
 
 
-def follow_double_underscores(obj, field_name=None, excel_dialect=True):
+def follow_double_underscores(obj, field_name, excel_dialect=True):
     '''Like getattr(obj, field_name) only follows model relationships through "__" or "." as link separators'''
     if not obj:
         return obj
@@ -296,6 +295,8 @@ def follow_double_underscores(obj, field_name=None, excel_dialect=True):
         split_fields = field_name
     else:
         split_fields = re_model_instance_dot.split(field_name)
+
+    # "base instance" in Sedgewick lingo
     if len(split_fields) <= 1:
 
         if hasattr(obj, split_fields[0]):
@@ -307,13 +308,15 @@ def follow_double_underscores(obj, field_name=None, excel_dialect=True):
         elif split_fields[0] in obj.__dict__:
             value = obj.__dict__.get(split_fields[0])
         else:
-            return follow_double_underscores(getattr(obj, split_fields[0]), field_name=split_fields[1:])
+            return follow_double_underscores(getattr(obj, split_fields[0], None), field_name=split_fields[1:])
         if excel_dialect:
             if isinstance(value, datetime.datetime):
                 value = value.strftime('%Y-%m-%d %H:%M:%S')
         return value
-    return follow_double_underscores(getattr(obj, split_fields[0]), field_name=split_fields[1:])
-
+    # FIXME: Use django template engine to process obj query (since it django does integer indexing and function calls in addition to what's here)
+    # recursion call that converges by reducing the length of the
+    return follow_double_underscores(getattr(obj, split_fields[0], None) or obj.get(split_fields[0], None), field_name=split_fields[1:])
+    
 
 def table_from_list_of_instances(data, field_names=None, excluded_field_names=None, sort=True, excel_dialect=True):
     '''Return an iterator over the model instances that yeilds lists of values
