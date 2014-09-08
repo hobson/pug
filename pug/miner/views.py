@@ -5,6 +5,7 @@ import datetime
 import math
 import collections
 import re
+import string
 
 from django.shortcuts import render_to_response
 from django.views.generic import View  #, TemplateView
@@ -294,7 +295,7 @@ def context_from_request(request, context=None, Form=GetLagForm, delim=',', verb
 re_model_instance_dot = re.compile('__|[.]+')
     
 
-def follow_double_underscores(obj, field_name=None, excel_dialect=True):
+def follow_double_underscores(obj, field_name=None, excel_dialect=True, eval_python=False, index_error_value=None):
     '''Like getattr(obj, field_name) only follows model relationships through "__" or "." as link separators
 
     >>> from django.contrib.auth.models import Permission
@@ -302,7 +303,7 @@ def follow_double_underscores(obj, field_name=None, excel_dialect=True):
     >>> p = Permission.objects.all()[0]
     >>> follow_double_underscores(p, 'content_type__name') == p.content_type.name
     True
-    >>> follow_double_underscores(p, 'math.sqrt(len(obj.content_type.name))') == math.sqrt(len(p.content_type.name))
+    >>> follow_double_underscores(p, 'math.sqrt(len(obj.content_type.name))', eval_python=True) == math.sqrt(len(p.content_type.name))
     True
     '''
     if not obj:
@@ -311,12 +312,13 @@ def follow_double_underscores(obj, field_name=None, excel_dialect=True):
         split_fields = field_name
     else:
         split_fields = re_model_instance_dot.split(field_name)
-    try:
-        return eval(field_name, {'datetime': datetime, 'math': math, 'collections': collections}, {'obj': obj})
-    except IndexError:
-        return None
-    except:
-        pass
+    if False and eval_python:
+        try:
+            return eval(field_name, {'datetime': datetime, 'math': math, 'collections': collections}, {'obj': obj})
+        except IndexError:
+            return index_error_value
+        except:
+            pass
     if len(split_fields) <= 1:
         if hasattr(obj, split_fields[0]):
             value = getattr(obj, split_fields[0])
@@ -331,10 +333,10 @@ def follow_double_underscores(obj, field_name=None, excel_dialect=True):
         if value and excel_dialect and isinstance(value, datetime.datetime):
             value = value.strftime('%Y-%m-%d %H:%M:%S')
         return value
-    return follow_double_underscores(getattr(obj, split_fields[0]), field_name=split_fields[1:])
+    return follow_double_underscores(getattr(obj, split_fields[0]), field_name=split_fields[1:], eval_python=eval_python)
 
 
-def table_generator_from_list_of_instances(data, field_names=None, excluded_field_names=None, sort=True, excel_dialect=True):
+def table_generator_from_list_of_instances(data, field_names=None, excluded_field_names=None, sort=True, excel_dialect=True, eval_python=False):
     '''Return an iterator over the model instances (or queryset) that yeilds lists of values
 
     This forms a table suitable for output as a csv
@@ -374,10 +376,10 @@ def table_generator_from_list_of_instances(data, field_names=None, excluded_fiel
             field_names = [k for (k, v) in row.__dict__.iteritems() if not k in excluded_field_names]
         if not i:
             yield field_names
-        yield [follow_double_underscores(row, field_name=k, excel_dialect=True) for k in field_names]
+        yield [follow_double_underscores(row, field_name=k, excel_dialect=True, eval_python=eval_python) for k in field_names]
 
 
-def csv_response_from_context(context=None, filename=None, field_names=None, null_string=''):
+def csv_response_from_context(context=None, filename=None, field_names=None, null_string='', eval_python=True):
     """Generate the response for a Download CSV button from data within the context dict
 
     The CSV data must be in one of these places/formats:
@@ -391,6 +393,9 @@ def csv_response_from_context(context=None, filename=None, field_names=None, nul
     """
     filename = filename or context.get('filename') or 'table_download.csv'
     field_names = field_names or context.get('columns', []) or context.get('field_names', [])
+    # FIXME: too slow!
+    if context.get('field_names', []) and not any(context.get('columns', [])) and not all(all(c in (string.letters+string.digits+'_'+'.') for c in s) for s in field_names):
+        eval_python=False
 
     data = context
 
@@ -401,7 +406,7 @@ def csv_response_from_context(context=None, filename=None, field_names=None, nul
             data = context.get('data', {}).get('cases', [[]])
 
     if not isinstance(data, (list, tuple)) or not isinstance(data[0], (list, tuple)):
-        data = list(table_generator_from_list_of_instances(data, field_names=field_names))
+        data = list(table_generator_from_list_of_instances(data, field_names=field_names, eval_python=eval_python))
 
     try:
         if len(data) < len(data[0]):
