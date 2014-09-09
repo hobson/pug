@@ -1639,7 +1639,7 @@ def import_items(item_seq, dest_model,  batch_len=500, clear=False, dry_run=True
             except:
                 obj, row_errors = django_object_from_row(d, dest_model)
             try:
-                obj._link_rels(save=False, overwrite=False)
+                obj.update(save=False, overwrite=False)
             except:
                 pass
             item_batch += [obj]

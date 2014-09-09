@@ -10,6 +10,7 @@ import re
 import collections
 import functools
 import logging
+from types import NoneType
 
 from nlp.db import representation
 from inspect import getmodule
@@ -207,12 +208,46 @@ def represent(cls):
     setattr(cls, '__unicode__', representation)
     return cls
 
+# FIXME, DRY these 3 models up by just adding a kwarg to select between them  decorators
+#        very unDRY (only a few characters changed in each!)
 def _link_rels(obj, fields=None, save=False, overwrite=False):
+    """Populate any database related fields (ForeignKeyField, OneToOneField) that have `_get`ters to populate them with"""
     if not fields:
         meta = obj._meta
-        fields = [f.name for f in meta.fields if isinstance(f, RelatedField) and hasattr(meta, '_get_' + f.name) and hasattr(meta, '_' + f.name)]
+        fields = [f.name for f in meta.fields if isinstance(f, RelatedField) and not f.primary_key and hasattr(meta, '_get_' + f.name) and hasattr(meta, '_' + f.name)]
     for field in fields:
-        if not overwrite and getattr(obj, field, None):
+        # skip fields if they contain non-null data and `overwrite` option wasn't set
+        if not overwrite and isinstance(getattr(obj, field, None), NoneType):
+            # print 'skipping %s which already has a value of %s' % (field, getattr(obj, field, None))
+            continue
+        if hasattr(obj, field):
+            setattr(obj, field, getattr(obj, '_' + field, None))
+    if save:
+        obj.save()
+
+def _denormalize(obj, fields=None, save=False, overwrite=False):
+    """Update/populate any database fields that are not related fields (FKs) but have `_get`ters to populate them with"""
+    if not fields:
+        meta = obj._meta
+        fields = [f.name for f in meta.fields if not isinstance(f, RelatedField) and not f.primary_key and hasattr(meta, '_get_' + f.name) and hasattr(meta, '_' + f.name)]
+    for field in fields:
+        # skip fields if they contain non-null data and `overwrite` option wasn't set
+        if not overwrite and isinstance(getattr(obj, field, None), NoneType):
+            # print 'skipping %s which already has a value of %s' % (field, getattr(obj, field, None))
+            continue
+        if hasattr(obj, field):
+            setattr(obj, field, getattr(obj, '_' + field, None))
+    if save:
+        obj.save()
+
+def _update(obj, fields=None, save=False, overwrite=False):
+    """Update/populate any database fields that have `_get`ters to populate them with, regardless of whether they are data fields or related fields"""
+    if not fields:
+        meta = obj._meta
+        fields = [f.name for f in meta.fields if not f.primary_key and hasattr(meta, '_get_' + f.name) and hasattr(meta, '_' + f.name)]
+    for field in fields:
+        # skip fields if they contain non-null data and `overwrite` option wasn't set
+        if not overwrite and isinstance(getattr(obj, field, None), NoneType):
             # print 'skipping %s which already has a value of %s' % (field, getattr(obj, field, None))
             continue
         if hasattr(obj, field):
@@ -226,9 +261,18 @@ def linkable_rels(cls):
     # FIXME: instantiate a new copy of the _link_rels function and give it default arguments
     def _customized_link_rels(obj, fields=fields, save=False, overwrite=False):
         return _link_rels(obj, fields=fields, save=save, overwrite=overwrite)
-    setattr(cls, '_link_rels', _customized_link_rels )
+    setattr(cls, '_link_rels', _customized_link_rels)
     return cls
 
+
+# TODO: make this a decotator class that accepts arguments which become default args of the link_rels method (fields, overwrite, save)
+def updateable(cls):
+    fields = tuple(f.name for f in cls._meta.fields if not f.primary_key and hasattr(cls, '_get_' + f.name) and hasattr(cls, '_' + f.name))
+    # FIXME: instantiate a new copy of the _link_rels function and give it default arguments
+    def _customized_update(obj, fields=fields, save=False, overwrite=False):
+        return _update(obj, fields=fields, save=save, overwrite=overwrite)
+    setattr(cls, '_update', _customized_update)
+    return cls
 
 # class dbname(object):
 #     'Decorator to add _db_name and _db_alias attributes to a class definition'
