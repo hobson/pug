@@ -15,6 +15,7 @@ from traceback import print_exc
 from django.core import serializers
 from django.db.models import related
 from django.db import connection
+from django.db import models
 
 import progressbar as pb  # import ProgressBar, Percentage, RotatingMarker, Bar, ETA
 from fuzzywuzzy import process as fuzzy
@@ -28,12 +29,10 @@ DEFAULT_DB = 'default'
 DEFAULT_APP = None  # models.get_apps()[-1]
 DEFAULT_MODEL = None  # DEFAULT_MODEL.get_models()[0]
 from django.core.exceptions import ImproperlyConfigured
-models, connection, settings = None, None, None
+settings = None
 try:
-    from django.db import models
-    from django.db import connection
-    from django.conf import settings  # there is only one function that requires settings, all other functions should be moved to nlp.db module?
-
+    # FIXME Only 1 function that requires settings: all other functions should be moved to nlp.db module?
+    from django.conf import settings  
 except ImproperlyConfigured:
     print print_exc()
     print 'WARNING: The module named %r from file %r' % (__name__, __file__)
@@ -1620,10 +1619,14 @@ def import_items(item_seq, dest_model,  batch_len=500, clear=False, dry_run=True
         pbar = pb.ProgressBar(widgets=widgets, maxval=N).start()
 
     for batch_num, dict_batch in enumerate(util.generate_batches(item_seq, batch_len)):
-        if batch_num < start_batch or (end_batch and (batch_num > end_batch)):
+        if batch_num < start_batch:
             if verbosity > 1:
                 print('Skipping batch {0} because not between {1} and {2}'.format(batch_num, start_batch, end_batch))
             continue
+        elif end_batch and (batch_num > end_batch):
+            if verbosity > 1:
+                print('Stopping before batch {0} because it is not between {1} and {2}'.format(batch_num, start_batch, end_batch))
+            break
         if verbosity > 2:
             print(repr(dict_batch))
             print(repr((batch_num, len(dict_batch), batch_len)))
@@ -1647,8 +1650,9 @@ def import_items(item_seq, dest_model,  batch_len=500, clear=False, dry_run=True
         if verbosity and verbosity < 2:
             pbar.update(batch_num * batch_len + len(dict_batch))
         elif verbosity > 1:
-            print('Writing {0} items in batch {1} between batch {2} and batch {3} and {4} batches to the {5} model...'.format(
-                len(item_batch), batch_num, start_batch, end_batch, int(N / float(batch_len)), dest_model))
+            print('Writing {0} items (of type {1}) from batch {2}. Will stop at batch {3} which is record {4} ...'.format(
+                len(item_batch), dest_model, batch_num, end_batch or N, int((end_batch or N) / float(batch_len))
+                ))
         if not dry_run:
             try:
                 dest_model.objects.bulk_create(item_batch)
