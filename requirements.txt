@@ -1,5 +1,6 @@
-pip==1.4.1
---editable=git://github.com/mdp-toolkit/mdp-toolkit#egg=mdp --exists-action=w
+pip==1.5.6
+--editable=git://github.com/mdp-toolkit/mdp-toolkit#egg=mdp
+#$ pip install --editable=git://github.com/mdp-toolkit/mdp-toolkit#egg=mdp --exists-action=w
 setuptools==5.7
 cffi==0.8.6
 cryptography==0.4
@@ -11,7 +12,7 @@ cssselect==0.9.1
 django-crispy-forms==1.4.0
 lxml==3.3.5
 numpy==1.8.2
-progressbar==2.2
+--editable=https://python-progressbar.googlecode.com/files/progressbar-2.3.tar.gz
 psycopg2==2.5.3
 pyOpenSSL==0.14
 python-dateutil==2.2
