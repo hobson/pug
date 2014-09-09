@@ -216,7 +216,6 @@ def _link_rels(obj, fields=(), save=False, overwrite=False):
         obj.save()
 
 def add_link_rels(cls):
-    setattr(cls, '_link_rel', _link_rels)
     setattr(cls, '_link_rels', _link_rels)
     return cls
 
