@@ -1642,8 +1642,11 @@ def import_items(item_seq, dest_model,  batch_len=500, clear=False, dry_run=True
             except:
                 obj, row_errors = django_object_from_row(d, dest_model)
             try:
-                obj.update(save=False, overwrite=False)
+                obj._update(save=False, overwrite=False)
             except:
+                if verbosity:
+                    print_exc()
+                    print 'ERROR: Unable to update record: %r' % obj
                 pass
             item_batch += [obj]
             stats += row_errors
