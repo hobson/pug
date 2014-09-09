@@ -266,7 +266,7 @@ def linkable_rels(cls):
 
 
 # TODO: make this a decotator class that accepts arguments which become default args of the link_rels method (fields, overwrite, save)
-def updateable(cls):
+def updatable(cls):
     fields = tuple(f.name for f in cls._meta.fields if not f.primary_key and hasattr(cls, '_get_' + f.name) and hasattr(cls, '_' + f.name))
     # FIXME: instantiate a new copy of the _link_rels function and give it default arguments
     def _customized_update(obj, fields=fields, save=False, overwrite=False):
