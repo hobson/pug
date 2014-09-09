@@ -1,4 +1,4 @@
-"""Function decorators for memoizing and logging.
+"""Function and class decorators for memoizing and logging or adding methods to a Django Model.
 
 Shamelessly borrowed from python.org:
 https://wiki.python.org/moin/PythonDecoratorLibrary#Memoize
@@ -14,6 +14,7 @@ import logging
 from nlp.db import representation
 from inspect import getmodule
 from nlp.util import make_name
+from django.db.models.fields.related import RelatedField
 
 
 class memoize(object):
@@ -206,7 +207,10 @@ def represent(cls):
     setattr(cls, '__unicode__', representation)
     return cls
 
-def _link_rels(obj, fields=(), save=False, overwrite=False):
+def _link_rels(obj, fields=None, save=False, overwrite=False):
+    if not fields:
+        meta = obj._meta
+        fields = [f.name for f in meta.fields if isinstance(meta, RelatedField) and hasattr(meta, '_get_' + f.name) and hasattr(meta, '_' + f.name)]
     for field in fields:
         if not overwrite and getattr(obj, field.lower(), None):
             continue
@@ -215,8 +219,14 @@ def _link_rels(obj, fields=(), save=False, overwrite=False):
     if save:
         obj.save()
 
-def add_link_rels(cls):
-    setattr(cls, '_link_rels', _link_rels)
+# FIXME: learn how to write decorators that accept arguments
+def linkable_rels(cls):
+    meta = cls._meta
+    fields = tuple(f.name for f in meta.fields if isinstance(meta, RelatedField) and hasattr(meta, '_get_' + f.name) and hasattr(meta, '_' + f.name))
+    # FIXME: instantiate a new copy of the _link_rels function and give it default arguments
+    def _customized_link_rels(obj, fields=fields, save=False, overwrite=False):
+        return _link_rels(obj, fields, save, overwrite)
+    setattr(cls, '_link_rels', _customized_link_rels )
     return cls
 
 
