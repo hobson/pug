@@ -210,22 +210,22 @@ def represent(cls):
 def _link_rels(obj, fields=None, save=False, overwrite=False):
     if not fields:
         meta = obj._meta
-        fields = [f.name for f in meta.fields if isinstance(meta, RelatedField) and hasattr(meta, '_get_' + f.name) and hasattr(meta, '_' + f.name)]
+        fields = [f.name for f in meta.fields if isinstance(f, RelatedField) and hasattr(meta, '_get_' + f.name) and hasattr(meta, '_' + f.name)]
     for field in fields:
-        if not overwrite and getattr(obj, field.lower(), None):
+        if not overwrite and getattr(obj, field, None):
+            # print 'skipping %s which already has a value of %s' % (field, getattr(obj, field, None))
             continue
         if hasattr(obj, field):
             setattr(obj, field, getattr(obj, '_' + field, None))
     if save:
         obj.save()
 
-# FIXME: learn how to write decorators that accept arguments
+# TODO: make this a decotator class that accepts arguments which become default args of the link_rels method (fields, overwrite, save)
 def linkable_rels(cls):
-    meta = cls._meta
-    fields = tuple(f.name for f in meta.fields if isinstance(meta, RelatedField) and hasattr(meta, '_get_' + f.name) and hasattr(meta, '_' + f.name))
+    fields = tuple(f.name for f in cls._meta.fields if isinstance(f, RelatedField) and hasattr(cls, '_get_' + f.name) and hasattr(cls, '_' + f.name))
     # FIXME: instantiate a new copy of the _link_rels function and give it default arguments
     def _customized_link_rels(obj, fields=fields, save=False, overwrite=False):
-        return _link_rels(obj, fields, save, overwrite)
+        return _link_rels(obj, fields=fields, save=save, overwrite=overwrite)
     setattr(cls, '_link_rels', _customized_link_rels )
     return cls
 
