@@ -217,13 +217,14 @@ def _link_rels(obj, fields=None, save=False, overwrite=False):
         fields = [f.name for f in meta.fields if isinstance(f, RelatedField) and not f.primary_key and hasattr(meta, '_get_' + f.name) and hasattr(meta, '_' + f.name)]
     for field in fields:
         # skip fields if they contain non-null data and `overwrite` option wasn't set
-        if not overwrite and isinstance(getattr(obj, field, None), NoneType):
+        if not overwrite and not isinstance(getattr(obj, field, None), NoneType):
             # print 'skipping %s which already has a value of %s' % (field, getattr(obj, field, None))
             continue
         if hasattr(obj, field):
             setattr(obj, field, getattr(obj, '_' + field, None))
     if save:
         obj.save()
+    return obj
 
 def _denormalize(obj, fields=None, save=False, overwrite=False):
     """Update/populate any database fields that are not related fields (FKs) but have `_get`ters to populate them with"""
@@ -232,28 +233,33 @@ def _denormalize(obj, fields=None, save=False, overwrite=False):
         fields = [f.name for f in meta.fields if not isinstance(f, RelatedField) and not f.primary_key and hasattr(meta, '_get_' + f.name) and hasattr(meta, '_' + f.name)]
     for field in fields:
         # skip fields if they contain non-null data and `overwrite` option wasn't set
-        if not overwrite and isinstance(getattr(obj, field, None), NoneType):
+        if not overwrite and not isinstance(getattr(obj, field, None), NoneType):
             # print 'skipping %s which already has a value of %s' % (field, getattr(obj, field, None))
             continue
         if hasattr(obj, field):
             setattr(obj, field, getattr(obj, '_' + field, None))
     if save:
         obj.save()
+    return obj
 
 def _update(obj, fields=None, save=False, overwrite=False):
     """Update/populate any database fields that have `_get`ters to populate them with, regardless of whether they are data fields or related fields"""
     if not fields:
         meta = obj._meta
         fields = [f.name for f in meta.fields if not f.primary_key and hasattr(meta, '_get_' + f.name) and hasattr(meta, '_' + f.name)]
+    print fields
     for field in fields:
         # skip fields if they contain non-null data and `overwrite` option wasn't set
-        if not overwrite and isinstance(getattr(obj, field, None), NoneType):
+        if not overwrite and not isinstance(getattr(obj, field, None), NoneType):
             # print 'skipping %s which already has a value of %s' % (field, getattr(obj, field, None))
             continue
+        print field
         if hasattr(obj, field):
+            print field, getattr(obj, '_' + field, None)
             setattr(obj, field, getattr(obj, '_' + field, None))
     if save:
         obj.save()
+    return obj
 
 # TODO: make this a decotator class that accepts arguments which become default args of the link_rels method (fields, overwrite, save)
 def linkable_rels(cls):
