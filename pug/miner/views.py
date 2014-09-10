@@ -189,7 +189,6 @@ def context_from_request(request, context=None, Form=GetLagForm, delim=',', verb
     sg = request.GET.get('sg', "") or request.GET.get('group', "") or request.GET.get('sales', "") or request.GET.get('sales_group', "") or request.GET.get('sale_group_number', "")
     sg = [s.strip().upper() for s in sg.split(',')] or ['']
     # need to implement filters on sales_group (where serial_numbers was, in explore_lags, and filter_sla_lags or lags_dict)
-    #context['filter']['sales_groups'] = sg
     context['filter']['sales_groups'] = sg
 
     #context['filter']['model_numbers'] += SLAmodels.models_from_sales_groups(context['sales_groups'])
@@ -235,39 +234,49 @@ def context_from_request(request, context=None, Form=GetLagForm, delim=',', verb
         fiscal_years = [filter_values[3].strip('*')]
         context['filter']['fiscal_years'] = fiscal_years
 
-    lag_days = request.GET.get('lag', '')
-    max_lag = request.GET.get('max_lag', '')
-    min_lag = request.GET.get('min_lag', '')
+    # lag values can't be used directly in a django filter so don't put them in context['filter']
+    lag = request.GET.get('lag', '') or request.GET.get('l', '')
+    lag = [s.strip().upper() for s in lag.split(',')] or ['']
+
+    maxl = request.GET.get('max_lag', '') or request.GET.get('maxlag', '') or request.GET.get('maxl', '')
+#    maxls = [s.strip() for s in maxl.split(',')] or ['']
+
+    minl = request.GET.get('min_lag', '') or request.GET.get('minlag', '') or request.GET.get('maxl', '')
+#    minls = [s.strip() for s in minl.split(',')] or ['']
+
     try:
-        lag_days = int(lag_days)
-        min_lag = lag_days - 7
-        max_lag = lag_days
+        lag = int(lag)
+        minl = lag - 7
+        maxl = lag
     except:
         try:
-            min_lag = int(min_lag)
+            minl = int(minl)
         except:
-            min_lag = ''
+            minl = ''
         try:
-            max_lag = int(max_lag)
+            maxl = int(maxl)
         except:
-            max_lag = ''
+            maxl = ''
     
+    print 'minl = %r' % minl
+    print 'maxl = %r' % maxl
+
     initial = {
                 'mn': ', '.join(m.strip() for m in context['filter']['model_numbers'] if m.strip()), 
                 'sg': ', '.join(context['filter']['sales_groups']),
                 'r': ', '.join(context['filter']['reasons']),
                 'an': ', '.join(context['filter']['account_numbers']),
                 'fy': ', '.join(context['filter']['fiscal_years']),
-                'exclude': str(exclude),
-                'min_lag': str(min_lag) or '',
-                'max_lag': str(max_lag) or '',
+                'exclude': unicode(exclude),
+                'min_lag': unicode(minl),
+                'max_lag': unicode(maxl),
                 'min_date': ', '.join(context['filter']['min_dates']),
                 'max_date': ', '.join(context['filter']['max_dates']),
                 'columns': '; '.join(context['columns']),
                 'regex': context['regex'],
               }
 
-    if verbosity > 1:
+    if settings.DEBUG or verbosity > 1:
         print 'normalized GET query parameters: %r' % initial
 
     if request.method == 'POST':
