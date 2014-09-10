@@ -44,16 +44,16 @@ class GetLagForm(forms.Form):
         #widget=forms.TextInput(attrs={'placeholder': 'R10, R13, ...'}),
         )
 
-    min_lag = forms.IntegerField(max_value=365*10, min_value=-60, required=False,
+    min_lag = forms.CharField(required=False,
         label='Min Lag',
-        initial=0,
+        initial='',
         help_text='Min days between sale & return',
         #widget=forms.TextInput(attrs={'placeholder': 'Min days between sale & return'}),
         )
 
-    max_lag = forms.IntegerField(max_value=365*10, min_value=-60, required=False,
+    max_lag = forms.CharField(required=False,
         label='Max Lag',
-        initial=365*3,
+        initial='',
         help_text='Max days between sale & return',
         #widget=forms.TextInput(attrs={'placeholder': 'Max days between sale & return'}),
         )

@@ -235,15 +235,22 @@ def context_from_request(request, context=None, Form=GetLagForm, delim=',', verb
         fiscal_years = [filter_values[3].strip('*')]
         context['filter']['fiscal_years'] = fiscal_years
 
-    lag_days = request.GET.get('lag', None)
-    max_lag = request.GET.get('max_lag', None)
-    min_lag = request.GET.get('min_lag', None)
+    lag_days = request.GET.get('lag', '')
+    max_lag = request.GET.get('max_lag', '')
+    min_lag = request.GET.get('min_lag', '')
     try:
-        min_lag = int(lag_days) - 7
-        max_lag = int(lag_days)
+        lag_days = int(lag_days)
+        min_lag = lag_days - 7
+        max_lag = lag_days
     except:
-        min_lag = int(min_lag or 0)
-        max_lag = int(max_lag or 180)
+        try:
+            min_lag = int(min_lag)
+        except:
+            min_lag = ''
+        try:
+            max_lag = int(max_lag)
+        except:
+            max_lag = ''
     
     initial = {
                 'mn': ', '.join(m.strip() for m in context['filter']['model_numbers'] if m.strip()), 
@@ -252,8 +259,8 @@ def context_from_request(request, context=None, Form=GetLagForm, delim=',', verb
                 'an': ', '.join(context['filter']['account_numbers']),
                 'fy': ', '.join(context['filter']['fiscal_years']),
                 'exclude': str(exclude),
-                'min_lag': str(min_lag),
-                'max_lag': str(max_lag),
+                'min_lag': str(min_lag) or '',
+                'max_lag': str(max_lag) or '',
                 'min_date': ', '.join(context['filter']['min_dates']),
                 'max_date': ', '.join(context['filter']['max_dates']),
                 'columns': '; '.join(context['columns']),
