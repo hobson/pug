@@ -261,6 +261,9 @@ def context_from_request(request, context=None, Form=GetLagForm, delim=',', verb
     print 'minl = %r' % minl
     print 'maxl = %r' % maxl
 
+    context['filter']['min_lag'] = minl
+    context['filter']['max_lag'] = maxl
+
     initial = {
                 'mn': ', '.join(m.strip() for m in context['filter']['model_numbers'] if m.strip()), 
                 'sg': ', '.join(context['filter']['sales_groups']),
@@ -268,8 +271,8 @@ def context_from_request(request, context=None, Form=GetLagForm, delim=',', verb
                 'an': ', '.join(context['filter']['account_numbers']),
                 'fy': ', '.join(context['filter']['fiscal_years']),
                 'exclude': unicode(exclude),
-                'min_lag': unicode(minl),
-                'max_lag': unicode(maxl),
+                'min_lag': context['filter']['min_lag'],
+                'max_lag': context['filter']['max_lag'],
                 'min_date': ', '.join(context['filter']['min_dates']),
                 'max_date': ', '.join(context['filter']['max_dates']),
                 'columns': '; '.join(context['columns']),
