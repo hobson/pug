@@ -247,15 +247,15 @@ def _update(obj, fields=None, save=False, overwrite=False):
     if not fields:
         meta = obj._meta
         fields = [f.name for f in meta.fields if not f.primary_key and hasattr(meta, '_get_' + f.name) and hasattr(meta, '_' + f.name)]
-    print fields
+    # print fields
     for field in fields:
         # skip fields if they contain non-null data and `overwrite` option wasn't set
         if not overwrite and not isinstance(getattr(obj, field, None), NoneType):
             # print 'skipping %s which already has a value of %s' % (field, getattr(obj, field, None))
             continue
-        print field
+        # print field
         if hasattr(obj, field):
-            print field, getattr(obj, '_' + field, None)
+            # print field, getattr(obj, '_' + field, None)
             setattr(obj, field, getattr(obj, '_' + field, None))
     if save:
         obj.save()
