@@ -41,21 +41,20 @@ class GetLagForm(forms.Form):
         label='R-Code',
         initial='',
         help_text='e.g. "R11, R12, R13"',
-        #widget=forms.TextInput(attrs={'placeholder': 'R10, R13, ...'}),
         )
 
     min_lag = forms.CharField(required=False,
+        max_length=16,
         label='Min Lag',
         initial='',
-        help_text='Min days between sale & return',
-        #widget=forms.TextInput(attrs={'placeholder': 'Min days between sale & return'}),
+        help_text='Minimum days between sale & return',
         )
 
     max_lag = forms.CharField(required=False,
+        max_length=16,
         label='Max Lag',
         initial='',
-        help_text='Max days between sale & return',
-        #widget=forms.TextInput(attrs={'placeholder': 'Max days between sale & return'}),
+        help_text='Maximum days between sale & return',
         )
 
     min_date = forms.DateField(
