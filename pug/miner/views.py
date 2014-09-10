@@ -276,7 +276,7 @@ def context_from_request(request, context=None, Form=GetLagForm, delim=',', verb
                 'regex': context['regex'],
               }
 
-    if settings.DEBUG or verbosity > 1:
+    if verbosity > 1:
         print 'normalized GET query parameters: %r' % initial
 
     if request.method == 'POST':
