@@ -226,7 +226,7 @@ def get_app(app=None, verbosity=0):
 get_app.default = DEFAULT_APP
 
 
-def get_model(model=DEFAULT_MODEL, app=None):
+def get_model(model=DEFAULT_MODEL, app=None, fuzzy=False):
     """Retrieve a Django model class for the indicated model name and app name (or module object)
 
     `model` should be one of:
@@ -263,16 +263,21 @@ def get_model(model=DEFAULT_MODEL, app=None):
         try:
             app = get_app(model.app_label)
         except:
-            try:
-                app = get_app(model._meta.app_label)
-            except:
-                app = get_app(DEFAULT_APP)
+            app = get_app(model._meta.app_label)
     try:
+        model_object = djmodels.get_model(app.__package__.split('.')[-1], model)
+        if model_object:
+            return model_object
+    except:
+        pass
+    try: 
         model_object = djmodels.get_model(app, model)
         if model_object:
             return model_object
     except:
         pass
+    if not fuzzy and not model_object:
+        return model_object
     app = get_app(app)
     if not app:
         return None
@@ -690,11 +695,9 @@ def find_model(model_name, apps=settings.INSTALLED_APPS):
     >>> find_model('Connection')
     >>> find_model('InvalidModelName')
     """ 
-    print 'apps=%r' % (apps,)
     apps = util.listify(apps)
-    print 'apps=%r' % (apps,)
     for app in apps:
-        model = get_model(model=model_name, app=app)
+        model = get_model(model=model_name, app=app, fuzzy=False)
         if model:
             return model
     return None
