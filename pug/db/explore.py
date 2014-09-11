@@ -41,7 +41,7 @@ types_not_aggregatable = types_not_countable + ['bit', 'uniqueidentifier']
 
 
 def get_app_meta(apps=None, app_filter=lambda x: x.startswith('sec_') or x.startswith('siica_'), app_exclude_filter=None, verbosity=0, save=True):
-    apps = apps or djdb.get_app(apps)
+    apps = util.listify(apps or djdb.get_app(apps))
     meta = []
     for app in apps:
         if filter_reject(app, app_filter, app_exclude_filter):

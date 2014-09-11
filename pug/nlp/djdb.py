@@ -16,7 +16,7 @@ from copy import deepcopy
 from django.core import serializers
 from django.db.models import related
 from django.db import connection
-from django.db import models
+from django.db import models as djmodels
 
 import progressbar as pb  # import ProgressBar, Percentage, RotatingMarker, Bar, ETA
 from fuzzywuzzy import process as fuzzy
@@ -27,7 +27,7 @@ logger = logging.getLogger('bigdata.info')
 # required to monkey-patch django.utils.encoding.force_text
 from django.utils.encoding import is_protected_type, DjangoUnicodeDecodeError, six
 DEFAULT_DB = 'default'
-DEFAULT_APP = None  # models.get_apps()[-1]
+DEFAULT_APP = None  # djmodels.get_apps()[-1]
 DEFAULT_MODEL = None  # DEFAULT_MODEL.get_models()[0]
 from django.core.exceptions import ImproperlyConfigured
 settings = None
@@ -104,15 +104,15 @@ def normalize_values_queryset(values_queryset, model=None, app=None, verbosity=1
         for k, v in record.iteritems():
             field_name = find_field(k, model=model, app=app)
             field_class = model._meta.get_field(field_name)
-            # if isinstance(field_class, (models.fields.DateTimeField, models.fields.DateField)):
+            # if isinstance(field_class, (djmodels.fields.DateTimeField, djmodels.fields.DateField)):
             #     new_record[field_name] = unix_timestamp(v)
             # try:
-            if isinstance(field_class, (models.fields.CharField, models.fields.TextField))  or isinstance(v, basestring):
+            if isinstance(field_class, (djmodels.fields.CharField, djmodels.fields.TextField))  or isinstance(v, basestring):
                 if v is None:
                     v = ''
                 else:
                     v = unicode(v).strip()
-            if isinstance(field_class, models.fields.CharField):
+            if isinstance(field_class, djmodels.fields.CharField):
                 if len(v) > getattr(field_class, 'max_length', 0):
                     if verbosity:
                         print k, v, len(v), '>', field_class.max_length
@@ -172,7 +172,7 @@ def normalize_choices(db_values, field_name, app=DEFAULT_APP, model_name='', hum
 
 
 def get_app(app=None, verbosity=0):
-    """Uses django.db.models.get_app and fuzzywuzzy to get the models module for a django app
+    """Uses django.db.djmodels.get_app and fuzzywuzzy to get the models module for a django app
 
     Retrieve an app module from an app name string, even if mispelled (uses fuzzywuzzy to find the best match)
     To get a list of all the apps use `get_app(None)` or `get_app([]) or get_app(())`
@@ -195,61 +195,68 @@ def get_app(app=None, verbosity=0):
     if not app:
         # for an empty list, tuple or None, just get all apps
         if isinstance(app, (type(None), list, tuple)):
-            return [app_class.__package__ for app_class in models.get_apps() if app_class and app_class.__package__]
+            return [app_class.__package__ for app_class in djmodels.get_apps() if app_class and app_class.__package__]
         # for a blank string, get the default app(s)
         else:
             if get_app.default:
                 return get_app(get_app.default)
             else:
-                return models.get_apps()[-1]
-    if isinstance(app, basestring) and app.strip().endswith('.models'):
-        return get_app(app[:-len('.models')])
-    if isinstance(app, ModuleType):
+                return djmodels.get_apps()[-1]
+    elif isinstance(app, ModuleType):
         return app
-    # print 'type(' + repr(app) + ') = ' + repr(type(app))
+    elif isinstance(app, basestring):
+        if app.strip().endswith('.models'):
+            return get_app(app[:-len('.models')])
+        elif '.' in app:
+            return get_app('.'.join(app.split('.')[1:]))  # django.db.models only looks at the module name in the INSTALLED_APPS list!         
     try:
         if verbosity > 1:
-            print 'Attempting django.models.get_app(%r)' % app
-        return models.get_app(app)
-    except:
-        print_exc()
-        if not app:
-            if verbosity:
-                print 'WARNING: app = %r, so returning None!' % app
-            return None
+            print 'Attempting django.db.models.get_app(%r)' % app
+        return djmodels.get_app(app)
+    except ImproperlyConfigured:
+        if verbosity:
+            print 'WARNING: unable to find app = %r' % app
     if verbosity > 2:
         print 'Trying a fuzzy match on app = %r' % app
-    app_names = [app_class.__package__ for app_class in models.get_apps() if app_class and app_class.__package__]
+    app_names = [app_class.__package__ for app_class in djmodels.get_apps() if app_class and app_class.__package__]
     fuzzy_app_name = fuzzy.extractOne(str(app), app_names)[0]
     if verbosity:
         print 'WARNING: Best fuzzy match for app name %r is %s' % (app, fuzzy_app_name)
-    return get_app(fuzzy_app_name)
+    return djmodels.get_app(fuzzy_app_name.split('.')[-1])
 get_app.default = DEFAULT_APP
 
 
 def get_model(model=DEFAULT_MODEL, app=None):
-    """
+    """Retrieve a Django model class for the indicated model name and app name (or module object)
+
+    `model` should be one of:
+        * derivative of django.db.models.base.ModelBase
+        * derivative of django.db.models.query.QuerySet
+        * string name of a django.db.models.Model class that can be found in <app>.models
+
     >>> from django.db import connection
     >>> connection.close() 
     >>> get_model('WikiI').__name__.startswith('WikiItem')
     True
     >>> connection.close() 
-    >>> isinstance(get_model('master'), models.base.ModelBase)
+    >>> isinstance(get_model('master'), djmodels.base.ModelBase)
     True
     >>> connection.close() 
     >>> get_model(get_model('CaseMaster', DEFAULT_APP)).objects.count() >= 0
     True
     """
     # print 'get_model' + repr(model) + ' app ' + repr(app)
-    if isinstance(model, models.base.ModelBase):
+    if isinstance(model, djmodels.base.ModelBase):
         return model
-    elif isinstance(model, (models.Manager, models.query.QuerySet)):
+    elif isinstance(model, (djmodels.Manager, djmodels.query.QuerySet)):
         return model.model
-    if not app and isinstance(model, basestring):
+    if not app and isinstance(model, basestring) and '.' in model:
         try:
             app, model = model.split('.')
         except:
-            model = model.split('.')[-1]
+            tokens = model.split('.')
+            model = tokens[-1]
+            app = '.'.join(tokens[:-1])
     try:
         app = get_app(app)
     except:
@@ -261,7 +268,7 @@ def get_model(model=DEFAULT_MODEL, app=None):
             except:
                 app = get_app(DEFAULT_APP)
     try:
-        model_object = models.get_model(app, model)
+        model_object = djmodels.get_model(app, model)
         if model_object:
             return model_object
     except:
@@ -269,9 +276,9 @@ def get_model(model=DEFAULT_MODEL, app=None):
     app = get_app(app)
     if not app:
         return None
-    model_names = [mc.__name__ for mc in models.get_models(app)]
+    model_names = [mc.__name__ for mc in djmodels.get_models(app)]
     if app and model and model_names:
-        return models.get_model(app.__package__.split('.')[-1], fuzzy.extractOne(str(model), model_names)[0])
+        return djmodels.get_model(app.__package__.split('.')[-1], fuzzy.extractOne(str(model), model_names)[0])
 
 
 def get_queryset(qs=None, app=DEFAULT_APP, db_alias=None):
@@ -282,7 +289,7 @@ def get_queryset(qs=None, app=DEFAULT_APP, db_alias=None):
     True
     """
     # print 'get_model' + repr(model) + ' app ' + repr(app)
-    if isinstance(qs, (models.Manager, models.query.QuerySet)):
+    if isinstance(qs, (djmodels.Manager, djmodels.query.QuerySet)):
         qs = qs.all()
     else:
         qs = get_model(qs, app=app).objects.all()
@@ -309,7 +316,7 @@ def get_db_alias(app=DEFAULT_APP):
 
 def get_field(field):
     """Return a field object based on a dot-delimited app.model.field name"""
-    if isinstance(field, models.fields.Field):
+    if isinstance(field, djmodels.fields.Field):
         return field
     elif isinstance(field, basestring):
         field = field.split('.')
@@ -484,20 +491,20 @@ def format_fields(x, y, filter_dict={'model__startswith': 'LC60'}, model=DEFAULT
             objects = objects.extra({'x_value': aggregate})
             objects = objects.values('x_value')
             x = 'x_value'
-            objects = objects.annotate(y_value=models.Count('pk'))
+            objects = objects.annotate(y_value=djmodels.Count('pk'))
             y = 'y_value'
         else:
             if count_x:
-                objects = objects.annotate(x_value=models.Count(x))
+                objects = objects.annotate(x_value=djmodels.Count(x))
                 x = 'x_value'
             if count_y:
-                objects = objects.annotate(y_value=models.Count(y))
+                objects = objects.annotate(y_value=djmodels.Count(y))
                 y = 'y_value'
             if sum_x:
-                objects = objects.annotate(x_value=models.Sum(x))
+                objects = objects.annotate(x_value=djmodels.Sum(x))
                 x = 'x_value'
             if sum_y:
-                objects = objects.annotate(y_value=models.Sum(y))
+                objects = objects.annotate(y_value=djmodels.Sum(y))
                 y = 'y_value'
         objects = objects.values(x, y)
         if order_by:
@@ -527,7 +534,7 @@ def count_in_category(x='call_type', filter_dict=None, model=DEFAULT_MODEL, app=
 
     objects = model.objects.filter(**filter_dict)
     objects = objects.values(x)
-    objects = objects.annotate(y=models.Count(x))
+    objects = objects.annotate(y=djmodels.Count(x))
     if sort is not None:
         objects = objects.order_by(sort + 'y')
     objects = objects.all()
@@ -563,7 +570,7 @@ def count_in_date(x='date_time', filter_dict=None, model=DEFAULT_MODEL, app=DEFA
     objects = model.objects.filter(**filter_dict)
     objects = objects.extra({'date_bin_for_counting': 'date(%s)' % x})
     objects = objects.values('date_bin_for_counting')
-    objects = objects.annotate(count_of_records_per_date_bin=models.Count('pk'))
+    objects = objects.annotate(count_of_records_per_date_bin=djmodels.Count('pk'))
     
     # FIXME: this duplicates the dict of lists sort below
     if sort is not None:
@@ -596,7 +603,7 @@ def sum_in_date(x='date', y='net_sales', filter_dict=None, model='WikiItem', app
     objects = model.objects.filter(**filter_dict)
     # only the x values are now in the queryset (datetime information)
     objects = objects.values(x)
-    objects = objects.annotate(y=models.Sum(y))
+    objects = objects.annotate(y=djmodels.Sum(y))
 
     if sort is not None:
         # FIXME: this duplicates the dict of lists sort below
@@ -674,6 +681,23 @@ def find_synonymous_field(field, model=DEFAULT_MODEL, app=DEFAULT_APP, score_cut
             if not best_match or match[1] > (root_preference * best_ratio):
                 best_match, best_ratio = match
     return best_match
+
+
+def find_model(model_name, apps=settings.INSTALLED_APPS):
+    """Find model_name among indicated Django apps and return Model class
+
+    >>> find_model('WikiItem')
+    >>> find_model('Connection')
+    >>> find_model('InvalidModelName')
+    """ 
+    print 'apps=%r' % (apps,)
+    apps = util.listify(apps)
+    print 'apps=%r' % (apps,)
+    for app in apps:
+        model = get_model(model=model_name, app=app)
+        if model:
+            return model
+    return None
 
 
 def find_field(field, model=DEFAULT_MODEL, app=DEFAULT_APP, score_cutoff=50):
@@ -902,10 +926,12 @@ def diff_data(model0, model1, pk_name='pk', field_names=None, ignore_related=Fal
 
 
 class Columns(collections.OrderedDict):
-    """An collections.OrderedDict of named columns of data
+    """A collections.OrderedDict of named columns of data, similar to a pandas DataFrame
+
          `collections.OrderedDict([('name1', [x11, x21, ..., xM1]), ... ('nameM', [x1, ... objNM])]`
+
           similar to a Pandas `DataFrame`, but with the added convenience functions for DB I/O
-          and numpy data processing
+          and numpy data processing (though pandas is now more numpy-friendly)
 
     keys of collections.OrderedDict are the column (db field) names
         prefixed with the app and and table name if ambiguous
@@ -954,12 +980,12 @@ class Columns(collections.OrderedDict):
         if len(args) == 1:
             if isinstance(args[0], basestring):
                 self.from_string(args[0])
-            elif isinstance(args[0], models.query.ValuesQuerySet) or hasattr(args[0], '__iter__'):
+            elif isinstance(args[0], djmodels.query.ValuesQuerySet) or hasattr(args[0], '__iter__'):
                 if isinstance(iter(args[0]).next(), collections.Mapping):
                     self.from_valuesqueryset(args[0])
                 else:
                     self.from_row_wise_lists(args[0], **kwargs)
-            elif isinstance(args[0], models.query.QuerySet):
+            elif isinstance(args[0], djmodels.query.QuerySet):
                 self.from_queryset(args[0])
         if self and len(self) and self.default_tall:
             self.make_tall()

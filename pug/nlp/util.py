@@ -1645,7 +1645,6 @@ def listify(values, N=1, delim=None):
     >>> listify(False, 2)
     [False, False]
     """
-    print values
     ans = [] if values is None else values
 
     # convert non-string non-list iterables into a list
