@@ -12,6 +12,7 @@ import json
 import warnings
 from traceback import print_exc
 from copy import deepcopy
+from decimal import Decimal
 
 from django.core import serializers
 from django.db.models import related
@@ -130,11 +131,33 @@ def normalize_values_queryset(values_queryset, model=None, app=None, verbosity=1
     return new_list
 
 
+def make_choices(*args):
+    """Convert a 1-D sequence into a 2-D sequence of tuples for use in a Django field choices attribute
+
+    >>> make_choices(range(3))
+    ((0, u'0'), (1, u'1'), (2, u'2'))
+    >>> make_choices(dict(enumerate('abcd')))
+    ((0, u'a'), (1, u'b'), (2, u'c'), (3, u'd'))
+    >>> make_choices('hello')
+    (('hello', u'hello'),)
+    >>> make_choices('hello', 'world') == make_choices(['hello', 'world']) == (('hello', u'hello'), ('world', u'world'))
+    True
+    """
+    if not args:
+        return tuple()
+    if isinstance(args[0], (list, tuple)):
+        return make_choices(*tuple(args[0]))
+    elif isinstance(args[0], collections.Mapping):
+        return tuple((k, unicode(v)) for (k, v) in args[0].iteritems())
+    elif all(isinstance(arg, (int, float, Decimal, basestring)) for arg in args):
+        return tuple((k, unicode(k)) for k in args)
+
+
 # TODO: use both get and set to avoid errors when different values chosen
 # TODO: modularize in separate function that finds CHOICES appropriate to a value key
 def normalize_choices(db_values, field_name, app=DEFAULT_APP, model_name='', human_readable=True, none_value='Null', 
                       blank_value='Unknown', missing_value='Unknown DB Code'):
-    '''Output the human-readable strings associated with the list database values for a model field.
+    '''Output the human-readable strings associated with the list of database values for a model field.
 
     Uses the translation dictionary `CHOICES_<FIELD_NAME>` attribute for the given `model_name`.
     In addition, translate `None` into 'Null', or whatever string is indicated by `none_value`.
