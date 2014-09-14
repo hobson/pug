@@ -1,4 +1,4 @@
-"""Function decorators for memoizing and logging.
+"""Function and class decorators for memoizing and logging or adding methods to a Django Model.
 
 Shamelessly borrowed from python.org:
 https://wiki.python.org/moin/PythonDecoratorLibrary#Memoize
@@ -10,10 +10,12 @@ import re
 import collections
 import functools
 import logging
+from types import NoneType
 
 from nlp.db import representation
 from inspect import getmodule
 from nlp.util import make_name
+from django.db.models.fields.related import RelatedField
 
 
 class memoize(object):
@@ -206,20 +208,77 @@ def represent(cls):
     setattr(cls, '__unicode__', representation)
     return cls
 
-def _link_rels(obj, fields=(), save=False, overwrite=False):
+# FIXME, DRY these 3 models up by just adding a kwarg to select between them  decorators
+#        very unDRY (only a few characters changed in each!)
+def _link_rels(obj, fields=None, save=False, overwrite=False):
+    """Populate any database related fields (ForeignKeyField, OneToOneField) that have `_get`ters to populate them with"""
+    if not fields:
+        meta = obj._meta
+        fields = [f.name for f in meta.fields if isinstance(f, RelatedField) and not f.primary_key and hasattr(meta, '_get_' + f.name) and hasattr(meta, '_' + f.name)]
     for field in fields:
-        if not overwrite and getattr(obj, field.lower(), None):
+        # skip fields if they contain non-null data and `overwrite` option wasn't set
+        if not overwrite and not isinstance(getattr(obj, field, None), NoneType):
+            # print 'skipping %s which already has a value of %s' % (field, getattr(obj, field, None))
             continue
         if hasattr(obj, field):
             setattr(obj, field, getattr(obj, '_' + field, None))
     if save:
         obj.save()
+    return obj
 
-def add_link_rels(cls):
-    setattr(cls, '_link_rel', _link_rels)
-    setattr(cls, '_link_rels', _link_rels)
+def _denormalize(obj, fields=None, save=False, overwrite=False):
+    """Update/populate any database fields that are not related fields (FKs) but have `_get`ters to populate them with"""
+    if not fields:
+        meta = obj._meta
+        fields = [f.name for f in meta.fields if not isinstance(f, RelatedField) and not f.primary_key and hasattr(meta, '_get_' + f.name) and hasattr(meta, '_' + f.name)]
+    for field in fields:
+        # skip fields if they contain non-null data and `overwrite` option wasn't set
+        if not overwrite and not isinstance(getattr(obj, field, None), NoneType):
+            # print 'skipping %s which already has a value of %s' % (field, getattr(obj, field, None))
+            continue
+        if hasattr(obj, field):
+            setattr(obj, field, getattr(obj, '_' + field, None))
+    if save:
+        obj.save()
+    return obj
+
+def _update(obj, fields=None, save=False, overwrite=False):
+    """Update/populate any database fields that have `_get`ters to populate them with, regardless of whether they are data fields or related fields"""
+    if not fields:
+        meta = obj._meta
+        fields = [f.name for f in meta.fields if not f.primary_key and hasattr(meta, '_get_' + f.name) and hasattr(meta, '_' + f.name)]
+    # print fields
+    for field in fields:
+        # skip fields if they contain non-null data and `overwrite` option wasn't set
+        if not overwrite and not isinstance(getattr(obj, field, None), NoneType):
+            # print 'skipping %s which already has a value of %s' % (field, getattr(obj, field, None))
+            continue
+        # print field
+        if hasattr(obj, field):
+            # print field, getattr(obj, '_' + field, None)
+            setattr(obj, field, getattr(obj, '_' + field, None))
+    if save:
+        obj.save()
+    return obj
+
+# TODO: make this a decotator class that accepts arguments which become default args of the link_rels method (fields, overwrite, save)
+def linkable_rels(cls):
+    fields = tuple(f.name for f in cls._meta.fields if isinstance(f, RelatedField) and hasattr(cls, '_get_' + f.name) and hasattr(cls, '_' + f.name))
+    # FIXME: instantiate a new copy of the _link_rels function and give it default arguments
+    def _customized_link_rels(obj, fields=fields, save=False, overwrite=False):
+        return _link_rels(obj, fields=fields, save=save, overwrite=overwrite)
+    setattr(cls, '_link_rels', _customized_link_rels)
     return cls
 
+
+# TODO: make this a decotator class that accepts arguments which become default args of the link_rels method (fields, overwrite, save)
+def updatable(cls):
+    fields = tuple(f.name for f in cls._meta.fields if not f.primary_key and hasattr(cls, '_get_' + f.name) and hasattr(cls, '_' + f.name))
+    # FIXME: instantiate a new copy of the _link_rels function and give it default arguments
+    def _customized_update(obj, fields=fields, save=False, overwrite=False):
+        return _update(obj, fields=fields, save=save, overwrite=overwrite)
+    setattr(cls, '_update', _customized_update)
+    return cls
 
 # class dbname(object):
 #     'Decorator to add _db_name and _db_alias attributes to a class definition'

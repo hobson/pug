@@ -11,10 +11,12 @@ import csv
 import json
 import warnings
 from traceback import print_exc
+from copy import deepcopy
 
 from django.core import serializers
 from django.db.models import related
 from django.db import connection
+from django.db import models
 
 import progressbar as pb  # import ProgressBar, Percentage, RotatingMarker, Bar, ETA
 from fuzzywuzzy import process as fuzzy
@@ -28,12 +30,10 @@ DEFAULT_DB = 'default'
 DEFAULT_APP = None  # models.get_apps()[-1]
 DEFAULT_MODEL = None  # DEFAULT_MODEL.get_models()[0]
 from django.core.exceptions import ImproperlyConfigured
-models, connection, settings = None, None, None
+settings = None
 try:
-    from django.db import models
-    from django.db import connection
-    from django.conf import settings  # there is only one function that requires settings, all other functions should be moved to nlp.db module?
-
+    # FIXME Only 1 function that requires settings: all other functions should be moved to nlp.db module?
+    from django.conf import settings  
 except ImproperlyConfigured:
     print print_exc()
     print 'WARNING: The module named %r from file %r' % (__name__, __file__)
@@ -1620,10 +1620,14 @@ def import_items(item_seq, dest_model,  batch_len=500, clear=False, dry_run=True
         pbar = pb.ProgressBar(widgets=widgets, maxval=N).start()
 
     for batch_num, dict_batch in enumerate(util.generate_batches(item_seq, batch_len)):
-        if batch_num < start_batch or (end_batch and (batch_num > end_batch)):
+        if batch_num < start_batch:
             if verbosity > 1:
                 print('Skipping batch {0} because not between {1} and {2}'.format(batch_num, start_batch, end_batch))
             continue
+        elif end_batch and (batch_num > end_batch):
+            if verbosity > 1:
+                print('Stopping before batch {0} because it is not between {1} and {2}'.format(batch_num, start_batch, end_batch))
+            break
         if verbosity > 2:
             print(repr(dict_batch))
             print(repr((batch_num, len(dict_batch), batch_len)))
@@ -1639,16 +1643,21 @@ def import_items(item_seq, dest_model,  batch_len=500, clear=False, dry_run=True
             except:
                 obj, row_errors = django_object_from_row(d, dest_model)
             try:
-                obj._link_rels(save=False, overwrite=False)
+                if hasattr(obj, '_update'):
+                    obj._update(save=False, overwrite=False)
             except:
+                if verbosity:
+                    print_exc()
+                    print 'ERROR: Unable to update record: %r' % obj
                 pass
             item_batch += [obj]
             stats += row_errors
         if verbosity and verbosity < 2:
             pbar.update(batch_num * batch_len + len(dict_batch))
         elif verbosity > 1:
-            print('Writing {0} items in batch {1} between batch {2} and batch {3} and {4} batches to the {5} model...'.format(
-                len(item_batch), batch_num, start_batch, end_batch, int(N / float(batch_len)), dest_model))
+            print('Writing {0} items (of type {1}) from batch {2}. Will stop at batch {3} which is record {4} ...'.format(
+                len(item_batch), dest_model, batch_num, end_batch or N, int((end_batch or N) / float(batch_len))
+                ))
         if not dry_run:
             try:
                 dest_model.objects.bulk_create(item_batch)
@@ -1697,8 +1706,89 @@ def import_items(item_seq, dest_model,  batch_len=500, clear=False, dry_run=True
     return stats
 
 
+def update_items(item_seq,  batch_len=500, dry_run=True, start_batch=0, end_batch=None, ignore_errors=False, verbosity=1):
+    """Given a sequence (queryset, generator, tuple, list) of dicts run the _update method on them and do bulk_update"""
+    stats = collections.Counter()
+    try:
+        try:
+            src_qs = item_seq.objects.all()
+        except AttributeError:
+            src_qs = item_seq.all()
+        N = src_qs.count()
+        item_seq = iter(src_qs)
+    except AttributeError:
+        print_exc()
+        N = item_seq.count()
+
+    if not N:
+        if verbosity:
+            print 'No records found in %r' % src_qs
+        return N
+
+    if verbosity:
+        print('Updating %r records in the provided queryset, sequence or model...' % N)
+        widgets = [pb.Counter(), '/%d rows: ' % N or 1, pb.Percentage(), ' ', pb.RotatingMarker(), ' ', pb.Bar(),' ', pb.ETA()]
+        pbar = pb.ProgressBar(widgets=widgets, maxval=N).start()
+
+    for batch_num, obj_batch in enumerate(util.generate_batches(item_seq, batch_len)):
+        if batch_num < start_batch:
+            if verbosity > 1:
+                print('Skipping batch {0} because not between {1} and {2}'.format(batch_num, start_batch, end_batch))
+            continue
+        elif end_batch and (batch_num > end_batch):
+            if verbosity > 1:
+                print('Stopping before batch {0} because it is not between {1} and {2}'.format(batch_num, start_batch, end_batch))
+            break
+        for obj in obj_batch:
+            if verbosity > 2:
+                print(repr(obj))
+            try:
+                if hasattr(obj, '_update'):
+                    obj._update(save=False, overwrite=False)
+            except:
+                if verbosity:
+                    print_exc()
+                    print 'ERROR: Unable to update record: %r' % obj
+                pass
+        if verbosity and verbosity < 2:
+            pbar.update(batch_num * batch_len + len(obj_batch))
+        elif verbosity > 1:
+            print('Writing {0} items (of type {1}) from batch {2}. Will stop at batch {3} which is record {4} ...'.format(
+                len(obj_batch), src_qs.model, batch_num, end_batch or int((end_batch or N) / float(batch_len)), N
+                ))
+        if not dry_run:
+            try:
+                bulk_update(obj_batch, ignore_errors=ignore_errors, delete_first=True, verbosity=verbosity)
+            except Exception as err:
+                from django.db import connection
+                connection._rollback()
+                if verbosity:
+                    print '%s' % err
+                    print 'Now attempting tp save objects one at a time instead of as a batch...'
+                for obj in obj_batch:
+                    try:
+                        obj.save()
+                        stats += collections.Counter(['batch_Error'])
+                    except:
+                        from django.db import connection
+                        connection._rollback()
+                        print str(obj)
+                        print repr(obj.__dict__)
+                        print_exc()
+                        stats += collections.Counter(['save_Error'])
+                if not ignore_errors:
+                    print_exc()
+                    raise
+
+    if verbosity:
+        pbar.finish()
+    return stats
+
+
 def import_queryset_batches(qs, dest_qs,  batch_len=500, clear=None, dry_run=True, verbosity=1):
     """Given a sequence (queryset, generator, tuple, list) of dicts import them into the given model
+
+    FIXME: How is this differenct from import_items above?
 
     clear = model or queryset to be deleted/cleared 
         False: do not clear/delete anything
@@ -1979,24 +2069,31 @@ def import_json(path, model, batch_len=100, db_alias='default', start_batch=0, e
 # These attempt to speed data inserts using bulk_create
 
 
-def bulk_update(object_list, ignore_errors=False, verbosity=0):
+def bulk_update(object_list, ignore_errors=False, delete_first=False, verbosity=0):
     '''Bulk_create objects in provided list of model instances, delete database rows for the original pks in the object list.
 
     Returns any delta in the number of rows in the database table that resulted from the update.
     If nonzero, an error has likely occurred and database integrity is suspect.
+
+    # delete_first = True is required if your model has unique constraints that would be violated by creating duplicate records
+
+    # FIXME: check for unique constraints and raise exception if any exist (won't work because new objects may violate!)
     '''
     if not object_list:
         return 0
     model = object_list[0].__class__
     N_before = model.objects.count()
     pks_to_delete = set()
-    for obj in object_list:
+    for i, obj in enumerate(object_list):
         pks_to_delete.add(obj.pk)
-        obj.pk = None
+        if delete_first:
+            object_list[i] = deepcopy(obj)
+        object_list[i].pk = None
     if verbosity > 1:
         print 'Creating %d %r objects.' % (len(object_list), model)
         print 'BEFORE: %d' % model.objects.count()
-    model.objects.bulk_create(object_list)
+    if not delete_first:
+        model.objects.bulk_create(object_list)
     if verbosity:
         print 'Deleting %d objects with pks: %r ........' % (len(pks_to_delete), pks_to_delete)
     objs_to_delete = model.objects.filter(pk__in=pks_to_delete)
@@ -2012,6 +2109,8 @@ def bulk_update(object_list, ignore_errors=False, verbosity=0):
     if verbosity > 1:
         print 'Queryset to delete has %d objects' % objs_to_delete.count()
     objs_to_delete.delete()
+    if not delete_first:
+        model.objects.bulk_create(object_list)
     if verbosity > 1:
         print 'AFTER: %d' % model.objects.count()
     N_after = model.objects.count()

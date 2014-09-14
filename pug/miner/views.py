@@ -2,6 +2,10 @@
 import os
 import csv
 import datetime
+import math
+import collections
+import re
+import string
 
 from django.shortcuts import render_to_response
 from django.views.generic import View  #, TemplateView
@@ -129,7 +133,7 @@ def context_from_request(request, context=None, Form=GetLagForm, delim=',', verb
 
     TODO: Generalize this for any list of API variables/strings and separators for lists
 
-    Rturns context dict with these updated elements:
+    Returns context dict with these updated elements:
     context['form']                a Form object populated with the normalized form field values from the GET query
     context['form_is_valid']       True  or False
     context['errors']              list of validation error messages to be displayed at top of form
@@ -137,6 +141,8 @@ def context_from_request(request, context=None, Form=GetLagForm, delim=',', verb
     contexxt['plot_name']          descriptive name for the plot type: 'Histogram', 'Probability Mass Function' ...
     context['table']               'fast' or 'detailed'
     context['limit']               int indicating the maximum number of rows (for speeding the query for a detailed table)
+    context['regex']               regular expression string to test whether inspection notes and comments match
+    context['columns']             columns to display in quicktable and csv
     context['filter']              dict for use in a Django queryset filter:
     {
         'model_numbers': mn.split(',')  #    list of strings for ?mn=
@@ -149,6 +155,7 @@ def context_from_request(request, context=None, Form=GetLagForm, delim=',', verb
         'min_lag': sn.split(',')  #          list of strings for ?min_lag=
         'max_lag': sn.split(',')  #          list of strings for ?max_lag=
         'exclude': sn.split(',')  #          "E" or "I" (include or exclude account numbers)
+        'columns': columns.split(';')  #          list of fields for columns of CSV
     }
     """
     context = context or RequestContext(request)
@@ -180,10 +187,10 @@ def context_from_request(request, context=None, Form=GetLagForm, delim=',', verb
     context['filter']['model_numbers'] = mn
 
     sg = request.GET.get('sg', "") or request.GET.get('group', "") or request.GET.get('sales', "") or request.GET.get('sales_group', "") or request.GET.get('sale_group_number', "")
-    sg = [s.strip().upper() for s in sg.split(',')] or ['']   
+    sg = [s.strip().upper() for s in sg.split(',')] or ['']
     # need to implement filters on sales_group (where serial_numbers was, in explore_lags, and filter_sla_lags or lags_dict)
-    #context['filter']['sales_groups'] = sg
     context['filter']['sales_groups'] = sg
+
     #context['filter']['model_numbers'] += SLAmodels.models_from_sales_groups(context['sales_groups'])
 
     fy = request.GET.get('fy', "") or request.GET.get('yr', "") or request.GET.get('year', "") or request.GET.get('years', "") or request.GET.get('fiscal_year', "") or request.GET.get('fiscal_years', "")
@@ -210,6 +217,11 @@ def context_from_request(request, context=None, Form=GetLagForm, delim=',', verb
     max_dates = [s.strip() for s in max_dates.split(',')] or ['']
     context['filter']['max_dates'] = max_dates
 
+    context['regex'] = request.GET.get('re', "") or request.GET.get('regex', "") or request.GET.get('word', "") or request.GET.get('search', "") or request.GET.get('find', "")
+
+    context['columns'] = request.GET.get('col', "") or request.GET.get('cols', "") or request.GET.get('column', "") or request.GET.get('columns', "")
+    context['columns'] = [s.strip() for s in context['columns'].split(';')] or []
+
     series_name = request.GET.get('s', "") or request.GET.get('n', "") or request.GET.get('series', "") or request.GET.get('name', "")
     filter_values = series_name.split(' ')  # FIXME: '|'
     if filter_values and len(filter_values)==4:
@@ -222,26 +234,49 @@ def context_from_request(request, context=None, Form=GetLagForm, delim=',', verb
         fiscal_years = [filter_values[3].strip('*')]
         context['filter']['fiscal_years'] = fiscal_years
 
-    lag_days = request.GET.get('lag', None)
-    max_lag = request.GET.get('max_lag', None)
-    min_lag = request.GET.get('min_lag', None)
+    # lag values can't be used directly in a django filter so don't put them in context['filter']
+    lag = request.GET.get('lag', '') or request.GET.get('l', '')
+    lag = [s.strip().upper() for s in lag.split(',')] or ['']
+
+    maxl = request.GET.get('max_lag', '') or request.GET.get('maxlag', '') or request.GET.get('maxl', '')
+#    maxls = [s.strip() for s in maxl.split(',')] or ['']
+
+    minl = request.GET.get('min_lag', '') or request.GET.get('minlag', '') or request.GET.get('maxl', '')
+#    minls = [s.strip() for s in minl.split(',')] or ['']
+
     try:
-        min_lag = int(lag_days) - 7
-        max_lag = int(lag_days)
+        lag = int(lag)
+        minl = lag - 7
+        maxl = lag
     except:
-        min_lag = int(min_lag or 0)
-        max_lag = int(max_lag or 180)
+        try:
+            minl = int(minl)
+        except:
+            minl = ''
+        try:
+            maxl = int(maxl)
+        except:
+            maxl = ''
     
-    initial = {'mn': ', '.join(m.strip() for m in context['filter']['model_numbers'] if m.strip()), 
-               'sg': ', '.join(context['filter']['sales_groups']),
-               'r': ', '.join(context['filter']['reasons']),
-               'an': ', '.join(context['filter']['account_numbers']),
-               'fy': ', '.join(context['filter']['fiscal_years']),
-               'exclude': str(exclude),
-               'min_lag': str(min_lag),
-               'max_lag': str(max_lag),
-               'min_date': ', '.join(context['filter']['min_dates']),
-               'max_date': ', '.join(context['filter']['max_dates'])
+    print 'minl = %r' % minl
+    print 'maxl = %r' % maxl
+
+    context['filter']['min_lag'] = minl
+    context['filter']['max_lag'] = maxl
+
+    initial = {
+                'mn': ', '.join(m.strip() for m in context['filter']['model_numbers'] if m.strip()), 
+                'sg': ', '.join(context['filter']['sales_groups']),
+                'r': ', '.join(context['filter']['reasons']),
+                'an': ', '.join(context['filter']['account_numbers']),
+                'fy': ', '.join(context['filter']['fiscal_years']),
+                'exclude': unicode(exclude),
+                'min_lag': context['filter']['min_lag'],
+                'max_lag': context['filter']['max_lag'],
+                'min_date': ', '.join(context['filter']['min_dates']),
+                'max_date': ', '.join(context['filter']['max_dates']),
+                'columns': '; '.join(context['columns']),
+                'regex': context['regex'],
               }
 
     if verbosity > 1:
@@ -276,20 +311,35 @@ def context_from_request(request, context=None, Form=GetLagForm, delim=',', verb
     return context
 
 
-import re
 re_model_instance_dot = re.compile('__|[.]+')
+    
 
+def follow_double_underscores(obj, field_name=None, excel_dialect=True, eval_python=False, index_error_value=None):
+    '''Like getattr(obj, field_name) only follows model relationships through "__" or "." as link separators
 
-def follow_double_underscores(obj, field_name=None, excel_dialect=True):
-    '''Like getattr(obj, field_name) only follows model relationships through "__" or "." as link separators'''
+    >>> from django.contrib.auth.models import Permission
+    >>> import math
+    >>> p = Permission.objects.all()[0]
+    >>> follow_double_underscores(p, 'content_type__name') == p.content_type.name
+    True
+    >>> follow_double_underscores(p, 'math.sqrt(len(obj.content_type.name))', eval_python=True) == math.sqrt(len(p.content_type.name))
+    True
+    '''
     if not obj:
         return obj
     if isinstance(field_name, list):
         split_fields = field_name
     else:
         split_fields = re_model_instance_dot.split(field_name)
-    if len(split_fields) <= 1:
+    if False and eval_python:
+        try:
+            return eval(field_name, {'datetime': datetime, 'math': math, 'collections': collections}, {'obj': obj})
+        except IndexError:
+            return index_error_value
+        except:
+            pass
 
+    if len(split_fields) <= 1:
         if hasattr(obj, split_fields[0]):
             value = getattr(obj, split_fields[0])
         elif hasattr(obj, split_fields[0] + '_id'):
@@ -298,21 +348,46 @@ def follow_double_underscores(obj, field_name=None, excel_dialect=True):
             value = getattr(obj, split_fields[0] + '_set')
         elif split_fields[0] in obj.__dict__:
             value = obj.__dict__.get(split_fields[0])
+        elif eval_python:
+			value = eval('obj.' + split_fields[0])
         else:
-            return follow_double_underscores(getattr(obj, split_fields[0]), field_name=split_fields[1:])
-        if excel_dialect:
-            if isinstance(value, datetime.datetime):
-                value = value.strftime('%Y-%m-%d %H:%M:%S')
+            return follow_double_underscores(getattr(obj, split_fields[0]), field_name=split_fields[1:], eval_python=eval_python, index_error_value=index_error_value)
+        if value and excel_dialect and isinstance(value, datetime.datetime):
+            value = value.strftime('%Y-%m-%d %H:%M:%S')
         return value
-    return follow_double_underscores(getattr(obj, split_fields[0]), field_name=split_fields[1:])
+    return follow_double_underscores(getattr(obj, split_fields[0]), field_name=split_fields[1:], eval_python=eval_python, index_error_value=index_error_value)
 
 
-def table_from_list_of_instances(data, field_names=None, excluded_field_names=None, sort=True, excel_dialect=True):
-    '''Return an iterator over the model instances that yeilds lists of values
+def table_generator_from_list_of_instances(data, field_names=None, excluded_field_names=None, sort=True, excel_dialect=True, eval_python=False):
+    '''Return an iterator over the model instances (or queryset) that yeilds lists of values
 
     This forms a table suitable for output as a csv
 
     FIXME: allow specification of related field values with double_underscore
+
+    >>> from django.contrib.auth.models import Permission
+    >>> from django.db.models.base import ModelState
+    >>> t = table_generator_from_list_of_instances(list(Permission.objects.all()))
+    >>> import types
+    >>> isinstance(t, types.GeneratorType)
+    True
+    >>> t = list(t)
+    >>> len(t) > 3
+    True
+    >>> len(t[0])
+    5
+    >>> isinstance(t[0][0], basestring)
+    True
+    >>> isinstance(t[0][-1], basestring)
+    True
+    >>> isinstance(t[1][0], int)
+    True
+    >>> isinstance(t[0][2], basestring)
+    True
+    >>> isinstance(t[1][2], ModelState)
+    True
+    >>> isinstance(t[-1][2], ModelState)
+    True
     '''
     excluded_field_names = excluded_field_names or []
     excluded_field_names += '_state'
@@ -323,12 +398,26 @@ def table_from_list_of_instances(data, field_names=None, excluded_field_names=No
             field_names = [k for (k, v) in row.__dict__.iteritems() if not k in excluded_field_names]
         if not i:
             yield field_names
-        yield [follow_double_underscores(row, field_name=k, excel_dialect=True) for k in field_names]
+        yield [follow_double_underscores(row, field_name=k, excel_dialect=True, eval_python=eval_python) for k in field_names]
 
 
-def csv_response_from_context(context=None, filename=None, field_names=None, null_string=''):
+def csv_response_from_context(context=None, filename=None, field_names=None, null_string='', eval_python=True):
+    """Generate the response for a Download CSV button from data within the context dict
+
+    The CSV data must be in one of these places/formats:
+
+    * context as a list of lists of python values (strings for headers in first list)
+    * context['data']['d3data'] as a string in json format (python) for a list of lists of repr(python_value)s
+    * context['data']['cases'] as a list of lists of python values (strings for headers in first list)
+    * context['data']['d3data'] as a django queryset or iterable of model instances (list, tuple, generator)
+
+    If the input data is a list of lists (table) that has more columns that rows it will be trasposed before being processed
+    """
     filename = filename or context.get('filename') or 'table_download.csv'
-    field_names = context.get('field_names')
+    field_names = field_names or context.get('field_names', [])
+    # FIXME: too slow!
+    if field_names and all(field_names) and all(all(c in (string.letters + string.digits + '_.') for c in s) for s in field_names):
+        eval_python=False
 
     data = context
 
@@ -339,13 +428,13 @@ def csv_response_from_context(context=None, filename=None, field_names=None, nul
             data = context.get('data', {}).get('cases', [[]])
 
     if not isinstance(data, (list, tuple)) or not isinstance(data[0], (list, tuple)):
-        data = table_from_list_of_instances(data, field_names=field_names)
+        data = table_generator_from_list_of_instances(data, field_names=field_names, eval_python=eval_python)
 
     try:
         if len(data) < len(data[0]):
             data = util.transposed_lists(data)  # list(list(row) for row in data)
     except TypeError:
-        # no need to transpose if a generator was provided instead of a list or tuple (anythin with a len attribute)
+        # no need to transpose if a generator was provided instead of a list or tuple (anything with a len attribute)
         pass
 
     # Create the HttpResponse object with the appropriate CSV header.

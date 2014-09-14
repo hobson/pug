@@ -1,0 +1,28 @@
+#!/usr/bin/env bash
+# install_requirements
+
+
+REQFILE="$1"
+if [ -z "$1" ]; then
+    REQFILE="bigdata/requirements.txt"
+fi
+
+while read LINE; do
+  echo
+  if [[ "${LINE}" =~ ^\s*#\s*'$'.*$ ]]; then
+      SHELLCMD=`echo "${LINE}" | sed 's/^\s*#\s*$\s*\(.*\)/\1/'`
+      echo "================================="
+      echo "SHELL: ${SHELLCMD}"
+      echo "================================="
+      echo "${SHELLCMD}" | bash
+  elif [[ "${LINE}" =~ ^\s*#.*$ ]]; then
+      echo "COMMENT: ${LINE}"
+  else
+      echo "---------------------------------"
+      echo "EXECUTING: pip install $LINE"
+      echo "---------------------------------"
+      pip install $LINE
+  fi
+done <"${REQFILE}"
+
+

@@ -1,4 +1,9 @@
+pip==1.5.6
 --editable=git://github.com/mdp-toolkit/mdp-toolkit#egg=mdp
+#$ pip install --editable=git://github.com/mdp-toolkit/mdp-toolkit#egg=mdp --exists-action=w
+setuptools==5.7
+cffi==0.8.6
+cryptography==0.4
 Django==1.5.8
 Scrapy==0.22.2
 South==0.8.4
@@ -8,7 +13,8 @@ django-crispy-forms==1.4.0
 lxml==3.3.5
 numpy==1.8.2
 #$ pip install https://python-progressbar.googlecode.com/files/progressbar-2.3.tar.gz
-https://python-progressbar.googlecode.com/files/progressbar-2.3.tar.gz
+#https://python-progressbar.googlecode.com/files/progressbar-2.3.tar.gz
+--editable=https://python-progressbar.googlecode.com/files/progressbar-2.3.tar.gz
 psycopg2==2.5.3
 pyOpenSSL==0.14
 python-dateutil==2.2
