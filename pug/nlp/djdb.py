@@ -1548,6 +1548,110 @@ def load_all_csvs_to_model(path, model, field_names=None, delimiter=None, batch_
     return N
 
 
+def find_files_in_path(path, ext='', recursive=True, verbosity=0):
+    """Recursively find all files in the indicated directory with the indicated file name extension
+
+    Args:
+        path (str):
+        ext (str):  File name extension. Only file paths that ".endswith()" this string will be returned
+
+    Returns: 
+        list of dicts: dict keys are { 'path', 'bytes', 'created', 'modified', 'accessed', 'permissions' }
+            path (str): Full, absolute paths to file beneath the indicated directory and ending with `ext`
+            size (int): File size in bytes
+            created (datetime): File creation timestamp from file system
+            modified (datetime): File modification timestamp from file system
+            accessed (datetime): File access timestamp from file system
+            permissions (int): File permissions bytes as a chown-style integer with a maximum of 4 digits 
+                e.g.: 777 or 1755
+
+    Examples:
+    >>> sorted(find_files_in_path(__file__, ext='.py', recursive=False, verbosity=0))[0].endswith('__init__.py')
+    True
+    """
+    path = path or './'
+    files_in_queue = []
+    if verbosity:
+        print 'Preprocessing files to estimate pb.ETA'
+    # if verbosity:
+    #     widgets = [pb.Counter(), '/%d bytes for all files: ' % file_bytes, pb.Percentage(), ' ', pb.RotatingMarker(), ' ', pb.Bar(),' ', pb.ETA()]
+    #     i, pbar = 0, pb.ProgressBar(widgets=widgets, maxval=file_bytes)
+    #     print pbar
+    #     pbar.start()
+    for dir_path, dir_names, filenames in os.walk(path):
+        for fn in filenames:
+            if ext and not fn.lower().endswith(ext):
+                continue
+            files_in_queue += [{'name': os.path.join(dir_path, fn)}]
+            files_in_queue[-1]['size'] = os.path.getsize(files_in_queue[-1][0])
+            files_in_queue[-1]['accessed'] = datetime.datetime.fromtimestamp(os.path.getatime(files_in_queue[-1]['name']))
+            files_in_queue[-1]['modified'] = datetime.datetime.fromtimestamp(os.path.getmtime(files_in_queue[-1]['name']))
+            files_in_queue[-1]['created'] = datetime.datetime.fromtimestamp(os.path.getctime(files_in_queue[-1]['name']))
+            # file_bytes += files_in_queue[-1]['size']
+        if not recursive:
+            break
+    if verbosity > 1:
+        print files_in_queue
+    return files_in_queue
+
+def load_updated_csvs_to_model(path, model, field_names=None, delimiter=None, batch_len=10000,
+                           dialect=None, num_header_rows=1, mode='rUb',
+                           strip=True, clear=False, dry_run=True, 
+                           ignore_errors=True, verbosity=2,
+                           sort_files=True, recursive=False, ext=''):
+    """Bulk create database records from all csv files found within a directory."""
+    path = path or './'
+    batch_len = batch_len or 1000
+    if verbosity:
+        if dry_run:
+            print 'DRY_RUN: actions will not modify the database.'
+        else:
+            print 'THIS IS NOT A DRY RUN, THESE ACTIONS WILL MODIFY THE DATABASE!!!!!!!!!'
+
+    if clear:
+        clear_model(model, dry_run=dry_run, verbosity=verbosity)
+
+    N = 0
+    files_in_queue = []
+    file_bytes = 0
+    if verbosity:
+        print 'Preprocessing files to estimate pb.ETA'
+    for dir_path, dir_names, filenames in os.walk(path):
+        for fn in filenames:
+            if fn.lower().endswith(ext):
+                files_in_queue += [[os.path.join(dir_path, fn), 0]]
+                files_in_queue[-1][1] = os.path.getsize(files_in_queue[-1][0])
+                file_bytes += files_in_queue[-1][1]
+        if not recursive:
+            break
+    if sort_files:
+        files_in_queue = sorted(files_in_queue)
+    if verbosity > 1:
+        print files_in_queue
+    if verbosity:
+        widgets = [pb.Counter(), '/%d bytes for all files: ' % file_bytes, pb.Percentage(), ' ', pb.RotatingMarker(), ' ', pb.Bar(),' ', pb.ETA()]
+        i, pbar = 0, pb.ProgressBar(widgets=widgets, maxval=file_bytes)
+        print pbar
+        pbar.start()
+    file_bytes_done = 0
+    for file_path, file_size in files_in_queue:
+        if fn.lower().endswith(ext):
+            if verbosity:
+                print
+                print 'Loading "%s"...' % file_path
+            N += load_csv_to_model(path=file_path, model=model, field_names=field_names, delimiter=delimiter, batch_len=batch_len, 
+                                   dialect=dialect, num_header_rows=num_header_rows, mode=mode,
+                                   strip=strip, clear=False, dry_run=dry_run, 
+                                   ignore_errors=ignore_errors, verbosity=verbosity)
+            if verbosity:
+                file_bytes_done += file_size
+                pbar.update(file_bytes_done)
+        else:
+            if verbosity:
+                print 'Skipping "%s"...' % file_path
+    return N
+
+
 def clean_duplicates(model, unique_together=('serial_number',), date_field='created_on',
                      seq_field='seq', seq_max_field='seq_max', ignore_existing=True, verbosity=1):
     qs = getattr(model, 'objects', model)
