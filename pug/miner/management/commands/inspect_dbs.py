@@ -13,6 +13,7 @@ from django.core.management import call_command
 
 
 def inspect_dbs(output_dir='.', db_names=None, db_aliases=None, alias_prefix='SEC_', db_alias_lower=str.lower, verbosity=1):
+    return
     db_names = db_names or settings.INSPECT_DB_NAMES
     db_aliases = db_aliases or [alias_prefix + db_alias_lower(name) for name in db_names]
     for db_name, db_alias in zip(db_names, db_aliases):
