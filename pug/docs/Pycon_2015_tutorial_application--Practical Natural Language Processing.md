@@ -1,42 +1,67 @@
-Audience: Developers that want to incorporate fuzzy matching, regular expressions, word fruency analysis, sentiment analysis, and/or knowledge extraction from unstructured text into their applications.
-
 Practical Natural Language Processing
+=====================================
 
-Topics Covered: unstructured-text, formal language, knowledge extractions
-PyPi Packages Discussed: nltk, pug, pyparsing, aima
-Further Reading:
+
+About the Instructor
+--------------------
+
+Hobson Lane has 18 years of experience building autonomous systems and predictive analytics alogrithms as well as 4 years of experience contributing to various open source python projects. These projects include [django-pyodbc](https://github.com/lionheart/django-pyodbc), [scrapy](https://github.com/scrapy/scrapy), [will](https://github.com/skoczen/will), ansible, [djorm-ext-pgtrgm](https://github.com/jleivaizq/djorm-ext-pgtrgm) and [pug](http://github.com/pug/pug). As the Principal Data Scientist for the Sharp Labs "Big Data" project, Hobson is employing python tools for Natural Language Processing to improve the quality and perfomance of Sharp Electronics products (Televisions, Copiers, Smartphones, Solar Panels, etc). Software development credentials can be found on [Stack Overflow](http://stackoverflow.com/users/623735/hobs) and [github](github.com/hobson)
+Hobson's professional CV can be found on [Linked-In](https://www.linkedin.com/in/hobsonlane)
+
+Tutorial Overview
+-----------------
+
+Topics: 
+
+    Unstructured-text, natural languages, formal languages, knowledge extraction, statistical and semantic analysis of text 
+
+PyPi Packages Discussed In Detail:
+
+    nltk, will, pug
+
+Prerequisites and Evironment Preparation: 
+
+    1. python development basics
+    2. familiarity with basic statistics and (know what words like "probability" mean)
+    interest in automation, linguistics, artificial intelligence, or machine learning
+    3. a laptop with a python REPL and access to the the following PyPI packages
+        - pycon2015-nlp-tutorial (this will automatically install all the others)
+        - ipython
+        - numpy (*)
+        - matplotlib (*)
+        - NLTK (*)
+        - scrapy
+        - fuzzywuzzy
+        - regex (*)
+        - beautiful soup
+        - Distance (*)
+        - will
+        - pug
+        - aima
+        (*) packages that will likely require binary installation, compilation and/or OS-specific configuration
+
+Objectives:
+
+    At the conclusion of this course students will be ...
+
+        1. familiar with the terminology and concepts of NLP and some from overlapping fields like AI, information theory, and statistics
+        2. able to acquire unstructred and semi-structure corpora from web pages, twitter feeds, chat rooms, and academic archive
+        3. able to compute and visualize statistical trends documents/text-streams
+        4. excited about contributing to the devlopment of open-source python tools for natural language processing and AI
+
+Nonobjectives:
+
+    This tutorial teaches techniques for processing unstructured text as well as natural language text, but *not* voice or speech processing or general AI.
+
+Relevant Texts:
+
     Fundamentals of Statistical Natural Language Processing, Schutze et al
     Artificial Intlligence a Modern Approach, Norvig and Russell
     NLTK Cookbook 3
     NLTK Cookbook 2
     Doing Data Science
     Natural Language Processing with Python
-Prerequisites and Evironment Preparation: 
-    1. python development basics
-    2. familiarity with basic statistics and (know what words like "probability" mean)
-    interest in automation, linguistics, artificial intelligence, or machine learning
-    3. a laptop with a python REPL and access to the the following PyPI packages
-- pycon2015-nlp-tutorial (this will automatically install all the others)
-- ipython
-- numpy (*)
-- matplotlib (*)
-- NLTK (*)
-- scrapy
-- fuzzywuzzy
-- regex (*)
-- beautiful soup
-- Distance (*)
-- will
-- pug
-        (*) packages that will likely require binary installation, compilation and/or OS-specific configuration
-Objectives:
-    At the conclusion of the course students will be ...
-    1. familiar with the terminology and concepts of NLP and some from overlapping fields like AI, information theory, and statistics
-    2. able to acquire unstructred and semi-structure corpora from web pages, twitter feeds, chat rooms, and academic archive
-    3. able to compute and visualize statistical trends documents/text-streams
-    4. excited about contributing to the devlopment of open-source python tools for natural language processing and AI
-Nonobjectives:
-    This tutorial teaches techniques for processing unstructured text as well as natural language text, but *not* voice or speech processing or general AI.
+
 
 1. (5 min) what is natural language 
     1. a system of utterances invented by humans "spontaneously" over millions of years.
@@ -97,7 +122,7 @@ Nonobjectives:
     1. using nltk to download text corpora (text documents or strings)
     2. extracting text and semi-structure text (tables) from web pages using Scrapy and Beautiful Soup
     for  with some common tools for "quantifying" and structuring unstructured text
-8.  (20) Frequency analysis of an example corpus of text (US President innaugural speeches)
+8.  (20) Frequency analysis of US President innaugural speeches ()
     1. segmentation/tokenization/parsing
         - characters (encoding issues, some natural languages like Japanese Kanji and Chinese don't have "letters")
         - words
