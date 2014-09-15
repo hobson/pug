@@ -1583,7 +1583,7 @@ def find_files_in_path(path, ext='', recursive=True, verbosity=0):
             if ext and not fn.lower().endswith(ext):
                 continue
             files_in_queue += [{'name': os.path.join(dir_path, fn)}]
-            files_in_queue[-1]['size'] = os.path.getsize(files_in_queue[-1][0])
+            files_in_queue[-1]['size'] = os.path.getsize(files_in_queue[-1]['name'])
             files_in_queue[-1]['accessed'] = datetime.datetime.fromtimestamp(os.path.getatime(files_in_queue[-1]['name']))
             files_in_queue[-1]['modified'] = datetime.datetime.fromtimestamp(os.path.getmtime(files_in_queue[-1]['name']))
             files_in_queue[-1]['created'] = datetime.datetime.fromtimestamp(os.path.getctime(files_in_queue[-1]['name']))
