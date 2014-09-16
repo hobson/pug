@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
+"""Django database manipulations (using the ORM) that require the settings module to be imported"""
 
 import datetime
 import collections
@@ -15,6 +16,7 @@ from copy import deepcopy
 from decimal import Decimal
 from operator import itemgetter
 from types import NoneType
+import importlib
 
 from django.core import serializers
 from django.db.models import related
@@ -683,8 +685,11 @@ def find_fields(fields, model=DEFAULT_MODEL, app=DEFAULT_APP, score_cutoff=50, p
         [] If no similar field names could be found in the indicated model
         [None] If none found and and `pad_with_none` set
 
-    >>> find_fields(['date_time', 'title_prefix', 'sales'], model='WikiItem')
-    ['date', 'model', 'net_sales']
+    Examples:
+
+      >>> find_fields(['date_time', 'title_prefix', 'sales'], model='WikiItem')
+      ['date', 'model', 'net_sales']
+
     """
     fields = util.listify(fields)
     model = get_model(model, app)
@@ -697,6 +702,26 @@ def find_fields(fields, model=DEFAULT_MODEL, app=DEFAULT_APP, score_cutoff=50, p
         elif pad_with_none:
             matched_fields += [None]
     return matched_fields
+
+
+def model_from_path(model_path):
+    """Find the model class for a given model path like 'project.app.model'
+
+    Args:
+        path (str): dot-delimited model path, like 'project.app.model'
+
+    Returns:
+        Django Model-based class
+    """
+    app_name = '.'.join(model_path.split('.')[:-1])
+    model_name = model_path.split('.')[-1]
+    module = importlib.import_module(app_name)
+    try:
+        model = getattr(module, model_name)
+    except AttributeError:
+        model = getattr(getattr(module, 'models'), model_name)
+
+    return model
 
 
 def find_synonymous_field(field, model=DEFAULT_MODEL, app=DEFAULT_APP, score_cutoff=50, root_preference=1.02):
