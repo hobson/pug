@@ -722,7 +722,7 @@ def find_fields(fields, model=DEFAULT_MODEL, app=DEFAULT_APP, score_cutoff=50, p
     return matched_fields
 
 
-def model_from_path(model_path):
+def model_from_path(model_path, fuzziness=False):
     """Find the model class for a given model path like 'project.app.model'
 
     Args:
@@ -737,7 +737,10 @@ def model_from_path(model_path):
     try:
         model = getattr(module, model_name)
     except AttributeError:
-        model = getattr(getattr(module, 'models'), model_name)
+        try:
+            model = getattr(getattr(module, 'models'), model_name)
+        except AttributeError:
+            model = get_model(model_name, app_name, fuzziness=fuzziness)
 
     return model
 
