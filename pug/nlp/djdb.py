@@ -676,7 +676,13 @@ def sequence_from_filter_spec(field_names, filter_dict=None, model=DEFAULT_MODEL
 
 
 def find_fields(fields, model=DEFAULT_MODEL, app=DEFAULT_APP, score_cutoff=50, pad_with_none=False):
-    """
+    """Use fuzzy string matching to find similar model field names without consulting a synonyms list
+
+    Returns:
+      list: A list model field names (strings) sorted from most likely to least likely.
+        [] If no similar field names could be found in the indicated model
+        [None] If none found and and `pad_with_none` set
+
     >>> find_fields(['date_time', 'title_prefix', 'sales'], model='WikiItem')
     ['date', 'model', 'net_sales']
     """
@@ -694,13 +700,20 @@ def find_fields(fields, model=DEFAULT_MODEL, app=DEFAULT_APP, score_cutoff=50, p
 
 
 def find_synonymous_field(field, model=DEFAULT_MODEL, app=DEFAULT_APP, score_cutoff=50, root_preference=1.02):
-    """
-    >>> find_synonymous_field('date', model='WikiItem')
-    'end_date_time'
-    >>> find_synonymous_field('date', model='WikiItem')
-    'date_time'
-    >>> find_synonymous_field('time', model='WikiItem')
-    'date_time'
+    """Use a dictionary of synonyms and fuzzy string matching to find a similarly named field
+
+    Returns:
+      A single model field name (string)
+
+    Examples:
+
+      >>> find_synonymous_field('date', model='WikiItem')
+      'end_date_time'
+      >>> find_synonymous_field('date', model='WikiItem')
+      'date_time'
+      >>> find_synonymous_field('time', model='WikiItem')
+      'date_time'
+
     """
     fields = util.listify(field) + list(synonyms(field))
     model = get_model(model, app)
@@ -718,10 +731,14 @@ def find_synonymous_field(field, model=DEFAULT_MODEL, app=DEFAULT_APP, score_cut
 def find_model(model_name, apps=settings.INSTALLED_APPS):
     """Find model_name among indicated Django apps and return Model class
 
-    >>> find_model('WikiItem')
-    >>> find_model('Connection')
-    >>> find_model('InvalidModelName')
-    """ 
+    Examples:
+        To find models in an app called "miner":
+
+        >>> find_model('WikiItem', 'miner')
+        >>> find_model('Connection', 'miner')
+        >>> find_model('InvalidModelName')
+
+    """
     apps = util.listify(apps)
     for app in apps:
         model = get_model(model=model_name, app=app, fuzzy=False)
