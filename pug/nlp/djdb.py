@@ -255,24 +255,37 @@ def get_app(app=None, verbosity=0):
 get_app.default = DEFAULT_APP
 
 
-def get_model(model=DEFAULT_MODEL, app=None, fuzzy=False):
+def get_model(model=DEFAULT_MODEL, app=None, fuzziness=False):
     """Retrieve a Django model class for the indicated model name and app name (or module object)
 
-    `model` should be one of:
+    Args:
+      model: A model class, queryset or string. E.g. one of:
         * derivative of django.db.models.base.ModelBase
         * derivative of django.db.models.query.QuerySet
         * string name of a django.db.models.Model class that can be found in <app>.models
+      app (module): A python module (Django app) or the string name of a Django app.
+      fuzziness (float): The allowable levenshtein distance between the model name. (0 < fuzziness < 1)
 
-    >>> from django.db import connection
-    >>> connection.close() 
-    >>> get_model('WikiI').__name__.startswith('WikiItem')
-    True
-    >>> connection.close() 
-    >>> isinstance(get_model('master'), djmodels.base.ModelBase)
-    True
-    >>> connection.close() 
-    >>> get_model(get_model('CaseMaster', DEFAULT_APP)).objects.count() >= 0
-    True
+    Returns:
+      Model: a Django model class
+
+    TODO:
+      * Parse the model string to see if it contains a model path like 
+        'app_name.model_name' or 'app_name.models.model_name'
+
+    Examples:
+
+      >>> from django.db import connection
+      >>> connection.close() 
+      >>> get_model('mission', fuzziness=.7).__name__.startswith('Permi')
+      True
+      >>> connection.close() 
+      >>> isinstance(get_model('ser', fuzziness=.5), djmodels.base.ModelBase)
+      True
+      >>> connection.close() 
+      >>> get_model(get_model('CaseMaster', DEFAULT_APP, fuzziness=.05)).objects.count() >= 0
+      True
+
     """
     # print 'get_model' + repr(model) + ' app ' + repr(app)
     if isinstance(model, djmodels.base.ModelBase):
@@ -287,12 +300,15 @@ def get_model(model=DEFAULT_MODEL, app=None, fuzzy=False):
             model = tokens[-1]
             app = '.'.join(tokens[:-1])
     try:
+        # FIXME: this will turn app into a list of strings if app=None is passed in!!!
         app = get_app(app)
     except:
-        try:
-            app = get_app(model.app_label)
-        except:
-            app = get_app(model._meta.app_label)
+        pass
+        # FIXME: This seems futile! model is still just a string!
+        # try:
+        #     app = get_app(model.app_label)
+        # except:
+        #     app = get_app(model._meta.app_label)
     try:
         model_object = djmodels.get_model(app.__package__.split('.')[-1], model)
         if model_object:
@@ -305,14 +321,16 @@ def get_model(model=DEFAULT_MODEL, app=None, fuzzy=False):
             return model_object
     except:
         pass
-    if not fuzzy and not model_object:
+    if not fuzziness and not model_object:
         return model_object
     app = get_app(app)
     if not app:
         return None
     model_names = [mc.__name__ for mc in djmodels.get_models(app)]
     if app and model and model_names:
-        return djmodels.get_model(app.__package__.split('.')[-1], fuzzy.extractOne(str(model), model_names)[0])
+        model_name, similarity = fuzzy.extractOne(str(model), model_names)
+        if similarity + float(fuzziness) >= 1.:
+            return djmodels.get_model(app.__package__.split('.')[-1], model_name)
 
 
 def get_queryset(qs=None, app=DEFAULT_APP, db_alias=None):
@@ -753,7 +771,7 @@ def find_synonymous_field(field, model=DEFAULT_MODEL, app=DEFAULT_APP, score_cut
     return best_match
 
 
-def find_model(model_name, apps=settings.INSTALLED_APPS):
+def find_model(model_name, apps=settings.INSTALLED_APPS, fuzziness=0):
     """Find model_name among indicated Django apps and return Model class
 
     Examples:
@@ -764,9 +782,9 @@ def find_model(model_name, apps=settings.INSTALLED_APPS):
         >>> find_model('InvalidModelName')
 
     """
-    apps = util.listify(apps)
+    apps = util.listify(apps or settings.INSTALLED_APPS)
     for app in apps:
-        model = get_model(model=model_name, app=app, fuzzy=False)
+        model = get_model(model=model_name, app=app, fuzzy=fuzzy)
         if model:
             return model
     return None
