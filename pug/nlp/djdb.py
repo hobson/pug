@@ -787,7 +787,7 @@ def find_model(model_name, apps=settings.INSTALLED_APPS, fuzziness=0):
     """
     apps = util.listify(apps or settings.INSTALLED_APPS)
     for app in apps:
-        model = get_model(model=model_name, app=app, fuzzy=fuzzy)
+        model = get_model(model=model_name, app=app, fuzziness=fuzziness)
         if model:
             return model
     return None
