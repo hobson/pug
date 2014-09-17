@@ -287,8 +287,7 @@ def get_model(model=DEFAULT_MODEL, app=None, fuzziness=False):
       True
 
     """
-    print 'getting model=%r from app=%r' % (app, model)
-    # print 'get_model' + repr(model) + ' app ' + repr(app)
+    print 'getting model=%r from app=%r' % (model, app)
     if isinstance(model, djmodels.base.ModelBase):
         return model
     elif isinstance(model, (djmodels.Manager, djmodels.query.QuerySet)):
