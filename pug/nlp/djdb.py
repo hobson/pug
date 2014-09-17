@@ -287,12 +287,13 @@ def get_model(model=DEFAULT_MODEL, app=None, fuzziness=False):
       True
 
     """
+    print 'getting model=%r from app=%r' % (app, model)
     # print 'get_model' + repr(model) + ' app ' + repr(app)
     if isinstance(model, djmodels.base.ModelBase):
         return model
     elif isinstance(model, (djmodels.Manager, djmodels.query.QuerySet)):
         return model.model
-    if not app and isinstance(model, basestring) and '.' in model:
+    if not app or (isinstance(model, basestring) and '.' in model):
         try:
             app, model = model.split('.')
         except:
@@ -328,8 +329,8 @@ def get_model(model=DEFAULT_MODEL, app=None, fuzziness=False):
         return None
     model_names = [mc.__name__ for mc in djmodels.get_models(app)]
     if app and model and model_names:
-        model_name, similarity = fuzzy.extractOne(str(model), model_names)
-        if similarity + float(fuzziness) >= 1.:
+        model_name, similarity_score = fuzzy.extractOne(str(model), model_names)
+        if similarity_score / 100. + float(fuzziness) >= 1.0:
             return djmodels.get_model(app.__package__.split('.')[-1], model_name)
 
 
@@ -787,13 +788,14 @@ def find_model(model_name, apps=settings.INSTALLED_APPS, fuzziness=0):
     """
     apps = util.listify(apps or settings.INSTALLED_APPS)
     for app in apps:
+        print 'getting %r, from app %r' % (model_name, app)
         model = get_model(model=model_name, app=app, fuzziness=fuzziness)
         if model:
             return model
     return None
 
 
-def find_field(field, model=DEFAULT_MODEL, app=DEFAULT_APP, score_cutoff=50):
+def find_field(field, model=DEFAULT_MODEL, app=DEFAULT_APP, fuzziness=.5):
     """
     >>> find_field('date_time', model='WikiItem')
     'date'
@@ -805,7 +807,7 @@ def find_field(field, model=DEFAULT_MODEL, app=DEFAULT_APP, score_cutoff=50):
     >>> find_synonymous_field('date', model='WikiItem')
     'date_time'
     """
-    return find_fields(field, model, app, score_cutoff, pad_with_none=True)[0]
+    return find_fields(field, model, app, score_cutoff=int(fuzziness*100), pad_with_none=True)[0]
 
 
 def lagged_in_date(x=None, y=None, filter_dict=None, model='WikiItem', app=DEFAULT_APP, sort=True, limit=5000, lag=1, pad=0, truncate=True):
@@ -1854,11 +1856,12 @@ def import_items(item_seq, dest_model,  batch_len=500, clear=False, dry_run=True
                 pass
             item_batch += [obj]
             stats += row_errors
+        end_batch = end_batch or int(N / float(batch_len))
         if verbosity and verbosity < 2:
             pbar.update(batch_num * batch_len + len(dict_batch))
         elif verbosity > 1:
             print('Writing {0} items (of type {1}) from batch {2}. Will stop at batch {3} which is record {4} ...'.format(
-                len(item_batch), dest_model, batch_num, end_batch or N, int((end_batch or N) / float(batch_len))
+                len(item_batch), dest_model, batch_num, end_batch , min(end_batch * batch_len, N),
                 ))
         if not dry_run:
             try:
