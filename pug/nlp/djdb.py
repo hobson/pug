@@ -1790,8 +1790,18 @@ def delete_in_batches(queryset, batch_len=10000, verbosity=1):
 ##############################################################
 # These import_* functions attempt to import data from one model into another
 
-def import_items(item_seq, dest_model,  batch_len=500, clear=False, dry_run=True, start_batch=0, end_batch=None, ignore_errors=False, verbosity=1):
+def import_items(item_seq, dest_model,  batch_len=500, 
+                 clear=False, dry_run=True, 
+                 start_batch=0, end_batch=None, 
+                 overwrite=True,
+                 ignore_errors=False, verbosity=1):
     """Given a sequence (queryset, generator, tuple, list) of dicts import them into the given model"""
+    if isinstance(dest_model, (djmodels.query.QuerySet, djmodels.Manager)):
+        dest_qs = dest_model.all()
+        dest_model = get_model(dest_qs)
+    else:
+        dest_qs = dest_model.objects.all()
+
     stats = collections.Counter()
     try:
         try:
@@ -1812,8 +1822,8 @@ def import_items(item_seq, dest_model,  batch_len=500, clear=False, dry_run=True
 
     if clear and not dry_run:
         if verbosity:
-            print "WARNING: Deleting %d records from %r to make room for %d new records !!!!!!!" % (dest_model.objects.count(), dest_model, N)
-        num_deleted = delete_in_batches(dest_model.objects.all())
+            print "WARNING: Deleting %d records from %r to make room for %d new records !!!!!!!" % (dest_qs.count(), dest_model, N)
+        num_deleted = delete_in_batches(dest_qs)
         if verbosity:
             print "Finished deleting %d records in %r." % (num_deleted, dest_model)
 
@@ -1844,10 +1854,14 @@ def import_items(item_seq, dest_model,  batch_len=500, clear=False, dry_run=True
                 # if the model has an import_item method then use it
                 obj.import_item(d, verbosity=verbosity)
             except:
+                if verbosity > 2:
+                    print '------ Creating a new %r instance --------' % dest_model
                 obj, row_errors = django_object_from_row(d, dest_model)
             try:
-                if hasattr(obj, '_update'):
-                    obj._update(save=False, overwrite=False)
+                if verbosity > 2:
+                    print '------ updating FKs with overwrite=%r --------' % overwrite
+                    print hasattr(obj, '_update')
+                obj._update(save=False, overwrite=overwrite)
             except:
                 if verbosity:
                     print_exc()
