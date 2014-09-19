@@ -785,6 +785,9 @@ def find_model(model_name, apps=settings.INSTALLED_APPS, fuzziness=0):
         >>> find_model('InvalidModelName')
 
     """
+    # if it looks like a file system path rather than django project.app.model path the return it as a string
+    if '/' in model_name:
+        return model_name
     apps = util.listify(apps or settings.INSTALLED_APPS)
     for app in apps:
         print 'getting %r, from app %r' % (model_name, app)
@@ -1326,8 +1329,25 @@ def fixture_record_from_row():
     raise NotImplementedError("FIXME: See pug.nlp.djdb.django_object_from_row and pug.nlp.djdb.field_dict_from_row")
 
 
-def django_object_from_row(row, model, field_names=None, include_id=False, strip=True, ignore_errors=True, verbosity=0):
-    field_dict, errors = field_dict_from_row(row, model, field_names=field_names, include_id=include_id, strip=strip,
+def django_object_from_row(row, model, field_names=None, ignore_fields=('id', 'pk'), strip=True, ignore_errors=True, verbosity=0):
+    """Construct Django model instance from values provided in a python dict or Mapping
+
+    Args:
+      row (list or dict): Data (values of any type) to be assigned to fields in the Django object.
+        If `row` is a list, then the column names (header row) can be provided in `field_names`.
+        If `row` is a list and no field_names are provided, then `field_names` will be taken from the 
+        Django model class field names, in the order they appear within the class definition.
+      model (django.db.models.Model): The model class to be constructed with data from `row`
+      field_names (list or tuple of str): The field names to place the row values in. 
+        Defaults to the keys of the dict of `row` (if `row` is a `dict`) or the names of the fields
+        in the Django model being constructed.
+      ignore_fields (list or tuple of str): The field names to ignore if place the row values in. 
+
+    Returns:
+      Model instance: Django model instance constructed with values from `row` in fields
+        from `field_names` or `model`'s fields
+    """
+    field_dict, errors = field_dict_from_row(row, model, field_names=field_names, ignore_fields=ignore_fields, strip=strip,
                                      ignore_errors=ignore_errors, verbosity=verbosity)
     errors = collections.Counter()
     if verbosity >= 3:
@@ -1339,11 +1359,29 @@ def django_object_from_row(row, model, field_names=None, include_id=False, strip
         raise ValueError('Unable to coerce the dict = %r into a %r object' % (field_dict, model))
 
 
-def field_dict_from_row(row, model, field_names=None, include_id=False, strip=True, blank_none=True, ignore_field_nones=True, ignore_errors=True, verbosity=0):
+def field_dict_from_row(row, model, field_names=None, ignore_fields=('id', 'pk'), strip=True, blank_none=True, ignore_values=(None,), ignore_errors=True, verbosity=0):
+    """Construct a Mapping (dict) from field names to values from a row of data
+
+    Args:
+      row (list or dict): Data (values) to be assigned to field_names in the dict.
+        If `row` is a list, then the column names (header row) can be provided in `field_names`.
+        If `row` is a list and no field_names are provided, then `field_names` will be taken from the 
+        Django model class field names, in the order they appear within the class definition.
+      model (django.db.models.Model): The model class to be constructed with data from `row`
+      field_names (list or tuple of str): The field names to place the row values in. 
+        Defaults to the keys of the dict of `row` (if `row` is a `dict`) or the names of the fields
+        in the Django model being constructed.
+      ignore_fields (list or tuple of str): The field names to ignore if place the row values in. 
+
+    Returns:
+      dict: Mapping from fields to values compatible with a Django model constructor kwargs, `model(**kwargs)`
+    """
     errors = collections.Counter()
-    field_classes = [f for f in model._meta._fields() if (include_id or f.name != 'id')]
     if not field_names:
-        field_names = [f.name for f in field_classes if (include_id or f.name != 'id')]
+        field_classes = [f for f in model._meta._fields() if (not ignore_fields or (f.name not in ignore_fields))]
+        field_names = [f.name for f in field_classes]
+    else:
+        field_classes = [f for f in model._meta._fields() if (f.name in field_names and (not ignore_fields or (f.name not in ignore_fields)))]
     field_dict = {}
     if isinstance(row, collections.Mapping):
         row = [row.get(field_name, None) for field_name in field_names]
@@ -1422,7 +1460,7 @@ def field_dict_from_row(row, model, field_names=None, include_id=False, strip=Tr
                     clean_value = clean_value[:max_length]
                     if not ignore_errors:
                         raise  
-        if not ignore_field_nones or clean_value != None:
+        if not ignore_values or clean_value not in ignore_values:
             field_dict[field_name] = clean_value
     return field_dict, errors
 
@@ -1821,6 +1859,10 @@ def import_items(item_seq, dest_model,  batch_len=500,
         return N
 
     if clear and not dry_run:
+        if N < dest_qs.count():
+            if verbosity:
+                print "WARNING: There are %d %r records in the destinsation queryset which is more than the %d records in the source data. So no records will be deleted/cleared in the destination!" % (dest_qs.count(), dest_model, N)
+
         if verbosity:
             print "WARNING: Deleting %d records from %r to make room for %d new records !!!!!!!" % (dest_qs.count(), dest_model, N)
         num_deleted = delete_in_batches(dest_qs)
@@ -1842,12 +1884,13 @@ def import_items(item_seq, dest_model,  batch_len=500,
                 print('Stopping before batch {0} because it is not between {1} and {2}'.format(batch_num, start_batch, end_batch))
             break
         if verbosity > 2:
-            print(repr(dict_batch))
+            print '-------- dict batch ------'
+            # print(repr(dict_batch))
             print(repr((batch_num, len(dict_batch), batch_len)))
-            print(type(dict_batch))
         item_batch = []
         for d in dict_batch:
             if verbosity > 2:
+                print '-------- dict of source obj ------'
                 print(repr(d))
             obj = dest_model()
             try:
@@ -1857,10 +1900,11 @@ def import_items(item_seq, dest_model,  batch_len=500,
                 if verbosity > 2:
                     print '------ Creating a new %r instance --------' % dest_model
                 obj, row_errors = django_object_from_row(d, dest_model)
+                if verbosity > 2:
+                    print 'new obj.__dict__: %r' % obj.__dict__
             try:
                 if verbosity > 2:
-                    print '------ updating FKs with overwrite=%r --------' % overwrite
-                    print hasattr(obj, '_update')
+                    print '------ Updating FKs with overwrite=%r --------' % overwrite
                 obj._update(save=False, overwrite=overwrite)
             except:
                 if verbosity:
