@@ -1848,8 +1848,6 @@ def delete_in_batches(queryset, batch_len=10000, verbosity=1):
     return i
 
 
-
-
 ##############################################################
 # These import_* functions attempt to import data from one model into another
 
@@ -1857,6 +1855,7 @@ def import_items(item_seq, dest_model,  batch_len=500,
                  clear=False, dry_run=True, 
                  start_batch=0, end_batch=None, 
                  overwrite=True,
+                 run_update=False,
                  ignore_errors=False, verbosity=1):
     """Given a sequence (queryset, generator, tuple, list) of dicts import them into the given model"""
     if isinstance(dest_model, (djmodels.query.QuerySet, djmodels.Manager)):
@@ -1927,15 +1926,16 @@ def import_items(item_seq, dest_model,  batch_len=500,
                 obj, row_errors = django_object_from_row(d, dest_model)
                 if verbosity > 2:
                     print 'new obj.__dict__: %r' % obj.__dict__
-            try:
-                if verbosity > 2:
-                    print '------ Updating FKs with overwrite=%r --------' % overwrite
-                obj._update(save=False, overwrite=overwrite)
-            except:
-                if verbosity:
-                    print_exc()
-                    print 'ERROR: Unable to update record: %r' % obj
-                pass
+            if run_update:
+                try:
+                    if verbosity > 2:
+                        print '------ Updating FKs with overwrite=%r --------' % overwrite
+                    obj._update(save=False, overwrite=overwrite)
+                except:
+                    if verbosity:
+                        print_exc()
+                        print 'ERROR: Unable to update record: %r' % obj
+                    pass
             item_batch += [obj]
             stats += row_errors
         end_batch = end_batch or int(N / float(batch_len))
