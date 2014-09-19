@@ -1594,6 +1594,28 @@ def load_csv_to_model(path, model, field_names=None, delimiter=None, batch_len=1
 header_rows_to_ignore = [re.compile(r'^\s*[Dd]irectory\:.*$'), re.compile(r'^\s*[Nn]ame\:.*$'), re.compile(r'^\s*[-=_]+\s*$')]
 
 
+def path_size(path, total=False, ext='', level=None, verbosity=0):
+    """Walk the file tree and query the file.stat object(s) to compute their total (or individual) size in bytes
+
+    Returns:
+      dict: {relative_path: file_size_in_bytes, ...}
+
+    Examples:
+      >>> all(d >= 0 for d in path_size(__file__).values())
+      True
+      >>> sum(path_size(os.path.dirname(__file__)).values()) == path_size(os.path.dirname(__file__), total=True)
+      True
+      >>> path_size(__file__, total=True) > 10000
+      True
+      >>> len(path_size('.')) >= 2
+      True
+    """
+    dict_of_path_sizes = dict((d['path'], d['size']) for d in find_files(path, ext=ext, level=level, verbosity=0))
+    if total:
+        return reduce(lambda tot, size: tot + size, dict_of_path_sizes.values(), 0)
+    return dict_of_path_sizes
+
+
 def load_all_csvs_to_model(path, model, field_names=None, delimiter=None, batch_len=10000,
                            dialect=None, num_header_rows=1, mode='rUb',
                            strip=True, clear=False, dry_run=True, ignore_errors=True,
@@ -1658,60 +1680,63 @@ def load_all_csvs_to_model(path, model, field_names=None, delimiter=None, batch_
 def walk_level(path, level=1):
     """Like os.walk, but takes `level` kwarg that indicates how deep the recursion will go.
 
-    TODO: refactor `level`->`depth`
+    Notes:
+      TODO: refactor `level`->`depth`
 
-    From: http://stackoverflow.com/a/234329/623735
+    References:
+      http://stackoverflow.com/a/234329/623735
 
     Args:
-        path (str):  Root path to begin file tree traversal (walk)
-        level (int, optional): Depth of file tree to halt recursion at. 
-            None = full recursion to as deep as it goes
-            0 = nonrecursive, just provide a list of files at the root level of the tree
-            1 = one level of depth deeper in the tree
+      path (str):  Root path to begin file tree traversal (walk)
+      level (int, optional): Depth of file tree to halt recursion at. 
+        None = full recursion to as deep as it goes
+        0 = nonrecursive, just provide a list of files at the root level of the tree
+        1 = one level of depth deeper in the tree
 
-
-    >>> import os
-    >>> root = os.path.dirname(__file__)
-    >>> all((path.count('/')==root.count('/')) for (base, path, files) in walk_level(root, level=1))
-    True
+    Examples:
+      >>> root = os.path.dirname(__file__)
+      >>> all((os.path.join(base,d).count('/')==(root.count('/')+1)) for (base, dirs, files) in walk_level(root, level=0) for d in dirs)
+      True
     """
     if isinstance(level, NoneType):
         level = float('inf')
     path = path.rstrip(os.path.sep)
-    assert os.path.isdir(path)
-    root_level = path.count(os.path.sep)
-    for root, dirs, files in os.walk(path):
-        yield root, dirs, files
-        if root.count(os.path.sep) >= root_level + level:
-            del dirs[:]
+    if os.path.isdir(path):
+        root_level = path.count(os.path.sep)
+        for root, dirs, files in os.walk(path):
+            yield root, dirs, files
+            if root.count(os.path.sep) >= root_level + level:
+                del dirs[:]
+    else:
+        assert os.path.isfile(path)
+        yield os.path.dirname(path), [], [os.path.basename(path)]
 
 
 def find_files(path, ext='', level=None, verbosity=0):
     """Recursively find all files in the indicated directory with the indicated file name extension
 
     Args:
-        path (str):
-        ext (str):   File name extension. Only file paths that ".endswith()" this string will be returned
-        level (int, optional): Depth of file tree to halt recursion at. 
-            None = full recursion to as deep as it goes
-            0 = nonrecursive, just provide a list of files at the root level of the tree
-            1 = one level of depth deeper in the tree
+      path (str):
+      ext (str):   File name extension. Only file paths that ".endswith()" this string will be returned
+      level (int, optional): Depth of file tree to halt recursion at. 
+        None = full recursion to as deep as it goes
+        0 = nonrecursive, just provide a list of files at the root level of the tree
+        1 = one level of depth deeper in the tree
 
     Returns: 
-        list of dicts: dict keys are { 'path', 'name', 'bytes', 'created', 'modified', 'accessed', 'permissions' }
-            path (str): Full, absolute paths to file beneath the indicated directory and ending with `ext`
-            name (str): File name only (everythin after the last slash in the path)
-            size (int): File size in bytes
-            created (datetime): File creation timestamp from file system
-            modified (datetime): File modification timestamp from file system
-            accessed (datetime): File access timestamp from file system
-            permissions (int): File permissions bytes as a chown-style integer with a maximum of 4 digits 
-                e.g.: 777 or 1755
+      list of dicts: dict keys are { 'path', 'name', 'bytes', 'created', 'modified', 'accessed', 'permissions' }
+        path (str): Full, absolute paths to file beneath the indicated directory and ending with `ext`
+        name (str): File name only (everythin after the last slash in the path)
+        size (int): File size in bytes
+        created (datetime): File creation timestamp from file system
+        modified (datetime): File modification timestamp from file system
+        accessed (datetime): File access timestamp from file system
+        permissions (int): File permissions bytes as a chown-style integer with a maximum of 4 digits 
+          e.g.: 777 or 1755
 
     Examples:
-    >>> import os
-    >>> sorted(find_files(os.path.dirname(__file__), ext='.py', level=1))[0].endswith('__init__.py')
-    True
+      >>> sorted(d['name'] for d in find_files(os.path.dirname(__file__), ext='.py', level=0))[0]
+      '__init__.py'
     """
     path = path or './'
     files_in_queue = []
