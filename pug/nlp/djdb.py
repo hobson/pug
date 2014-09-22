@@ -1876,7 +1876,7 @@ def import_items(item_seq, dest_model,  batch_len=500,
         except AttributeError:
             src_qs = item_seq.all()
         N = src_qs.count()
-        item_seq = iter(src_qs.values())
+        item_seq = src_qs.values()
     except AttributeError as e:
         print_exc()
         if not ignore_errors:
