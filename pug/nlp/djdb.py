@@ -1877,10 +1877,11 @@ def import_items(item_seq, dest_model,  batch_len=500,
             src_qs = item_seq.all()
         N = src_qs.count()
         item_seq = iter(src_qs.values())
-    except AttributeError:
+    except AttributeError as e:
         print_exc()
+        if not ignore_errors:
+            raise e
         N = len(item_seq)
-
 
     if not N:
         if verbosity:
@@ -1901,9 +1902,9 @@ def import_items(item_seq, dest_model,  batch_len=500,
     if verbosity:
         print('Loading %r records from sequence provided...' % N)
         widgets = [pb.Counter(), '/%d rows: ' % N or 1, pb.Percentage(), ' ', pb.RotatingMarker(), ' ', pb.Bar(),' ', pb.ETA()]
-        pbar = pb.ProgressBar(widgets=widgets, maxval=N).start()
+        pbar = pb.ProgressBar(widgets=widgets, maxval=N)
 
-    for batch_num, dict_batch in enumerate(util.generate_batches(item_seq, batch_len)):
+    for batch_num, dict_batch in enumerate(util.generate_slices(item_seq, batch_len)):
         if batch_num < start_batch:
             if verbosity > 1:
                 print('Skipping batch {0} because not between {1} and {2}'.format(batch_num, start_batch, end_batch))
@@ -1917,6 +1918,8 @@ def import_items(item_seq, dest_model,  batch_len=500,
             # print(repr(dict_batch))
             print(repr((batch_num, len(dict_batch), batch_len)))
         item_batch = []
+
+        # convert an iterable of Django ORM record dictionaries into a list of Django ORM objects
         for d in dict_batch:
             if verbosity > 2:
                 print '-------- dict of source obj ------'
@@ -1943,13 +1946,21 @@ def import_items(item_seq, dest_model,  batch_len=500,
                     pass
             item_batch += [obj]
             stats += row_errors
+
+        # make sure there's a valid last batch number so the verbose messages will make sense
         end_batch = end_batch or int(N / float(batch_len))
         if verbosity and verbosity < 2:
-            pbar.update(batch_num * batch_len + len(dict_batch))
+            if batch_num:
+                pbar.update(batch_num * batch_len + len(dict_batch))
+            else:
+                # don't start the progress bar until at least one batch has been loaded
+                pbar.start()
         elif verbosity > 1:
             print('Writing {0} items (of type {1}) from batch {2}. Will stop at batch {3} which is record {4} ...'.format(
                 len(item_batch), dest_model, batch_num, end_batch , min(end_batch * batch_len, N),
                 ))
+
+        # use bulk_create to make fast DB insertions. Note: any custom save() or _update() methods will *NOT* be run
         if not dry_run:
             try:
                 dest_model.objects.bulk_create(item_batch)

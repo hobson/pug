@@ -224,15 +224,36 @@ def generate_batches(sequence, batch_len=1, allow_partial=True, ignore_errors=Tr
         yield batch
 
 
-def generate_slices(sliceable_set, batch_len=1, allow_partial=True, length=None):
-    """Iterate through a sequence (or generator) in batches of length `batch_len`
-
-    SEE ALSO: pug.nlp.djdb.generate_queryset_batches
-
-    BASED ON: http://stackoverflow.com/a/761125/623735
+def generate_tuple_batches(qs, batch_len=1):
+    """Iterate through a queryset in batches of length `batch_len`
 
     >>> [batch for batch in generate_batches(range(7), 3)]
-    [[0, 1, 2], [3, 4, 5], [6]]
+    [(0, 1, 2), (3, 4, 5), (6,)]
+    """
+    num_items, batch = 0, []
+    for item in qs:
+        if num_items >= batch_len:
+            yield tuple(batch)
+            num_items = 0
+            batch = []
+        num_items += 1
+        batch += [item]
+    if num_items:
+        yield tuple(batch)
+
+
+def generate_slices(sliceable_set, batch_len=1, length=None):
+    """Iterate through a sequence (or generator) in batches of length `batch_len`
+
+    See Also:
+      pug.nlp.djdb.generate_queryset_batches
+
+    References:
+      http://stackoverflow.com/a/761125/623735
+
+    Examples:
+      >>> [batch for batch in generate_batches(range(7), 3)]
+      [(0, 1, 2), (3, 4, 5), (6,)]
     """
     if length is None:
         try:
@@ -244,7 +265,7 @@ def generate_slices(sliceable_set, batch_len=1, allow_partial=True, length=None)
     for i in range(length / batch_len + 1):
         start = i * batch_len
         end = min((i + 1) * batch_len, length)
-        yield sliceable_set[start:end]
+        yield tuple(sliceable_set[start:end])
     raise StopIteration
 
 
