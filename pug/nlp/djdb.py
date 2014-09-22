@@ -1947,11 +1947,12 @@ def import_items(item_seq, dest_model,  batch_len=500,
             item_batch += [obj]
             stats += row_errors
 
+        del(dict_batch)
         # make sure there's a valid last batch number so the verbose messages will make sense
         end_batch = end_batch or int(N / float(batch_len))
         if verbosity and verbosity < 2:
             if batch_num:
-                pbar.update(batch_num * batch_len + len(dict_batch))
+                pbar.update(batch_num * batch_len + len(item_batch))
             else:
                 # don't start the progress bar until at least one batch has been loaded
                 pbar.start()
@@ -2003,6 +2004,7 @@ def import_items(item_seq, dest_model,  batch_len=500,
                 if not ignore_errors:
                     print_exc()
                     raise
+        del(item_batch)
 
     if verbosity:
         pbar.finish()
