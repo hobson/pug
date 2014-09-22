@@ -287,7 +287,6 @@ def get_model(model=DEFAULT_MODEL, app=None, fuzziness=False):
       True
 
     """
-    print 'getting model=%r from app=%r' % (model, app)
     if isinstance(model, djmodels.base.ModelBase):
         return model
     elif isinstance(model, (djmodels.Manager, djmodels.query.QuerySet)):
@@ -299,6 +298,7 @@ def get_model(model=DEFAULT_MODEL, app=None, fuzziness=False):
             tokens = model.split('.')
             model = tokens[-1]
             app = '.'.join(tokens[:-1])
+    # print 'getting model=%r from app=%r' % (model, app)
     try:
         # FIXME: this will turn app into a list of strings if app=None is passed in!!!
         app = get_app(app)
@@ -788,9 +788,11 @@ def find_model(model_name, apps=settings.INSTALLED_APPS, fuzziness=0):
     # if it looks like a file system path rather than django project.app.model path the return it as a string
     if '/' in model_name:
         return model_name
+    if not apps and isinstance(model_name, basestring) and '.' in model_name:
+        apps = [model_name.split('.')[0]]
     apps = util.listify(apps or settings.INSTALLED_APPS)
     for app in apps:
-        print 'getting %r, from app %r' % (model_name, app)
+        # print 'getting %r, from app %r' % (model_name, app)
         model = get_model(model=model_name, app=app, fuzziness=fuzziness)
         if model:
             return model
@@ -1850,6 +1852,7 @@ def delete_in_batches(queryset, batch_len=10000, verbosity=1):
 
 ##############################################################
 # These import_* functions attempt to import data from one model into another
+# They load the entire table into RAM despite creating generators of batches to load
 
 def import_items(item_seq, dest_model,  batch_len=500, 
                  clear=False, dry_run=True, 
@@ -1857,7 +1860,9 @@ def import_items(item_seq, dest_model,  batch_len=500,
                  overwrite=True,
                  run_update=False,
                  ignore_errors=False, verbosity=1):
-    """Given a sequence (queryset, generator, tuple, list) of dicts import them into the given model"""
+    """Import a sequence (queryset.values(), generator, tuple, list) of dicts into the given model
+
+    """
     if isinstance(dest_model, (djmodels.query.QuerySet, djmodels.Manager)):
         dest_qs = dest_model.all()
         dest_model = get_model(dest_qs)
@@ -1953,7 +1958,7 @@ def import_items(item_seq, dest_model,  batch_len=500,
                 connection._rollback()
                 if verbosity:
                     print '%s' % err
-                    print 'Now attempting tp save objects one at a time instead of as a batch...'
+                    print 'Now attempting to save objects one at a time instead of as a batch...'
                 for obj in item_batch:
                     try:
                         obj.save()
@@ -1972,7 +1977,7 @@ def import_items(item_seq, dest_model,  batch_len=500,
                 connection._rollback()
                 if verbosity:
                     print '%s' % err
-                    print 'Now attempting tp save objects one at a time instead of as a batch...'
+                    print 'Now attempting to save objects one at a time instead of as a batch...'
                 for obj in item_batch:
                     try:
                         obj.save()
