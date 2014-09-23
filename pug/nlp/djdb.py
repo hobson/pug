@@ -17,7 +17,6 @@ from decimal import Decimal
 from operator import itemgetter
 from types import NoneType
 import importlib
-import time
 
 from django.core import serializers
 from django.db.models import related
@@ -1346,14 +1345,12 @@ def django_object_from_row(row, model, field_names=None, ignore_fields=('id', 'p
       Model instance: Django model instance constructed with values from `row` in fields
         from `field_names` or `model`'s fields
     """
-    T0 = time.clock()
     field_dict, errors = field_dict_from_row(row, model, field_names=field_names, ignore_fields=ignore_fields, strip=strip,
                                              ignore_errors=ignore_errors, verbosity=verbosity)
     if verbosity >= 3:
         print 'field_dict = %r' % field_dict
     try:
         obj = model(**field_dict)
-        print("coercing into an obj took %r ms." % (1000.*(time.clock() - T0)))
         return obj, errors
     except:
         print_exc()
@@ -1378,7 +1375,6 @@ def field_dict_from_row(row, model, field_names=None, ignore_fields=('id', 'pk')
     Returns:
       dict: Mapping from fields to values compatible with a Django model constructor kwargs, `model(**kwargs)`
     """
-    T0= time.clock()
     errors = collections.Counter()
     if not field_names:
         field_classes = [f for f in model._meta._fields() if (not ignore_fields or (f.name not in ignore_fields))]
@@ -1466,7 +1462,6 @@ def field_dict_from_row(row, model, field_names=None, ignore_fields=('id', 'pk')
                         raise  
         if not ignore_values or clean_value not in ignore_values:
             field_dict[field_name] = clean_value
-    print("dict building took %r ms." % (1000.*(time.clock() - T0)))
     return field_dict, errors
 
 
