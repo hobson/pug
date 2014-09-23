@@ -1358,7 +1358,14 @@ def django_object_from_row(row, model, field_names=None, ignore_fields=('id', 'p
 
 
 
-def field_dict_from_row(row, model, field_names=None, ignore_fields=('id', 'pk'), strip=True, blank_none=True, ignore_related=True, ignore_values=(None,), ignore_errors=True, verbosity=0):
+def field_dict_from_row(row, model,
+                        field_names=None, ignore_fields=('id', 'pk'), 
+                        strip=True, 
+                        blank_none=True, 
+                        ignore_related=True, 
+                        ignore_values=(None,), 
+                        ignore_errors=True, 
+                        verbosity=0):
     """Construct a Mapping (dict) from field names to values from a row of data
 
     Args:
@@ -1445,7 +1452,7 @@ def field_dict_from_row(row, model, field_names=None, ignore_fields=('id', 'pk')
             if strip:
                 clean_value = clean_value.strip()
             # don't forget to decode the utf8 before doing a max_length truncation!
-            clean_value = clean_utf8(clean_value).decode('utf8')
+            clean_value = clean_utf8(clean_value, verbosity=verbosity).decode('utf8')
             max_length = getattr(field_class, 'max_length')
             if max_length:
                 try:
@@ -1567,7 +1574,7 @@ def load_csv_to_model(path, model, field_names=None, delimiter=None, batch_len=1
                         if not ignore_errors:
                             raise ValueError('ERROR importing row #%d which had %d columns, but previous rows had %d.' % (i + j + 1, len(row), M))
                 try:
-                    obj, row_errors = django_object_from_row(row, model=model, field_names=field_names, strip=strip)
+                    obj, row_errors = django_object_from_row(row, model=model, field_names=field_names, strip=strip, verbosity=verbosity)
                     batch_of_objects += [obj]
                     errors += row_errors
                 except:
@@ -1929,7 +1936,7 @@ def import_items(item_seq, dest_model,  batch_len=500,
             except:
                 if verbosity > 2:
                     print '------ Creating a new %r instance --------' % dest_model
-                obj, row_errors = django_object_from_row(d, dest_model)
+                obj, row_errors = django_object_from_row(d, dest_model, verbosity=verbosity)
                 if verbosity > 2:
                     print 'new obj.__dict__: %r' % obj.__dict__
             if run_update:

@@ -664,39 +664,44 @@ def strip_nonascii(s):
     return replace_nonascii(s, filler='')
 
 
-def clean_utf8(byte_string, carefully=False, encodings_to_try=('shift-jis', 'shift-jis-2004', 'CP-1252', 'iso-8859-1', 'utf16'), verbosity=0):
+def clean_utf8(byte_seq, carefully=False, encodings_to_try=('shift-jis', 'ISO-8859-2', 'utf8', 'shift-jis-2004', 'CP-1252', 'iso-8859-1', 'utf16'), verbosity=0):
     r"""Delete any invalid symbols in a UTF-8 encoded string
 
-    Returns the cleaned string.
+    Returns:
+      str: `byte_seq` encoded in UTF-8, e.g. `unicode(byte_seq).encode('utf-8')`
 
-    default `encodings_to_try` = ('shift-jis', 'shift-jis-2004', 'CP-1252', 'iso-8859-1', 'utf16')
-      'shift-jis': Japanese corporations often use
-      'CP1252' : legacy microsoft windows SQLServer that seems to work for u'\xff\xfe' line terminations
-                 Japanese corporations often use 'SQL_Latin1_General_CP1_CI_AS', a case-insensitive mix of CP-1252 and UTF-8
-      'iso-8859-1' : MS SQL Server default encoding
+    Arguments:
+      encodings_to_try (list of str): List of encodings to use to attempt to decode the byte sequence, listed in priority order.
+        default: = ['shift-jis', 'ISO-8859-2', 'utf8', 'shift-jis-2004', 'CP-1252', 'iso-8859-1', 'utf16']
+          'shift-jis': Japanese corporate data in MS SQL databases is often encoded in Shift JIS
+          'CP1252' : Legacy microsoft windows SQLServer that seems to work for u'\xff\xfe' line terminations
+          'SQL_Latin1_General_CP1_CI_AS': A case-insensitive mix of CP-1252 and UTF-8 common among Japanese corporations
+          'iso-8859-1' : MS SQL Server default encoding (before 2008)
+          'iso-8859-2' : MS SQL Server default encoding (before 2012)
 
-    
-    >>> clean_utf8('`A\xff\xffBC\x7fD\tE\r\nF~G`')
-    '`A\xc3\xbf\xc3\xbfBC\x7fD\tE\r\nF~G`'
-    >>> clean_utf8('`A\xff\xffBC\x7fD\tE\r\nF~G`').decode('UTF8')
-    u'`A\xff\xffBC\x7fD\tE\r\nF~G`'
-    >>> clean_utf8('`A\xff\xffBC\x7fD\tE\r\nF~G`', carefully=True)
-    '`ABC\x7fD\tE\r\nF~G`'
-    >>> clean_utf8('U\xc2\xa0\xc2\xa0\xc2\xa0\xc2\xa0\xc2').decode('UTF8')
+    Examples:
+      >>> clean_utf8('`A\xff\xffBC\x7fD\tE\r\nF~G`')
+      '`A\xc3\xbf\xc3\xbfBC\x7fD\tE\r\nF~G`'
+      >>> clean_utf8('`A\xff\xffBC\x7fD\tE\r\nF~G`').decode('UTF8')
+      u'`A\xff\xffBC\x7fD\tE\r\nF~G`'
+      >>> clean_utf8('`A\xff\xffBC\x7fD\tE\r\nF~G`', carefully=True)
+      '`ABC\x7fD\tE\r\nF~G`'
+      >>> clean_utf8('U\xc2\xa0\xc2\xa0\xc2\xa0\xc2\xa0\xc2').decode('UTF8')
     """
-    #print 'cleaning: ' + repr(byte_string)
-    if not isinstance(byte_string, basestring):
-        return byte_string
-    try:
-        return unicode(byte_string).encode('utf-8')
-    except:
-        if verbosity:
-            print 'Unable to quickly convert to UTF-8'
+    #print 'cleaning: ' + repr(byte_seq)
+    if not isinstance(byte_seq, basestring):
+        return byte_seq
+    for enc in encodings_to_try:
+        try:
+            return unicode(byte_seq.decode(enc)).encode('utf8')
+        except UnicodeDecodeError:
+            if verbosity > 1:
+                print("Unable to short-circuit clean_utf8 function with try {0}.decode({1})".format(byte_seq, enc))
     if carefully:
         while True:
             try:
-                byte_string.decode('utf8')
-                # json.dumps(byte_string)
+                byte_seq.decode('utf8')
+                # json.dumps(byte_seq)
                 break
             except UnicodeDecodeError as e:
                     if verbosity:
@@ -704,36 +709,37 @@ def clean_utf8(byte_string, carefully=False, encodings_to_try=('shift-jis', 'shi
                     m = re.match(r".*can't[ ]decode[ ]byte[ ]0x[0-9a-fA-F]{2}[ ]in[ ]position[ ](\d+)[ :.].*", str(e))
                     if m and m.group(1):
                         i = int(m.group(1))
-                        byte_string = byte_string[:i] + byte_string[i+1:]
+                        byte_seq = byte_seq[:i] + byte_seq[i+1:]
                     else:
                         raise e
             except UnicodeEncodeError:
                 if verbosity:
-                    'cleaned carefully and got UnicodeEncodeError, left with: %r' % unicode(byte_string)
-                return unicode(byte_string)
+                    'cleaned carefully and got UnicodeEncodeError, left with: %r' % unicode(byte_seq)
+                return unicode(byte_seq)
         if verbosity:
-            'cleaned carefully and came up with: %r' % unicode(byte_string)
-        return byte_string
+            'cleaned carefully and came up with: %r' % unicode(byte_seq)
+        return byte_seq
     else:
-        diagnosis = None
+        diagnosis = {'encoding': None, 'confidence': -1}
         try:
-            diagnosis = chardet.detect(byte_string)
+            diagnosis = chardet.detect(byte_seq)
         except:
             if verbosity:
                 from traceback import print_exc
                 print_exc()
-            diagnosis = {'confidence': -1}
+        if verbosity:
+            print diagnosis
         if diagnosis['confidence'] > 0.25:
             try:
                 # FIXME: should this be unicode instead of str?
-                return unicode(byte_string.decode(diagnosis['encoding']).encode('utf8'))
+                return unicode(byte_seq.decode(diagnosis['encoding']).encode('utf8'))
             except:
                 pass
-        for encoding in encodings_to_try:
+        for encoding in encodings_to_try[1:]:
             try:
-                return unicode(byte_string.decode(encoding).encode('utf8'))
+                return unicode(byte_seq.decode(encoding).encode('utf8'))
             except:
                 pass
-        return clean_utf8(byte_string, carefully=True)
+        return clean_utf8(byte_seq, carefully=True)
 
 
