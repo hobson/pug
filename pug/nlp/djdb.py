@@ -17,6 +17,7 @@ from decimal import Decimal
 from operator import itemgetter
 from types import NoneType
 import importlib
+import time
 
 from django.core import serializers
 from django.db.models import related
@@ -1327,10 +1328,6 @@ class Columns(collections.OrderedDict):
         # return float(Decimal(int(scale_factor)) / 10).quantize(1, rounding=ROUND_UP) * 10)
 
 
-def fixture_record_from_row():
-    raise NotImplementedError("FIXME: See pug.nlp.djdb.django_object_from_row and pug.nlp.djdb.field_dict_from_row")
-
-
 def django_object_from_row(row, model, field_names=None, ignore_fields=('id', 'pk'), strip=True, ignore_errors=True, verbosity=0):
     """Construct Django model instance from values provided in a python dict or Mapping
 
@@ -1349,19 +1346,22 @@ def django_object_from_row(row, model, field_names=None, ignore_fields=('id', 'p
       Model instance: Django model instance constructed with values from `row` in fields
         from `field_names` or `model`'s fields
     """
+    T0 = time.clock()
     field_dict, errors = field_dict_from_row(row, model, field_names=field_names, ignore_fields=ignore_fields, strip=strip,
-                                     ignore_errors=ignore_errors, verbosity=verbosity)
-    errors = collections.Counter()
+                                             ignore_errors=ignore_errors, verbosity=verbosity)
     if verbosity >= 3:
         print 'field_dict = %r' % field_dict
     try:
-        return model(**field_dict), errors
+        obj = model(**field_dict)
+        print("coercing into an obj took %r ms." % (1000.*(time.clock() - T0)))
+        return obj, errors
     except:
         print_exc()
         raise ValueError('Unable to coerce the dict = %r into a %r object' % (field_dict, model))
 
 
-def field_dict_from_row(row, model, field_names=None, ignore_fields=('id', 'pk'), strip=True, blank_none=True, ignore_values=(None,), ignore_errors=True, verbosity=0):
+
+def field_dict_from_row(row, model, field_names=None, ignore_fields=('id', 'pk'), strip=True, blank_none=True, ignore_related=True, ignore_values=(None,), ignore_errors=True, verbosity=0):
     """Construct a Mapping (dict) from field names to values from a row of data
 
     Args:
@@ -1378,6 +1378,7 @@ def field_dict_from_row(row, model, field_names=None, ignore_fields=('id', 'pk')
     Returns:
       dict: Mapping from fields to values compatible with a Django model constructor kwargs, `model(**kwargs)`
     """
+    T0= time.clock()
     errors = collections.Counter()
     if not field_names:
         field_classes = [f for f in model._meta._fields() if (not ignore_fields or (f.name not in ignore_fields))]
@@ -1395,15 +1396,16 @@ def field_dict_from_row(row, model, field_names=None, ignore_fields=('id', 'pk')
         if verbosity >= 3:
             print field_name, field_class, value
         if isinstance(field_class, related.RelatedField):
-            try:
-                clean_value = field_class.related.parent_model.objects.get(value)
-            except:
+            if not ignore_related:
                 try:
-                    clean_value = field_class.related.parent_model.objects.get_by_natural_key(value)
+                    clean_value = field_class.related.parent_model.objects.get(value)
                 except:
-                    errors += collections.Counter(['num_unlinked_fks'])
-                    if verbosity > 1:
-                        print 'Unable to connect related field %r using value %r' % (field_class, value)
+                    try:
+                        clean_value = field_class.related.parent_model.objects.get_by_natural_key(value)
+                    except:
+                        errors += collections.Counter(['num_unlinked_fks'])
+                        if verbosity > 1:
+                            print 'Unable to connect related field %r using value %r' % (field_class, value)
         # FIXME: lots of redundancy and potential for error here and below
         if isinstance(value, basestring) and not value:
             if verbosity >= 3:
@@ -1464,6 +1466,7 @@ def field_dict_from_row(row, model, field_names=None, ignore_fields=('id', 'pk')
                         raise  
         if not ignore_values or clean_value not in ignore_values:
             field_dict[field_name] = clean_value
+    print("dict building took %r ms." % (1000.*(time.clock() - T0)))
     return field_dict, errors
 
 
@@ -2489,16 +2492,16 @@ def generate_queryset_batches(queryset, batch_len=1000, verbosity=1):
         pbar.finish()
 
 
-def fixture_from_table(table, header_rows=1):
-    """JSON string that represents a valid Django fixture for the data in a table"""
-    yield '[\n'
-    for i in range(header_rows, len(table)):
-        s = fixture_record_from_row(table[i])
-        if i == header_rows:
-            yield s + '\n'
-        else:
-            yield ',\n' + s + '\n'
-    yield ']\n'
+# def fixture_from_table(table, header_rows=1):
+#     """JSON string that represents a valid Django fixture for the data in a table"""
+#     yield '[\n'
+#     for i in range(header_rows, len(table)):
+#         s = fixture_record_from_row(table[i])
+#         if i == header_rows:
+#             yield s + '\n'
+#         else:
+#             yield ',\n' + s + '\n'
+#     yield ']\n'
 
 
 def force_text(s, encoding='utf-8', strings_only=False, errors='strict'):

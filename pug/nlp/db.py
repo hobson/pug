@@ -687,6 +687,11 @@ def clean_utf8(byte_string, carefully=False, encodings_to_try=('shift-jis', 'shi
     #print 'cleaning: ' + repr(byte_string)
     if not isinstance(byte_string, basestring):
         return byte_string
+    try:
+        return unicode(byte_string).encode('utf-8')
+    except:
+        if verbosity:
+            print 'Unable to quickly convert to UTF-8'
     if carefully:
         while True:
             try:
@@ -721,12 +726,12 @@ def clean_utf8(byte_string, carefully=False, encodings_to_try=('shift-jis', 'shi
         if diagnosis['confidence'] > 0.25:
             try:
                 # FIXME: should this be unicode instead of str?
-                return str(byte_string.decode(diagnosis['encoding']).encode('utf8'))
+                return unicode(byte_string.decode(diagnosis['encoding']).encode('utf8'))
             except:
                 pass
         for encoding in encodings_to_try:
             try:
-                return str(byte_string.decode(encoding).encode('utf8'))
+                return unicode(byte_string.decode(encoding).encode('utf8'))
             except:
                 pass
         return clean_utf8(byte_string, carefully=True)
