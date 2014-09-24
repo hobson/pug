@@ -248,18 +248,21 @@ def _update(obj, fields=None, save=False, overwrite=False):
         meta = obj._meta
         fields = [f.name for f in meta.fields if not f.primary_key and hasattr(meta, '_get_' + f.name) and hasattr(meta, '_' + f.name)]
     # print fields
+    fields_updated = []
     for field in fields:
         # skip fields if they contain non-null data and `overwrite` option wasn't set
-        if not overwrite and not isinstance(getattr(obj, field, None), NoneType):
+        if not overwrite and not getattr(obj, field, None) == None:
             # print 'skipping %s which already has a value of %s' % (field, getattr(obj, field, None))
             continue
         # print field
         if hasattr(obj, field):
             # print field, getattr(obj, '_' + field, None)
             setattr(obj, field, getattr(obj, '_' + field, None))
+            if getattr(obj, field, None) != None:
+                fields_updated += [field]
     if save:
         obj.save()
-    return obj
+    return fields_updated
 
 # TODO: make this a decotator class that accepts arguments which become default args of the link_rels method (fields, overwrite, save)
 def linkable_rels(cls):

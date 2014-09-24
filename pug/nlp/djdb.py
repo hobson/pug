@@ -897,7 +897,7 @@ def shared_field_names(model0, model1):
     return diff[0]
 
 
-def diff_data(model0, model1, pk_name='pk', field_names=None, ignore_related=False, strip=True, nulls=(0, 0.0, ''), clean_unicode=clean_utf8, short_circuit=False, ignore_field_names=None, verbosity=2, limit=10000):
+def diff_data(model0, model1, pk_name='pk', field_names=None, ignore_related=True, strip=True, nulls=(0, 0.0, ''), clean_unicode=clean_utf8, short_circuit=False, ignore_field_names=None, verbosity=2, limit=10000):
     nulls = set(nulls) if nulls else set()
     ans = {
         'count': 0,
@@ -1327,7 +1327,7 @@ class Columns(collections.OrderedDict):
         # return float(Decimal(int(scale_factor)) / 10).quantize(1, rounding=ROUND_UP) * 10)
 
 
-def django_object_from_row(row, model, field_names=None, ignore_fields=('id', 'pk'), strip=True, ignore_errors=True, verbosity=0):
+def django_object_from_row(row, model, field_names=None, ignore_fields=('id', 'pk'), ignore_related=True, strip=True, ignore_errors=True, verbosity=0):
     """Construct Django model instance from values provided in a python dict or Mapping
 
     Args:
@@ -1346,7 +1346,7 @@ def django_object_from_row(row, model, field_names=None, ignore_fields=('id', 'p
         from `field_names` or `model`'s fields
     """
     field_dict, errors = field_dict_from_row(row, model, field_names=field_names, ignore_fields=ignore_fields, strip=strip,
-                                             ignore_errors=ignore_errors, verbosity=verbosity)
+                                             ignore_errors=ignore_errors, ignore_related=ignore_related, verbosity=verbosity)
     if verbosity >= 3:
         print 'field_dict = %r' % field_dict
     try:
@@ -1355,7 +1355,6 @@ def django_object_from_row(row, model, field_names=None, ignore_fields=('id', 'p
     except:
         print_exc()
         raise ValueError('Unable to coerce the dict = %r into a %r object' % (field_dict, model))
-
 
 
 def field_dict_from_row(row, model,
@@ -1863,7 +1862,7 @@ def import_items(item_seq, dest_model,  batch_len=500,
                  clear=False, dry_run=True, 
                  start_batch=0, end_batch=None, 
                  overwrite=True,
-                 run_update=False,
+                 run_update=False, ignore_related=True,
                  ignore_errors=False, verbosity=1):
     """Import a sequence (queryset.values(), generator, tuple, list) of dicts into the given model
 
@@ -1936,7 +1935,7 @@ def import_items(item_seq, dest_model,  batch_len=500,
             except:
                 if verbosity > 2:
                     print '------ Creating a new %r instance --------' % dest_model
-                obj, row_errors = django_object_from_row(d, dest_model, verbosity=verbosity)
+                obj, row_errors = django_object_from_row(d, dest_model, ignore_related=ignore_related, verbosity=verbosity)
                 if verbosity > 2:
                     print 'new obj.__dict__: %r' % obj.__dict__
             if run_update:
@@ -2419,7 +2418,7 @@ def bulk_update(object_list, ignore_errors=False, delete_first=False, verbosity=
     if verbosity > 1:
         print 'Queryset to delete has %d objects' % objs_to_delete.count()
     objs_to_delete.delete()
-    if not delete_first:
+    if delete_first:
         model.objects.bulk_create(object_list)
     if verbosity > 1:
         print 'AFTER: %d' % model.objects.count()
