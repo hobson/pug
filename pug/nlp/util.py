@@ -161,7 +161,7 @@ def clean_field_dict(field_dict, cleaner=unicode.strip, time_zone=None):
     return d
 
 
-def reduce_vocab(tokens, similarity=.85, limit=20):
+def reduce_vocab(tokens, similarity=.87, limit=20):
     """Find spelling variations of similar words within a list of words to reduce unique set length
 
     Returns:
@@ -172,11 +172,13 @@ def reduce_vocab(tokens, similarity=.85, limit=20):
       >>> reduce_vocab(tokens)
       
     """
-    tokens = set(tokens)
+    token_set = set(tokens)
+    token_list = (t for (l, t) in sorted((-len(tok), tok) for tok in token_set))
+
     thesaurus = {}
-    while tokens:
-        tok = tokens.pop()
-        matches = fuzzy.extractBests(tok, tokens, score_cutoff=int(similarity * 100), limit=20)
+    while token_list:
+        tok = token_list.next()
+        matches = fuzzy.extractBests(tok, tokens, score_cutoff=int(similarity/(10 + len(tok)) * 100), limit=20)
         if matches:
             thesaurus[tok] = zip(*matches)[0]
         else:
@@ -2000,3 +2002,9 @@ def uniq_tag(seq, k=4, other_strings=None):
         print min(km_frequencies)
         return min(km_frequencies)[1]
     return tuple(uniq_tag(s, other_strings) for s in seq)
+
+
+def count_duplicates(items):
+    """Return a dict of objects and thier counts (like a Counter), but only count > 1"""
+    c = collections.Counter(items)
+    return dict((k, v) for (k,v) in c.iteritems() if v > 1)

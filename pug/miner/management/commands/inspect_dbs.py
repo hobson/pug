@@ -11,11 +11,12 @@ from django.core.management import call_command
 # 2. create a Model mixin that stores attributes in the Meta class per this:
 #   http://stackoverflow.com/questions/1088431/adding-attributes-into-django-models-meta-class
 
+from pug.nlp.util import make_name
 
-def inspect_dbs(output_dir='.', db_names=None, db_aliases=None, alias_prefix='SEC_', db_alias_lower=str.lower, verbosity=1):
-    return
+
+def inspect_dbs(output_dir='.', db_names=None, db_aliases=None, alias_prefix='SEC_', db_alias_maker=make_name, verbosity=1):
     db_names = db_names or settings.INSPECT_DB_NAMES
-    db_aliases = db_aliases or [alias_prefix + db_alias_lower(name) for name in db_names]
+    db_aliases = db_aliases or [alias_prefix + db_alias_maker(name) for name in db_names]
     for db_name, db_alias in zip(db_names, db_aliases):
         fn = os.path.join(os.path.realpath(output_dir), 'models_%s.py' % db_alias)
         if verbosity:
