@@ -733,6 +733,10 @@ def model_from_path(model_path, fuzziness=False):
     """
     app_name = '.'.join(model_path.split('.')[:-1])
     model_name = model_path.split('.')[-1]
+
+    if not app_name:
+        return None
+
     module = importlib.import_module(app_name)
     try:
         model = getattr(module, model_name)
