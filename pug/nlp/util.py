@@ -161,7 +161,31 @@ def clean_field_dict(field_dict, cleaner=unicode.strip, time_zone=None):
     return d
 
 
-def reduce_vocab(tokens, similarity=.87, limit=20):
+def reduce_vocab(tokens, similarity=.85, limit=20):
+    """Find spelling variations of similar words within a list of words to reduce unique set length
+
+    Returns:
+      dict: { 'token': ('similar_token', 'similar_token2', ...), ...}
+
+    Examples:
+      >>> tokens = ('on', 'hon', 'honey', 'ones', 'one', 'two', 'three')
+      >>> reduce_vocab(tokens)
+      
+    """
+    tokens = set(tokens)
+    thesaurus = {}
+    while tokens:
+        tok = tokens.pop()
+        matches = fuzzy.extractBests(tok, tokens, score_cutoff=int(similarity * 100), limit=20)
+        if matches:
+            thesaurus[tok] = zip(*matches)[0]
+        else:
+            thesaurus[tok] = (tok,)
+        for syn in thesaurus[tok][1:]:
+            tokens.discard(syn)
+    return thesaurus
+
+def reduce_vocab_list(tokens, similarity=.87, limit=20):
     """Find spelling variations of similar words within a list of words to reduce unique set length
 
     Returns:
