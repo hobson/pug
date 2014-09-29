@@ -1539,14 +1539,33 @@ def get_sentences(s, regex=RE.sentence_sep):
 # this regex assumes "s' " is the end of a possessive word and not the end of an inner quotation, e.g. He said, "She called me 'Hoss'!"
 def get_words(s, splitter_regex=RE.word_sep_except_external_appostrophe, 
               preprocessor=strip_HTML, postprocessor=strip_edge_punc, min_len=None, max_len=None, blacklist=None, whitelist=None, lower=False, filter_fun=None, str_type=str):
-    r"""Segment words (tokens), returning a list of all tokens (but not the separators/punctuation)
+    r"""Segment words (tokens), returning a list of all tokens 
+
+    Does not return any separating whitespace or punctuation marks.
+    Attempts to return external apostrophes at the end of words.
+    Comparable to `nltk.word_toeknize`.
+
+    Arguments:
+      splitter_regex (str or re): compiled or uncompiled regular expression
+        Applied to the input string using `re.split()`
+      preprocessor (function): defaults to a function that strips out all HTML tags
+      postprocessor (function): a function to apply to each token before return it as an element in the word list
+        Applied using the `map()` builtin
+      min_len (int): delete all words shorter than this number of characters
+      max_len (int): delete all words longer than this number of characters
+      blacklist and whitelist (list of str): words to delete or preserve
+      lower (bool): whether to convert all words to lowercase
+      str_type (type): typically `str` or `unicode`, any type constructor that should can be applied to all words before returning the list
+
+    Returns:
+      list of str: list of tokens
 
     >>> get_words('He said, "She called me \'Hoss\'!". I didn\'t hear.')
     ['He', 'said', 'She', 'called', 'me', 'Hoss', 'I', "didn't", 'hear']
     >>> get_words('The foxes\' oh-so-tiny den was 2empty!')
     ['The', 'foxes', 'oh-so-tiny', 'den', 'was', '2empty']
     """
-    # TODO: Get rid of lower kwarg (and make sure code that uses it doesn't break) 
+    # TODO: Get rid of `lower` kwarg (and make sure code that uses it doesn't break) 
     #       That and other simple postprocessors can be done outside of get_words
     postprocessor = postprocessor or str_type
     preprocessor = preprocessor or str_type

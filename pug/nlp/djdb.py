@@ -20,7 +20,7 @@ import importlib
 
 from django.core import serializers
 from django.db.models import related
-from django.db import connection
+from django.db import transaction
 from django.db import models as djmodels
 
 import progressbar as pb  # import ProgressBar, Percentage, RotatingMarker, Bar, ETA
@@ -275,14 +275,14 @@ def get_model(model=DEFAULT_MODEL, app=None, fuzziness=False):
 
     Examples:
 
-      >>> from django.db import connection
-      >>> connection.close() 
+      >>> from django.db import transaction
+      >>> transaction.rollback() 
       >>> get_model('mission', fuzziness=.7).__name__.startswith('Permi')
       True
-      >>> connection.close() 
+      >>> transaction.rollback() 
       >>> isinstance(get_model('ser', fuzziness=.5), djmodels.base.ModelBase)
       True
-      >>> connection.close() 
+      >>> transaction.rollback() 
       >>> get_model(get_model('CaseMaster', DEFAULT_APP, fuzziness=.05)).objects.count() >= 0
       True
 
@@ -335,8 +335,8 @@ def get_model(model=DEFAULT_MODEL, app=None, fuzziness=False):
 
 def get_queryset(qs=None, app=DEFAULT_APP, db_alias=None):
     """
-    >>> from django.db import connection
-    >>> connection.close() 
+    >>> from django.db import transaction
+    >>> transaction.rollback() 
     >>> get_queryset('WikiI').count() > 0
     True
     """
@@ -605,8 +605,8 @@ def count_in_date(x='date_time', filter_dict=None, model=DEFAULT_MODEL, app=DEFA
     """
     Count the number of records for each discrete (categorical) value of a field and return a dict of two lists, the field values and the counts.
 
-    >>> from django.db import connection
-    >>> connection.close()
+    >>> from django.db import transaction
+    >>> transaction.rollback()
     >>> x, y = count_in_date(x='date', filter_dict={'model__icontains': 'LC5'}, limit=5, sort=1)
     >>> len(x) == len(y) == 5
     True
@@ -641,8 +641,8 @@ def sum_in_date(x='date', y='net_sales', filter_dict=None, model='WikiItem', app
     """
     Count the number of records for each discrete (categorical) value of a field and return a dict of two lists, the field values and the counts.
 
-    >>> from django.db import connection
-    >>> connection.close()
+    >>> from django.db import transaction
+    >>> transaction.rollback()
     >>> x, y = sum_in_date(y='net_sales', filter_dict={'model__startswith': 'LC60'}, model='WikiItem', limit=5, sort=1)
     >>> len(x) == len(y) == 5
     True
@@ -1974,7 +1974,7 @@ def import_items(item_seq, dest_model,  batch_len=500,
             try:
                 dest_model.objects.bulk_create(item_batch)
             except UnicodeDecodeError as err:
-                from django.db import connection
+                from django.db import transaction
                 connection._rollback()
                 if verbosity:
                     print '%s' % err
@@ -1984,7 +1984,7 @@ def import_items(item_seq, dest_model,  batch_len=500,
                         obj.save()
                         stats += collections.Counter(['batch_UnicodeDecodeError'])
                     except:
-                        from django.db import connection
+                        from django.db import transaction
                         connection._rollback()
                         stats += collections.Counter(['save_UnicodeDecodeError'])
                         print str(obj)
@@ -1993,7 +1993,7 @@ def import_items(item_seq, dest_model,  batch_len=500,
                     print_exc()
                     raise
             except Exception as err:
-                from django.db import connection
+                from django.db import transaction
                 connection._rollback()
                 if verbosity:
                     print '%s' % err
@@ -2003,7 +2003,7 @@ def import_items(item_seq, dest_model,  batch_len=500,
                         obj.save()
                         stats += collections.Counter(['batch_Error'])
                     except:
-                        from django.db import connection
+                        from django.db import transaction
                         connection._rollback()
                         print str(obj)
                         print repr(obj.__dict__)
@@ -2073,7 +2073,7 @@ def update_items(item_seq,  batch_len=500, dry_run=True, start_batch=0, end_batc
             try:
                 bulk_update(obj_batch, ignore_errors=ignore_errors, delete_first=True, verbosity=verbosity)
             except Exception as err:
-                from django.db import connection
+                from django.db import transaction
                 connection._rollback()
                 if verbosity:
                     print '%s' % err
@@ -2083,7 +2083,7 @@ def update_items(item_seq,  batch_len=500, dry_run=True, start_batch=0, end_batc
                         obj.save()
                         stats += collections.Counter(['batch_Error'])
                     except:
-                        from django.db import connection
+                        from django.db import transaction
                         connection._rollback()
                         print str(obj)
                         print repr(obj.__dict__)
