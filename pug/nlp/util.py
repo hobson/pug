@@ -162,10 +162,10 @@ def clean_field_dict(field_dict, cleaner=unicode.strip, time_zone=None):
 
 
 def reduce_vocab(tokens, similarity=.85, limit=20):
-    """Find spelling variations of similar words within a list of words to reduce unique set length
+    """Find spelling variations of similar words within a list of tokens to reduce token set size
 
-    Returns:
-      dict: { 'token': ('similar_token', 'similar_token2', ...), ...}
+    Arguments:
+      tokens (list or set or tuple of str): token strings from which to eliminate similar spellings
 
     Examples:
       >>> tokens = ('on', 'hon', 'honey', 'ones', 'one', 'two', 'three')
@@ -184,6 +184,41 @@ def reduce_vocab(tokens, similarity=.85, limit=20):
         for syn in thesaurus[tok][1:]:
             tokens.discard(syn)
     return thesaurus
+
+
+def reduce_vocab_reversed(tokens, similarity=.85, limit=20):
+    """Find spelling variations of similar words within a list of tokens to reduce token set size
+
+    Reverse-lexically sorted before running through fuzzy-wuzzy to prefer longer tokens
+    and words later in the dictionary for use as the key token.
+
+    Arguments:
+      tokens (list or set or tuple of str): token strings from which to eliminate similar spellings
+
+    Returns:
+      dict: { 'token': ('similar_token', 'similar_token2', ...), ...}
+
+    Examples:
+      >>> reduce_vocab_reversed(('on', 'hon', 'honey', 'ones', 'one', 'two', 'three'))
+      
+    """
+    tokens = set(tokens)
+    tokens_sorted = sorted(list(tokens), reverse=True)
+    thesaurus = {}
+    for tok in tokens_sorted:
+        try:
+            tokens.remove(tok)
+        except KeyError:
+            continue
+        matches = fuzzy.extractBests(tok, tokens, score_cutoff=int(similarity * 100), limit=20)
+        if matches:
+            thesaurus[tok] = zip(*matches)[0]
+        else:
+            thesaurus[tok] = (tok,)
+        for syn in thesaurus[tok][1:]:
+            tokens.discard(syn)
+    return thesaurus
+
 
 def reduce_vocab_list(tokens, similarity=.87, limit=20):
     """Find spelling variations of similar words within a list of words to reduce unique set length
