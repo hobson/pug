@@ -161,36 +161,90 @@ def clean_field_dict(field_dict, cleaner=unicode.strip, time_zone=None):
     return d
 
 
-def reduce_vocab(tokens, similarity=.85, limit=20):
+# def reduce_vocab(tokens, similarity=.85, limit=20):
+#     """Find spelling variations of similar words within a list of tokens to reduce token set size
+
+#     Arguments:
+#       tokens (list or set or tuple of str): token strings from which to eliminate similar spellings
+
+#     Examples:
+#       >>> reduce_vocab(('on', 'hon', 'honey', 'ones', 'one', 'two', 'three'))  # doctest: +NORMALIZE_WHITESPACE
+
+
+#     """
+#     tokens = set(tokens)
+#     thesaurus = {}
+#     while tokens:
+#         tok = tokens.pop()
+#         matches = fuzzy.extractBests(tok, tokens, score_cutoff=int(similarity * 100), limit=20)
+#         if matches:
+#             thesaurus[tok] = zip(*matches)[0]
+#         else:
+#             thesaurus[tok] = (tok,)
+#         for syn in thesaurus[tok][1:]:
+#             tokens.discard(syn)
+#     return thesaurus
+
+
+def reduce_vocab(tokens, similarity=.85, limit=20, reverse=True):
     """Find spelling variations of similar words within a list of tokens to reduce token set size
+
+    Lexically sorted in reverse order (unless `reverse=False`), before running through fuzzy-wuzzy
+    which results in the longer of identical spellings to be prefered (e.g. "ones" prefered to "one")
+    as the key token. Usually you wantThis is usually what you want.
 
     Arguments:
       tokens (list or set or tuple of str): token strings from which to eliminate similar spellings
+      similarity (float): portion of characters that should be unchanged in order to be considered a synonym
+        as a fraction of the key token length.
+        e.g. `0.85` (which means 85%) allows "hon" to match "on" and "honey", but not "one"
+
+    Returns:
+      dict: { 'token': ('similar_token', 'similar_token2', ...), ...}
 
     Examples:
       >>> tokens = ('on', 'hon', 'honey', 'ones', 'one', 'two', 'three')
-      >>> reduce_vocab(tokens)
-      
+      >>> answer = {'hon': ('on', 'honey'),
+      ...           'one': ('ones',),
+      ...           'three': ('three',),
+      ...           'two': ('two',)}
+      >>> reduce_vocab(tokens, reverse=False) == answer
+      True
+      >>> answer = {'honey': ('hon',),
+      ...           'ones': ('on', 'one'),
+      ...           'three': ('three',),
+      ...           'two': ('two',)}
+      >>> reduce_vocab(tokens, reverse=True) == answer
+      True
+      >>> reduce_vocab(tokens, 0.5, False) == {'ones': ('one', 'honey', 'hon'), 'three': ('three',), 'two': ('on',)}
+      True
+
     """
+    if 0 <= similarity <= 1:
+        similarity *= 100
     tokens = set(tokens)
+    tokens_sorted = sorted(list(tokens), reverse=reverse)
     thesaurus = {}
-    while tokens:
-        tok = tokens.pop()
-        matches = fuzzy.extractBests(tok, tokens, score_cutoff=int(similarity * 100), limit=20)
+    for tok in tokens_sorted:
+        try:
+            tokens.remove(tok)
+        except KeyError:
+            continue
+        matches = fuzzy.extractBests(tok, tokens, score_cutoff=int(similarity), limit=20)
         if matches:
             thesaurus[tok] = zip(*matches)[0]
         else:
             thesaurus[tok] = (tok,)
-        for syn in thesaurus[tok][1:]:
+        for syn in thesaurus[tok]:
             tokens.discard(syn)
     return thesaurus
 
 
-def reduce_vocab_reversed(tokens, similarity=.85, limit=20):
+def reduce_vocab_by_len(tokens, similarity=.87, limit=20, reverse=True):
     """Find spelling variations of similar words within a list of tokens to reduce token set size
 
-    Reverse-lexically sorted before running through fuzzy-wuzzy to prefer longer tokens
-    and words later in the dictionary for use as the key token.
+    Sorted by length (longest first unless reverse=False) before running through fuzzy-wuzzy
+    which results in longer key tokens.
 
     Arguments:
       tokens (list or set or tuple of str): token strings from which to eliminate similar spellings
@@ -199,11 +253,17 @@ def reduce_vocab_reversed(tokens, similarity=.85, limit=20):
       dict: { 'token': ('similar_token', 'similar_token2', ...), ...}
 
     Examples:
-      >>> reduce_vocab_reversed(('on', 'hon', 'honey', 'ones', 'one', 'two', 'three'))
-      
+      >>> tokens = ('on', 'hon', 'honey', 'ones', 'one', 'two', 'three')
+      >>> answer = {'honey': ('on', 'hon', 'one'),
+      ...           'ones': ('ones',),
+      ...           'three': ('three',),
+      ...           'two': ('two',)}
+      >>> reduce_vocab_by_len(tokens) == answer
+      True
+
     """
     tokens = set(tokens)
-    tokens_sorted = sorted(list(tokens), reverse=True)
+    tokens_sorted = zip(*sorted([(len(tok), tok) for tok in tokens], reverse=reverse))[1]
     thesaurus = {}
     for tok in tokens_sorted:
         try:
@@ -215,34 +275,7 @@ def reduce_vocab_reversed(tokens, similarity=.85, limit=20):
             thesaurus[tok] = zip(*matches)[0]
         else:
             thesaurus[tok] = (tok,)
-        for syn in thesaurus[tok][1:]:
-            tokens.discard(syn)
-    return thesaurus
-
-
-def reduce_vocab_list(tokens, similarity=.87, limit=20):
-    """Find spelling variations of similar words within a list of words to reduce unique set length
-
-    Returns:
-      dict: { 'token': ('similar_token', 'similar_token2', ...), ...}
-
-    Examples:
-      >>> tokens = ('on', 'hon', 'honey', 'ones', 'one', 'two', 'three')
-      >>> reduce_vocab(tokens)
-      
-    """
-    token_set = set(tokens)
-    token_list = (t for (l, t) in sorted((-len(tok), tok) for tok in token_set))
-
-    thesaurus = {}
-    while token_list:
-        tok = token_list.next()
-        matches = fuzzy.extractBests(tok, tokens, score_cutoff=int(similarity/(10 + len(tok)) * 100), limit=20)
-        if matches:
-            thesaurus[tok] = zip(*matches)[0]
-        else:
-            thesaurus[tok] = (tok,)
-        for syn in thesaurus[tok][1:]:
+        for syn in thesaurus[tok]:
             tokens.discard(syn)
     return thesaurus
 
