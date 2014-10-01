@@ -664,7 +664,7 @@ def strip_nonascii(s):
     return replace_nonascii(s, filler='')
 
 
-def clean_utf8(byte_seq, carefully=False, encodings_to_try=('CP-1252', 'shift-jis', 'ISO-8859-2', 'utf8', 'shift-jis-2004', 'iso-8859-1', 'utf16'), verbosity=0):
+def clean_utf8(byte_seq, carefully=False, encodings_to_try=('cp1252', 'iso-8859-1', 'shift-jis', 'utf8', 'shift-jis-2004', 'iso-8859-1', 'utf16'), verbosity=0):
     r"""Delete any invalid symbols in a UTF-8 encoded string
 
     Returns:
