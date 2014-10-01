@@ -141,7 +141,7 @@ def reverse_dict_of_lists(d):
 
 
 def clean_field_dict(field_dict, cleaner=unicode.strip, time_zone=None):
-    r"""Normalize text field values by stripping leading and trailing whitespace
+    r"""Normalize field values by stripping whitespace from strings, localizing datetimes to a timezone, etc
 
     >>> sorted(clean_field_dict({'_state': object(), 'x': 1, 'y': u"\t  Wash Me! \n" }).items())
     [('x', 1), ('y', u'Wash Me!')]
@@ -206,17 +206,19 @@ def reduce_vocab(tokens, similarity=.85, limit=20, reverse=True):
       >>> tokens = ('on', 'hon', 'honey', 'ones', 'one', 'two', 'three')
       >>> answer = {'hon': ('on', 'honey'),
       ...           'one': ('ones',),
-      ...           'three': ('three',),
-      ...           'two': ('two',)}
+      ...           'three': (),
+      ...           'two': ()}
       >>> reduce_vocab(tokens, reverse=False) == answer
       True
       >>> answer = {'honey': ('hon',),
       ...           'ones': ('on', 'one'),
-      ...           'three': ('three',),
-      ...           'two': ('two',)}
+      ...           'three': (),
+      ...           'two': ()}
       >>> reduce_vocab(tokens, reverse=True) == answer
       True
-      >>> reduce_vocab(tokens, 0.5, False) == {'ones': ('one', 'honey', 'hon'), 'three': ('three',), 'two': ('on',)}
+      >>> reduce_vocab(tokens, similarity=0.3, limit=2, reverse=True) ==  {'ones': ('one',), 'three': ('honey',), 'two': ('on', 'hon')}
+      True
+      >>> reduce_vocab(tokens, similarity=0.3, limit=3, reverse=True) ==  {'ones': (), 'three': ('honey',), 'two': ('on', 'hon', 'one')}
       True
 
     """
@@ -230,11 +232,11 @@ def reduce_vocab(tokens, similarity=.85, limit=20, reverse=True):
             tokens.remove(tok)
         except KeyError:
             continue
-        matches = fuzzy.extractBests(tok, tokens, score_cutoff=int(similarity), limit=20)
+        matches = fuzzy.extractBests(tok, tokens, score_cutoff=int(similarity), limit=limit)
         if matches:
             thesaurus[tok] = zip(*matches)[0]
         else:
-            thesaurus[tok] = (tok,)
+            thesaurus[tok] = ()
         for syn in thesaurus[tok]:
             tokens.discard(syn)
     return thesaurus
@@ -262,6 +264,8 @@ def reduce_vocab_by_len(tokens, similarity=.87, limit=20, reverse=True):
       True
 
     """
+    if 0 <= similarity <= 1:
+        similarity *= 100
     tokens = set(tokens)
     tokens_sorted = zip(*sorted([(len(tok), tok) for tok in tokens], reverse=reverse))[1]
     thesaurus = {}
@@ -270,7 +274,7 @@ def reduce_vocab_by_len(tokens, similarity=.87, limit=20, reverse=True):
             tokens.remove(tok)
         except KeyError:
             continue
-        matches = fuzzy.extractBests(tok, tokens, score_cutoff=int(similarity * 100), limit=20)
+        matches = fuzzy.extractBests(tok, tokens, score_cutoff=int(similarity), limit=limit)
         if matches:
             thesaurus[tok] = zip(*matches)[0]
         else:
@@ -281,13 +285,20 @@ def reduce_vocab_by_len(tokens, similarity=.87, limit=20, reverse=True):
 
 
 def quantify_field_dict(field_dict, precision=None, date_precision=None, cleaner=unicode.strip):
-    r"""Convert text and datetime dict values into float/int/long, if possible
+    r"""Convert strings and datetime objects in the values of a dict into float/int/long, if possible
+
+    Arguments:
+      field_dict (dict): The dict to have any values (not keys) that are strings "quantified"
+      precision (int): Number of digits of precision to enforce
+      cleaner: A string cleaner to apply to all string before
+
 
     FIXME: this test probably needs to define a time zone for the datetime object
-    >>> sorted(quantify_field_dict({'_state': object(), 'x': 12345678911131517L, 'y': "\t  Wash Me! \n", 'z': datetime.datetime(1970, 10, 23, 23, 59, 59, 123456)}).items())
-    [('x', 12345678911131517L), ('y', u'Wash Me!'), ('z', 25592399.123456)]
+    >>> quantify_field_dict({'_state': object(), 'x': 12345678911131517L, 'y': "\t  Wash Me! \n", 'z': datetime.datetime(1970, 10, 23, 23, 59, 59, 123456)}) == {'x': 12345678911131517L, 'y': u'Wash Me!', 'z': 25574399.123456}
+    True
     """
-    d = clean_field_dict(field_dict)
+    if cleaner:
+        d = clean_field_dict(field_dict, cleaner=cleaner)
     for k, v in d.iteritems():
         if isinstance(d[k], datetime.datetime):
             # seconds since epoch = datetime.datetime(1969,12,31,18,0,0)
@@ -371,8 +382,14 @@ def generate_slices(sliceable_set, batch_len=1, length=None):
       http://stackoverflow.com/a/761125/623735
 
     Examples:
-      >>> [batch for batch in generate_batches(range(7), 3)]
+      >>> [batch for batch in generate_slices(range(7), 3)]
       [(0, 1, 2), (3, 4, 5), (6,)]
+      >>> from django.contrib.auth.models import User, Permission
+      >>> import math
+      >>> len(list(generate_slices(User.objects.all(), 2))) == max(math.ceil(User.objects.count() / 2.), 1)
+      True
+      >>> len(set(generate_slices(Permission.objects.all(), 2))) == max(math.ceil(Permission.objects.count() / 2.), 1)
+      True
     """
     if length is None:
         try:
