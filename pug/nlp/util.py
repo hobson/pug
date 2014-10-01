@@ -141,7 +141,7 @@ def reverse_dict_of_lists(d):
 
 
 def clean_field_dict(field_dict, cleaner=unicode.strip, time_zone=None):
-    r"""Normalize text field values by stripping leading and trailing whitespace
+    r"""Normalize field values by stripping whitespace from strings, localizing datetimes to a timezone, etc
 
     >>> sorted(clean_field_dict({'_state': object(), 'x': 1, 'y': u"\t  Wash Me! \n" }).items())
     [('x', 1), ('y', u'Wash Me!')]
@@ -161,41 +161,144 @@ def clean_field_dict(field_dict, cleaner=unicode.strip, time_zone=None):
     return d
 
 
-def reduce_vocab(tokens, similarity=.87, limit=20):
-    """Find spelling variations of similar words within a list of words to reduce unique set length
+# def reduce_vocab(tokens, similarity=.85, limit=20):
+#     """Find spelling variations of similar words within a list of tokens to reduce token set size
+
+#     Arguments:
+#       tokens (list or set or tuple of str): token strings from which to eliminate similar spellings
+
+#     Examples:
+#       >>> reduce_vocab(('on', 'hon', 'honey', 'ones', 'one', 'two', 'three'))  # doctest: +NORMALIZE_WHITESPACE
+
+
+#     """
+#     tokens = set(tokens)
+#     thesaurus = {}
+#     while tokens:
+#         tok = tokens.pop()
+#         matches = fuzzy.extractBests(tok, tokens, score_cutoff=int(similarity * 100), limit=20)
+#         if matches:
+#             thesaurus[tok] = zip(*matches)[0]
+#         else:
+#             thesaurus[tok] = (tok,)
+#         for syn in thesaurus[tok][1:]:
+#             tokens.discard(syn)
+#     return thesaurus
+
+
+def reduce_vocab(tokens, similarity=.85, limit=20, reverse=True):
+    """Find spelling variations of similar words within a list of tokens to reduce token set size
+
+    Lexically sorted in reverse order (unless `reverse=False`), before running through fuzzy-wuzzy
+    which results in the longer of identical spellings to be prefered (e.g. "ones" prefered to "one")
+    as the key token. Usually you wantThis is usually what you want.
+
+    Arguments:
+      tokens (list or set or tuple of str): token strings from which to eliminate similar spellings
+      similarity (float): portion of characters that should be unchanged in order to be considered a synonym
+        as a fraction of the key token length.
+        e.g. `0.85` (which means 85%) allows "hon" to match "on" and "honey", but not "one"
 
     Returns:
       dict: { 'token': ('similar_token', 'similar_token2', ...), ...}
 
     Examples:
       >>> tokens = ('on', 'hon', 'honey', 'ones', 'one', 'two', 'three')
-      >>> reduce_vocab(tokens)
-      
-    """
-    token_set = set(tokens)
-    token_list = (t for (l, t) in sorted((-len(tok), tok) for tok in token_set))
+      >>> answer = {'hon': ('on', 'honey'),
+      ...           'one': ('ones',),
+      ...           'three': (),
+      ...           'two': ()}
+      >>> reduce_vocab(tokens, reverse=False) == answer
+      True
+      >>> answer = {'honey': ('hon',),
+      ...           'ones': ('on', 'one'),
+      ...           'three': (),
+      ...           'two': ()}
+      >>> reduce_vocab(tokens, reverse=True) == answer
+      True
+      >>> reduce_vocab(tokens, similarity=0.3, limit=2, reverse=True) ==  {'ones': ('one',), 'three': ('honey',), 'two': ('on', 'hon')}
+      True
+      >>> reduce_vocab(tokens, similarity=0.3, limit=3, reverse=True) ==  {'ones': (), 'three': ('honey',), 'two': ('on', 'hon', 'one')}
+      True
 
+    """
+    if 0 <= similarity <= 1:
+        similarity *= 100
+    tokens = set(tokens)
+    tokens_sorted = sorted(list(tokens), reverse=reverse)
     thesaurus = {}
-    while token_list:
-        tok = token_list.next()
-        matches = fuzzy.extractBests(tok, tokens, score_cutoff=int(similarity/(10 + len(tok)) * 100), limit=20)
+    for tok in tokens_sorted:
+        try:
+            tokens.remove(tok)
+        except KeyError:
+            continue
+        matches = fuzzy.extractBests(tok, tokens, score_cutoff=int(similarity), limit=limit)
+        if matches:
+            thesaurus[tok] = zip(*matches)[0]
+        else:
+            thesaurus[tok] = ()
+        for syn in thesaurus[tok]:
+            tokens.discard(syn)
+    return thesaurus
+
+
+def reduce_vocab_by_len(tokens, similarity=.87, limit=20, reverse=True):
+    """Find spelling variations of similar words within a list of tokens to reduce token set size
+
+    Sorted by length (longest first unless reverse=False) before running through fuzzy-wuzzy
+    which results in longer key tokens.
+
+    Arguments:
+      tokens (list or set or tuple of str): token strings from which to eliminate similar spellings
+
+    Returns:
+      dict: { 'token': ('similar_token', 'similar_token2', ...), ...}
+
+    Examples:
+      >>> tokens = ('on', 'hon', 'honey', 'ones', 'one', 'two', 'three')
+      >>> answer = {'honey': ('on', 'hon', 'one'),
+      ...           'ones': ('ones',),
+      ...           'three': ('three',),
+      ...           'two': ('two',)}
+      >>> reduce_vocab_by_len(tokens) == answer
+      True
+
+    """
+    if 0 <= similarity <= 1:
+        similarity *= 100
+    tokens = set(tokens)
+    tokens_sorted = zip(*sorted([(len(tok), tok) for tok in tokens], reverse=reverse))[1]
+    thesaurus = {}
+    for tok in tokens_sorted:
+        try:
+            tokens.remove(tok)
+        except KeyError:
+            continue
+        matches = fuzzy.extractBests(tok, tokens, score_cutoff=int(similarity), limit=limit)
         if matches:
             thesaurus[tok] = zip(*matches)[0]
         else:
             thesaurus[tok] = (tok,)
-        for syn in thesaurus[tok][1:]:
+        for syn in thesaurus[tok]:
             tokens.discard(syn)
     return thesaurus
 
 
 def quantify_field_dict(field_dict, precision=None, date_precision=None, cleaner=unicode.strip):
-    r"""Convert text and datetime dict values into float/int/long, if possible
+    r"""Convert strings and datetime objects in the values of a dict into float/int/long, if possible
+
+    Arguments:
+      field_dict (dict): The dict to have any values (not keys) that are strings "quantified"
+      precision (int): Number of digits of precision to enforce
+      cleaner: A string cleaner to apply to all string before
+
 
     FIXME: this test probably needs to define a time zone for the datetime object
-    >>> sorted(quantify_field_dict({'_state': object(), 'x': 12345678911131517L, 'y': "\t  Wash Me! \n", 'z': datetime.datetime(1970, 10, 23, 23, 59, 59, 123456)}).items())
-    [('x', 12345678911131517L), ('y', u'Wash Me!'), ('z', 25592399.123456)]
+    >>> quantify_field_dict({'_state': object(), 'x': 12345678911131517L, 'y': "\t  Wash Me! \n", 'z': datetime.datetime(1970, 10, 23, 23, 59, 59, 123456)}) == {'x': 12345678911131517L, 'y': u'Wash Me!', 'z': 25574399.123456}
+    True
     """
-    d = clean_field_dict(field_dict)
+    if cleaner:
+        d = clean_field_dict(field_dict, cleaner=cleaner)
     for k, v in d.iteritems():
         if isinstance(d[k], datetime.datetime):
             # seconds since epoch = datetime.datetime(1969,12,31,18,0,0)
@@ -279,8 +382,14 @@ def generate_slices(sliceable_set, batch_len=1, length=None):
       http://stackoverflow.com/a/761125/623735
 
     Examples:
-      >>> [batch for batch in generate_batches(range(7), 3)]
+      >>> [batch for batch in generate_slices(range(7), 3)]
       [(0, 1, 2), (3, 4, 5), (6,)]
+      >>> from django.contrib.auth.models import User, Permission
+      >>> import math
+      >>> len(list(generate_slices(User.objects.all(), 2))) == max(math.ceil(User.objects.count() / 2.), 1)
+      True
+      >>> len(set(generate_slices(Permission.objects.all(), 2))) == max(math.ceil(Permission.objects.count() / 2.), 1)
+      True
     """
     if length is None:
         try:
@@ -1539,14 +1648,33 @@ def get_sentences(s, regex=RE.sentence_sep):
 # this regex assumes "s' " is the end of a possessive word and not the end of an inner quotation, e.g. He said, "She called me 'Hoss'!"
 def get_words(s, splitter_regex=RE.word_sep_except_external_appostrophe, 
               preprocessor=strip_HTML, postprocessor=strip_edge_punc, min_len=None, max_len=None, blacklist=None, whitelist=None, lower=False, filter_fun=None, str_type=str):
-    r"""Segment words (tokens), returning a list of all tokens (but not the separators/punctuation)
+    r"""Segment words (tokens), returning a list of all tokens 
+
+    Does not return any separating whitespace or punctuation marks.
+    Attempts to return external apostrophes at the end of words.
+    Comparable to `nltk.word_toeknize`.
+
+    Arguments:
+      splitter_regex (str or re): compiled or uncompiled regular expression
+        Applied to the input string using `re.split()`
+      preprocessor (function): defaults to a function that strips out all HTML tags
+      postprocessor (function): a function to apply to each token before return it as an element in the word list
+        Applied using the `map()` builtin
+      min_len (int): delete all words shorter than this number of characters
+      max_len (int): delete all words longer than this number of characters
+      blacklist and whitelist (list of str): words to delete or preserve
+      lower (bool): whether to convert all words to lowercase
+      str_type (type): typically `str` or `unicode`, any type constructor that should can be applied to all words before returning the list
+
+    Returns:
+      list of str: list of tokens
 
     >>> get_words('He said, "She called me \'Hoss\'!". I didn\'t hear.')
     ['He', 'said', 'She', 'called', 'me', 'Hoss', 'I', "didn't", 'hear']
     >>> get_words('The foxes\' oh-so-tiny den was 2empty!')
     ['The', 'foxes', 'oh-so-tiny', 'den', 'was', '2empty']
     """
-    # TODO: Get rid of lower kwarg (and make sure code that uses it doesn't break) 
+    # TODO: Get rid of `lower` kwarg (and make sure code that uses it doesn't break) 
     #       That and other simple postprocessors can be done outside of get_words
     postprocessor = postprocessor or str_type
     preprocessor = preprocessor or str_type
