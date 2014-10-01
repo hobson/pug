@@ -664,7 +664,7 @@ def strip_nonascii(s):
     return replace_nonascii(s, filler='')
 
 
-def clean_utf8(byte_seq, carefully=False, encodings_to_try=('cp1252', 'iso-8859-1', 'shift-jis', 'utf8', 'shift-jis-2004', 'iso-8859-1', 'utf16'), verbosity=0):
+def clean_utf8(byte_seq, carefully=False, encodings_to_try=('utf_8', 'shift_jis', 'iso8859_1', 'cp1252', 'shift_jis', 'shiftjis2004', 'iso8859_1', 'utf16'), verbosity=0):
     r"""Delete any invalid symbols in a UTF-8 encoded string
 
     Returns:
@@ -675,7 +675,7 @@ def clean_utf8(byte_seq, carefully=False, encodings_to_try=('cp1252', 'iso-8859-
         default: = ['shift-jis', 'ISO-8859-2', 'utf8', 'shift-jis-2004', 'CP-1252', 'iso-8859-1', 'utf16']
           'shift-jis': Japanese corporate data in MS SQL databases is often encoded in Shift JIS
           'CP1252' : Legacy microsoft windows SQLServer that seems to work for u'\xff\xfe' line terminations
-          'SQL_Latin1_General_CP1_CI_AS': A case-insensitive mix of CP-1252 and UTF-8 common among Japanese corporations
+          'SQL_Latin1_General_CP1_CI_AS': no python codec for this case-insensitive mix of CP-1252 and UTF-8 common among Japanese corporations
           'iso-8859-1' : MS SQL Server default encoding (before 2008)
           'iso-8859-2' : MS SQL Server default encoding (before 2012)
 
@@ -691,12 +691,13 @@ def clean_utf8(byte_seq, carefully=False, encodings_to_try=('cp1252', 'iso-8859-
     #print 'cleaning: ' + repr(byte_seq)
     if not isinstance(byte_seq, basestring):
         return byte_seq
-    for enc in encodings_to_try:
+    for i, enc in enumerate(encodings_to_try):
         try:
             return unicode(byte_seq.decode(enc)).encode('utf8')
         except UnicodeDecodeError:
+            print i
             if verbosity > 1:
-                print("Unable to short-circuit clean_utf8 function with try {0}.decode({1})".format(byte_seq, enc))
+                print("Unable to short-circuit clean_utf8 function with `try: {0}.decode({1})`".format(byte_seq, enc))
     if carefully:
         while True:
             try:
