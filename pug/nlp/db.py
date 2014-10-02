@@ -697,7 +697,7 @@ def clean_utf8(byte_seq, carefully=False, encodings_to_try=('utf_8', 'iso8859_1'
         except UnicodeDecodeError:
             print i
             if verbosity > 1:
-                print("Unable to short-circuit clean_utf8 function with `try: {0}.decode({1})`".format(byte_seq, enc))
+                print("Unable to short-circuit clean_utf8 function with `try: string.decode({0})` for the string:\n{1}".format(enc, byte_seq))
     if carefully:
         while True:
             try:

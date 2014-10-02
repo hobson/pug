@@ -1896,6 +1896,9 @@ def import_items(item_seq, dest_model,  batch_len=500,
             print 'No records found in %r' % src_qs
         return N
 
+    # make sure there's a valid last batch number so the verbose messages will make sense
+    end_batch = end_batch or int(N / float(batch_len))
+
     if clear and not dry_run:
         if N < dest_qs.count():
             if verbosity:
@@ -1913,7 +1916,7 @@ def import_items(item_seq, dest_model,  batch_len=500,
         pbar = pb.ProgressBar(widgets=widgets, maxval=N)
 
     for batch_num, dict_batch in enumerate(util.generate_slices(item_seq, batch_len=batch_len, start_batch=start_batch)):
-        if end_batch and (start_batch + batch_num > end_batch):
+        if start_batch + batch_num > end_batch:
             if verbosity > 1:
                 print('Stopping before batch {0} because it is not between {1} and {2}'.format(start_batch + batch_num, start_batch, end_batch))
             break
@@ -1922,6 +1925,7 @@ def import_items(item_seq, dest_model,  batch_len=500,
             # print(repr(dict_batch))
             print(repr((start_batch + batch_num, len(dict_batch), batch_len)))
         item_batch = []
+        total_len_batches = 0
 
         # convert an iterable of Django ORM record dictionaries into a list of Django ORM objects
         for d in dict_batch:
@@ -1952,8 +1956,6 @@ def import_items(item_seq, dest_model,  batch_len=500,
             stats += row_errors
 
         del(dict_batch)
-        # make sure there's a valid last batch number so the verbose messages will make sense
-        end_batch = end_batch or int(N / float(batch_len))
         if verbosity and verbosity < 2:
             if batch_num:
                 pbar.update(batch_num * batch_len + len(item_batch))
@@ -1962,8 +1964,9 @@ def import_items(item_seq, dest_model,  batch_len=500,
                 pbar.start()
         elif verbosity > 1:
             print('Writing {0} items (of type {1}) from batch {2}. Will stop at batch {3} which is record {4} ...'.format(
-                len(item_batch), dest_model, start_batch + batch_num, end_batch , min(end_batch * batch_len, N),
+                len(item_batch), dest_model, start_batch + batch_num, end_batch, min(batch_len * (start_batch + end_batch), N),
                 ))
+        total_len_batches += len(item_batch)
 
         # use bulk_create to make fast DB insertions. Note: any custom save() or _update() methods will *NOT* be run
         if not dry_run:
@@ -2008,6 +2011,11 @@ def import_items(item_seq, dest_model,  batch_len=500,
                 if not ignore_errors:
                     print_exc()
                     raise
+        if batch_num < end_batch:
+            if len(item_batch) != batch_len:
+                stats += collections.Counter(['batch_len={0}'.format(len(item_batch))])
+            print('Retrieving {0} {1} items for the next batch, batch number {2}...'.format(
+                  batch_len, src_qs.model, batch_num + 1))
         del(item_batch)
 
     if verbosity:
@@ -2024,8 +2032,8 @@ def update_items(item_seq,  batch_len=500, dry_run=True, start_batch=0, end_batc
         except AttributeError:
             src_qs = item_seq.all()
         N = src_qs.count()
-        item_seq = iter(src_qs)
     except AttributeError:
+        item_seq = iter(src_qs)
         print_exc()
         N = item_seq.count()
 
@@ -2034,17 +2042,16 @@ def update_items(item_seq,  batch_len=500, dry_run=True, start_batch=0, end_batc
             print 'No records found in %r' % src_qs
         return N
 
+    # make sure there's a valid last batch number so the verbose messages will make sense
+    end_batch = end_batch or int(N / float(batch_len))
+
     if verbosity:
-        print('Updating %r records in the provided queryset, sequence or model...' % N)
+        print('Updating from a source queryset/model/sequence with %r records...' % N)
         widgets = [pb.Counter(), '/%d rows: ' % N or 1, pb.Percentage(), ' ', pb.RotatingMarker(), ' ', pb.Bar(),' ', pb.ETA()]
         pbar = pb.ProgressBar(widgets=widgets, maxval=N).start()
 
-    for batch_num, obj_batch in enumerate(util.generate_batches(item_seq, batch_len)):
-        if batch_num < start_batch:
-            if verbosity > 1:
-                print('Skipping batch {0} because not between {1} and {2}'.format(batch_num, start_batch, end_batch))
-            continue
-        elif end_batch and (batch_num > end_batch):
+    for batch_num, obj_batch in enumerate(util.generate_batches(item_seq, batch_len=batch_len, start_batch=start_batch)):
+        if start_batch + batch_num > end_batch:
             if verbosity > 1:
                 print('Stopping before batch {0} because it is not between {1} and {2}'.format(batch_num, start_batch, end_batch))
             break
@@ -2062,8 +2069,8 @@ def update_items(item_seq,  batch_len=500, dry_run=True, start_batch=0, end_batc
         if verbosity and verbosity < 2:
             pbar.update(batch_num * batch_len + len(obj_batch))
         elif verbosity > 1:
-            print('Writing {0} items (of type {1}) from batch {2}. Will stop at batch {3} which is record {4} ...'.format(
-                len(obj_batch), src_qs.model, batch_num, end_batch or int((end_batch or N) / float(batch_len)), N
+            print('Writing {0} items (of type {1}) from batch {2}. Will stop at batch {3} which is records {4} - {5} ...'.format(
+                len(obj_batch), src_qs.model, batch_num, end_batch, min(batch_len * (start_batch + end_batch), N)
                 ))
         if not dry_run:
             try:
@@ -2071,9 +2078,8 @@ def update_items(item_seq,  batch_len=500, dry_run=True, start_batch=0, end_batc
             except Exception as err:
                 from django.db import transaction
                 transaction.rollback()
-                if verbosity:
-                    print '%s' % err
-                    print 'Now attempting tp save objects one at a time instead of as a batch...'
+                print '%s' % err
+                print 'Attempting to save objects one at a time instead of as a batch...'
                 for obj in obj_batch:
                     try:
                         obj.save()
@@ -2088,6 +2094,11 @@ def update_items(item_seq,  batch_len=500, dry_run=True, start_batch=0, end_batc
                 if not ignore_errors:
                     print_exc()
                     raise
+        if batch_num < end_batch:
+            if len(obj_batch) != batch_len:
+                stats += collections.Counter(['batch_len={0}'.format(len(obj_batch))])
+            print('Retrieving {0} {1} items for the next batch, batch number {2}...'.format(
+                batch_len, src_qs.model, batch_num + 1))
 
     if verbosity:
         pbar.finish()

@@ -283,6 +283,13 @@ def updatable(cls):
     setattr(cls, '_update', _customized_update)
     return cls
 
+
+def audit(cls):
+    setattr(cls, 'updated', models.DateTimeField(auto_now=True))
+    setattr(cls, 'created', models.DateTimeField(auto_now_add=True))
+    return cls
+
+
 # class dbname(object):
 #     'Decorator to add _db_name and _db_alias attributes to a class definition'
 
