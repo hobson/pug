@@ -372,7 +372,7 @@ def generate_tuple_batches(qs, batch_len=1):
         yield tuple(batch)
 
 
-def generate_slices(sliceable_set, batch_len=1, length=None):
+def generate_slices(sliceable_set, batch_len=1, length=None, start_batch=0):
     """Iterate through a sequence (or generator) in batches of length `batch_len`
 
     See Also:
@@ -399,6 +399,8 @@ def generate_slices(sliceable_set, batch_len=1, length=None):
     length = int(length)
 
     for i in range(length / batch_len + 1):
+        if i < start_batch:
+            continue
         start = i * batch_len
         end = min((i + 1) * batch_len, length)
         yield tuple(sliceable_set[start:end])

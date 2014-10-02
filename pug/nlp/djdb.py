@@ -20,7 +20,7 @@ import importlib
 
 from django.core import serializers
 from django.db.models import related
-from django.db import transaction
+from django.db import connection
 from django.db import models as djmodels
 
 import progressbar as pb  # import ProgressBar, Percentage, RotatingMarker, Bar, ETA
@@ -1912,19 +1912,15 @@ def import_items(item_seq, dest_model,  batch_len=500,
         widgets = [pb.Counter(), '/%d rows: ' % N or 1, pb.Percentage(), ' ', pb.RotatingMarker(), ' ', pb.Bar(),' ', pb.ETA()]
         pbar = pb.ProgressBar(widgets=widgets, maxval=N)
 
-    for batch_num, dict_batch in enumerate(util.generate_slices(item_seq, batch_len)):
-        if batch_num < start_batch:
+    for batch_num, dict_batch in enumerate(util.generate_slices(item_seq, batch_len=batch_len, start_batch=start_batch)):
+        if end_batch and (start_batch + batch_num > end_batch):
             if verbosity > 1:
-                print('Skipping batch {0} because not between {1} and {2}'.format(batch_num, start_batch, end_batch))
-            continue
-        elif end_batch and (batch_num > end_batch):
-            if verbosity > 1:
-                print('Stopping before batch {0} because it is not between {1} and {2}'.format(batch_num, start_batch, end_batch))
+                print('Stopping before batch {0} because it is not between {1} and {2}'.format(start_batch + batch_num, start_batch, end_batch))
             break
         if verbosity > 2:
             print '-------- dict batch ------'
             # print(repr(dict_batch))
-            print(repr((batch_num, len(dict_batch), batch_len)))
+            print(repr((start_batch + batch_num, len(dict_batch), batch_len)))
         item_batch = []
 
         # convert an iterable of Django ORM record dictionaries into a list of Django ORM objects
@@ -1966,7 +1962,7 @@ def import_items(item_seq, dest_model,  batch_len=500,
                 pbar.start()
         elif verbosity > 1:
             print('Writing {0} items (of type {1}) from batch {2}. Will stop at batch {3} which is record {4} ...'.format(
-                len(item_batch), dest_model, batch_num, end_batch , min(end_batch * batch_len, N),
+                len(item_batch), dest_model, start_batch + batch_num, end_batch , min(end_batch * batch_len, N),
                 ))
 
         # use bulk_create to make fast DB insertions. Note: any custom save() or _update() methods will *NOT* be run
@@ -1975,7 +1971,7 @@ def import_items(item_seq, dest_model,  batch_len=500,
                 dest_model.objects.bulk_create(item_batch)
             except UnicodeDecodeError as err:
                 from django.db import transaction
-                connection._rollback()
+                transaction.rollback()
                 if verbosity:
                     print '%s' % err
                     print 'Now attempting to save objects one at a time instead of as a batch...'
@@ -1985,7 +1981,7 @@ def import_items(item_seq, dest_model,  batch_len=500,
                         stats += collections.Counter(['batch_UnicodeDecodeError'])
                     except:
                         from django.db import transaction
-                        connection._rollback()
+                        transaction.rollback()
                         stats += collections.Counter(['save_UnicodeDecodeError'])
                         print str(obj)
                         print repr(obj.__dict__)
@@ -1994,7 +1990,7 @@ def import_items(item_seq, dest_model,  batch_len=500,
                     raise
             except Exception as err:
                 from django.db import transaction
-                connection._rollback()
+                transaction.rollback()
                 if verbosity:
                     print '%s' % err
                     print 'Now attempting to save objects one at a time instead of as a batch...'
@@ -2004,7 +2000,7 @@ def import_items(item_seq, dest_model,  batch_len=500,
                         stats += collections.Counter(['batch_Error'])
                     except:
                         from django.db import transaction
-                        connection._rollback()
+                        transaction.rollback()
                         print str(obj)
                         print repr(obj.__dict__)
                         print_exc()
@@ -2074,7 +2070,7 @@ def update_items(item_seq,  batch_len=500, dry_run=True, start_batch=0, end_batc
                 bulk_update(obj_batch, ignore_errors=ignore_errors, delete_first=True, verbosity=verbosity)
             except Exception as err:
                 from django.db import transaction
-                connection._rollback()
+                transaction.rollback()
                 if verbosity:
                     print '%s' % err
                     print 'Now attempting tp save objects one at a time instead of as a batch...'
@@ -2084,7 +2080,7 @@ def update_items(item_seq,  batch_len=500, dry_run=True, start_batch=0, end_batc
                         stats += collections.Counter(['batch_Error'])
                     except:
                         from django.db import transaction
-                        connection._rollback()
+                        transaction.rollback()
                         print str(obj)
                         print repr(obj.__dict__)
                         print_exc()
