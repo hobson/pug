@@ -26,8 +26,8 @@ VERSION="$VERSION1.$VERSION2"  # 4.2
 echo $VERSION
 
 sudo cp /bin/bash /bin/bash.bak
-mkdir -P ~/src/patch-bash
-cd ~/src/patch-bash
+mkdir -P ~/src/shellshock-remedy
+cd ~/src/shellshock-remedy
 wget https://ftp.gnu.org/pub/gnu/bash/bash-$VERSION.tar.gz
 tar xvzf bash-$VERSION.tar.gz
 cd bash-$VERSION
