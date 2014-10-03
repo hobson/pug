@@ -803,17 +803,15 @@ def find_model(model_name, apps=settings.INSTALLED_APPS, fuzziness=0):
     return None
 
 
-def find_field(field, model=DEFAULT_MODEL, app=DEFAULT_APP, fuzziness=.5):
+def find_field_name(field, model=DEFAULT_MODEL, app=DEFAULT_APP, fuzziness=.5):
     """
-    >>> find_field('date_time', model='WikiItem')
+    >>> find_field_name('date_time', model='WikiItem')
     'date'
-    >>> find_field('$#!@', model='WikiItem')
-    >>> find_field('date', model='WikiItem')
+    >>> find_field_name('$#!@', model='WikiItem')
+    >>> find_field_name('date', model='WikiItem')
     'end_date_time'
-    >>> find_field('date', model='WikiItem')
+    >>> find_field_name('date', model='WikiItem')
     'date_in_svc'
-    >>> find_synonymous_field('date', model='WikiItem')
-    'date_time'
     """
     return find_fields(field, model, app, score_cutoff=int(fuzziness*100), pad_with_none=True)[0]
 
