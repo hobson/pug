@@ -11,7 +11,7 @@ from dateutil import parser
 import progressbar as pb  # import ProgressBar, Bar, Percentage, ETA, RotatingMarker
 
 from django.core.exceptions import ImproperlyConfigured
-from django.db import DatabaseError
+from django.db import DatabaseError, transaction
 from django.core.exceptions import FieldError
 from django.db.models import FieldDoesNotExist
 
@@ -918,3 +918,5 @@ def get_field_names(model, types=[models.TextField]):
         if type(model.get_field(name)) in types:
             names += [name]
     return names
+
+

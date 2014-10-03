@@ -6,7 +6,9 @@ from django_hstore import hstore
 from jsonfield import JSONField
 
 from pug.nlp import db
-import pug
+# FIXME: simplify circular import/dependencies with miner app 
+from pug import miner
+from model_mixin import DateMixin
 
 
 class Connection(models.Model):
@@ -24,7 +26,7 @@ class Connection(models.Model):
         return db.representation(self)
 
 
-class AggregatedResults(pug.miner.model_mixin.DateMixin):
+class AggregatedResults(DateMixin):
     """Storage a results json string that was returned by any restful web-based service
 
     DateMixin adds the fields 'updated' and 'created'.
@@ -256,7 +258,7 @@ def import_meta(db_meta, db_name, db_date=None, verbosity=1):
 
 
 def explore_app(app_name='call_center', verbosity=1):
-    db_meta = pug.db.explore.get_db_meta(app_name, verbosity=verbosity)
+    db_meta = miner.explore.get_db_meta(app_name, verbosity=verbosity)
     try:
         print '&'*100
         print db_meta
