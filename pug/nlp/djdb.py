@@ -109,7 +109,7 @@ def normalize_values_queryset(values_queryset, model=None, app=None, verbosity=1
     for record in values_queryset:
         new_record = {}
         for k, v in record.iteritems():
-            field_name = find_field(k, model=model, app=app)
+            field_name = find_field_name(k, model=model, app=app)
             field_class = model._meta.get_field(field_name)
             # if isinstance(field_class, (djmodels.fields.DateTimeField, djmodels.fields.DateField)):
             #     new_record[field_name] = unix_timestamp(v)
@@ -695,7 +695,7 @@ def sequence_from_filter_spec(field_names, filter_dict=None, model=DEFAULT_MODEL
     return tuple(objects[fn] for fn in field_names)
 
 
-def find_fields(fields, model=DEFAULT_MODEL, app=DEFAULT_APP, score_cutoff=50, pad_with_none=False):
+def find_field_names(fields, model=DEFAULT_MODEL, app=DEFAULT_APP, score_cutoff=50, pad_with_none=False):
     """Use fuzzy string matching to find similar model field names without consulting a synonyms list
 
     Returns:
@@ -705,7 +705,7 @@ def find_fields(fields, model=DEFAULT_MODEL, app=DEFAULT_APP, score_cutoff=50, p
 
     Examples:
 
-      >>> find_fields(['date_time', 'title_prefix', 'sales'], model='WikiItem')
+      >>> find_field_names(['date_time', 'title_prefix', 'sales'], model='WikiItem')
       ['date', 'model', 'net_sales']
 
     """
@@ -813,7 +813,7 @@ def find_field_name(field, model=DEFAULT_MODEL, app=DEFAULT_APP, fuzziness=.5):
     >>> find_field_name('date', model='WikiItem')
     'date_in_svc'
     """
-    return find_fields(field, model, app, score_cutoff=int(fuzziness*100), pad_with_none=True)[0]
+    return find_field_names(field, model, app, score_cutoff=int((1-fuzziness)*100), pad_with_none=True)[0]
 
 
 def lagged_in_date(x=None, y=None, filter_dict=None, model='WikiItem', app=DEFAULT_APP, sort=True, limit=5000, lag=1, pad=0, truncate=True):
