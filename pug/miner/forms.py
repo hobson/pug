@@ -2,6 +2,13 @@
 import datetime
 
 from django import forms
+from pug.nlp import util
+
+
+def name_initial(obj=None):
+    if obj is None:
+        obj = util.make_tz_aware(datetime.datetime.now())
+    return str(obj)
 
 
 class GetLagForm(forms.Form):
@@ -94,6 +101,12 @@ class GetLagForm(forms.Form):
         # widget=forms.TextInput(attrs={'placeholder': '12, 2013, 14, ...'}),
         )
 
+    name = forms.CharField(max_length=128, required=False,
+        label='Name or Description',
+        initial=name_initial(),
+        help_text='A name or description associated with the results of this query, to make them easy to find later.',
+        # widget=forms.TextInput(attrs={'placeholder': '12, 2013, 14, ...'}),
+        )
 
     def __init__(self, *args, **kwargs):
         super(GetLagForm, self).__init__(*args, **kwargs)

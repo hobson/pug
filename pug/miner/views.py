@@ -8,7 +8,7 @@ import re
 import string
 
 from django.shortcuts import render_to_response
-from django.views.generic import View  #, TemplateView
+from django.views.generic import View, TemplateView
 from django.template import RequestContext
 from django.template.response import TemplateResponse #, HttpResponse
 from django.template.loader import get_template
@@ -399,6 +399,16 @@ def table_generator_from_list_of_instances(data, field_names=None, excluded_fiel
         if not i:
             yield field_names
         yield [follow_double_underscores(row, field_name=k, excel_dialect=True, eval_python=eval_python) for k in field_names]
+
+
+class DashboardView(TemplateView):
+    """Query the miner.AggregateResults table to retrieve values for plotting in a bar chart"""
+    template_name = 'miner/dashboard.html'
+
+    def get_context_data(self, **kwargs):
+        # Call the base implementation first to get a context
+        context = super(DashboardView, self).get_context_data(**kwargs)
+        return context
 
 
 def csv_response_from_context(context=None, filename=None, field_names=None, null_string='', eval_python=True):

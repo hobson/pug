@@ -11,7 +11,7 @@ from dateutil import parser
 import progressbar as pb  # import ProgressBar, Bar, Percentage, ETA, RotatingMarker
 
 from django.core.exceptions import ImproperlyConfigured
-from django.db import DatabaseError
+from django.db import DatabaseError, transaction
 from django.core.exceptions import FieldError
 from django.db.models import FieldDoesNotExist
 
@@ -184,7 +184,7 @@ def get_db_meta(app=DEFAULT_APP_NAME, db_alias=None, table=None, verbosity=0, co
             if verbosity:
                 print_exc()
                 print "DatabaseError: Unable to count records for model '%s' (%s) because of %s." % (model.__name__, repr(model), e)
-            connection.close()
+            transaction.rollback()
         except:
             print_exc()
             print 'Connection doesnt exist?'
@@ -237,7 +237,7 @@ def get_model_meta(model, app=DEFAULT_APP_NAME, db_alias=None, column_name_filte
         if verbosity:
             print_exc()
             print "DatabaseError: Unable to count records for model '%s' (%s) because of %s." % (model.__name__, repr(model), e)
-        connection.close()
+        transaction.rollback()
     except:
         print_exc()
         print 'Connection doesnt exist?'
@@ -367,7 +367,7 @@ def augment_field_meta(field, queryset, field_properties, verbosity=0, count=0):
             if verbosity:
                 print_exc()
                 print "DatabaseError: Skipped count of values in field named '%s' (%s) because of %s." % (field.name, repr(field.db_column), e)
-            connection.close()
+            transaction.rollback()
         try:
             if field_properties['num_distinct'] > 1 and (0 < field_properties['fraction_distinct'] < 0.999):
                 # this will not work until pyodbc is updated
@@ -390,7 +390,7 @@ def augment_field_meta(field, queryset, field_properties, verbosity=0, count=0):
     field_properties['shortest'] = None
     # check field_properties['num_null'] for all Null first?
     if count and typ and typ not in types_not_aggregatable:
-        connection.close()
+        transaction.rollback()
         try:
             field_properties['max'] = db.clean_utf8(queryset.aggregate(max_value=models.Max(field.name))['max_value'])
             field_properties['min'] = db.clean_utf8(queryset.aggregate(min_value=models.Min(field.name))['min_value'])
@@ -398,12 +398,12 @@ def augment_field_meta(field, queryset, field_properties, verbosity=0, count=0):
             if verbosity:
                 print_exc()
                 print "ValueError (perhaps UnicodeDecodeError?): Skipped max/min calculations for field named '%s' (%s) because of %s." % (field.name, repr(field.db_column), e)
-            connection.close()
+            transaction.rollback()
         except DatabaseError, e:
             if verbosity:
                 print_exc()
                 print "DatabaseError: Skipped max/min calculations for field named '%s' (%s) because of %s." % (field.name, repr(field.db_column), e)
-            connection.close()
+            transaction.rollback()
         # validate values that might be invalid strings do to db encoding/decoding errors (make sure they are UTF-8
         for k in ('min', 'max'):
             db.clean_utf8(field_properties.get(k))
@@ -918,3 +918,5 @@ def get_field_names(model, types=[models.TextField]):
         if type(model.get_field(name)) in types:
             names += [name]
     return names
+
+

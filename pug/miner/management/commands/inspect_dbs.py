@@ -74,8 +74,21 @@ inspect_dbs.seds = [
     { # no need to do anything if a primary_key argument is set
         'regex': re.compile(r'^\s+id\s*=\s*models[.]\w+Field\(.*primary_key\=True.*\)'),
     },
-    { # need to set primary_key if not set for fields named id
-        'regex': re.compile(r'^(\s+)id(\s*=\s*models[.]\w+)Field\((.*)\)'),
+    { # need to set PK for fields named id, FIXME: but should really only do this if another PK isn't labeled as such already
+        'regex': re.compile(r'^(\s+)id(\s*=\s*models[.]\w+)Field\(([^)\n]*)([^p)\s\n][^r)\s\n][^i)\s\n][^)\s\n]*[^u)\s\n][^e)\s\n][^)\s\n]*)\)$'),
         'sub': r"\1id\2Field(\3, primary_key=True)",
     },
+    # { # need to rename id fields that are not the primary_key
+    #     'regex': re.compile(r'^(\s+)id(\s*=\s*models[.]\w+)Field\((.*)\)'),
+    #     'sub': r"\1id_\2Field(\3, db_column='id')",
+    # },
+    {   # no primary keys should be allowed to be null
+        'regex': re.compile(r'null[=]True(.*)primary_key[=]True'),
+        'sub': r"null=False\1primary_key=True",
+    },
+    # {   # have to get rid of the useless ''self'' FK reference
+    #     'regex': re.compile(r"^class\s+(\w+)\(models[.]Model\):(\s*[#].*)?\n(.*)[']{2}self[']{2}"),
+    #     'sub': r"^class \1(models.Model):\2\n\3'\1'",
+    # }
+
     ]

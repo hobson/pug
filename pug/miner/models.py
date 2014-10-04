@@ -3,24 +3,47 @@ import datetime
 from django.db import models
 
 from django_hstore import hstore
+from jsonfield import JSONField
 
 from pug.nlp import db
-import pug
+# FIXME: simplify circular import/dependencies with miner app 
+from pug import miner
+from model_mixin import DateMixin
 
 
 class Connection(models.Model):
     "The username, password, IP Address or URL required to access a database"
     _IMPORTANT_FIELDS = ('pk', 'uri', 'user')
 
-    ip = models.CharField(max_length=15, null=True)
-    uri =  models.CharField(max_length=256, null=True)
-    fqdn = models.CharField(max_length=128, null=True)
-    user = models.CharField(max_length=128, null=True)
+    ip       = models.CharField(max_length=15, null=True)
+    uri      = models.CharField(max_length=256, null=True)
+    fqdn     = models.CharField(max_length=128, null=True)
+    user     = models.CharField(max_length=128, null=True)
     password = models.CharField(max_length=128, null=True)
-    port = models.IntegerField(null=False)
+    port     = models.IntegerField(null=False)
 
     def __unicode__(self):
         return db.representation(self)
+
+
+class AggregatedResults(DateMixin):
+    """Storage a results json string that was returned by any restful web-based service
+
+    DateMixin adds the fields 'updated' and 'created'.
+
+    """
+    name           = models.CharField(max_length=256, default='', blank=False)
+    slug           = models.CharField(max_length=256, default='', blank=False)
+    uri            = models.URLField(
+        help_text='Base service URI without the GET API query')
+    get_dict       = JSONField(
+        help_text='Complete GET Request URI')
+    filter_dict    = JSONField(
+        help_text='The query `filter()` portion of the GET Request URI formatted in a form acceptable as a `queryset.filter(**filter_dict)`')
+    exclude_dict   = JSONField(
+        help_text='The query `exclude()` portion of the GET Request URI formatted in a form evaluated as a `for k, v in exclude_dict.items():  queryset = queryset.exclude({k,v});`')
+    results        = JSONField(
+        help_text='The results (first HTML table or JSON dictionary returned when you query a service)')
 
 
 class Database(models.Model):
@@ -235,7 +258,7 @@ def import_meta(db_meta, db_name, db_date=None, verbosity=1):
 
 
 def explore_app(app_name='call_center', verbosity=1):
-    db_meta = pug.db.explore.get_db_meta(app_name, verbosity=verbosity)
+    db_meta = miner.explore.get_db_meta(app_name, verbosity=verbosity)
     try:
         print '&'*100
         print db_meta

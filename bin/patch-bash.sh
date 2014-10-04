@@ -17,7 +17,7 @@ else
     echo "patch-bash.sh 4 2 52"
     echo "patch-bash.sh 4 1 16"
     echo "     OR"
-    echo "patch-bash.sh 4 0 16"
+    echo "patch-bash.sh 4 0 60"
 fi
 
 if [ "$2" ]; then
