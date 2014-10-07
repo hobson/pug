@@ -1,10 +1,20 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-'''NLP utilities for use with django models and querysets and ORM (SQL)
+'''Utilities to support natural language processing:
 
-Intended only for use within a Django project (requires django.db, which itself requires settings)
+* Vocabulary dimension reduction
+* Word statistics calculation
+* Add a timezone to a datetime
+* Slice a django queryset
+* Genereate batches from a long list or sequence
+* Inverse dict/hashtable lookup
+* Generate a valid python variable or class name from a string
+* Generate a slidedeck-compatible markdown from an text or markdown outline or list
+* Convert a sequence of sequences to a dictionary of sequences
+* Pierson correlation coefficient calculation
+* Parse a string into sentences or tokens
+* Table (list of list) manipulation
 
-TODO: Move all functions that depend on a properly configured django.conf.settings to pug.db or pug.dj
 '''
 
 import types
