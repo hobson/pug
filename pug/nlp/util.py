@@ -22,13 +22,15 @@ from traceback import print_exc
 import ascii
 import decimal
 import random
-#import math
+# import math
 
 from progressbar import ProgressBar
 from pytz import timezone
 import numpy as np
 import scipy as sci
 from fuzzywuzzy import process as fuzzy
+import nltk
+# from sklearn.feature_extraction.text import TfidfVectorizer
 
 import character_subset as chars
 import regex_patterns as RE
@@ -2138,3 +2140,34 @@ def count_duplicates(items):
     """Return a dict of objects and thier counts (like a Counter), but only count > 1"""
     c = collections.Counter(items)
     return dict((k, v) for (k,v) in c.iteritems() if v > 1)
+
+
+
+def markdown_stats(doc):
+    """Compute statistics about the string or document provided.
+
+    Returns:
+        dict: e.g. {'pages': 24, 'words': 1234, 'vocabulary': 123, 'reaading level': 3, ...}
+    """
+    sentence_detector = nltk.data.load('tokenizers/punkt/english.pickle')
+    sentences = sentence_detector.tokenize(doc)
+    tokens = nltk.tokenize.punkt.PunktWordTokenizer().tokenize(doc)
+    vocabulary = collections.Counter(tokens)
+    
+    return collections.OrderedDict([
+        ('lines', sum([bool(l.strip().strip('-').strip()) for l in doc.split('\n')])),
+        ('pages', sum([bool(l.strip().startswith('---')) for l in doc.split('\n')]) + 1),
+        ('tokens', len(tokens)),
+        ('sentences', len(sentences)),
+        ('vocabulary', len(vocabulary.keys())),
+        ])
+
+
+def tfidf(corpus):
+    """Compute a TFIDF Matrix (Term Frequency and Inverse Document Freuqency)"""
+    pass
+
+
+def shakeness(doc):
+    """Determine how similar a document's vocabulary is to Shakespeare's"""
+    pass

@@ -17,6 +17,10 @@ ASCII_CHARACTERS = ''.join([chr(i) for i in range(128)])
 # consider using "from re import *" and renaming this module re or RE
 import re
 
+list_bullet = re.compile(r'^\s*[! \t@#%.?(*+=-_]*[0-9.]*[#-_.)]*\s+')
+nondigit = re.compile("[^0-9]")
+parenthetical_time = re.compile(r'([^(]*)\(\s*(\d+)\s*(?:min)?\s*\)([^(]*)', re.IGNORECASE)
+
 nonword           = re.compile(r'[\W]')
 white_space       = re.compile(r'[\s]')
 
