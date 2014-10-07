@@ -1,12 +1,11 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-'''NLP utilities
+'''NLP utilities:
 
-Dimension reduction
+* Vocabulary dimension reduction
+* Word statistics calculation
+* Adding a timezone to a datetime
 
-Intended only for use within a Django project (requires django.db, which itself requires settings)
-
-TODO: Move all functions that depend on a properly configured django.conf.settings to pug.db or pug.dj
 '''
 
 import types
