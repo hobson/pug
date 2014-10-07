@@ -16,6 +16,7 @@ from django.http import Http404, HttpResponse
 from django import http
 from django.utils import simplejson as json
 # from django.shortcuts import render
+from django.conf import settings
 
 from pug.nlp import parse
 from pug.nlp import util
@@ -39,6 +40,7 @@ def explorer(request, graph_uri=None):
     #return HttpResponse('Looking for template in miner/explorer.html')
     return render_to_response('miner/explorer.html')
 
+
 def home(request):
     """Explore the database (or any data provided by a REST service)"""
     return render_to_response('miner/home.html')
@@ -51,6 +53,7 @@ def connections(request, edges):
     edge_list, node_list = parse.graph_definition(edges)
     data = {'nodes': json.dumps(node_list), 'edges': json.dumps(edge_list)}
     return render_to_response('miner/connections.html', data)
+
 
 def stats(request, date_offset=0, fields=None, title_prefix=None, model='WikiItem'):
     """
@@ -127,7 +130,7 @@ class JSONView(View):
         # -- can be serialized as JSON.
         return json.dumps(context)
 
-   
+
 def context_from_request(request, context=None, Form=GetLagForm, delim=',', verbosity=0, **kwargs):
     """Process GET query request to normalize query arguments (split lists, etc)
 
@@ -209,30 +212,29 @@ def context_from_request(request, context=None, Form=GetLagForm, delim=',', verb
     exclude = request.GET.get('exclude', "") or request.GET.get('e', "") or request.GET.get('x', "") or request.GET.get('ex', "") or request.GET.get('excl', "I")
     context['exclude'] = 'E' if exclude.upper().startswith('E') else 'I'
 
-    min_dates = request.GET.get('mind', "") or request.GET.get('min_date', "") or request.GET.get('min_dates', "")
+    min_dates = request.GET.get('mind') or request.GET.get('min_date') or request.GET.get('min_dates') or ""
     min_dates = [s.strip() for s in min_dates.split(',')] or ['']
     context['filter']['min_dates'] = min_dates
 
-    max_dates = request.GET.get('maxd', "") or request.GET.get('max_date', "") or request.GET.get('max_dates', "")
+    max_dates = request.GET.get('maxd') or request.GET.get('max_date') or request.GET.get('max_dates') or ""
     max_dates = [s.strip() for s in max_dates.split(',')] or ['']
     context['filter']['max_dates'] = max_dates
 
-    context['regex'] = request.GET.get('re', "") or request.GET.get('regex', "") or request.GET.get('word', "") or request.GET.get('search', "") or request.GET.get('find', "")
+    context['regex'] = request.GET.get('re') or request.GET.get('regex') or request.GET.get('word') or request.GET.get('search') or request.GET.get('find') or ""
 
-    context['columns'] = request.GET.get('col', "") or request.GET.get('cols', "") or request.GET.get('column', "") or request.GET.get('columns', "")
+    context['columns'] = request.GET.get('col') or request.GET.get('cols') or request.GET.get('column') or request.GET.get('columns') or ""
     context['columns'] = [s.strip() for s in context['columns'].split(';')] or []
 
-    series_name = request.GET.get('s', "") or request.GET.get('n', "") or request.GET.get('series', "") or request.GET.get('name', "")
-    filter_values = series_name.split(' ')  # FIXME: '|'
-    if filter_values and len(filter_values)==4:
-        mn = [filter_values[0].strip('*')]
-        context['filter']['model_numbers'] = mn  # SLAmodels.models_from_sales_groups(mn)
-        r = [filter_values[1].strip('*')]
-        context['filter']['reasons'] = r
-        a = [filter_values[2].strip('*')]
-        context['filter']['account_numbers'] = a
-        fiscal_years = [filter_values[3].strip('*')]
-        context['filter']['fiscal_years'] = fiscal_years
+    # filter_values = context['name'].split(' ')  # FIXME: '|'
+    # if filter_values and len(filter_values)==4:
+    #     mn = [filter_values[0].strip('*')]
+    #     context['filter']['model_numbers'] = mn  # SLAmodels.models_from_sales_groups(mn)
+    #     r = [filter_values[1].strip('*')]
+    #     context['filter']['reasons'] = r
+    #     a = [filter_values[2].strip('*')]
+    #     context['filter']['account_numbers'] = a
+    #     fiscal_years = [filter_values[3].strip('*')]
+    #     context['filter']['fiscal_years'] = fiscal_years
 
     # lag values can't be used directly in a django filter so don't put them in context['filter']
     lag = request.GET.get('lag', '') or request.GET.get('l', '')
@@ -279,6 +281,12 @@ def context_from_request(request, context=None, Form=GetLagForm, delim=',', verb
                 'regex': context['regex'],
               }
 
+
+    # now = util.make_tz_aware(datetime.datetime.now(), settings.TIME_ZONE)
+    # date_label = now.strftime('%b') + '{0} {1}:{2:02d}'.format(now.day, now.hour % 12, now.minute))
+    context['name'] = request.GET.get('s') or request.GET.get('n') or request.GET.get('series') or request.GET.get('name') or util.slug_from_dict(initial) 
+    initial['name'] = ''
+
     if verbosity > 1:
         print 'normalized GET query parameters: %r' % initial
 
@@ -297,7 +305,6 @@ def context_from_request(request, context=None, Form=GetLagForm, delim=',', verb
         #import ipdb
         #ipdb.set_trace()
         #raise RuntimeError('form is invalid')
-
 
     if not context.get('field_names'):
         if kwargs.get('field_names'):

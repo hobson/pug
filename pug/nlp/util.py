@@ -22,6 +22,7 @@ from traceback import print_exc
 import ascii
 import decimal
 import random
+from decimal import Decimal
 # import math
 
 from progressbar import ProgressBar
@@ -30,6 +31,7 @@ import numpy as np
 import scipy as sci
 from fuzzywuzzy import process as fuzzy
 import nltk
+from slugify import slugify
 # from sklearn.feature_extraction.text import TfidfVectorizer
 
 import character_subset as chars
@@ -2161,6 +2163,15 @@ def markdown_stats(doc):
         ('sentences', len(sentences)),
         ('vocabulary', len(vocabulary.keys())),
         ])
+
+
+def slug_from_dict(d, max_len=128, delim='-'):
+    return slug_from_iter(d.values(), max_len=max_len, delim=delim)
+
+
+def slug_from_iter(it, max_len=128, delim='-'):
+    nonnull_values = [str(v) for v in it if (isinstance(v, (long, int, float, Decimal)) and str(v))]
+    return slugify(delim.join(abbreviate(v, max_len=int(float(max_len) / len(nonnull_values))) for v in nonnull_values))
 
 
 def tfidf(corpus):

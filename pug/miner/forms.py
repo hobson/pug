@@ -5,12 +5,6 @@ from django import forms
 from pug.nlp import util
 
 
-def name_initial(obj=None):
-    if obj is None:
-        obj = util.make_tz_aware(datetime.datetime.now())
-    return str(obj)
-
-
 class GetLagForm(forms.Form):
 
     mn = forms.CharField(max_length=512, required=False,
@@ -103,8 +97,8 @@ class GetLagForm(forms.Form):
 
     name = forms.CharField(max_length=128, required=False,
         label='Name or Description',
-        initial=name_initial(),
-        help_text='A name or description associated with the results of this query, to make them easy to find later.',
+        initial='',
+        help_text='e.g. BB-2014-LC70',
         # widget=forms.TextInput(attrs={'placeholder': '12, 2013, 14, ...'}),
         )
 
