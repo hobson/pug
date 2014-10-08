@@ -2,7 +2,7 @@
 import datetime
 
 from django import forms
-from pug.nlp import util
+#from pug.nlp import util
 
 
 class GetLagForm(forms.Form):
@@ -19,7 +19,6 @@ class GetLagForm(forms.Form):
         label='Product Department',
         initial='',
         help_text='e.g. "117, 118, 119"',
-        #widget=forms.TextInput(attrs={'placeholder': '117, 118, 119 ...'}),
         )
 
     an= forms.CharField(required=False,
@@ -27,14 +26,13 @@ class GetLagForm(forms.Form):
         label='Refurb Account',
         initial='',
         help_text="e.g. 113656, 100479, 105158",
-        #widget=forms.TextInput(attrs={'placeholder': "Comma-separated customer account #'s"}),
         )
 
     exclude = forms.ChoiceField(
-        #widget=forms.RadioSelect,
         initial='I',
         label='Exclude?',
-        choices=(('I', 'Include'), ('E', 'Exclude'))
+        choices=(('I', 'Include'), ('E', 'Exclude')),
+        # widget=forms.RadioSelect,
         )
 
     r = forms.CharField(required=False,
@@ -63,7 +61,6 @@ class GetLagForm(forms.Form):
         label='Min Date',
         initial=datetime.date(2012, 4, 1),
         help_text='e.g. "2013-03-31"',
-        #widget=forms.DateInput(), #attrs={'placeholder': 'e.g. 2014-04-01'}
         )
 
     max_date = forms.DateField(
@@ -71,35 +68,41 @@ class GetLagForm(forms.Form):
         label='Max Date',
         initial=datetime.date.today,
         help_text='e.g. "2014-04-01"',
-        #widget=forms.DateInput(), #attrs={'placeholder': 'e.g. 2014-04-01'}
         )
 
     fy = forms.CharField(max_length=256, required=False,
         label='Fiscal Years',
         initial='13', 
         help_text='e.g. 12, \'13, 2014',
-        # widget=forms.TextInput(attrs={'placeholder': '12, 2013, 14, ...'}),
         )
+
+    ##### These fields aren't data filters, but aggregation configuration values
 
     regex = forms.CharField(max_length=256, required=False,
         label='Comments Search Pattern (<a href="https://www.icewarp.com/support/online_help/203030104.htm">regex</a>)',
         initial='MURA|HORIZ', 
         help_text='e.g. MURA|HORIZ',
-        # widget=forms.TextInput(attrs={'placeholder': '12, 2013, 14, ...'}),
         )
 
     columns = forms.CharField(max_length=256, required=False,
         label='CSV Columns (semicolon-separated)',
         initial='', 
         help_text='e.g. model; inspnote; recvnotes; repanote; ',
-        # widget=forms.TextInput(attrs={'placeholder': '12, 2013, 14, ...'}),
         )
+
+    ##### These fields are for the dashboard functionality, recording and displaying aggregates that you want
 
     name = forms.CharField(max_length=128, required=False,
         label='Name or Description',
         initial='',
         help_text='e.g. BB-2014-LC70',
-        # widget=forms.TextInput(attrs={'placeholder': '12, 2013, 14, ...'}),
+        )
+
+    aggregate_ids = forms.CharField(max_length=128, required=False,
+        label='ID numbers of previous queries to display', #  for display in a Dashboard (table or plot of aggregates)
+        initial='',
+        help_text='e.g. -3,-2,-1  or 98,99,100',
+        widget=forms.HiddenInput(),
         )
 
     def __init__(self, *args, **kwargs):

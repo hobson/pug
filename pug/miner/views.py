@@ -183,8 +183,7 @@ def context_from_request(request, context=None, Form=GetLagForm, delim=',', verb
     if context['table'].startswith('a'):
         context['table'] = 'aggregate'
         context['aggregates'] = []
-        context['aggregate_ids'] = context.get('aggregate_ids') or []
-        context['plot'] = 'aggregate'
+        # context['plot'] = 'aggregate'
     if context['table'].startswith('d'):
         context['table'] = 'detailed'
         limit = limit or 10*1000
@@ -229,6 +228,8 @@ def context_from_request(request, context=None, Form=GetLagForm, delim=',', verb
 
     context['columns'] = request.GET.get('col') or request.GET.get('cols') or request.GET.get('column') or request.GET.get('columns') or ""
     context['columns'] = [s.strip() for s in context['columns'].split(';')] or []
+
+    context['aggregate_ids'] = request.GET.get('agg') or request.GET.get('ids') or request.GET.get('aggids') or request.GET.get('aggregates') or request.GET.get('aggregate_ids') or ''
 
     # filter_values = context['name'].split(' ')  # FIXME: '|'
     # if filter_values and len(filter_values)==4:
@@ -289,7 +290,7 @@ def context_from_request(request, context=None, Form=GetLagForm, delim=',', verb
     context['name'] = request.GET.get('s') or request.GET.get('n') or request.GET.get('series') or request.GET.get('name') or util.slug_from_dict(initial) 
     initial['name'] = ''
 
-    if verbosity > 1:
+    if verbosity:
         print 'normalized GET query parameters: %r' % initial
 
     if request.method == 'POST':
