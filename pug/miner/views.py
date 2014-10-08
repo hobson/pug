@@ -180,6 +180,11 @@ def context_from_request(request, context=None, Form=GetLagForm, delim=',', verb
                         ).strip().lower()
     if context['table'].startswith('f'):
         context['table'] = 'fast'
+    if context['table'].startswith('a'):
+        context['table'] = 'aggregate'
+        context['aggregates'] = []
+        context['aggregate_ids'] = context.get('aggregate_ids') or []
+        context['plot'] = 'aggregate'
     if context['table'].startswith('d'):
         context['table'] = 'detailed'
         limit = limit or 10*1000
@@ -259,9 +264,6 @@ def context_from_request(request, context=None, Form=GetLagForm, delim=',', verb
             maxl = int(maxl)
         except:
             maxl = ''
-    
-    print 'minl = %r' % minl
-    print 'maxl = %r' % maxl
 
     context['filter']['min_lag'] = minl
     context['filter']['max_lag'] = maxl

@@ -1966,7 +1966,7 @@ def save_sheets(tables, filename, ext='.tsv', verbosity=0):
 
 
 
-def shorten(s, max_length=16):
+def shorten(s, max_len=16):
     """Attempt to shorten a phrase by deleting words at the end of the phrase
 
     >>> shorten('Hello World!')
@@ -1978,9 +1978,9 @@ def shorten(s, max_length=16):
     words = [abbreviate(word) for word in get_words(s)]
     for i in xrange(len(words), 0, -1):
         short = ' '.join(words[:i])
-        if len(short) <= max_length:
+        if len(short) <= max_len:
             break
-    return short[:max_length]
+    return short[:max_len]
 
 
 def abbreviate(word):
@@ -2176,12 +2176,23 @@ def markdown_stats(doc):
 
 
 def slug_from_dict(d, max_len=128, delim='-'):
+    """Produce a slug (short URI-friendly string) from an iterable Mapping (dict, OrderedDict)
+
+    >>> slug_from_dict({'a': 1, 'b': 'beta', ' ': 'alpha'})
+    '1-alpha-beta'
+    """
     return slug_from_iter(d.values(), max_len=max_len, delim=delim)
 
 
 def slug_from_iter(it, max_len=128, delim='-'):
-    nonnull_values = [str(v) for v in it if (isinstance(v, (long, int, float, Decimal)) and str(v))]
-    return slugify(delim.join(abbreviate(v, max_len=int(float(max_len) / len(nonnull_values))) for v in nonnull_values))
+    """Produce a slug (short URI-friendly string) from an iterable (list, tuple, dict)
+
+    >>> slug_from_iter(['.a.', '=b=', '--alpha--'])
+    'a-b-alpha'
+    """
+
+    nonnull_values = [str(v) for v in it if v or ((isinstance(v, (long, int, float, Decimal)) and str(v)))]
+    return slugify(delim.join(shorten(v, max_len=int(float(max_len) / len(nonnull_values))) for v in nonnull_values), word_boundary=True)
 
 
 def tfidf(corpus):
