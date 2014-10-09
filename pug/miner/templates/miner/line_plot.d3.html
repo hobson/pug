@@ -1,10 +1,18 @@
+<div class="row">
+  <div id="linegraph" class="graph"></div>
+</div> 
+
 
 <script>
+
 var margin = {top: 20, right: 80, bottom: 30, left: 50},
     width = 960 - margin.left - margin.right,
     height = 500 - margin.top - margin.bottom;
 
 var d3data = {{ data.d3data|safe }};
+
+console.log(d3data);
+
 var xlabel = "{{ data.xlabel|escapejs }}";
 var ylabel = "{{ data.ylabel|escapejs }}";
 
@@ -16,15 +24,24 @@ data.sort(function(a, b) { return a.x - b.x; });
 
 var color = d3.scale.category10().domain(ans.ylabels);
 
-var parse_date = d3.time.format("%Y%m%d").parse;
+
+function d3_parse_date(date_or_time) {
+  return d3.time.format("%Y%m%d").parse(date_or_time);
+}
 
 var x = d3.scale.linear().range([0, width]);
 
 // parse xdata as datetimes if the xlabel starts with the word "date" or "time" 
 if ((xlabel.substring(0, 4).toUpperCase() == "DATE") 
-    || (xlabel.substring(0, 4).toUpperCase() == "TIME")) {
+    // || (xlabel.substring(0, 4).toUpperCase() == "TIME")
+  ) {
   x = d3.time.scale().range([0, width]);
-  data.forEach(function(d) { d.x = parse_date(d.x); });
+  
+  data.forEach(function(d) { 
+    console.log(d);
+    console.log(d.x);
+    d.x = d3_parse_date(d.x); }
+    );
 }
 
 var xAxis = d3.svg.axis().scale(x).orient("bottom");
@@ -56,7 +73,7 @@ var line = d3.svg.line()
 // d3.select("#makeraw").on("click", make_smooth);
 
 
-var svg = d3.select("#graph").append("svg")
+var svg = d3.select("#linegraph").append("svg")
     .attr("width", width + margin.left + margin.right)
     .attr("height", height + margin.top + margin.bottom)
   .append("g")

@@ -48,7 +48,7 @@ d3.json("occurrence.json", function(cooccurrence) {
     node.count = 0;
     matrix[i] = d3.range(n).map(function(j) { return {x: j, y: i, z: 0}; });
   });
-  console.log(cooccurrence.nodes.length)
+  console.log(cooccurrence.nodes.length);
 
   // Convert links to matrix; count word occurrences.
   cooccurrence.links.forEach(function(link) {

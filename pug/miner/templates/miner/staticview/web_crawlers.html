@@ -11,9 +11,9 @@
             if (typeof method == 'undefined') {
                 method = "crawler/engine/open_spiders"
                 }
-            console.log(method)
-            console.log(typeof method)
-            console.log([$("textarea#input").val()])
+            console.log(method);
+            console.log(typeof method);
+            console.log([$("textarea#input").val()]);
             $("input#evaluate").click(function() {
                 $.jsonRPC.request(method, {
                     params : [$("textarea#input").val()],

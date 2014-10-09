@@ -229,7 +229,10 @@ def context_from_request(request, context=None, Form=GetLagForm, delim=',', verb
     context['columns'] = request.GET.get('col') or request.GET.get('cols') or request.GET.get('column') or request.GET.get('columns') or ""
     context['columns'] = [s.strip() for s in context['columns'].split(';')] or []
 
-    context['aggregate_ids'] = request.GET.get('agg') or request.GET.get('ids') or request.GET.get('aggids') or request.GET.get('aggregates') or request.GET.get('aggregate_ids') or ''
+    # whether the FK join queries should be short-circuited
+    context['quick'] = context.get('quick', False) or (bool(context.get('columns', [])) and any(context.get('columns', [])))
+
+    context['aggregate_ids'] = request.GET.get('agg') or request.GET.get('ids') or request.GET.get('aggids') or request.GET.get('aggregates') or request.GET.get('aggregate_ids') or '-1'
 
     # filter_values = context['name'].split(' ')  # FIXME: '|'
     # if filter_values and len(filter_values)==4:

@@ -1,4 +1,26 @@
+{% extends 'miner/base.html' %}
+{% load i18n %}
+{% load staticfiles %}
+{% load static %}
 
+{% block extra_head %}
+    <script src="{% static "d3/d3.min.js" %}"></script>
+    {# <script src="{% static "d3-tip/index.js" %}"></script> #}
+    <link rel="stylesheet" href="{% static "miner/css/hist.css" %}">
+{% endblock %}
+
+{% block content %}
+    {% include "case/bootstrap_case_form.html" %}
+    </div>
+    <div class="row">
+    {% if not errors and data.d3data %}
+      <div id="graph" class="aGraph"></div>
+    {% endif %}
+    </div> 
+{% comment %}
+    <button id="makesmooth" onclick="make_smooth()">Smooth</button>
+    <button id="makeraw" onclick="make_raw()">Make Raw</button>
+{% endcomment %}
 <script>
 var margin = {top: 20, right: 80, bottom: 30, left: 50},
     width = 960 - margin.left - margin.right,
@@ -281,6 +303,8 @@ function mouseout(d) {
 
 </script>
 
+
+{% endblock %}
 
 
 

@@ -57,8 +57,8 @@ d3.json("occurrence.json", function(error, json) {
 
     pow_scale = d3.scale.pow().exponent(exp).domain([x_min, x_max]).range([0.0, 1.0]);
     console.log('scaled min, mid, mean, max: ' + [pow_scale(x_min), pow_scale(x_mid), pow_scale(x_ave), pow_scale(x_max)]);
-    var length = 100 * (width + height) * Math.pow(pow_scale(x_ave) / pow_scale(x_mid), 2) / Math.pow(N_edges, .75) / Math.pow(N_nodes, .25)
-    console.log("length: " + length + " for " + N_edges + ", " +  N_nodes + " edges and nodes")
+    var length = 100 * (width + height) * Math.pow(pow_scale(x_ave) / pow_scale(x_mid), 2) / Math.pow(N_edges, .75) / Math.pow(N_nodes, .25);
+    console.log("length: " + length + " for " + N_edges + ", " +  N_nodes + " edges and nodes");
 
     for(var indx in graph.nodes) { 
         graph.nodes[indx].r = radius; }
