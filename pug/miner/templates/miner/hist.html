@@ -5,6 +5,7 @@
 
 {% block extra_head %}
     <script src="{% static "d3/d3.min.js" %}"></script>
+    <script src="{% static "miner/js/line-plot.js" %}"></script>
     {# <script src="{% static "d3-tip/index.js" %}"></script> #}
     <link rel="stylesheet" href="{% static "miner/css/hist.css" %}">
 {% endblock %}
@@ -13,7 +14,12 @@
 
     {% include "case/bootstrap_case_form.html" %}
 
+
     {% include "miner/line_plot.d3.html" %}
+    <script>
+      var d3data = {{ data.d3data|safe }};
+      line_plot(d3data);
+    </script>
 
 {% endblock %}
 
