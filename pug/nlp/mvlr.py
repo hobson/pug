@@ -2,7 +2,7 @@ from pug.crawler.models import WikiItem as Item
 import numpy as np
 
 # a [10000 x num_predictors] matrix inversion is intractible, so don't dare try it
-MAX_NUM_RECORDS = 10000
+MAX_NUM_RECORDS = 100000
 
 
 def predictor_values(predictors=None, filter_dict=None, exclude_dict=None, predicted='wikiitem.modified', max_num_records=10000):

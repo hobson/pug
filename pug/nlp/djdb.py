@@ -671,7 +671,7 @@ def sum_in_date(x='date', y='net_sales', filter_dict=None, model='WikiItem', app
     else:
         return objects[x], objects['y']
 
-def sequence_from_filter_spec(field_names, filter_dict=None, model=DEFAULT_MODEL, app=DEFAULT_APP, sort=None, limit=5000):
+def sequence_from_filter_spec(field_names, filter_dict=None, model=DEFAULT_MODEL, app=DEFAULT_APP, sort=None, limit=30000):
     field_names = util.listify(field_names)
     # TODO: enable +1 to mean increasing order on 1st column
     sort_char = sort_prefix(sort)
@@ -816,7 +816,7 @@ def find_field_name(field, model=DEFAULT_MODEL, app=DEFAULT_APP, fuzziness=.5):
     return find_field_names(field, model, app, score_cutoff=int((1-fuzziness)*100), pad_with_none=True)[0]
 
 
-def lagged_in_date(x=None, y=None, filter_dict=None, model='WikiItem', app=DEFAULT_APP, sort=True, limit=5000, lag=1, pad=0, truncate=True):
+def lagged_in_date(x=None, y=None, filter_dict=None, model='WikiItem', app=DEFAULT_APP, sort=True, limit=30000, lag=1, pad=0, truncate=True):
     """
     Lag the y values by the specified number of samples.
 
@@ -899,7 +899,7 @@ def shared_field_names(model0, model1):
     return diff[0]
 
 
-def diff_data(model0, model1, pk_name='pk', field_names=None, ignore_related=True, strip=True, nulls=(0, 0.0, ''), clean_unicode=clean_utf8, short_circuit=False, ignore_field_names=None, verbosity=2, limit=10000):
+def diff_data(model0, model1, pk_name='pk', field_names=None, ignore_related=True, strip=True, nulls=(0, 0.0, ''), clean_unicode=clean_utf8, short_circuit=False, ignore_field_names=None, verbosity=2, limit=30000):
     nulls = set(nulls) if nulls else set()
     ans = {
         'count': 0,

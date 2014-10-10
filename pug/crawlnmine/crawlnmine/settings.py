@@ -8,10 +8,20 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/1.6/ref/settings/
 """
 
+
+import sys
+
 # Build paths inside the project like this: os.path.join(BASE_DIR, ...)
 import os
-BASE_DIR = os.path.dirname(os.path.dirname(__file__))
 
+PROJECT_SETTINGS_PATH = os.path.realpath(os.path.dirname(__file__))
+
+# because the apps we want in INSTALLED are "external" to this project (two directories up) we have to add them to the python path manually
+ROOT_PROJECT_PATH = os.path.realpath(os.path.join(PROJECT_SETTINGS_PATH,'..','..','..'))
+
+if ROOT_PROJECT_PATH not in sys.path:
+    sys.path.insert(1, ROOT_PROJECT_PATH)
+print sys.path
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/1.6/howto/deployment/checklist/
@@ -36,11 +46,11 @@ INSTALLED_APPS = (
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    'celery',
+    # 'celery',
 
-    'pug.crawler',
+    # 'pug.crawler',
     'pug.miner',
-    'pug.agile',
+    # 'pug.agile',
 )
 
 MIDDLEWARE_CLASSES = (
@@ -63,9 +73,13 @@ WSGI_APPLICATION = 'crawlnmine.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': os.path.join(BASE_DIR, 'db.sqlite3'),
+        'NAME': os.path.join(ROOT_PROJECT_PATH, 'db.sqlite3'),
     }
 }
+
+
+if 'test' in sys.argv or 'test_coverage' in sys.argv: #Covers regular testing and django-coverage
+    DATABASES['default']['engine'] = 'django.db.backends.sqlite3'
 
 # Internationalization
 # https://docs.djangoproject.com/en/1.6/topics/i18n/
@@ -85,6 +99,12 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/1.6/howto/static-files/
 
 STATIC_URL = '/static/'
+
+# Absolute path to the directory static files should be collected to.
+# Don't put anything in this directory yourself; store your static files
+# in apps' "static/" subdirectories and in STATICFILES_DIRS.
+# Example: "/var/www/example.com/static/"
+STATIC_ROOT = os.path.join(ROOT_PROJECT_PATH, 'collected_static_files')
 
 
 # List of modules to import when celery starts.  But crawlnmine.crawlnmine.__init__ will do this
