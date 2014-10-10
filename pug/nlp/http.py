@@ -1,4 +1,8 @@
-"""Functions for manipulating and composing http-protocol traffic"""
+"""Functions for manipulating and composing http-protocol traffic
+
+* simplify_get: eliminate empty and/or redundant HTTP GET parameters from a request dict
+
+"""
 
 
 def simplify_get(get_dict, keys_to_del=None):

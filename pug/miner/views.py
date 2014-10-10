@@ -214,7 +214,7 @@ def context_from_request(request, context=None, Form=GetLagForm, delim=',', verb
     context['filter']['account_numbers'] = a
 
     exclude = request.GET.get('exclude', "") or request.GET.get('e', "") or request.GET.get('x', "") or request.GET.get('ex', "") or request.GET.get('excl', "I")
-    context['exclude'] = 'E' if exclude.upper().startswith('E') else 'I'
+    context['exclude'] = 'E' if exclude.upper().startswith('E') else ''
 
     min_dates = request.GET.get('mind') or request.GET.get('min_date') or request.GET.get('min_dates') or ""
     min_dates = [s.strip() for s in min_dates.split(',')] or ['']
@@ -287,10 +287,9 @@ def context_from_request(request, context=None, Form=GetLagForm, delim=',', verb
                 'regex': context['regex'],
               }
 
-
     # now = util.make_tz_aware(datetime.datetime.now(), settings.TIME_ZONE)
     # date_label = now.strftime('%b') + '{0} {1}:{2:02d}'.format(now.day, now.hour % 12, now.minute))
-    context['name'] = request.GET.get('s') or request.GET.get('n') or request.GET.get('series') or request.GET.get('name') or util.slug_from_dict(initial) 
+    context['name'] = request.GET.get('s') or request.GET.get('n') or request.GET.get('series') or request.GET.get('name') or util.slug_from_dict(initial)
     initial['name'] = ''
 
     if verbosity:
