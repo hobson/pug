@@ -1,4 +1,7 @@
-import sys, pickle, numpy
+# HL: unused
+# import sys, pickle
+
+import numpy
 
 import matplotlib.pyplot as pyplot
 
@@ -14,19 +17,19 @@ rand = numpy.random.rand
 
 # This function returns a projection vector for binary decision. p_matrix is a n_training x n_dimensions
 
-# numpy array with the positions achieved from the spring function. label is a n_training x 1 numpy array
+# numpy array with the positions achieved from the spring function. labels is a n_training x 1 numpy array
 
 # of +/-1 labels.
 
-def projection_vector(p_matrix, label):
+def projection_vector(p_matrix, labels):
 
-  assert p_matrix.shape[0] == label.shape[0]
+  assert p_matrix.shape[0] == labels.shape[0]
 
   temp = numpy.copy(p_matrix)
 
   for idx in range(p_matrix.shape[0]):
 
-    temp[idx][:] = label[idx]*temp[idx][:]
+    temp[idx][:] = labels[idx]*temp[idx][:]
 
   unnormalized_pv = temp.sum(axis = 0)
 
@@ -40,12 +43,12 @@ def projection_vector(p_matrix, label):
 
 # with all the pairwise distances. Drift is a function that uses labels to vary the drift between each
 
-# iteration. label is a n_training x 1 numpy array of +/-1 labels.
+# iteration. labels is a n_training x 1 numpy array of +/-1 labels.
 
 # which direction is steepest in your training data
 # average of blue points and red points, the vectors between the groups to say which group the node is closer too
 
-def spring(d_matrix, drift, label, n_dimensions, n_iteration):
+def spring(d_matrix, drift, labels, n_dimensions=5, n_iteration=555):
   """Propagate the p_matrix (positions of the nodes) for n_iterations printing out the MSE matrix at the end.
       
     Returns:
@@ -55,7 +58,7 @@ def spring(d_matrix, drift, label, n_dimensions, n_iteration):
       d_matrix (np.matrix of float): symmetric N x N matrix of distances between nodes (documents)
         column is node called `acted` the one being pulled, the column the node doing the push/pulling `actor`
       drift (bool): whether there should be some supervisory force to keep the absolute position of nodes near zero
-      label (list of int): +/- 1 for each of N nodes or 0 if no labeled. +/-1 for only 2 categories or labels in your training set
+      labels (list of int): +/- 1 for each of N nodes or 0 if no labeled. +/-1 for only 2 categories or labels in your training set
       n_dimensions (int): number of dimensions to reduce to
         We don't know how many dimensions our final vector will be, so adjust this from low to high until the gain in mse is small
       n_iterations (int): number of times
@@ -64,8 +67,8 @@ def spring(d_matrix, drift, label, n_dimensions, n_iteration):
 
   assert d_matrix.shape[0] == d_matrix.shape[1]
 
-  # HL: FIXME: delete this unused variable
-  n_elements = d_matrix.shape[0]
+  # # HL: FIXME: delete this unused variable
+  # n_elements = d_matrix.shape[0]
 
   p_matrix = init_position(d_matrix, n_dimensions)
 
@@ -78,7 +81,7 @@ def spring(d_matrix, drift, label, n_dimensions, n_iteration):
 
     # to our desired distance matrix.
 
-    p_matrix = p_matrix + drift(label, n_dimensions)
+    p_matrix = p_matrix + drift(labels, n_dimensions)
 
     p_matrix = propagate(p_matrix, d_matrix)
 
@@ -123,13 +126,13 @@ def init_position(d_matrix, n_dimensions):
 
   
 
-def drift(label, n_dimensions):
+def drift(labels, n_dimensions):
 
-  p_change = 0.01*ones(shape = (label.shape[0], n_dimensions))
+  p_change = 0.01*ones(shape = (labels.shape[0], n_dimensions))
 
   for idx in range(p_change.shape[0]):
 
-    if label[idx] < 0:
+    if labels[idx] < 0:
 
       p_change[idx][:] = -p_change[idx][:]
 
@@ -240,12 +243,14 @@ def main():
   
 
   
-
+  # HL: random 6x6 matrix
   temp = 2*rand(6, 6)
 
-  label = 2*(numpy.random.randint(0, 2, (6, 1))-0.5)
+  # HL: random labels +/- 1
+  labels = 2*(numpy.random.randint(0, 2, (6, 1))-0.5)
 
-  p_matrix = spring(temp.T+temp, drift, label, 5, 555)
+  # HL: this is the "Main" work that shold take a while on a big matrix
+  p_matrix = spring(temp.T+temp, drift, labels, 5, 555)
 
   
 
@@ -254,7 +259,7 @@ def main():
 
   #temp = numpy.array([[0, 0.1, 1, 1.1], [0, 0, 1.2, 1.4], [0, 0, 0, 0.05], [0, 0, 0, 0]])
 
-  #label = numpy.array([[1], [1], [-1], [-1]])
+  #labels = numpy.array([[1], [1], [-1], [-1]])
 
   #p_matrix = spring(temp.T+temp, drift, numpy.array([[1], [1], [-1], [-1]]), 2, 555)
 
@@ -271,16 +276,13 @@ def main():
   
 
   # Find the projection vector and plot the training data.
-  a = projection_vector(p_matrix, label)
+  a = projection_vector(p_matrix, labels)
 
-  # HL: `fig` is not used anywhere
-  fig = pyplot.figure()
-
-  
+  pyplot.figure()
 
   for idx in range(p_matrix.shape[0]):
 
-    if label[idx] >= 0:
+    if labels[idx] >= 0:
 
       pyplot.scatter(p_matrix[idx][0], p_matrix[idx][1], s=100, c='r')
 
