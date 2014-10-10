@@ -23,7 +23,7 @@ from pug.nlp import util
 from pug.nlp import db
 
 # from sec_sharp_refurb.models import Refrefurb as SECRef
-import call_center.models as SLAmodels
+#import call_center.models as SLAmodels
 from forms import GetLagForm
 
 
@@ -312,10 +312,8 @@ def context_from_request(request, context=None, Form=GetLagForm, delim=',', verb
         #raise RuntimeError('form is invalid')
 
     if not context.get('field_names'):
-        if kwargs.get('field_names'):
-            context['field_names'] = kwargs.get('field_names', [])
-        else:
-            context['field_names'] = list(SLAmodels.Refrefurb._meta.get_all_field_names())
+        context['field_names'] = kwargs.get('field_names', [])
+
         
     if not context.get('filename'):
         context['filename'] = 'Refurb.csv'

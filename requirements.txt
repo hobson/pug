@@ -8,6 +8,10 @@ cryptography==0.4
 # gitdb==0.5.4
 # GitPython==0.3.2.RC1
 Django==1.5.8
+
+python-nvd3==0.13.3
+django-nvd3==0.7.6
+
 fuzzywuzzy==0.3.2
 jsonfield==1.0
 Scrapy==0.22.2
