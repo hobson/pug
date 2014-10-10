@@ -46,21 +46,25 @@ def projection_vector(p_matrix, label):
 # average of blue points and red points, the vectors between the groups to say which group the node is closer too
 
 def spring(d_matrix, drift, label, n_dimensions, n_iteration):
-"""
-  
-  Arguments:
-    d_matrix (np.matrix of float): symmetric N x N matrix of distances between nodes (documents)
-      column is node called `acted` the one being pulled, the column the node doing the push/pulling `actor`
-    drift (bool): whether there should be some supervisory force to keep the absolute position of nodes near zero
-    label (list of int): +/- 1 for each of N nodes or 0 if no labeled. +/-1 for only 2 categories or labels in your training set
-    n_dimensions (int): number of dimensions to reduce to
-      We don't know how many dimensions our final vector will be, so adjust this from low to high until the gain in mse is small
-    n_iterations (int): number of times
-"""
+  """Propagate the p_matrix (positions of the nodes) for n_iterations printing out the MSE matrix at the end.
+      
+    Returns:
+      p_matrix (np.matrix of float): each row is a node position?  the eigenvectors of the reduced dimensional space?
+
+    Arguments:
+      d_matrix (np.matrix of float): symmetric N x N matrix of distances between nodes (documents)
+        column is node called `acted` the one being pulled, the column the node doing the push/pulling `actor`
+      drift (bool): whether there should be some supervisory force to keep the absolute position of nodes near zero
+      label (list of int): +/- 1 for each of N nodes or 0 if no labeled. +/-1 for only 2 categories or labels in your training set
+      n_dimensions (int): number of dimensions to reduce to
+        We don't know how many dimensions our final vector will be, so adjust this from low to high until the gain in mse is small
+      n_iterations (int): number of times
+  """
   # Make sure distance matrix is square.
 
   assert d_matrix.shape[0] == d_matrix.shape[1]
 
+  # HL: FIXME: delete this unused variable
   n_elements = d_matrix.shape[0]
 
   p_matrix = init_position(d_matrix, n_dimensions)
@@ -267,9 +271,9 @@ def main():
   
 
   # Find the projection vector and plot the training data.
-
   a = projection_vector(p_matrix, label)
 
+  # HL: `fig` is not used anywhere
   fig = pyplot.figure()
 
   
