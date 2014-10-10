@@ -21,7 +21,6 @@ ROOT_PROJECT_PATH = os.path.realpath(os.path.join(PROJECT_SETTINGS_PATH,'..','..
 
 if ROOT_PROJECT_PATH not in sys.path:
     sys.path.insert(1, ROOT_PROJECT_PATH)
-print sys.path
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/1.6/howto/deployment/checklist/
