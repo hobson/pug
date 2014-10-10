@@ -14,11 +14,13 @@
 
     {% include "case/bootstrap_case_form.html" %}
 
+    <div class="row">
+      <div id="linegraph" class="graph"></div>
+    </div> 
 
-    {% include "miner/line_plot.d3.html" %}
     <script>
       var d3data = {{ data.d3data|safe }};
-      line_plot(d3data);
+      line_plot(d3data, "{{ data.xlabel|escapejs }}", "{{ data.ylabel|escapejs }}");
     </script>
 
 {% endblock %}

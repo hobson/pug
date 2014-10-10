@@ -63,22 +63,38 @@ function query_param(name) {
 }
 
 
-function line_plot(d3data, xlabel, ylabel) {
-    xlabel = typeof xlabel !== 'undefined' ? xlabel: "X";
-    ylabel = typeof ylabel !== 'undefined' ? xlabel: "Y";
+// Line plot with clickable Voronoi regions and mouse-over tool tips showing the coordinate values
+// 
+// Arguments:
+//   d3data (array): N*M 2-D array, where N is the number of data series to plot (typically 2)
+//     d3data[0][0] (String or Null): x-axis label (horizontal, independent axis or domain)
+//     d3data[1][0] (String or Null): y-axis label (vertical, dependent axis or range)
+//     d3data[0][1..M] (Number or String): x-coordinate values, Strings are converted to dates in seconds since epoch
+//     d3data[1][1..M] (Number): y-coordinate values
+//   x-axis (String, optional): horizontal x-axis label (overrides d3data[0][0])
+//   y-axis (String, optional): vertical y-axis label (overrides d3data[0][0])
+function line_plot(d3data, xlabel, ylabels) {
 
-    console.log(d3data.length);
-    var margin = {top: 20, right: 80, bottom: 30, left: 50},
-        width = 960 - margin.left - margin.right,
-        height = 500 - margin.top - margin.bottom;
+    xlabel = typeof xlabel !== 'undefined' ? xlabel: "X Axis";
+    ylabels = typeof ylabel !== 'undefined' ? ylabels: ["Y Axis"];
 
-    var ans = arrays_as_d3_series(d3data);
-    var xlabel = xlabel.length ? xlabel : ans.xlabel;
-    var ylabel = ylabel.length ? ylabel : ans.ylabels[0];
-    var data = ans.data;
+    // strip the header row, use the headers as axis labels, and transpose the data-series rows into columns
+    var data_obj = arrays_as_d3_series(d3data);
+    var xlabel = xlabel.length ? xlabel : data_obj.xlabel;
+    var ylabel = ylabel.length ? ylabel : data_obj.ylabels[0];
+    var ylabels = ylabels.length ? ylabels : data_obj.ylabels[0];
+
+    var data = data_obj.data;
+
+    // be smarter about scaling margins with data and desired plot height/width
+    var margin = { top: 40, right: 80, bottom: 30, left: 50 };
+    var width = 960 - margin.left - margin.right;
+    var height = 500 - margin.top - margin.bottom;
+
+    // sort the data by the x-axis (typically time)
     data.sort(function(a, b) { return a.x - b.x; });
 
-    var color = d3.scale.category10().domain(ans.ylabels);
+    var color = d3.scale.category10().domain(ylabels);
     var x = d3.scale.linear().range([0, width]);
 
     // parse xdata as datetimes if the xlabel starts with the word "date" or "time" 

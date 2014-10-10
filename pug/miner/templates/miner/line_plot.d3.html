@@ -2,13 +2,9 @@
   <div id="linegraph" class="graph"></div>
 </div> 
 
-
 <script>
-
-
-
-
-
+  var d3data = {{ data.d3data|safe }};
+  line_plot(d3data, 'xlabel', 'ylabel');
 </script>
 
 
