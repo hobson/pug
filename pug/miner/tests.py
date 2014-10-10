@@ -28,10 +28,10 @@ class AdminTest(LiveServerTestCase):
     def tearDown(self):
         self.browser.quit()
 
-    def test_admin_interface_login_page(self):
-        # Angeline opens her web browser, and goes to the admin page
-        self.browser.get(self.live_server_url + '/admin')
+    # def test_admin_interface_login_page(self):
+    #     # Angeline opens her web browser, and goes to the admin page
+    #     self.browser.get(self.live_server_url + '/admin')
 
-        # She sees the phrase 'Django administration' somewhere in the body
-        body = self.browser.find_element_by_tag_name('body')
-        self.assertIn('Django administration', body.text)
+    #     # She sees the phrase 'Django administration' somewhere in the body
+    #     body = self.browser.find_element_by_tag_name('body')
+    #     self.assertIn('Django administration', body.text)
