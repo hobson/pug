@@ -1,5 +1,4 @@
 https://github.com/ddollar/heroku-buildpack-apt
 https://github.com/coderanger/heroku-buildpack-cffi
 https://github.com/heroku/heroku-buildpack-python
-https://github.com/thenovices/heroku-buildpack-scipy
 https://github.com/CognitiveScale/heroku-buildpack-scipy
