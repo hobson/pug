@@ -42,5 +42,4 @@ django-widget-tweaks==1.3
 --allow-all-external --allow-unverified ntlk nltk==3.0.0
 pyenchant==1.6.6
 python-slugify==0.0.9
-scipy
-# ==0.9.0
+scipy==0.14.0
