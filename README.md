@@ -4,8 +4,7 @@
 
 ---
 
-![Codeship Status](https://www.codeship.io/projects/8df30150-32b4-0132-b8db-469abd0fd26c/status)
-
+[ ![Codeship Status for hobson/pug](https://codeship.io/projects/2d004b30-3312-0132-4537-5696ea0452a8/status)](https://codeship.io/projects/40551)
 ---
 
 ## Introduction
