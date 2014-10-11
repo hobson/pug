@@ -24,7 +24,7 @@ See [the docs](https://github.com/hobsonlane/pug/tree/master/pug/docs "incomplet
 
 ## Installation
 
-### Posix
+### On a Posix System
 
 You really want to contribute, right?
 
