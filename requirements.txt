@@ -1,4 +1,4 @@
-pip==1.5.6
+pip==1.5.5
 --editable=git://github.com/mdp-toolkit/mdp-toolkit#egg=mdp
 #$ pip install --editable=git://github.com/mdp-toolkit/mdp-toolkit#egg=mdp --exists-action=w
 setuptools==5.7
