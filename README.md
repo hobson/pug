@@ -1,9 +1,10 @@
 # `pug`
 
-## PDX-Python User Group Utility Glob
+## PDX-Python User Group utilities
 
 ---
-
+![Codeship Status](https://www.codeship.io/projects/8df30150-32b4-0132-b8db-469abd0fd26c/status)
+---
 ## Introduction
 
 Collection of utilities by and for the PDX Python User Group.
