@@ -1,8 +1,8 @@
-# pip==1.5.6
+pip==1.5.6
 # --editable=git://github.com/mdp-toolkit/mdp-toolkit#egg=mdp
 # --editable=git://github.com/mdp-toolkit/mdp-toolkit#egg=mdp --exists-action=w
 # setuptools==5.7
-#cffi==0.8.6
+cffi==0.8.6
 chardet==2.3.0
 # cryptography==0.4
 # gitdb==0.5.4
