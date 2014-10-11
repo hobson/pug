@@ -4,9 +4,10 @@ pip==1.5.6
 # setuptools==5.7
 #cffi==0.8.6
 chardet==2.3.0
-cryptography==0.4
+#cryptography==0.4
 # gitdb==0.5.4
 # GitPython==0.3.2.RC1
+
 Django==1.5.8
 
 python-nvd3==0.13.3
