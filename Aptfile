@@ -1,2 +1,4 @@
 libffi-dev
+libevent-dev
+python-dev
 
