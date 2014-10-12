@@ -70,12 +70,12 @@ WSGI_APPLICATION = 'crawlnmine.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/1.6/ref/settings/#databases
 
-# DATABASES = {
-#     'default': {
-#         'ENGINE': 'django.db.backends.sqlite3',
-#         'NAME': os.path.join(ROOT_PROJECT_PATH, 'db.sqlite3'),
-#     }
-# }
+DATABASES = {
+    'default': {
+        'ENGINE': 'django.db.backends.sqlite3',
+        'NAME': os.path.join(ROOT_PROJECT_PATH, 'db.sqlite3'),
+    }
+}
 
 
 # if 'test' in sys.argv or 'test_coverage' in sys.argv: #Covers regular testing and django-coverage
