@@ -14,6 +14,9 @@ import sys
 # Build paths inside the project like this: os.path.join(BASE_DIR, ...)
 import os
 
+# Heroku: Honor the 'X-Forwarded-Proto' header for request.is_secure()
+SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+
 PROJECT_SETTINGS_PATH = os.path.realpath(os.path.dirname(__file__))
 
 # because the apps we want in INSTALLED are "external" to this project (two directories up) we have to add them to the python path manually
@@ -33,8 +36,10 @@ DEBUG = True
 
 TEMPLATE_DEBUG = True
 
-ALLOWED_HOSTS = []
 
+# ALLOWED_HOSTS = []
+# Heroku: Allow all hosts
+ALLOWED_HOSTS = ['*']
 
 # Application definition
 
@@ -78,6 +83,10 @@ DATABASES = {
         # 'NAME': os.path.join(ROOT_PROJECT_PATH, 'db.sqlite3'),
     }
 }
+
+# Heroku: Parse database configuration from $DATABASE_URL for heroku
+import dj_database_url
+DATABASES['default'] =  dj_database_url.config()
 
 
 # if 'test' in sys.argv or 'test_coverage' in sys.argv: #Covers regular testing and django-coverage
