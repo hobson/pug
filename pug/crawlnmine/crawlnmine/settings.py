@@ -78,16 +78,16 @@ WSGI_APPLICATION = 'crawlnmine.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.', # Add 'postgresql_psycopg2', 'mysql', 'sqlite3' or 'oracle'.
-        'NAME': ''
-        # 'ENGINE': 'django.db.backends.sqlite3',
-        # 'NAME': os.path.join(ROOT_PROJECT_PATH, 'db.sqlite3'),
+        #'NAME': ''
+        'ENGINE': 'django.db.backends.sqlite3',
+        'NAME': os.path.join(ROOT_PROJECT_PATH, 'db.sqlite3'),
     }
 }
 
 
-
 if DEBUG or 'test' in sys.argv or 'test_coverage' in sys.argv: #Covers regular testing and django-coverage
-    DATABASES['default']['engine'] = 'django.db.backends.sqlite3'
+    DATABASES['default']['ENGINE'] = 'django.db.backends.sqlite3'
+    DATABASES['default']['NAME'] = os.path.join(ROOT_PROJECT_PATH, 'db.sqlite3'),
 else:
     # Heroku: Parse database configuration from $DATABASE_URL for heroku
     import dj_database_url
