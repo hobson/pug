@@ -8,7 +8,8 @@
 # # gitdb==0.5.4
 # # GitPython==0.3.2.RC1
 
-# Django==1.5.8
+django-toolbelt
+Django==1.5.8
 
 # python-nvd3==0.13.3
 # django-nvd3==0.7.6
