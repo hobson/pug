@@ -3,7 +3,7 @@
 # # --editable=git://github.com/mdp-toolkit/mdp-toolkit#egg=mdp --exists-action=w
 # # setuptools==5.7
 # cffi==0.8.6
-# chardet==2.3.0
+chardet==2.3.0
 # # cryptography==0.4
 # # gitdb==0.5.4
 # # GitPython==0.3.2.RC1
@@ -15,7 +15,7 @@ Django==1.5.8
 # django-nvd3==0.7.6
 
 # fuzzywuzzy==0.3.2
-# jsonfield==1.0
+jsonfield==1.0
 # Scrapy==0.22.2
 # South==0.8.4
 
@@ -31,18 +31,20 @@ Django==1.5.8
 # # https://python-progressbar.googlecode.com/files/progressbar-2.3.tar.gz
 # https://python-progressbar.googlecode.com/files/progressbar-2.3-dev.tar.gz
 # # --editable=https://python-progressbar.googlecode.com/files/progressbar-2.3.tar.gz
+progressbar-latest==2.4
+
 # ipython==2.0.0
 
 # # psycopg2==2.5.3
 # psycopg2==2.4.5
 # # pycparser==2.10
 # pyOpenSSL==0.14
-# python-dateutil==2.2
+python-dateutil==2.2
 # pytz==2014.3
 # # queuelib==1.1.1
 # # selenium==2.39.0
 
-# six==1.6.1
+six==1.8.0
 
 # tabulate==0.7.1
 # w3lib==1.5
