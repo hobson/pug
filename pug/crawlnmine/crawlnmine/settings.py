@@ -84,13 +84,15 @@ DATABASES = {
     }
 }
 
-# Heroku: Parse database configuration from $DATABASE_URL for heroku
-import dj_database_url
-DATABASES['default'] =  dj_database_url.config()
 
 
-if 'test' in sys.argv or 'test_coverage' in sys.argv: #Covers regular testing and django-coverage
+if DEBUG or 'test' in sys.argv or 'test_coverage' in sys.argv: #Covers regular testing and django-coverage
     DATABASES['default']['engine'] = 'django.db.backends.sqlite3'
+else:
+    # Heroku: Parse database configuration from $DATABASE_URL for heroku
+    import dj_database_url
+    DATABASES['default'] =  dj_database_url.config()
+
 
 # Internationalization
 # https://docs.djangoproject.com/en/1.6/topics/i18n/
