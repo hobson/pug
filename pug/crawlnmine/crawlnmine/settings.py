@@ -72,8 +72,10 @@ WSGI_APPLICATION = 'crawlnmine.wsgi.application'
 
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': os.path.join(ROOT_PROJECT_PATH, 'db.sqlite3'),
+        'ENGINE': 'django.db.backends.', # Add 'postgresql_psycopg2', 'mysql', 'sqlite3' or 'oracle'.
+        'NAME': ''
+        # 'ENGINE': 'django.db.backends.sqlite3',
+        # 'NAME': os.path.join(ROOT_PROJECT_PATH, 'db.sqlite3'),
     }
 }
 
