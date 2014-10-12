@@ -89,8 +89,8 @@ import dj_database_url
 DATABASES['default'] =  dj_database_url.config()
 
 
-# if 'test' in sys.argv or 'test_coverage' in sys.argv: #Covers regular testing and django-coverage
-#     DATABASES['default']['engine'] = 'django.db.backends.sqlite3'
+if 'test' in sys.argv or 'test_coverage' in sys.argv: #Covers regular testing and django-coverage
+    DATABASES['default']['engine'] = 'django.db.backends.sqlite3'
 
 # Internationalization
 # https://docs.djangoproject.com/en/1.6/topics/i18n/
