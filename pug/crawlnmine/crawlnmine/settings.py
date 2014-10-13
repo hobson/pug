@@ -14,6 +14,9 @@ import sys
 # Build paths inside the project like this: os.path.join(BASE_DIR, ...)
 import os
 
+# Heroku: Honor the 'X-Forwarded-Proto' header for request.is_secure()
+SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+
 PROJECT_SETTINGS_PATH = os.path.realpath(os.path.dirname(__file__))
 
 # because the apps we want in INSTALLED are "external" to this project (two directories up) we have to add them to the python path manually
@@ -33,8 +36,10 @@ DEBUG = True
 
 TEMPLATE_DEBUG = True
 
-ALLOWED_HOSTS = []
 
+# ALLOWED_HOSTS = []
+# Heroku: Allow all hosts
+ALLOWED_HOSTS = ['*']
 
 # Application definition
 
@@ -45,7 +50,7 @@ INSTALLED_APPS = (
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    'django_nvd3',
+    #'django_nvd3',
     # 'celery',
 
     # 'pug.crawler',
@@ -72,14 +77,22 @@ WSGI_APPLICATION = 'crawlnmine.wsgi.application'
 
 DATABASES = {
     'default': {
+        'ENGINE': 'django.db.backends.', # Add 'postgresql_psycopg2', 'mysql', 'sqlite3' or 'oracle'.
+        #'NAME': ''
         'ENGINE': 'django.db.backends.sqlite3',
         'NAME': os.path.join(ROOT_PROJECT_PATH, 'db.sqlite3'),
     }
 }
 
 
-if 'test' in sys.argv or 'test_coverage' in sys.argv: #Covers regular testing and django-coverage
-    DATABASES['default']['engine'] = 'django.db.backends.sqlite3'
+if DEBUG or 'test' in sys.argv or 'test_coverage' in sys.argv: #Covers regular testing and django-coverage
+    DATABASES['default']['ENGINE'] = 'django.db.backends.sqlite3'
+    DATABASES['default']['NAME'] = os.path.join(ROOT_PROJECT_PATH, 'db.sqlite3'),
+else:
+    # Heroku: Parse database configuration from $DATABASE_URL for heroku
+    import dj_database_url
+    DATABASES['default'] =  dj_database_url.config()
+
 
 # Internationalization
 # https://docs.djangoproject.com/en/1.6/topics/i18n/

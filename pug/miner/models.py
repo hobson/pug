@@ -2,7 +2,7 @@ import datetime
 
 from django.db import models
 
-from django_hstore import hstore
+#from django_hstore import hstore
 from jsonfield import JSONField
 
 from pug.nlp import db
@@ -179,7 +179,7 @@ class Field(models.Model):
     """Metadata about a Database field and its Django Field"""
     _IMPORTANT_FIELDS = ('pk', 'db_column', 'db_table', 'type', 'fraction_distinct')
 
-    objects = hstore.HStoreManager()
+    # objects = hstore.HStoreManager()
 
     table_stats = models.ForeignKey(Table)
     django_field = models.CharField(max_length=255, null=False, default='', blank=True) 
@@ -212,7 +212,7 @@ class Field(models.Model):
     relative_type = models.CharField(choices=(('ForeignKey', 'ForeignKey'), ('OneToOneField', 'OneToOneField'), ('ManyToManyField', 'ManyToManyField')), max_length=20)
     peer = models.ManyToManyField('Field', through='Correlation', help_text='A field statistically related to this one in some way other than as a foreign key')
 
-    most_frequent = hstore.DictionaryField(db_index=True, default=None, null=True)
+    # most_frequent = hstore.DictionaryField(db_index=True, default=None, null=True)
 
     __unicode__ = db.representation
 
