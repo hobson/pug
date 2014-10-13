@@ -15,7 +15,6 @@ from django.template.loader import get_template
 from django.http import Http404, HttpResponse
 from django import http
 from django.utils import simplejson as json
-from call_center.models_lookup import normalize_account_numbers
 # from django.shortcuts import render
 # from django.conf import settings
 
@@ -154,7 +153,7 @@ def context_from_request(request, context=None, Form=GetLagForm, delim=',', verb
         'sales_groups': sg.split(',')  #     list of strings for ?sg=
         'fiscal_years': sn.split(',')  #     list of strings for ?fy=
         'reasons': sn.split(',')  #          list of strings for ?r=
-        'account_numbers': sn.split(',')  #  list of strings for ?an=
+        'account_numbers': an.split(',')  #  list of strings for ?an=
         'min_dates': sn.split(',')  #        list of strings for ?min_date=
         'max_dates': sn.split(',')  #        list of strings for ?max_date=
         'min_lag': sn.split(',')  #          list of strings for ?min_lag=
@@ -200,19 +199,16 @@ def context_from_request(request, context=None, Form=GetLagForm, delim=',', verb
     # need to implement filters on sales_group (where serial_numbers was, in explore_lags, and filter_sla_lags or lags_dict)
     context['filter']['sales_groups'] = sg
 
-    #context['filter']['model_numbers'] += SLAmodels.models_from_sales_groups(context['sales_groups'])
-
     fy = request.GET.get('fy', "") or request.GET.get('yr', "") or request.GET.get('year', "") or request.GET.get('years', "") or request.GET.get('fiscal_year', "") or request.GET.get('fiscal_years', "")
     fiscal_years = [util.normalize_year(y) for y in fy.split(',')] or []
     fiscal_years = [str(y) for y in fiscal_years if y]
     context['filter']['fiscal_years'] = fiscal_years
 
-    r = request.GET.get('r', "") or request.GET.get('rc', "") or request.GET.get('rcode', "") or request.GET.get('reason', "") or request.GET.get('reasons', "")
-    r = [s.strip().upper() for s in r.split(',')] or ['']
-    context['filter']['reasons'] = r
+    rc = request.GET.get('r', "") or request.GET.get('rc', "") or request.GET.get('rcode', "") or request.GET.get('reason', "") or request.GET.get('reasons', "")
+    context['filter']['reasons'] = [s.strip().upper() for s in rc.split(',')] or ['']
 
-    a = request.GET.get('a', "") or request.GET.get('an', "") or request.GET.get('account', "") or request.GET.get('account_number', "") or request.GET.get('account_numbers', "")
-    context['filter']['account_numbers'] = normalize_account_numbers(a)
+    an = request.GET.get('a', "") or request.GET.get('an', "") or request.GET.get('account', "") or request.GET.get('account_number', "") or request.GET.get('account_numbers', "")
+    context['filter']['account_numbers'] = [s.strip().upper() for s in an.split(',')] or ['']
 
     exclude = request.GET.get('exclude', "") or request.GET.get('e', "") or request.GET.get('x', "") or request.GET.get('ex', "") or request.GET.get('excl', "I")
     context['exclude'] = 'E' if exclude.upper().startswith('E') else ''
@@ -235,26 +231,11 @@ def context_from_request(request, context=None, Form=GetLagForm, delim=',', verb
 
     context['aggregate_ids'] = request.GET.get('agg') or request.GET.get('ids') or request.GET.get('aggids') or request.GET.get('aggregates') or request.GET.get('aggregate_ids') or '-1'
 
-    # filter_values = context['name'].split(' ')  # FIXME: '|'
-    # if filter_values and len(filter_values)==4:
-    #     mn = [filter_values[0].strip('*')]
-    #     context['filter']['model_numbers'] = mn  # SLAmodels.models_from_sales_groups(mn)
-    #     r = [filter_values[1].strip('*')]
-    #     context['filter']['reasons'] = r
-    #     a = [filter_values[2].strip('*')]
-    #     context['filter']['account_numbers'] = a
-    #     fiscal_years = [filter_values[3].strip('*')]
-    #     context['filter']['fiscal_years'] = fiscal_years
-
     # lag values can't be used directly in a django filter so don't put them in context['filter']
     lag = request.GET.get('lag', '') or request.GET.get('l', '')
     lag = [s.strip().upper() for s in lag.split(',')] or ['']
-
     maxl = request.GET.get('max_lag', '') or request.GET.get('maxlag', '') or request.GET.get('maxl', '')
-#    maxls = [s.strip() for s in maxl.split(',')] or ['']
-
     minl = request.GET.get('min_lag', '') or request.GET.get('minlag', '') or request.GET.get('maxl', '')
-#    minls = [s.strip() for s in minl.split(',')] or ['']
 
     try:
         lag = int(lag)
@@ -274,22 +255,20 @@ def context_from_request(request, context=None, Form=GetLagForm, delim=',', verb
     context['filter']['max_lag'] = maxl
 
     initial = {
-                'mn': ', '.join(m.strip() for m in context['filter']['model_numbers'] if m.strip()), 
-                'sg': ', '.join(context['filter']['sales_groups']),
-                'r': ', '.join(context['filter']['reasons']),
-                'an': ', '.join(context['filter']['account_numbers']),
-                'fy': ', '.join(context['filter']['fiscal_years']),
-                'exclude': unicode(exclude),
-                'min_lag': context['filter']['min_lag'],
-                'max_lag': context['filter']['max_lag'],
+                'mn':       ', '.join(m.strip() for m in context['filter']['model_numbers'] if m.strip()), 
+                'sg':       ', '.join(context['filter']['sales_groups']),
+                'r':        ', '.join(context['filter']['reasons']),
+                'an':       ', '.join(context['filter']['account_numbers']),
+                'fy':       ', '.join(context['filter']['fiscal_years']),
+                'exclude':            context['exclude'],
+                'min_lag':            context['filter']['min_lag'],
+                'max_lag':            context['filter']['max_lag'],
                 'min_date': ', '.join(context['filter']['min_dates']),
                 'max_date': ', '.join(context['filter']['max_dates']),
-                'columns': '; '.join(context['columns']),
-                'regex': context['regex'],
+                'columns':  '; '.join(context['columns']),
+                'regex':              context['regex'],
               }
 
-    # now = util.make_tz_aware(datetime.datetime.now(), settings.TIME_ZONE)
-    # date_label = now.strftime('%b') + '{0} {1}:{2:02d}'.format(now.day, now.hour % 12, now.minute))
     context['name'] = request.GET.get('s') or request.GET.get('n') or request.GET.get('series') or request.GET.get('name') or util.slug_from_dict(initial)
     initial['name'] = ''
 
@@ -468,97 +447,3 @@ def csv_response_from_context(context=None, filename=None, field_names=None, nul
 
     return response
 
-
-# def lag(request, *args):
-#     '''Line chart with zoom and pan and "focus area" at bottom like google analytics.
-    
-#     Data takes a long time to load, so you better use this to increase the timeout
-#     python gunicorn bigdata.wsgi:application --bind bigdata.enet.sharplabs.com:8000 --graceful-timeout=60 --timeout=60
-#     '''
-#     # print 'lag with form'
-#     context = context_from_request(request)
-
-#     # retrieve a dict {'refurbs_dict': {}, 'lags_dict': {}, 'means_dict': {}, 'hist': {}, 'pmf': {}, 'cfd': {} ...etc}
-#     # each one of these dicts is a dictionary with keys for each of the series/filter definitions (which are used for the legend string)
-#     lags_dict = SLAmodels.explore_lags(**context['filter'])
-#     context['means'] = lags_dict['means_dict']
-#     hist = lags_dict[context['plot']]  # context['plot'] is 'cfd', 'pmf' or 'hist', etc
-
-
-#     # FIXME: use util.transposed_lists and make this look more like the hist() view below
-#     hist_t=[[],[],[],[]]
-#     names, xdata, ydata = [], [], []
-#     if hist and len(hist) > 1:
-#         hist_t = util.transposed_matrix(hist[1:])
-
-#         if hist[0]:
-#             # print hist[0]
-#             names = hist[0][1:]
-#             #print names
-#             xdata = hist_t[0]
-#             ydata = hist_t[1:]
-#     # print names
-
-#     #tooltip_date = "%d %b %Y %H:%M:%S %p"
-#     extra_series = {
-#                     "tooltip": {"y_start": " ", "y_end": " returns"},
-#                    #"date_format": tooltip_date
-#                    }
-
-#     chartdata = { 'x': xdata }
-
-#     for i, name in enumerate(names):
-#         chartdata['name%d' % (i + 1)] = name
-#         chartdata['y%d' % (i + 1)] = ydata[i]
-#         chartdata['extra%d' % (i + 1)] = extra_series
-
-#     subtitle = []
-
-#     params = {
-#         'FY': context['filter']['fiscal_years'],
-#         'Reason': context['filter']['reasons'],
-#         'Account #': context['filter']['account_numbers'],
-#         'Model #': context['filter']['model_numbers'],
-#         }
-
-#     for k, v in params.iteritems():
-#         if len(v) == 1 and v[0] and len(str(v[0])):
-#             subtitle += [str(k) + ': ' + str(v[0])] 
-
-#     context.update({
-#         'data': {
-#             'title': 'Returns Lag <font color="gray">' + context['plot_name'] + '</font>',
-#             'd3data': json.dumps(util.transposed_lists(hist)),
-#             'subtitle': ', '.join(subtitle),
-#             'charttype': "lineWithFocusChart",
-#             'chartdata': chartdata,
-#             'chartcontainer': 'linewithfocuschart_container',
-#             'extra': {
-#                 'x_is_date': False,
-#                 'x_axis_format': ',.0f', # %b %Y %H',
-#                 'y_axis_format': ',.0f', # "%d %b %Y"
-#                 'tag_script_js': True,
-#                 'jquery_on_ready': True,
-#                 },
-#             }
-#         })
-#     return render(request, 'miner/lag.html', context)
-
-
-# def hist(request, *args):
-#     '''Multi-column table of lag vs. counts (histogram) displayed as a line plot.'''
-#     context = context_from_request(context=None, request=request)
-
-#     lags_dict = SLAmodels.explore_lags(**context['filter'])
-#     context['means'] = lags_dict['means_dict']
-
-#     hist_type = context['plot']
-
-#     context.update({'data': {
-#         'title': 'Returns Lag <font color="gray">' + hist_type.upper() + '</font>',
-#         'xlabel': 'Lag (days)',
-#         'ylabel': util.HIST_CONFIG[hist_type]['ylabel'],
-#         'd3data': json.dumps(util.transposed_lists(lags_dict[hist_type])),
-#         'form': {},
-#         }})
-#     return render(request, 'miner/hist.html', context)
