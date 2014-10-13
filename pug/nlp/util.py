@@ -1493,6 +1493,8 @@ join=False
 na=RE.nones
 
 
+normalize_account_number = normalize_serial_number
+
 
 def multisplit(s, seps=list(string.punctuation) + list(string.whitespace), blank=True):
     r"""Just like str.split(), except that a variety (list) of seperators is allowed.

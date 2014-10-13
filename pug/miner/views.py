@@ -15,8 +15,9 @@ from django.template.loader import get_template
 from django.http import Http404, HttpResponse
 from django import http
 from django.utils import simplejson as json
+from call_center.models_lookup import normalize_account_numbers
 # from django.shortcuts import render
-from django.conf import settings
+# from django.conf import settings
 
 from pug.nlp import parse
 from pug.nlp import util
@@ -131,6 +132,7 @@ class JSONView(View):
         return json.dumps(context)
 
 
+# FIXME: move this back to sharp repo/apps
 def context_from_request(request, context=None, Form=GetLagForm, delim=',', verbosity=0, **kwargs):
     """Process GET query request to normalize query arguments (split lists, etc)
 
@@ -210,8 +212,7 @@ def context_from_request(request, context=None, Form=GetLagForm, delim=',', verb
     context['filter']['reasons'] = r
 
     a = request.GET.get('a', "") or request.GET.get('an', "") or request.GET.get('account', "") or request.GET.get('account_number', "") or request.GET.get('account_numbers', "")
-    a = [s.strip().upper() for s in a.split(',')] or ['']
-    context['filter']['account_numbers'] = a
+    context['filter']['account_numbers'] = normalize_account_numbers(a)
 
     exclude = request.GET.get('exclude', "") or request.GET.get('e', "") or request.GET.get('x', "") or request.GET.get('ex', "") or request.GET.get('excl', "I")
     context['exclude'] = 'E' if exclude.upper().startswith('E') else ''
