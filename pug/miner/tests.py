@@ -42,8 +42,9 @@ class AdminTest(LiveServerTestCase):
 
 class DocTest(TestCase):
 
-    def test_doctests(self):                
-        try:
-            doctest.testmod(pug.nlp.util, raise_on_error=True)
-        except doctest.DocTestFailure, e:
-            self.fail(e)
+    def test_doctests(self):
+        failure_count, test_count = doctest.testmod(pug.nlp.util, raise_on_error=True, verbose=True)
+        msg = "Ran {0} tests and {1} passed ({2} failed)".format(test_count, test_count-failure_count, failure_count)
+        print msg
+        if failure_count:
+            self.fail(msg)
