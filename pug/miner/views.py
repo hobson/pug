@@ -166,7 +166,7 @@ def context_from_request(request, context=None, Form=GetLagForm, delim=',', verb
     context['errors'] = []
     context['filter'] = {}
 
-    limit = request.GET.get('limit', 0) or request.GET.get('num', 0) or request.GET.get('num_rows', 0) or request.GET.get('rows', 0) or request.GET.get('records', 0) or request.GET.get('count', 0)
+    limit = request.GET.get('limit') or request.GET.get('num') or request.GET.get('num_rows') or request.GET.get('rows') or request.GET.get('records') or request.GET.get('count', 0)
 
     context['plot'] = (request.GET.get('plot', '') or request.GET.get('plt', '') or request.GET.get('p', '') 
                         or request.GET.get('chart', '') or request.GET.get('chrt', '')
@@ -229,10 +229,10 @@ def context_from_request(request, context=None, Form=GetLagForm, delim=',', verb
     context['columns'] = request.GET.get('col') or request.GET.get('cols') or request.GET.get('column') or request.GET.get('columns') or ""
     context['columns'] = [s.strip() for s in context['columns'].split(';')] or []
 
-    # whether the FK join queries should be short-circuited
-    context['quick'] = context.get('quick', False) or (bool(context.get('columns', [])) and any(context.get('columns', [])))
-
     context['aggregate_ids'] = request.GET.get('agg') or request.GET.get('ids') or request.GET.get('aggids') or request.GET.get('aggregates') or request.GET.get('aggregate_ids') or '-1'
+
+    # whether the FK join queries should be short-circuited
+    context['quick'] = context.get('quick') or (bool(context.get('columns', [])) and any(context.get('columns', []))) or (context.get('aggregate_ids') and context.get('aggregate_ids')== '-1')
 
     # filter_values = context['name'].split(' ')  # FIXME: '|'
     # if filter_values and len(filter_values)==4:
