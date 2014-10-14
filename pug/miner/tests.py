@@ -1,7 +1,8 @@
 from django.test import LiveServerTestCase, TestCase
 from selenium import webdriver
 import doctest
-import pug.nlp.util 
+import pug.nlp.util
+import pug.nlp.djdb
 
 class HomeTest(LiveServerTestCase):
 
@@ -42,9 +43,16 @@ class AdminTest(LiveServerTestCase):
 
 class DocTest(TestCase):
 
-    def test_doctests(self):
-        failure_count, test_count = doctest.testmod(pug.nlp.util, raise_on_error=True, verbose=True)
-        msg = "Ran {0} tests and {1} passed ({2} failed)".format(test_count, test_count-failure_count, failure_count)
+    def test_util(self, module=pug.nlp.util):
+        failure_count, test_count = doctest.testmod(module, raise_on_error=False, verbose=True)
+        msg = "Ran {0} tests in {3} and {1} passed ({2} failed)".format(test_count, test_count-failure_count, failure_count, module.__file__)
+        print msg
+        if failure_count:
+            self.fail(msg)
+
+    def test_djdb(self, module=pug.nlp.djdb):
+        failure_count, test_count = doctest.testmod(module, raise_on_error=False, verbose=True)
+        msg = "Ran {0} tests in {3} and {1} passed ({2} failed)".format(test_count, test_count-failure_count, failure_count, module.__file__)
         print msg
         if failure_count:
             self.fail(msg)
