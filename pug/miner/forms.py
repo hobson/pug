@@ -31,6 +31,7 @@ class GetLagForm(forms.Form):
     exclude = forms.ChoiceField(
         initial='I',
         label='Exclude?',
+        required=False,
         choices=(('I', 'Include'), ('E', 'Exclude')),
         # widget=forms.RadioSelect,
         )

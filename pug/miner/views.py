@@ -273,13 +273,16 @@ def context_from_request(request, context=None, Form=GetLagForm, delim=',', verb
     initial['name'] = ''
 
     if verbosity:
+        print 'initial: {0}'.format(initial)
         print 'normalized GET query parameters: %r' % initial
+        print 'Form {0}'.format(Form)
 
     if request.method == 'POST':
         # GetLagForm only has a GET button
         context['form'] = Form(request.POST)
     elif request.method == 'GET':
         context['form'] = Form(data=initial, initial=initial)
+    print Form
 
     context['form_is_valid'] = context['form'].is_valid()
     if not context['form_is_valid']:
