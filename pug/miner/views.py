@@ -267,15 +267,15 @@ def context_from_request(request, context=None, Form=GetLagForm, delim=',', verb
                 'max_date': ', '.join(context['filter']['max_dates']),
                 'columns':  '; '.join(context['columns']),
                 'regex':              context['regex'],
+                'name':        ''
               }
 
     context['name'] = request.GET.get('s') or request.GET.get('n') or request.GET.get('series') or request.GET.get('name') or util.slug_from_dict(initial)
-    initial['name'] = ''
 
     if verbosity:
         print 'initial: {0}'.format(initial)
         print 'normalized GET query parameters: %r' % initial
-        print 'Form {0}'.format(Form)
+        print 'Form before validation {0}'.format(Form)
 
     if request.method == 'POST':
         # GetLagForm only has a GET button

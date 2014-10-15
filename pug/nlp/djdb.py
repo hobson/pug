@@ -34,8 +34,8 @@ from dateutil.parser import parse as parse_date
 # required to monkey-patch django.utils.encoding.force_text
 from django.utils.encoding import is_protected_type, DjangoUnicodeDecodeError, six
 DEFAULT_DB = 'default'
-DEFAULT_APP = None  # djmodels.get_apps()[-1]
-DEFAULT_MODEL = None  # DEFAULT_MODEL.get_models()[0]
+DEFAULT_APP = 'django.contrib.auth'  # djmodels.get_apps()[-1]
+DEFAULT_MODEL = 'Permission'  # DEFAULT_MODEL.get_models()[0]
 from django.core.exceptions import ImproperlyConfigured
 settings = None
 try:
@@ -57,9 +57,9 @@ from pug.miner.models import ChangeLog
 class QueryTimer(object):
     """Based on https://github.com/jfalkner/Efficient-Django-QuerySet-Use
 
-    >>> from miner.models import TestModel
+    >>> from django.contrib.auth.models import Permission
     >>> qt = QueryTimer()
-    >>> cm_list = list(TestModel.objects.values()[0:10])
+    >>> cm_list = list(Permission.objects.values()[0:10])
     >>> qt.stop()  # doctest: +ELLIPSIS
     QueryTimer(time=0.0..., num_queries=1)
     """
@@ -1027,7 +1027,7 @@ def diff_data(model0, model1, pk_name='pk', field_names=None, ignore_related=Tru
 
 
 class Columns(collections.OrderedDict):
-    """A collections.OrderedDict of named columns of data, similar to a pandas DataFrame
+    """A collections.OrderedDict of named columns of data from a Django app, similar to a pandas DataFrame
 
          `collections.OrderedDict([('name1', [x11, x21, ..., xM1]), ... ('nameM', [x1, ... objNM])]`
 
@@ -2633,3 +2633,32 @@ def dump_json(model, batch_len=200000, use_natural_keys=True, verbosity=1):
     if verbosity:
         pbar.finish()
 
+
+def filter_exclude_dicts(filter_dict=None, exclude_dict=None, name='acctno', values=[], swap=False):
+    """Produces kwargs dicts for Django Queryset `filter` and `exclude` from a list of values
+
+    The last, critical step in generating Django ORM kwargs dicts from a natural language query.
+    Properly parses "NOT" unary operators on each field value in the list.
+    Assumes the lists have been pre-processed to consolidate NOTs and normalize values and syntax.
+
+    Examples:
+      >>> filter_exclude_dicts(name='num', values=['NOT 1', '2', '3', 'NOT 4']
+      ... ) == ({'num__in': ['2', '3']}, {'num__in': ['1', '4']})
+      True
+    """
+    filter_dict = filter_dict or {}
+    exclude_dict = exclude_dict or {}
+
+    if not name.endswith('__in'):
+        name += '__in'
+
+    filter_dict[name], exclude_dict[name] = [], []
+    for v in values:
+        # "NOT " means switch from include (filter) to exclude for that one account number
+        if v.startswith('NOT '):
+            exclude_dict[name] += [v[4:]]
+        else:
+            filter_dict[name] += [v]
+    if swap:
+        return exclude_dict, filter_dict
+    return filter_dict, exclude_dict

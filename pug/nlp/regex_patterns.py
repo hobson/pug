@@ -12,13 +12,15 @@ Compiled Regular Expression Patterns
 ['E', 'x 10 ^']
 """
 
+# try to make constant string variables all uppercase and regex patterns lowercase
 ASCII_CHARACTERS = ''.join([chr(i) for i in range(128)])
 
 # consider using "from re import *" and renaming this module re or RE
 import re
 
 list_bullet = re.compile(r'^\s*[! \t@#%.?(*+=-_]*[0-9.]*[#-_.)]*\s+')
-nondigit = re.compile("[^0-9]")
+nondigit = re.compile(r"[^0-9]")
+nonphrase = re.compile(r"[^-\w\s/&']")
 parenthetical_time = re.compile(r'([^(]*)\(\s*(\d+)\s*(?:min)?\s*\)([^(]*)', re.IGNORECASE)
 
 nonword           = re.compile(r'[\W]')
@@ -37,13 +39,15 @@ ascii = re.compile(r'[\x00-\x7F]')
 # would be better-named as scientific_notation_base
 
 scientific_notation_exponent = re.compile(r'\s*(?:[xX]{1}\s*10\s*[*^]{1,2}|[eE]){1}\s*')
+nondigit = re.compile(r'[^\d]+')
+not_digit_list = re.compile(r'[^\d,]+')
 not_digit_nor_sign = re.compile(r'[^0-9-+]+')
 
 word_sep_except_external_appostrophe = re.compile('\W*\s\'{1,3}|\'{1,3}\W+|[^-\'_.a-zA-Z0-9]+|\W+\s+')
 word_sep_permissive = re.compile('[^-\'_.a-zA-Z0-9]+|[^\'a-zA-Z0-9]\s\W*')
 sentence_sep = re.compile('[.?!](\W+)|$')
 month_name = re.compile('(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[acbeihmlosruty]*', re.IGNORECASE)
-not_digit_list = re.compile(r'[^\d,]+')
+
 
 # A permissive filter of javascript variable/function names
 #  Allows unicode and leading undercores and $ 
@@ -55,3 +59,5 @@ wikipedia_special = re.compile(r'.*wikipedia[.]org/wiki/[^:]+[:].*')
 
 nones = re.compile(r'^Unk[n]?own|unk[n]?own|UNK|Unk|UNK[N]?OWN|[.]+|[-]+|[=]+|[_]+|[*]+|[?]+|N[/]A|n[/]a|None|none|NONE|Null|null|NULL|NaN$')
 
+# Unary NOT operator and its operand returned in match.groups() 2-tuple
+notter = re.compile(r'^(NOT|[\~\-\!\^])?\s*(.*)\s*$', re.IGNORECASE)

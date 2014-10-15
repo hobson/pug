@@ -200,7 +200,7 @@ def clean_field_dict(field_dict, cleaner=unicode.strip, time_zone=None):
 #     return thesaurus
 
 
-def reduce_vocab(tokens, similarity=.85, limit=20, reverse=True):
+def reduce_vocab(tokens, similarity=.85, limit=20, sort_order=-1):
     """Find spelling variations of similar words within a list of tokens to reduce token set size
 
     Lexically sorted in reverse order (unless `reverse=False`), before running through fuzzy-wuzzy
@@ -222,29 +222,33 @@ def reduce_vocab(tokens, similarity=.85, limit=20, reverse=True):
       ...           'one': ('ones',),
       ...           'three': (),
       ...           'two': ()}
-      >>> reduce_vocab(tokens, reverse=False) == answer
+      >>> reduce_vocab(tokens, sort_order=1) == answer
       True
       >>> answer = {'honey': ('hon',),
       ...           'ones': ('on', 'one'),
       ...           'three': (),
       ...           'two': ()}
-      >>> reduce_vocab(tokens, reverse=True) == answer
+      >>> reduce_vocab(tokens, sort_order=-1) == answer
       True
-      >>> reduce_vocab(tokens, similarity=0.3, limit=2, reverse=True) ==  {'ones': ('one',), 'three': ('honey',), 'two': ('on', 'hon')}
+      >>> reduce_vocab(tokens, similarity=0.3, limit=2, sort_order=-1) ==  {'ones': ('one',), 'three': ('honey',), 'two': ('on', 'hon')}
       True
-      >>> reduce_vocab(tokens, similarity=0.3, limit=3, reverse=True) ==  {'ones': (), 'three': ('honey',), 'two': ('on', 'hon', 'one')}
+      >>> reduce_vocab(tokens, similarity=0.3, limit=3, sort_order=-1) ==  {'ones': (), 'three': ('honey',), 'two': ('on', 'hon', 'one')}
       True
 
     """
     if 0 <= similarity <= 1:
         similarity *= 100
-    tokens = set(tokens)
-    tokens_sorted = sorted(list(tokens), reverse=reverse)
+    if sort_order:
+        tokens = set(tokens)
+        tokens_sorted = sorted(list(tokens), reverse=bool(sort_order < 0))
+    else:
+        tokens_sorted = list(tokens)
+        tokens = set(tokens)
     thesaurus = {}
     for tok in tokens_sorted:
         try:
             tokens.remove(tok)
-        except KeyError:
+        except (KeyError, ValueError):
             continue
         matches = fuzzy.extractBests(tok, tokens, score_cutoff=int(similarity), limit=limit)
         if matches:
@@ -274,7 +278,7 @@ def reduce_vocab_by_len(tokens, similarity=.87, limit=20, reverse=True):
       ...           'ones': ('ones',),
       ...           'three': ('three',),
       ...           'two': ('two',)}
-      >>> reduce_vocab_by_len(tokens) == answer
+      >>> reduce_vocab_by_len(tokens) == {'on': ('on',), 'hon': ('hon',), 'three': ('three',), 'one': ('one',), 'honey': ('honey',), 'ones': ('ones',), 'two': ('two',)}
       True
 
     """
@@ -282,20 +286,7 @@ def reduce_vocab_by_len(tokens, similarity=.87, limit=20, reverse=True):
         similarity *= 100
     tokens = set(tokens)
     tokens_sorted = zip(*sorted([(len(tok), tok) for tok in tokens], reverse=reverse))[1]
-    thesaurus = {}
-    for tok in tokens_sorted:
-        try:
-            tokens.remove(tok)
-        except KeyError:
-            continue
-        matches = fuzzy.extractBests(tok, tokens, score_cutoff=int(similarity), limit=limit)
-        if matches:
-            thesaurus[tok] = zip(*matches)[0]
-        else:
-            thesaurus[tok] = (tok,)
-        for syn in thesaurus[tok]:
-            tokens.discard(syn)
-    return thesaurus
+    return reduce_vocab(tokens=tokens_sorted, similarity=similarity, limit=limit, sort_order=0)
 
 
 def quantify_field_dict(field_dict, precision=None, date_precision=None, cleaner=unicode.strip):
@@ -400,9 +391,9 @@ def generate_slices(sliceable_set, batch_len=1, length=None, start_batch=0):
       [(0, 1, 2), (3, 4, 5), (6,)]
       >>> from django.contrib.auth.models import User, Permission
       >>> import math
-      >>> len(list(generate_slices(User.objects.all(), 2))) == max(math.ceil(User.objects.count() / 2.), 1)
+      >>> len(list(generate_slices(User.objects.all(), 2)))       == max(math.ceil(User.objects.count() / 2.), 1)
       True
-      >>> len(set(generate_slices(Permission.objects.all(), 2))) == max(math.ceil(Permission.objects.count() / 2.), 1)
+      >>> len(list(generate_slices(Permission.objects.all(), 2))) == max(math.ceil(Permission.objects.count() / 2.), 1)
       True
     """
     if length is None:
