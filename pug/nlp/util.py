@@ -450,8 +450,28 @@ def get_key_for_value(dict_obj, value, default=None):
     return default
 
 
-def fuzzy_get(dict_obj, approximate_key, dict_keys=None, key_and_value=False, similarity=0.6, tuple_joiner='|', default=None):
-    """Find the closest matching key and/or value in a dictionary (must have all string keys!)"""
+def fuzzy_get(dict_obj, approximate_key, default=None, similarity=0.6, tuple_joiner='|', key_and_value=False, dict_keys=None, ):
+    r"""Find the closest matching key and/or value in a dictionary (must have all string keys!)
+
+    Note:
+      Key order is opposite order to `fuzzywuzzy.process.extractOne()` but in the same order as get(self, key) method on dicts
+
+    Arguments:
+      dict_obj (dict): object to run the get method on using the key that is most similar to one within the dict
+      approximate_key (str): key to look for a fuzzy match within the dict keys
+      default (obj): the value to return if a similar key cannote be found in the `dict_obj`
+      similarity (str): fractional similiarity between the approximate_key and the dict key (0.9 means 90% of characters must be identical)
+      tuple_joiner (str): Character to use as delimitter/joiner between tuple elements.
+        Used to create keys of any tuples to be able to use fuzzywuzzy string matching on it.
+      key_and_value (bool): Whether to return both the key and its value (True) or just the value (False). 
+        Default is the same behavior as dict.get (i.e. key_and_value=False)
+      dict_keys (list of str): if you already have a set of keys to search, this will save this funciton a little time and RAM
+
+    Examples:
+      >>> fuzzy_get({'dealer': 1, 'sailor': 2}, 'eel', similarity=.1)
+      'dealer'
+    """
+    fuzzy_key, value = None, default
     if approximate_key in dict_obj:
         fuzzy_key, value = approximate_key, dict_obj[approximate_key]
     else:
