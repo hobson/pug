@@ -112,7 +112,7 @@ class JSONView(View):
             raise Http404()
         return self.render_to_response(context)
 
-    def render_to_response(self, context):
+    def render_to_response(self, context, indent=None):
         "Returns a JSON response containing 'context' as payload"
         return self.get_json_response(self.convert_context_to_json(context))
 
@@ -122,13 +122,13 @@ class JSONView(View):
                                  content_type='application/json',
                                  **httpresponse_kwargs)
 
-    def convert_context_to_json(self, context):
+    def convert_context_to_json(self, context, indent=None):
         "Convert the context dictionary into a JSON object"
         # Note: This is *EXTREMELY* naive; in reality, you'll need
         # to do much more complex handling to ensure that arbitrary
         # objects -- such as Django model instances or querysets
         # -- can be serialized as JSON.
-        return json.dumps(context)
+        return json.dumps(context, indent=indent)
 
 
 def context_from_request(request, context=None, Form=GetLagForm, delim=',', verbosity=0, **kwargs):
