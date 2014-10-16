@@ -18,14 +18,14 @@ def projection_vector(p_matrix, labels):
   unnormalized_pv = temp.sum(axis = 0)
   return unnormalized_pv/pow(numpy.dot(unnormalized_pv, unnormalized_pv.T), 0.5)
   
-# MAIN function
-# This function returns the final position matrix. d_matrix is a n_training x n_training numpy array
-# with all the pairwise distances. Drift is a function that uses labels to vary the drift between each
-# iteration. labels is a n_training x 1 numpy array of +/-1 labels.
-# which direction is steepest in your training data
-# average of blue points and red points, the vectors between the groups to say which group the node is closer too
 def spring(d_matrix, drift, labels, n_dimensions=5, n_iteration=555):
   """Propagate the p_matrix (positions of the nodes) for n_iterations printing out the MSE matrix at the end.
+
+  Returns the final position matrix after the force-directed graph settles out.
+  d_matrix is a n_training x n_training numpy array with all the pairwise distances.
+  Drift is a function that uses labels to vary the drift between each iteration.
+  which direction is steepest in your training data
+  average of blue points and red points, the vectors between the groups to say which group the node is closer too
       
     Returns:
       p_matrix (np.matrix of float): each row is a node position?  the eigenvectors of the reduced dimensional space?
