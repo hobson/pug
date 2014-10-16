@@ -114,7 +114,7 @@ class JSONView(View):
 
     def render_to_response(self, context, indent=None):
         "Returns a JSON response containing 'context' as payload"
-        return self.get_json_response(self.convert_context_to_json(context))
+        return self.get_json_response(self.convert_context_to_json(context, indent=indent))
 
     def get_json_response(self, content, **httpresponse_kwargs):
         "Construct an `HttpResponse` object."
