@@ -230,7 +230,7 @@ def context_from_request(request, context=None, Form=GetLagForm, delim=',', verb
     context['columns'] = [s.strip() for s in context['columns'].split(';')] or []
 
     # whether the FK join queries should be short-circuited
-    context['quick'] = context.get('quick', False) or (bool(context.get('columns', [])) and any(context.get('columns', [])))
+    context['quick'] = context.get('quick') or (context.get('aggregate_ids') and not(context.get('aggregate_ids','').endswith('-1')))
 
     context['aggregate_ids'] = request.GET.get('agg') or request.GET.get('ids') or request.GET.get('aggids') or request.GET.get('aggregates') or request.GET.get('aggregate_ids') or '-1'
 
