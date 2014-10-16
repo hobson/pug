@@ -208,7 +208,7 @@ def context_from_request(request, context=None, Form=GetLagForm, delim=',', verb
     context['filter']['reasons'] = [s.strip().upper() for s in rc.split(',')] or ['']
 
     an = request.GET.get('a', "") or request.GET.get('an', "") or request.GET.get('account', "") or request.GET.get('account_number', "") or request.GET.get('account_numbers', "")
-    context['filter']['account_numbers'] = [s.strip().upper() for s in an.split(',')] or ['']
+    context['filter']['account_numbers'] = [s.strip().upper() for s in an.split(',')] or []
 
     exclude = request.GET.get('exclude', "") or request.GET.get('e', "") or request.GET.get('x', "") or request.GET.get('ex', "") or request.GET.get('excl', "I")
     context['exclude'] = 'E' if exclude.upper().startswith('E') else ''

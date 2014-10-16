@@ -2607,6 +2607,44 @@ def optimize_filter_dict(filter_dict, trgm=True):
     return optimized
 
 
+def clean_filter_dict(filter_dict, strip=False):
+    """Clear/del Django ORM filter kwargs dict queries like `filter({"<field>__in": member_list` where `member_list` is empty
+
+    Brute force processing of user-entered lists of query parameters can often produce null `__in` filters
+      which will return no results if not "cleaned" by deleting these dict entries.
+    Similarly `exclude` dicts sometimes contain emtpy or all `None` lists, but these often produce the intended result
+      so they usually do not need to be cleaned.
+
+    Examples:
+      >>> del_null_in_filter({'acctno__in': None, 'serialno': None})
+      {'serialno': None}
+      >>> del_null_in_filter({'acctno__in': [], 'name': None, 'serialno__in': [u'', None, ''], 'serialno__in': ['', None, 0]})
+      {'serialno__in': ['', None, 0]}
+      >>> exclude_dict = {'acctno__in': [], 'serialno__in': [u'', None, r" "]}
+      >>> del_null_in_filter(exclude_dict)
+      {'serialno__in': [u'', None, ' ']}
+      >>> print exclude_dict
+      {'serialno__in': [u'', None, ' ']}
+      >>> del_null_in_filter(exclude_dict, strip=True)
+      {}
+      >>> print exclude_dict
+      {}
+      >>> del_null_in_filter({'num__in': [0], 'bool__in': [False], 'str__in': [' \t \r \n ']}, strip=True) ==  {'bool__in': [False], 'num__in': [0]}
+      True
+    """
+    if not strip:
+        strip = lambda s: s
+    elif not callable(strip):
+        strip = lambda s: str(s).strip()
+    keys_to_del = set()
+    for k, values_list in filter_dict.iteritems():
+        if k.endswith('__in'):
+            if not values_list or not any((v != None and strip(v) != '') for v in values_list):
+                keys_to_del.add(k)
+    for k in keys_to_del:
+        del filter_dict[k]
+    return filter_dict
+
 def dump_json(model, batch_len=200000, use_natural_keys=True, verbosity=1):
     """Dump database records to .json Django fixture file, one file for each batch of `batch_len` records
 

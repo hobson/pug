@@ -450,15 +450,15 @@ def get_key_for_value(dict_obj, value, default=None):
     return default
 
 
-def fuzzy_get(dict_obj, approximate_key, dict_keys=None, key_and_value=False, threshold=0.5, default=None):
+def fuzzy_get(dict_obj, approximate_key, dict_keys=None, key_and_value=False, similarity=0.6, tuple_joiner='|', default=None):
     """Find the closest matching key and/or value in a dictionary (must have all string keys!)"""
     if approximate_key in dict_obj:
         fuzzy_key, value = approximate_key, dict_obj[approximate_key]
     else:
         if any(isinstance(k, (tuple, list)) for k in dict_obj):
-            dict_obj = dict(('|'.join(str(k2) for k2 in k), v) for (k, v) in dict_obj.iteritems())
+            dict_obj = dict((tuple_joiner.join(str(k2) for k2 in k), v) for (k, v) in dict_obj.iteritems())
             if isinstance(approximate_key, (tuple, list)):
-                approximate_key = '|'.join(approximate_key)
+                approximate_key = tuple_joiner.join(approximate_key)
         dict_keys = set(dict_keys if dict_keys else dict_obj)
         strkey = str(approximate_key)
         if strkey in dict_keys:
@@ -468,18 +468,22 @@ def fuzzy_get(dict_obj, approximate_key, dict_keys=None, key_and_value=False, th
             if strkey in dict_keys:
                 fuzzy_key, value = strkey, dict_obj[strkey]
             else:
-                fuzzy_key, fuzzy_score = fuzzy.extractOne(str(approximate_key), dict_keys)
-                value = dict_obj[fuzzy_key]
+                fuzzy_key_score = fuzzy.extractOne(str(approximate_key), dict_keys, score_cutoff=max(min(similarity*100, 100), 0))
+                if fuzzy_key_score:
+                    fuzzy_key, fuzzy_score = fuzzy_key_score
+                    value = dict_obj[fuzzy_key]
+                else:
+                    fuzzy_key, value = None, value
     if key_and_value:
         return fuzzy_key, value
     else:
         return value
 
 
-def fuzzy_get_tuple(dict_obj, approximate_key, dict_keys=None, key_and_value=False, threshold=0.5, default=None):
+def fuzzy_get_tuple(dict_obj, approximate_key, dict_keys=None, key_and_value=False, similarity=0.6, default=None):
     """Find the closest matching key and/or value in a dictionary (must have all string keys!)"""
     return fuzzy_get(dict(('|'.join(str(k2) for k2 in k), v) for (k, v) in dict_obj.iteritems()), 
-                     '|'.join(str(k) for k in approximate_key), dict_keys=dict_keys, key_and_value=key_and_value, threshold=threshold, default=default)
+                     '|'.join(str(k) for k in approximate_key), dict_keys=dict_keys, key_and_value=key_and_value, similarity=similarity, default=default)
 
 
 
