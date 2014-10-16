@@ -20,6 +20,7 @@ from django.utils import simplejson as json
 
 from pug.nlp import parse
 from pug.nlp import util
+from pug.db.explore import make_serializable
 from pug.nlp import db
 
 # from sec_sharp_refurb.models import Refrefurb as SECRef
@@ -128,7 +129,7 @@ class JSONView(View):
         # to do much more complex handling to ensure that arbitrary
         # objects -- such as Django model instances or querysets
         # -- can be serialized as JSON.
-        return json.dumps(context)
+        return json.dumps(make_serializable(context))
 
 
 # FIXME: move this back to sharp repo/apps

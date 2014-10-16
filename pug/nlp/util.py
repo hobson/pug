@@ -468,8 +468,18 @@ def fuzzy_get(dict_obj, approximate_key, default=None, similarity=0.6, tuple_joi
       dict_keys (list of str): if you already have a set of keys to search, this will save this funciton a little time and RAM
 
     Examples:
-      >>> fuzzy_get({'dealer': 1, 'sailor': 2}, 'eel', similarity=.1)
-      'dealer'
+      >>> fuzzy_get({'seller': 2.7, 'sailor': set('e')}, 'sail')
+      {'e'}
+      >>> fuzzy_get({'seller': 2.7, 'sailor': set('e'), 'camera': object()}, 'SLR')
+      {'e'}
+      >>> fuzzy_get({'seller': 2.7, 'sailor': set('e'), 'camera': object()}, 'I')
+      None
+      >>> fuzzy_get({'word': tuple('word'), 'noun': tuple('noun')}, 'woh!', similarity=.3, key_and_value=True)
+      ('word', ('w', 'o', 'r', 'd'))
+      >>> fuzzy_get({'word': tuple('word'), 'noun': tuple('noun')}, 'woh!', similarity=.9, key_and_value=True)
+      (None, None)
+      >>> fuzzy_get({'word': tuple('word'), 'noun': tuple('noun')}, 'woh!', similarity=.9, default='darn :-(', key_and_value=True)
+      (None, 'darn :-(')
     """
     fuzzy_key, value = None, default
     if approximate_key in dict_obj:
@@ -492,8 +502,9 @@ def fuzzy_get(dict_obj, approximate_key, default=None, similarity=0.6, tuple_joi
                 if fuzzy_key_score:
                     fuzzy_key, fuzzy_score = fuzzy_key_score
                     value = dict_obj[fuzzy_key]
-                else:
-                    fuzzy_key, value = None, value
+    print 'key and value'
+    print key_and_value
+    print fuzzy_key, value
     if key_and_value:
         return fuzzy_key, value
     else:

@@ -737,6 +737,7 @@ def try_convert(value, datetime_to_ms=False, precise=False):
         pass
     return value
 
+
 def make_serializable(data, mutable=True, key_stringifier=lambda x:x):
     r"""Make sure the data structure is json serializable (json.dumps-able), all they way down to scalars in nested structures.
 
@@ -748,15 +749,17 @@ def make_serializable(data, mutable=True, key_stringifier=lambda x:x):
     >>> data = {'x': Decimal('01.234567891113151719'), 'X': [{('y', 'z'): {'q': 'A\xFFB'}}, 'ender'] }
     >>> make_serializable(OrderedDict(data)) == {'X': [{('y', 'z'): {'q': 'A\xc3\xbfB'}}, 'ender'], 'x': 1.2345678911131517}
     True
+    >>> make_serializable({'ABCs': list('abc'), datetime.datetime(2014,10,31): datetime.datetime(2014,10,31,23,59,59)}
+    ...                  ) == {'ABCs': ['2014-10-16 00:00:00', 'b', 'c'], '2014-10-31 00:00:00': '2014-10-31 23:59:59'}
+    True
     """
     #print 'serializabling: ' + repr(data)
     # print 'type: ' + repr(type(data))
-    if isinstance(data, basestring):
-        return db.clean_utf8(data)
+
     if isinstance(data, (datetime.datetime, datetime.date, datetime.time)):
         return str(data)
     #print 'nonstring type: ' + repr(type(data))
-    if isinstance(data, Mapping):
+    elif isinstance(data, Mapping):
         mapping = tuple((make_serializable(k, mutable=False, key_stringifier=key_stringifier), make_serializable(v, mutable=mutable)) for (k, v) in data.iteritems())
         # print 'mapping tuple = %s' % repr(mapping)
         #print 'keys list = %s' % repr([make_serializable(k, mutable=False) for k in data])
@@ -764,15 +767,18 @@ def make_serializable(data, mutable=True, key_stringifier=lambda x:x):
         if mutable:
             return dict(mapping)
         return mapping
-    if hasattr(data, '__iter__'):
+    elif hasattr(data, '__iter__'):
         if mutable:
             #print list(make_serializable(v, mutable=mutable) for v in data)
             return list(make_serializable(v, mutable=mutable) for v in data)
         else:
             #print tuple(make_serializable(v, mutable=mutable) for v in data)
             return key_stringifier(tuple(make_serializable(v, mutable=mutable) for v in data))
-    if isinstance(data, (float, Decimal)):
+    elif isinstance(data, (float, Decimal)):
         return float(data)
+    elif isinstance(data, basestring):
+        data = db.clean_utf8(data)
+    # Data is either a string or some other object class Django.db.models.Model etc
     try:
         return int(data)
     except:
@@ -780,10 +786,20 @@ def make_serializable(data, mutable=True, key_stringifier=lambda x:x):
             return float(data)
         except:
             try:
-                # try to parse a date or datetime string
-                return parser.parse(str(data))
+                # see if can be coerced into datetime by first coercing to a string
+                return make_serializable(parser.parse(str(data)))
             except:
-                return str(try_convert(data))
+                try:
+                    # see if can be coerced into a dict (e.g. Dajngo Model or custom user module or class)
+                    return make_serializable(data.__dict__)
+                except:
+                    # stringify it and give up
+                    return str(data)
+            # try:
+            #     # try to parse a date or datetime string
+            #     return parser.parse(str(data))
+            # except:
+            #     return str(try_convert(data))
 
 
 def convert_loaded_json(js):
