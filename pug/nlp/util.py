@@ -478,8 +478,8 @@ def fuzzy_get(dict_obj, approximate_key, default=None, similarity=0.6, tuple_joi
       ('word', ('w', 'o', 'r', 'd'))
       >>> fuzzy_get({'word': tuple('word'), 'noun': tuple('noun')}, 'woh!', similarity=.9, key_and_value=True)
       (None, None)
-      >>> fuzzy_get({'word': tuple('word'), 'noun': tuple('noun')}, 'woh!', similarity=.9, default='darn :-(', key_and_value=True)
-      (None, 'darn :-(')
+      >>> fuzzy_get({'word': tuple('word'), 'noun': tuple('noun')}, 'woh!', similarity=.9, default='darn :-()', key_and_value=True)
+      (None, 'darn :-()')
     """
     fuzzy_key, value = None, default
     if approximate_key in dict_obj:
