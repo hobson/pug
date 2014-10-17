@@ -6,6 +6,7 @@ import math
 import collections
 import re
 import string
+import codecs
 
 from django.shortcuts import render_to_response
 from django.views.generic import View, TemplateView
@@ -447,7 +448,16 @@ def csv_response_from_context(context=None, filename=None, field_names=None, nul
 
     writer = csv.writer(response)
     for row in data:
-        writer.writerow([unicode(s if not s == None else null_string).encode('UTF-8') for s in row])
+        #writer.writerow([unicode(s if not s == None else null_string).encode('UTF-8') for s in row])
+        newrow = []
+        for s in row:
+            try:
+                newrow.append(s)
+            except UnicodeDecodeError:
+                newrow.append(unicode(s.strip(codecs.BOM_UTF8), 'utf8'))
+            except:
+                newrow.writerow(str(s))
+        writer.writerow(newrow)
 
     return response
 
