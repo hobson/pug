@@ -24,6 +24,10 @@ setup(
     name = package_name,
     packages = ["pug"],  # without this: Downloading/unpacking pug ... ImportError: No module named pug ... from pug import __version__, __name__, __doc__, _github_url_
     include_package_data = True,  # install non-.py files listed in MANIFEST.in (.js, .html, .txt, .md, etc)
+    scripts=['pug/bin/jira.py'],
+    entry_points={'console_scripts': [
+        'jira = pug.crawlnmine.management:execute_from_command_line',
+    ]},
     install_requires = install_requires,
     dependency_links = dependency_links,
     version = __version__,
@@ -31,6 +35,7 @@ setup(
     long_description = open(os.path.join(os.path.dirname(__file__), 'README.md')).read(),
     author = ', '.join(__authors__),
     author_email = "pugauthors@totalgood.com",
+
     #tests_require = ['django-setuptest', 'south'],
     #test_suite = 'setuptest.setuptest.SetupTestSuite',
     #cmdclass = {'test': test},

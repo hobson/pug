@@ -26,8 +26,6 @@ from pug.nlp import db
 #import call_center.models as SLAmodels
 from forms import GetLagForm
 
-
-
 # format options for lag histograms:
 #   hist = ff = fd = Frequency Distribution/Function (histogram of counts)
 #   pmf = pdf = Probability Mass/Distribution Function (or PDF, probability distribution/density function)
