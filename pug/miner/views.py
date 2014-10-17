@@ -453,10 +453,10 @@ def csv_response_from_context(context=None, filename=None, field_names=None, nul
         for s in row:
             try:
                 newrow.append(s)
-            except UnicodeDecodeError:
+            except (UnicodeDecodeError, UnicodeDecodeError):
                 newrow.append(unicode(s.strip(codecs.BOM_UTF8), 'utf8'))
             except:
-                newrow.writerow(str(s))
+                newrow.append(str(s))
         writer.writerow(newrow)
 
     return response
