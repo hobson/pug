@@ -7,7 +7,7 @@ import datetime
 
 import numpy as np
 import matplotlib.pyplot as plt
-from dateutil import parser
+from dateutil import parser as dateutil
 import progressbar as pb  # import ProgressBar, Bar, Percentage, ETA, RotatingMarker
 
 from django.core.exceptions import ImproperlyConfigured
@@ -728,7 +728,7 @@ def try_convert(value, datetime_to_ms=False, precise=False):
     except:
         pass
     try:
-        dt = parser.parse(value)
+        dt = dateutil.parse(value)
         if dt and isinstance(dt, datetime.datetime) and (3000 >= dt.year >= 1900):
             if datetime_to_ms:
                 return db.datetime_in_milliseconds(dt)
@@ -776,9 +776,20 @@ def make_serializable(data, mutable=True, key_stringifier=lambda x:x):
             return key_stringifier(tuple(make_serializable(v, mutable=mutable) for v in data))
     elif isinstance(data, (float, Decimal)):
         return float(data)
+<<<<<<< HEAD
     elif isinstance(data, basestring):
         data = db.clean_utf8(data)
     # Data is either a string or some other object class Django.db.models.Model etc
+||||||| merged common ancestors
+=======
+    elif isinstance(data, basestring):
+        data = db.clean_utf8(data)
+        try:
+            data = dateutil.parse(str(data))
+        except:
+            pass
+    # Data is either a string or some other object class Django.db.models.Model etc
+>>>>>>> prod_json_fix
     try:
         return int(data)
     except:
@@ -786,9 +797,18 @@ def make_serializable(data, mutable=True, key_stringifier=lambda x:x):
             return float(data)
         except:
             try:
+<<<<<<< HEAD
                 # see if can be coerced into datetime by first coercing to a string
                 return make_serializable(parser.parse(str(data)))
+||||||| merged common ancestors
+                # try to parse a date or datetime string
+                return parser.parse(str(data))
+=======
+                # see if can be coerced into datetime by first coercing to a string
+                return make_serializable(dateutil.parse(str(data)))
+>>>>>>> prod_json_fix
             except:
+<<<<<<< HEAD
                 try:
                     # see if can be coerced into a dict (e.g. Dajngo Model or custom user module or class)
                     return make_serializable(data.__dict__)
@@ -800,6 +820,17 @@ def make_serializable(data, mutable=True, key_stringifier=lambda x:x):
             #     return parser.parse(str(data))
             # except:
             #     return str(try_convert(data))
+||||||| merged common ancestors
+                return str(try_convert(data))
+=======
+                try:
+                    # see if can be coerced into a dict (e.g. Dajngo Model or custom user module or class)
+                    return make_serializable(data.__dict__)
+                except:
+                    # stringify it and give up
+                    return str(data)
+
+>>>>>>> prod_json_fix
 
 
 def convert_loaded_json(js):
