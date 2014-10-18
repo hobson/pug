@@ -11,7 +11,7 @@ import codecs
 from django.shortcuts import render_to_response
 from django.views.generic import View, TemplateView
 from django.template import RequestContext
-from django.template.response import TemplateResponse #, HttpResponse
+from django.template.response import TemplateResponse, HttpResponse
 from django.template.loader import get_template
 from django.http import Http404, HttpResponse
 from django import http
@@ -452,12 +452,14 @@ def csv_response_from_context(context=None, filename=None, field_names=None, nul
         newrow = []
         for s in row:
             try:
+                newrow.append(s.encode('utf-8')) #handles strings, unicodes, utf-8s
+            except AttributeError:  #will happen when we try to encode a class object or number
                 newrow.append(s)
-            except (UnicodeDecodeError, UnicodeDecodeError):
-                newrow.append(unicode(s.strip(codecs.BOM_UTF8), 'utf8'))
-            except:
+            except: #not sure
                 newrow.append(str(s))
         writer.writerow(newrow)
+        #except:
+        #    return HttpResponse(newrow)
 
     return response
 
