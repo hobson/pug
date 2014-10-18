@@ -498,9 +498,15 @@ def fuzzy_get(dict_obj, approximate_key, default=None, similarity=0.6, tuple_joi
             if strkey in dict_keys:
                 fuzzy_key, value = strkey, dict_obj[strkey]
             else:
-                fuzzy_key_score = fuzzy.extractOne(str(approximate_key), dict_keys, score_cutoff=max(min(similarity*100, 100), 0))
-                if fuzzy_key_score:
-                    fuzzy_key, fuzzy_score = fuzzy_key_score
+                fuzzy_key_scores = fuzzy.extractBests(str(approximate_key), dict_keys, score_cutoff=max(min(similarity*100, 100), 0), limit=6)
+                if fuzzy_key_scores:
+                    print fuzzy_key_scores
+                    fuzzy_score_keys = []
+                    # add length similarity as part of score
+                    for (i, (k, score)) in enumerate(fuzzy_key_scores):
+                        fuzzy_score_keys += [(score * (len(k)-len(strkey))**2 / float(len(strkey) or 1.)**3, k)]
+                    print fuzzy_score_keys
+                    fuzzy_score, fuzzy_key = sorted(fuzzy_score_keys)[-1]
                     value = dict_obj[fuzzy_key]
     print 'key and value'
     print key_and_value
