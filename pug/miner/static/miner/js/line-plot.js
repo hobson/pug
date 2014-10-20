@@ -78,8 +78,8 @@ function mouseover(d) {
   tt = (xlabel.length ? xlabel : "bin") + ": " + d.x + "\u00A0\u00A0\u00A0\u00A0" + series_name + ": " + d.y;
   focus.select("text").text(tt);
 
-  query_obj.min_lag = d.x-1
-  query_obj.max_lag = d.x+1
+  query_obj.min_lag = d.x-5
+  query_obj.max_lag = d.x+5
 
   focus.select("a").attr("xlink:href", "?"+obj2query(query_obj));
 

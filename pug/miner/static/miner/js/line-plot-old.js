@@ -69,18 +69,32 @@ var x_scale = d3.scale.linear().range([0, 1]);
 var y_scale = d3.scale.linear().range([1, 0]);
 var ylabel = "Vertical Value"
 var xlabel = "Horizontal Value (Time?)"
+
+// FIXME: put all globals in a plot conf object/namespace
+var conf = {margin: margin, width: width, height: height, x_scale: x_scale, xlabel: xlabel, y_scale: y_scale, ylabel: ylabel};
+
+console.log("conf");
+console.log(conf);
 // tooltips
 var svg = d3.select("#linegraph").append("svg")
             .attr("width",  width + margin.left + margin.right)
             .attr("height", height + margin.top + margin.bottom)
       .append("g")
         .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+console.log("svg");
+console.log(svg);
 var focus = svg.append("g")
     .attr("transform", "translate(0,0)")  // make sure initial tool-tip circle is located outside (upper left) of the plot (svg element)
     .attr("class", "focus");
+console.log(svg);
 focus.append("text").attr("y", -12);
 focus.append("a").attr("xlink:href", "/")
   .append("circle").attr("r", 4.5).style("fill", "steelblue").style("fill-opacity", 0.3);
+
+// query object used to set the HTTP GET query for the URI when the user clicks on a region/circle
+var query_obj = query2obj();
+delete query_obj.plot
+query_obj.table = "fast";
 
 
 function mouseover(d) {
@@ -94,20 +108,24 @@ function mouseover(d) {
   d3.select(d.series.line).classed("series-hover", true);
 
   // tip.attr("transform", "translate(" + x_scale(d.x) + "," + y_scale(d.y) + ")");
-  console.log("transform", "translate(" + x_scale(d.x) + "," + y_scale(d.y) + ")")
+  console.log("transform", "translate(" + x_scale(d.x) + "," + y_scale(d.y) + ")");
   focus.attr("transform", "translate(" + x_scale(d.x) + "," + y_scale(d.y) + ")");
   series_name = d.series.name.length ? d.series.name : ylabel
   tt = (xlabel.length ? xlabel : "bin") + ": " + d.x + "\u00A0\u00A0\u00A0\u00A0" + series_name + ": " + d.y;
   focus.select("text").text(tt);
 
-  query_obj.min_lag = d.x-1
-  query_obj.max_lag = d.x+1
+  query_obj.min_lag = d.x-5;
+  query_obj.max_lag = d.x+5;
 
+  // This generates the right link, but the SVG doesn't respond to clicks on the circle or anywhere nearby
   focus.select("a").attr("xlink:href", "?"+obj2query(query_obj));
+  console.log(focus.select("a"));
+  console.log(focus.select("a").attr("xlink:href"));
 
 }
 
 
+// FIXME: Unused!
 function mouseclick(d) {
   console.log('mouseclick')
   console.log(d);
@@ -131,9 +149,6 @@ function mouseout(d) {
   focus.select("text").text("");
 }
 
-var query_obj = query2obj();
-delete query_obj.plot
-query_obj.table = "fast";
 
 
 // Line plot with clickable Voronoi regions and mouse-over tool tips showing the coordinate values
