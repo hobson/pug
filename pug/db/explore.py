@@ -753,8 +753,9 @@ def make_serializable(data, mutable=True, key_stringifier=lambda x:x):
     ...                  ) == {'ABCs': ['2014-10-16 00:00:00', 'b', 'c'], '2014-10-31 00:00:00': '2014-10-31 23:59:59'}
     True
     """
-    #print 'serializabling: ' + repr(data)
+    # print 'serializabling: ' + repr(data)
     # print 'type: ' + repr(type(data))
+
 
     if isinstance(data, (datetime.datetime, datetime.date, datetime.time)):
         return data
@@ -783,10 +784,6 @@ def make_serializable(data, mutable=True, key_stringifier=lambda x:x):
     elif isinstance(data, basestring):
         # Data is either a string or some other object class Django.db.models.Model etc
         data = db.clean_utf8(data)
-        try:
-            data = dateutil.parse(unicode(data))
-        except:
-            pass
     try:
         return int(data)
     except:
