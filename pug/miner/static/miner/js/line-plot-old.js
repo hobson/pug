@@ -43,7 +43,6 @@ function query2obj(query) {
   return JSON.parse('{"' + decodeURI(query).replace(/"/g, '\\"').replace(/%2C/g,",").replace(/%2B/g," ").replace(/&/g, '","').replace(/=/g,'":"') + '"}')
   }
 
-
 function obj2query(obj, prefix) { 
     var str = [];
     for(var p in obj) {
@@ -55,7 +54,6 @@ function obj2query(obj, prefix) {
     return str.join("&");
 }
 
-
 function query_param(name) {
     name = name.replace(/[\[]/, "\\[").replace(/[\]]/, "\\]");
     var regex = new RegExp("[\\?&]" + name + "=([^&#]*)"),
@@ -63,19 +61,40 @@ function query_param(name) {
     return results == null ? "" : decodeURIComponent(results[1].replace(/\+/g, " "));
 }
 
-
+// globals used by mouseover and mouseout for tooltips, etc
+var margin = {top: 20, right: 80, bottom: 30, left: 50};
+var  width = 960 - margin.left - margin.right;
+var height = 500 - margin.top - margin.bottom;
 var x_scale = d3.scale.linear().range([0, 1]);
 var y_scale = d3.scale.linear().range([1, 0]);
+var ylabel = "Vertical Value"
+var xlabel = "Horizontal Value (Time?)"
+// tooltips
+var svg = d3.select("#linegraph").append("svg")
+            .attr("width",  width + margin.left + margin.right)
+            .attr("height", height + margin.top + margin.bottom)
+      .append("g")
+        .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+var focus = svg.append("g")
+    .attr("transform", "translate(0,0)")  // make sure initial tool-tip circle is located outside (upper left) of the plot (svg element)
+    .attr("class", "focus");
+focus.append("text").attr("y", -12);
+focus.append("a").attr("xlink:href", "/")
+  .append("circle").attr("r", 4.5).style("fill", "steelblue").style("fill-opacity", 0.3);
+
 
 function mouseover(d) {
   // displays tip at center of voronoi region instead of near point
   // tip.show(d);
 
+  console.log('mouseover')
+  console.log(d)
   // doesn't work
   d.series.line.parentNode.appendChild(d.series.line);
   d3.select(d.series.line).classed("series-hover", true);
 
   // tip.attr("transform", "translate(" + x_scale(d.x) + "," + y_scale(d.y) + ")");
+  console.log("transform", "translate(" + x_scale(d.x) + "," + y_scale(d.y) + ")")
   focus.attr("transform", "translate(" + x_scale(d.x) + "," + y_scale(d.y) + ")");
   series_name = d.series.name.length ? d.series.name : ylabel
   tt = (xlabel.length ? xlabel : "bin") + ": " + d.x + "\u00A0\u00A0\u00A0\u00A0" + series_name + ": " + d.y;
@@ -90,6 +109,7 @@ function mouseover(d) {
 
 
 function mouseclick(d) {
+  console.log('mouseclick')
   console.log(d);
   var url = document.URL + "&lag=" + d.x + "&series=" + d.series.name;
   var hist_formats = ["", "-pmf", "-cmf", "-cfd"];
@@ -105,11 +125,11 @@ function mouseclick(d) {
 
 function mouseout(d) {
   // tip.hide(d);
-  //console.log(d);
+  console.log('mouseout')
+  console.log(d);
   d3.select(d.series.line).classed("series-hover", false);
   focus.select("text").text("");
 }
-
 
 var query_obj = query2obj();
 delete query_obj.plot
@@ -126,12 +146,10 @@ query_obj.table = "fast";
 //     d3data[1][1..M] (Number): y-coordinate values
 //   x-axis (String, optional): horizontal x-axis label (overrides d3data[0][0])
 //   y-axis (String, optional): vertical y-axis label (overrides d3data[0][0])
-function line_plot_old(d3data, xlabel, ylabel) {
+function line_plot_old(d3data, new_xlabel, new_ylabel) {
 
 
-    var margin = {top: 20, right: 80, bottom: 30, left: 50},
-        width = 960 - margin.left - margin.right,
-        height = 500 - margin.top - margin.bottom;
+
 
     // var d3data = {{ data.d3data|safe }};
 
@@ -139,9 +157,9 @@ function line_plot_old(d3data, xlabel, ylabel) {
     // var ylabel = "{{ data.ylabel|escapejs }}";
 
     var ans = arrays_as_d3_series(d3data);
-    var xlabel = xlabel.length ? xlabel : ans.xlabel;
+    xlabel = new_xlabel.length ? new_xlabel : ans.xlabel;
     var ylabels = [ylabel];
-    var ylabel = ylabel.length ? ylabel : ans.ylabels[0];
+    ylabel = new_ylabel.length ? new_ylabel : ans.ylabels[0];
     var data = ans.data;
     data.sort(function(a, b) { return a.x - b.x; });
 
@@ -167,7 +185,7 @@ function line_plot_old(d3data, xlabel, ylabel) {
         );
     }
 
-    var y_scale = d3.scale.linear().range([height, 0]);
+    y_scale = d3.scale.linear().range([height, 0]);
 
     var xAxis = d3.svg.axis().scale(x_scale).orient("bottom");
 
@@ -183,11 +201,6 @@ function line_plot_old(d3data, xlabel, ylabel) {
         .y(function(d) { return y_scale(d.y); });
 
 
-    var svg = d3.select("#linegraph").append("svg")
-        .attr("width", width + margin.left + margin.right)
-        .attr("height", height + margin.top + margin.bottom)
-      .append("g")
-        .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
 
     var all_series = color.domain().map(function(name) {
       var series = { 
@@ -245,6 +258,7 @@ function line_plot_old(d3data, xlabel, ylabel) {
         .attr("d", function(d) { d.line=this; return line(d.values); })
         .style("stroke", function(d) { return color(d.name); });
 
+
     // legend
     series.append("text")
         .datum(function(d) { return { name: d.name, value: d.values[d.values.length - 1]}; })
@@ -269,15 +283,7 @@ function line_plot_old(d3data, xlabel, ylabel) {
     //    .on("click", mouseclick)
         .on("mouseout", mouseout);
 
-    // tooltips
-    var focus = svg.append("g")
-        .attr("transform", "translate(-100,-100)")  // make sure initial tool-tip circle is located outside (upper left) of the plot (svg element)
-        .attr("class", "focus");
 
-    focus.append("text").attr("y", -12);
-
-    focus.append("a").attr("xlink:href", "/")
-      .append("circle").attr("r", 4.5).style("fill", "steelblue").style("fill-opacity", 0.3);
 
 }
 

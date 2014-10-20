@@ -104,7 +104,7 @@ function mouseclick(d) {
 
 function mouseout(d) {
   // tip.hide(d);
-  //console.log(d);
+  console.log(d);
   d3.select(d.series.line).classed("series-hover", false);
   focus.select("text").text("");
 }

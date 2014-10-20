@@ -5,7 +5,6 @@
 
 {% block extra_head %}
     <script src="{% static "d3/d3.min.js" %}"></script>
-    <script src="{% static "miner/js/line-plot-old.js" %}"></script>
     {#  <script src="{% static "d3-tip/index.js" %}"></script> #}
     <link rel="stylesheet" href="{% static "miner/css/hist.css" %}">
 {% endblock %}
@@ -14,7 +13,18 @@
 
     {% include "case/bootstrap_case_form.html" %}
 
-    {% include "miner/line_plot.d3.html" %}
+    {# block graph #}
+    <div class="row"><div id="linegraph" class="graph"></div></div> 
+    {# the linegraph attribute ID must be created before this line-plot.js globals are created #}
+    <script src="{% static "miner/js/line-plot-old.js" %}"></script>
+    <script>
+    var d3data = {{ data.d3data|safe }};
+    console.log('xlabel and ylabel being sent to line_plot fun');
+    line_plot_old(d3data, "{{ data.xlabel|escapejs }}", "{{ data.ylabel|escapejs }}");
+    </script>
+    {# endblock graph #}
+
+    {# include "miner/line_plot.d3.html" #}
 
 {% endblock %}
 

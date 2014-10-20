@@ -1,8 +1,7 @@
-<div class="row">
-  <div id="linegraph" class="graph"></div>
-</div> 
 
 <script>
+
+
   var d3data = {{ data.d3data|safe }};
   console.log('xlabel and ylabel being sent to line_plot fun');
   line_plot_old(d3data, "{{ data.xlabel|escapejs }}", "{{ data.ylabel|escapejs }}");
