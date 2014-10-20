@@ -63,6 +63,10 @@ function query_param(name) {
     return results == null ? "" : decodeURIComponent(results[1].replace(/\+/g, " "));
 }
 
+
+var x_scale = d3.scale.linear().range([0, 1]);
+var y_scale = d3.scale.linear().range([1, 0]);
+
 function mouseover(d) {
   // displays tip at center of voronoi region instead of near point
   // tip.show(d);
@@ -71,8 +75,8 @@ function mouseover(d) {
   d.series.line.parentNode.appendChild(d.series.line);
   d3.select(d.series.line).classed("series-hover", true);
 
-  // tip.attr("transform", "translate(" + x(d.x) + "," + y(d.y) + ")");
-  focus.attr("transform", "translate(" + x(d.x) + "," + y(d.y) + ")");
+  // tip.attr("transform", "translate(" + x_scale(d.x) + "," + y_scale(d.y) + ")");
+  focus.attr("transform", "translate(" + x_scale(d.x) + "," + y_scale(d.y) + ")");
   series_name = d.series.name.length ? d.series.name : ylabel
   tt = (xlabel.length ? xlabel : "bin") + ": " + d.x + "\u00A0\u00A0\u00A0\u00A0" + series_name + ": " + d.y;
   focus.select("text").text(tt);
@@ -149,14 +153,12 @@ function line_plot_old(d3data, xlabel, ylabel) {
 
     var color = d3.scale.category10().domain(ans.ylabels);
 
-
-   var x = d3.scale.linear().range([0, width]);
-
+    x_scale = d3.scale.linear().range([0, width]);
     // parse xdata as datetimes if the xlabel starts with the word "date" or "time" 
     if ((xlabel.substring(0, 4).toUpperCase() == "DATE") 
         // || (xlabel.substring(0, 4).toUpperCase() == "TIME")
       ) {
-      x = d3.time.scale().range([0, width]);
+      x_scale = d3.time.scale().range([0, width]);
       
       data.forEach(function(d) { 
         console.log(d);
@@ -165,20 +167,20 @@ function line_plot_old(d3data, xlabel, ylabel) {
         );
     }
 
-    var xAxis = d3.svg.axis().scale(x).orient("bottom");
+    var y_scale = d3.scale.linear().range([height, 0]);
 
-    var y = d3.scale.linear().range([height, 0]);
+    var xAxis = d3.svg.axis().scale(x_scale).orient("bottom");
 
-    var yAxis = d3.svg.axis().scale(y).orient("left");
+    var yAxis = d3.svg.axis().scale(y_scale).orient("left");
 
     var voronoi = d3.geom.voronoi()
-        .x(function(d) { return x(d.x); })
-        .y(function(d) { return y(d.y); })
+        .x(function(d) { return x_scale(d.x); })
+        .y(function(d) { return y_scale(d.y); })
         .clipExtent([[-margin.left, -margin.top], [width + margin.right, height + margin.bottom]]);
 
     var line = d3.svg.line()
-        .x(function(d) { return x(d.x); })
-        .y(function(d) { return y(d.y); });
+        .x(function(d) { return x_scale(d.x); })
+        .y(function(d) { return y_scale(d.y); });
 
 
     var svg = d3.select("#linegraph").append("svg")
@@ -204,9 +206,9 @@ function line_plot_old(d3data, xlabel, ylabel) {
     });
 
 
-    x.domain(d3.extent(data, function(d) { return d.x; }));
+    x_scale.domain(d3.extent(data, function(d) { return d.x; }));
 
-    y.domain([
+    y_scale.domain([
       d3.min(all_series, function(c) { return d3.min(c.values, function(v) { return v.y; }); }),
       d3.max(all_series, function(c) { return d3.max(c.values, function(v) { return v.y; }); })
     ]);
@@ -216,9 +218,9 @@ function line_plot_old(d3data, xlabel, ylabel) {
         .attr("transform", "translate(0," + height + ")")
         .call(xAxis)
       .append("text")
-        .attr("y", y.range()[1])
+        .attr("y", y_scale.range()[1])
         .style("text-anchor", "end")
-        .attr("x", x.range()[1])
+        .attr("x", x_scale.range()[1])
         .attr("dy", "-.3em")
 
         .text(xlabel);
@@ -246,7 +248,7 @@ function line_plot_old(d3data, xlabel, ylabel) {
     // legend
     series.append("text")
         .datum(function(d) { return { name: d.name, value: d.values[d.values.length - 1]}; })
-        .attr("transform", function(d) { return "translate(" + x(d.value.x) + "," + y(d.value.y) + ")"; })
+        .attr("transform", function(d) { return "translate(" + x_scale(d.value.x) + "," + y_scale(d.value.y) + ")"; })
         .attr("x", 3)
         .attr("dy", ".35em")
         .text(function(d) { return d.name; });
@@ -256,7 +258,7 @@ function line_plot_old(d3data, xlabel, ylabel) {
 
     voronoiGroup.selectAll("path")
         .data(voronoi(d3.nest()
-            .key(function(d) { return x(d.x) + "," + y(d.y); })
+            .key(function(d) { return x_scale(d.x) + "," + y_scale(d.y); })
             .rollup(function(v) { return v[0]; })
             .entries(d3.merge(all_series.map(function(d) { return d.values; })))
             .map(function(d) { return d.values; })))
