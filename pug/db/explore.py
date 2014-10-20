@@ -757,7 +757,11 @@ def make_serializable(data, mutable=True, key_stringifier=lambda x:x):
     # print 'type: ' + repr(type(data))
 
     if isinstance(data, (datetime.datetime, datetime.date, datetime.time)):
-        return str(data)
+        return data
+        # s = unicode(data)
+        # if s.endswith('00:00:00'):
+        #     return s[:8]
+        # return s
     #print 'nonstring type: ' + repr(type(data))
     elif isinstance(data, Mapping):
         mapping = tuple((make_serializable(k, mutable=False, key_stringifier=key_stringifier), make_serializable(v, mutable=mutable)) for (k, v) in data.iteritems())
@@ -780,7 +784,7 @@ def make_serializable(data, mutable=True, key_stringifier=lambda x:x):
         # Data is either a string or some other object class Django.db.models.Model etc
         data = db.clean_utf8(data)
         try:
-            data = dateutil.parse(str(data))
+            data = dateutil.parse(unicode(data))
         except:
             pass
     try:
@@ -791,14 +795,14 @@ def make_serializable(data, mutable=True, key_stringifier=lambda x:x):
         except:
             try:
                 # see if can be coerced into datetime by first coercing to a string
-                return make_serializable(dateutil.parse(str(data)))
+                return make_serializable(dateutil.parse(unicode(data)))
             except:
                 try:
                     # see if can be coerced into a dict (e.g. Dajngo Model or custom user module or class)
                     return make_serializable(data.__dict__)
                 except:
                     # stringify it and give up
-                    return str(data)
+                    return unicode(data)
 
 
 def convert_loaded_json(js):
