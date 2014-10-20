@@ -455,8 +455,8 @@ def csv_response_from_context(context=None, filename=None, field_names=None, nul
                 newrow.append(s.encode('utf-8')) #handles strings, unicodes, utf-8s
             except AttributeError:  #will happen when we try to encode a class object or number
                 newrow.append(s)
-            except: #not sure
-                newrow.append(str(s))
+            except: #not sure it ever will be touched.
+                newrow.append(unicode(s))
         writer.writerow(newrow)
         #except:
         #    return HttpResponse(newrow)
