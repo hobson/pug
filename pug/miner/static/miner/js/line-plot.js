@@ -8,6 +8,8 @@ function d3_parse_date(date_or_time) {
 // Returns a d3-compatible object with an xlabel, ylabels = header with xlabel removed
 // and data which is an array of objects with elements x and y (y attribute is named by the header/ylabels)
 function arrays_as_d3_series(d3data) {
+    console.log('d3data before transpose')
+    console.log(d3data)
     var ans = {};
     d3data = d3.transpose(d3data);
     // console.log(d3data);
@@ -81,10 +83,16 @@ function line_plot(d3data, xlabel, ylabels) {
     // strip the header row, use the headers as axis labels, and transpose the data-series rows into columns
     var data_obj = arrays_as_d3_series(d3data);
     var xlabel = xlabel.length ? xlabel : data_obj.xlabel;
+    var ylabel = typeof ylabels[0] !== 'undefined' ? ylabels[0]: "Y Axis";
     var ylabel = ylabel.length ? ylabel : data_obj.ylabels[0];
     var ylabels = ylabels.length ? ylabels : data_obj.ylabels[0];
 
+
+    console.log('data_obj that contains the data bit')
+    console.log(data_obj)
     var data = data_obj.data;
+    console.log('d3data after grabbing data bit')
+    console.log(data)
 
     // be smarter about scaling margins with data and desired plot height/width
     var margin = { top: 40, right: 80, bottom: 30, left: 50 };
