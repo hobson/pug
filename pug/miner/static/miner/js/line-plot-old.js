@@ -62,7 +62,7 @@ function query_param(name) {
 }
 
 // globals used by mouseover and mouseout for tooltips, etc
-var margin = {top: 20, right: 80, bottom: 30, left: 50};
+var margin = {top: 30, right: 80, bottom: 30, left: 50};
 var  width = 960 - margin.left - margin.right;
 var height = 500 - margin.top - margin.bottom;
 var x_scale = d3.scale.linear().range([0, 1]);
@@ -84,12 +84,13 @@ var svg = d3.select("#linegraph").append("svg")
 console.log("svg");
 console.log(svg);
 var focus = svg.append("g")
-    .attr("transform", "translate(0,0)")  // make sure initial tool-tip circle is located outside (upper left) of the plot (svg element)
+    .attr("transform", "translate(-100,-100)")  // make sure initial tool-tip circle is located outside (upper left) of the plot (svg element)
     .attr("class", "focus");
 console.log(svg);
 focus.append("text").attr("y", -12);
 focus.append("a").attr("xlink:href", "/")
-  .append("circle").attr("r", 4.5).style("fill", "steelblue").style("fill-opacity", 0.3);
+  .append("circle").attr("r", 9.5).style("fill", "steelblue").style("fill-opacity", 0.3);
+
 
 // query object used to set the HTTP GET query for the URI when the user clicks on a region/circle
 var query_obj = query2obj();
@@ -121,25 +122,25 @@ function mouseover(d) {
   focus.select("a").attr("xlink:href", "?"+obj2query(query_obj));
   console.log(focus.select("a"));
   console.log(focus.select("a").attr("xlink:href"));
-
+  // FIXME: for this link to be visible/clickable the mouseout function has to be triggered when the mouse enters the circle and leaves the voronoi region
 }
 
 
-// FIXME: Unused!
-function mouseclick(d) {
-  console.log('mouseclick')
-  console.log(d);
-  var url = document.URL + "&lag=" + d.x + "&series=" + d.series.name;
-  var hist_formats = ["", "-pmf", "-cmf", "-cfd"];
-  hist_formats.forEach(function(hf) { 
-    url = url.replace("/hist"+hf+"/", "/cases/");
-  });
-  var plot_types = ["linked", "link", "l", "zoomable", "zoom", "z"];
-  plot_types.forEach(function(pt) { 
-    url = url.replace("&plot="+pt, "&table=quick");
-  });
-  window.location = url;
-}
+// // FIXME: Unused!
+// function mouseclick(d) {
+//   console.log('mouseclick')
+//   console.log(d);
+//   var url = document.URL + "&lag=" + d.x + "&series=" + d.series.name;
+//   var hist_formats = ["", "-pmf", "-cmf", "-cfd"];
+//   hist_formats.forEach(function(hf) { 
+//     url = url.replace("/hist"+hf+"/", "/cases/");
+//   });
+//   var plot_types = ["linked", "link", "l", "zoomable", "zoom", "z"];
+//   plot_types.forEach(function(pt) { 
+//     url = url.replace("&plot="+pt, "&table=quick");
+//   });
+//   window.location = url;
+// }
 
 function mouseout(d) {
   // tip.hide(d);
