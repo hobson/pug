@@ -299,8 +299,15 @@ function line_plot_old(d3data, new_xlabel, new_ylabel) {
     //    .on("click", mouseclick)
         .on("mouseout", mouseout);
 
+    // reappend the svg with a focus circle and see if it'll mouse-out from the veronoi
+    focus = svg.append("g")
+        .attr("transform", "translate(-100,-100)")  // make sure initial tool-tip circle is located outside (upper left) of the plot (svg element)
+        .attr("class", "focus");
 
+    focus.append("text").attr("y", -12);
 
+    focus.append("a").attr("xlink:href", "/")
+      .append("circle").attr("r", 4.5).style("fill", "steelblue").style("fill-opacity", 0.3);
 }
 
 
