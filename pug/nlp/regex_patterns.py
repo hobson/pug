@@ -10,6 +10,8 @@ Compiled Regular Expression Patterns
 ['x 10 ^']
 >>> scientific_notation_exponent.findall(' 1E10 and 1 x 10 ^23 ')
 ['E', 'x 10 ^']
+>>> [bool(zero_pad_4_10_digit.match(an)) for an in ['0000123744', '0', '0000', '0000000000', '0000001000', '000001', '0000126473', '000102952', '0000107079']]
+[True, False, False, False, True, False, True, True, True]
 """
 
 # try to make constant string variables all uppercase and regex patterns lowercase
@@ -60,4 +62,17 @@ wikipedia_special = re.compile(r'.*wikipedia[.]org/wiki/[^:]+[:].*')
 nones = re.compile(r'^Unk[n]?own|unk[n]?own|UNK|Unk|UNK[N]?OWN|[.]+|[-]+|[=]+|[_]+|[*]+|[?]+|N[/]A|n[/]a|None|none|NONE|Null|null|NULL|NaN$')
 
 # Unary NOT operator and its operand returned in match.groups() 2-tuple
-notter = re.compile(r'^(NOT|[\~\-\!\^])?\s*(.*)\s*$', re.IGNORECASE)
+not_symbol = re.compile(r'[Nn][Oo][Tt]|[\~\-\!\^]')
+notter = re.compile(r'(' + not_symbol.pattern +  r')?\s*(.*)\s*')
+
+# A 4-10 digit numerical serial number or account number with zero padding
+#   * Allow any number of padding zeros to precede the 4-10 "significant" digits
+#   * Allow whitespace on both ends
+#   * Allows '0000' but not '0001' or '0000000001'
+zero_pad_4_10_digit = re.compile(r'[0]{0,6}[1-9][0-9]{3,9}')
+serial_number = zero_pad_4_10_digit
+account_number = zero_pad_4_10_digit
+
+
+
+optionally_notted_zero_pad_4_10_digit = re.compile(r'\s*(' + not_symbol.pattern + r')?\s*(' + zero_pad_4_10_digit.pattern + r')\s*')

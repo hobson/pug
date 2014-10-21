@@ -43,9 +43,7 @@ class AggregatedResults(DateMixin):
     exclude_dict   = JSONField(
         help_text='The query `exclude()` portion of the GET Request URI formatted in a form evaluated as a `for k, v in exclude_dict.items():  queryset = queryset.exclude({k,v});`')
     results        = JSONField(
-        help_text='The results (first HTML table or JSON dictionary returned when you query a service)')
-
-
+        help_text="The dictionary of data used to display the Queries summary table at the top of the Quick Table with aggregate statistics 'mean' (lag), 'num_matches', 'num_returns', 'num_sales', 'effective_return_rate', 'word_match_rate', 'mura_match_rate', 'nprb_match_rate', 'last_update', 'num_mura_match', 'num_word_match', 'num_nprb_match'")
 class Database(models.Model):
     """Metadata about a Database (postgres or Microsoft SQL "USE" argument)"""
     _IMPORTANT_FIELDS = ('pk', 'name', 'date')

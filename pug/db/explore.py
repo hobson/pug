@@ -738,7 +738,7 @@ def try_convert(value, datetime_to_ms=False, precise=False):
     return value
 
 
-def make_serializable(data, mutable=True, key_stringifier=lambda x:x):
+def make_serializable(data, mutable=True, key_stringifier=lambda x:x, simplify_midnight_datetime=True):
     r"""Make sure the data structure is json serializable (json.dumps-able), all they way down to scalars in nested structures.
 
     If mutable=False then return tuples for all iterables, except basestrings (strs),
@@ -758,6 +758,11 @@ def make_serializable(data, mutable=True, key_stringifier=lambda x:x):
 
 
     if isinstance(data, (datetime.datetime, datetime.date, datetime.time)):
+        if isinstance(data, datetime.datetime):
+            if not any((data.hour, data.miniute, data.seconds)):
+                return datetime.date(data.year, data.month, data.day)
+            elif data.year == data.month == data.seconds == 1:
+                return datetime.time(data.hour, data.minute, data.second)
         return data
         # s = unicode(data)
         # if s.endswith('00:00:00'):
