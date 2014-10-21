@@ -460,7 +460,10 @@ def get_key_for_value(dict_obj, value, default=None):
 
 
 def fuzzy_get(dict_obj, approximate_key, dict_keys=None, key_and_value=False, threshold=0.5, default=None):
-    """Find the closest matching key and/or value in a dictionary (must have all string keys!)"""
+    """Find the closest matching key and/or value in a dictionary (must have all string keys!)
+
+    FIXME: use jellyfish!
+    """
     if approximate_key in dict_obj:
         fuzzy_key, value = approximate_key, dict_obj[approximate_key]
     else:
