@@ -16,11 +16,11 @@
     {# block graph #}
     <div class="row"><div id="linegraph" class="graph"></div></div> 
     {# the linegraph attribute ID must be created before this line-plot.js globals are created #}
-    <script src="{% static "miner/js/line-plot-old.js" %}"></script>
+    <script src="{% static "miner/js/line-plot.js" %}"></script>
     <script>
     var d3data = {{ data.d3data|safe }};
     console.log('xlabel and ylabel being sent to line_plot fun');
-    line_plot_old(d3data, "{{ data.xlabel|escapejs }}", "{{ data.ylabel|escapejs }}");
+    line_plot(d3data, "{{ data.xlabel|escapejs }}", "{{ data.ylabel|escapejs }}");
     </script>
     {# endblock graph #}
 

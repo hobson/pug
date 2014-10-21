@@ -4,7 +4,7 @@
 
   var d3data = {{ data.d3data|safe }};
   console.log('xlabel and ylabel being sent to line_plot fun');
-  line_plot_old(d3data, "{{ data.xlabel|escapejs }}", "{{ data.ylabel|escapejs }}");
+  line_plot(d3data, "{{ data.xlabel|escapejs }}", "{{ data.ylabel|escapejs }}");
 
 // var margin = {top: 20, right: 80, bottom: 30, left: 50},
 //     width = 960 - margin.left - margin.right,
