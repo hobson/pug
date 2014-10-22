@@ -16,15 +16,10 @@
     {# block graph #}
     <div class="row"><div id="linegraph" class="graph"></div></div> 
     {# the linegraph attribute ID must be created before this line-plot.js globals are created #}
-    <script src="{% static "miner/js/line-plot.js" %}"></script>
-    <script>
-    var d3data = {{ data.d3data|safe }};
-    console.log('xlabel and ylabel being sent to line_plot fun');
-    line_plot(d3data, "{{ data.xlabel|escapejs }}", "{{ data.ylabel|escapejs }}");
-    </script>
+
+    {% include "miner/line_plot.d3.html" %}
     {# endblock graph #}
 
-    {# include "miner/line_plot.d3.html" #}
 
 {% endblock %}
 
