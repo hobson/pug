@@ -17,7 +17,12 @@
     <div class="row"><div id="linegraph" class="graph"></div></div> 
     {# the linegraph attribute ID must be created before this line-plot.js globals are created #}
 
-    {% include "miner/line_plot.d3.html" %}
+    {% block plot %}
+
+        <script src="{% static "miner/js/line-plot.js" %}"></script>
+        <script> line_plot({{ data.d3data|safe }}, "{{ data.xlabel|escapejs }}", "{{ data.ylabel|escapejs }}"); </script>
+
+    {% endblock plot %}
     {# endblock graph #}
 
 

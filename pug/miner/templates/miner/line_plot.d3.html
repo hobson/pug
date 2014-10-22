@@ -1,7 +1,11 @@
-<script src="{% static "miner/js/line-plot.js" %}"></script>
-<script>
+{% extends 'miner/hist.html' %}
+{% load i18n %}
+{% load staticfiles %}
+{% load static %}
 
-var d3data = {{ data.d3data|safe }};
-console.log('xlabel and ylabel being sent to line_plot fun');
-line_plot(d3data, "{{ data.xlabel|escapejs }}", "{{ data.ylabel|escapejs }}");
-</script>
+{% block plot %}
+
+<script src="{% static "miner/js/line-plot.js" %}"></script>
+<script> line_plot({{ data.d3data|safe }}, "{{ data.xlabel|escapejs }}", "{{ data.ylabel|escapejs }}"); </script>
+
+{% endblock %}
