@@ -1,0 +1,12 @@
+{% extends 'miner/cases_aggregate.html' %}
+{% load i18n %}
+{% load staticfiles %}
+{% load static %}
+
+{% block plot %}
+
+<script src="{% static "miner/js/line-plot.js" %}"></script>
+<script> line_plot({{ data.d3data|safe }}, "{{ data.xlabel|escapejs }}", "{{ data.ylabel|escapejs }}"); </script>
+
+
+{% endblock %}
