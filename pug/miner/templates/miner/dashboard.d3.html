@@ -16,8 +16,8 @@
 {% block content %}
 
 
-    <div class="row"><div id="linegraph" class="graph"></div></div> 
-    {# the linegraph attribute ID must be created before this line-plot.js globals are created #}
+    <div class="row"><div id="plot_div" class="graph"></div></div> 
+    {# a div with a plot_div attribute ID must be created before this line-plot.js globals are created #}
 
     {% block plot %}
         <pre>{{ data|safe|escape }}</pre>

@@ -409,11 +409,14 @@ class DashboardView(TemplateView):
         context = super(DashboardView, self).get_context_data(**kwargs)
         print "context"
         context['data'] = {} 
-        context['data']['d3data'] = [["", 1,2,3,4,5,6,7,8],["", 51,72,43,54,65,76,67,98]]
+        context['data']['d3data'] = [["", 1,2,3,4,5,6,7,8],["", 51,72,43,54,65,76,67,98],["", 91,62,73,64,65,76,67,98]]
         context['data']['xlabel'] = 'X-Label'
         context['data']['ylabel'] = 'Y-Label'
         print context
         return context
+
+class BarPlotView(DashboardView):
+    template_name = 'miner/bar_plot.d3.html'
 
 
 def csv_response_from_context(context=None, filename=None, field_names=None, null_string='', eval_python=True):
