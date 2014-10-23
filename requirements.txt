@@ -57,7 +57,7 @@ python-dateutil==2.2
 six==1.8.0
 static3==0.5.1
 
-
+sqlparse==0.1.13
 # tabulate==0.7.1
 # w3lib==1.5
 # zope.interface==4.0.5
