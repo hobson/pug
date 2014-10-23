@@ -205,7 +205,7 @@ function query2obj(query) {
   // console.log(query);
   query = query.replace(/%2C/g,",").replace(/%2B/g," ")
   // console.log(query);
-  return JSON.parse('{"' + decodeURI(query).replace(/"/g, '\\"').replace(/%2C/g,",").replace(/%2B/g," ").replace(/&/g, '","').replace(/=/g,'":"') + '"}')
+  return JSON5.parse('{"' + decodeURI(query).replace(/"/g, '\\"').replace(/%2C/g,",").replace(/%2B/g," ").replace(/&/g, '","').replace(/=/g,'":"') + '"}')
   }
 
 

@@ -7,7 +7,7 @@ function d3_parse_date(date_or_time) {
 // Returns a d3-compatible object with an xlabel, ylabels = header with xlabel removed
 // and data which is an array of objects with elements x and y (y attribute is named by the header/ylabels)
 function arrays_as_d3_series(d3data) {
-    console.log('d3data before transpose');
+    console.log('line-plot.js:arrays_as_d3_series(): d3data before transpose');
     console.log(d3data);
     var ans = {};
     d3data = d3.transpose(d3data);
@@ -36,12 +36,14 @@ function arrays_as_d3_series(d3data) {
 function query2obj(query) {
   query = query ? query : location.search;
   // ignore the questionmark in the search (query) string part of the URI
-  if (query[0] == '?') { query = query.substring(1); }
+  if (query[0] == '?') { 
+    query = query.substring(1); }
   // console.log(query);
   query = query.replace(/%2C/g,",").replace(/%2B/g," ");
   // console.log(query);
-  return JSON.parse('{' + decodeURI(query).replace(/"/g, '\\"').replace(/%2C/g,",").replace(/%2B/g," ").replace(/&/g, '","').replace(/=/g,'":"') + '}');
+  return JSON5.parse('{"' + decodeURI(query).replace(/"/g, '\\"').replace(/%2C/g,",").replace(/%2B/g," ").replace(/&/g, '","').replace(/=/g,'":"') + '"}');
   }
+
 
 function obj2query(obj, prefix) {
     var str = [];
@@ -166,16 +168,8 @@ function mouseout(d) {
 //   x-axis (String, optional): horizontal x-axis label (overrides d3data[0][0])
 //   y-axis (String, optional): vertical y-axis label (overrides d3data[0][0])
 function line_plot(d3data, new_xlabel, new_ylabel) {
-
-
-
-
-    // var d3data = {{ data.d3data|safe }};
-
-    // var xlabel = "{{ data.xlabel|escapejs }}";
-    // var ylabel = "{{ data.ylabel|escapejs }}";
-
     var ans = arrays_as_d3_series(d3data);
+    console.log(ans);
     xlabel = new_xlabel.length ? new_xlabel : ans.xlabel;
     var ylabels = [new_ylabel];  // FIXME
     ylabel = new_ylabel.length ? new_ylabel : ans.ylabels[0]; // FIXME
