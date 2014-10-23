@@ -50,6 +50,8 @@ INSTALLED_APPS = (
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+
+    'gunicorn',  # adds run_gunicorn command
     #'django_nvd3',
     # 'celery',
 
