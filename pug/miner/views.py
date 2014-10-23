@@ -247,10 +247,11 @@ def context_from_request(request, context=None, Form=GetLagForm, delim=',', verb
     context['columns'] = [s.strip() for s in context['columns'].split(';')] or []
 
     context['aggregate_ids'] = request.GET.get('agg') or request.GET.get('ids') or request.GET.get('aggids') or request.GET.get('aggregates') or request.GET.get('aggregate_ids') or '-1'
+    context['aggregate_ids'] = [int(s.strip()) for s in context['aggregate_ids'].split(',')] or [-1]
 
     # whether the FK join queries should be short-circuited
     print 'aggregate_ids: ', context['aggregate_ids']
-    context['quick'] = context.get('quick') or (context.get('aggregate_ids') and not(context.get('aggregate_ids','').endswith('-1')))
+    context['quick'] = context.get('quick') or (context['table'].startswith('agg') and context['aggregate_ids'] and not (context['aggregate_ids'][-1] == -1) and not context['table'] == 'fast')
     print context['quick']
 
     # lag values can't be used directly in a django filter so don't put them in context['filter']
@@ -418,12 +419,26 @@ def table_generator_from_list_of_instances(data, field_names=None, excluded_fiel
 
 class DashboardView(TemplateView):
     """Query the miner.AggregateResults table to retrieve values for plotting in a bar chart"""
-    template_name = 'miner/dashboard.html'
+    template_name = 'miner/dashboard.d3.html'
 
-    def get_context_data(self, **kwargs):
+    def get(self, request, *args, **kwargs):
+        context = context_from_request(request)
+        context = self.get_context_data(context)
+        return self.render_to_response(context)
+
+    def get_context_data(self, context, **kwargs):
         # Call the base implementation first to get a context
         context = super(DashboardView, self).get_context_data(**kwargs)
+        print "context"
+        context['data'] = {} 
+        context['data']['d3data'] = [["x", 1,2,3,4,5,6,7,8],["y", 51,72,43,54,65,76,67,98],["y0", 91,62,73,64,65,76,67,98]]
+        context['data']['xlabel'] = 'X-Label'
+        context['data']['ylabel'] = 'Y-Label'
+        print context
         return context
+
+class BarPlotView(DashboardView):
+    template_name = 'miner/bar_plot.d3.html'
 
 
 def csv_response_from_context(context=None, filename=None, field_names=None, null_string='', eval_python=True):
@@ -434,7 +449,7 @@ def csv_response_from_context(context=None, filename=None, field_names=None, nul
     * context as a list of lists of python values (strings for headers in first list)
     * context['data']['d3data'] as a string in json format (python) for a list of lists of repr(python_value)s
     * context['data']['cases'] as a list of lists of python values (strings for headers in first list)
-    * context['data']['d3data'] as a django queryset or iterable of model instances (list, tuple, generator)
+    * context['data']['cases'] as a django queryset or iterable of model instances (list, tuple, generator)
 
     If the input data is a list of lists (table) that has more columns that rows it will be trasposed before being processed
     """

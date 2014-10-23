@@ -27,6 +27,8 @@ logger = logging.getLogger('bigdata.info')
 from pug.nlp import util  # import transposed_lists, sod_transposed, listify, intify
 from pug.nlp import regex_patterns
 
+# Don't be tempted to import django.db.models.base.ModelBase because it'll raise ImproperlyConfigured when run outside of django
+
 NULL_VALUES = (None, 'None', 'none', '<None>', 'NONE', 'Null', 'null', '<Null>', 'N/A', 'n/a', 'NULL')
 NAN_VALUES = (float('inf'), 'INF', 'inf', '+inf', '+INF', float('nan'), 'nan', 'NAN', float('-inf'), '-INF', '-inf')
 BLANK_VALUES = ('', ' ', '\t', '\n', '\r', ',')
@@ -36,8 +38,6 @@ TRUE_VALUES = (True, 'True', 'true', 'TRUE', 'T')
 
 NO_VALUES = ('No', 'no', 'N')
 YES_VALUES = ('Yes', 'yes', 'Y')
-
-from django.db.models.base import ModelBase
 
 
 class RobustEncoder(json.JSONEncoder):
@@ -55,7 +55,7 @@ class RobustEncoder(json.JSONEncoder):
         #     obj = str(obj)
         if isinstance(obj, (list, dict, tuple, int, float, basestring, bool, type(None))):
             return super(RobustEncoder, self).default(obj)
-        if isinstance(obj, ModelBase):
+        if hasattr(obj, 'pk') and hasattr(obj, '_meta'):  # isinstance(django.db.models.base.ModelBase):
             return str(getattr(obj, 'pk', '') or None)
         return str(obj)
 

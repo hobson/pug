@@ -25,7 +25,7 @@ class GetLagForm(forms.Form):
         max_length=256,
         label='Refurb Account',
         initial='',
-        help_text="e.g. 113656, 100479, 105158",
+        help_text="e.g. dealer, 113656, not 100479",
         )
 
     exclude = forms.ChoiceField(
@@ -40,7 +40,7 @@ class GetLagForm(forms.Form):
         max_length=128,
         label='R-Code',
         initial='',
-        help_text='e.g. "R11, R12, R13"',
+        help_text='e.g. "logistics, not R12, R13"',
         )
 
     min_lag = forms.CharField(required=False,

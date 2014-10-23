@@ -7,8 +7,8 @@ function d3_parse_date(date_or_time) {
 // Returns a d3-compatible object with an xlabel, ylabels = header with xlabel removed
 // and data which is an array of objects with elements x and y (y attribute is named by the header/ylabels)
 function arrays_as_d3_series(d3data) {
-    console.log('d3data before transpose')
-    console.log(d3data)
+    console.log('d3data before transpose');
+    console.log(d3data);
     var ans = {};
     d3data = d3.transpose(d3data);
     // console.log(d3data);
@@ -17,7 +17,7 @@ function arrays_as_d3_series(d3data) {
     // console.log(header);
     for (var i=1; i < d3data.length; i++) {
         var obj = {};
-        obj.x = d3data[i][0]
+        obj.x = d3data[i][0];
         for (var k=1; k < ans.header.length; k++) {
             obj[ans.header[k]] = d3data[i][k];
             }
@@ -38,12 +38,12 @@ function query2obj(query) {
   // ignore the questionmark in the search (query) string part of the URI
   if (query[0] == '?') { query = query.substring(1); }
   // console.log(query);
-  query = query.replace(/%2C/g,",").replace(/%2B/g," ")
+  query = query.replace(/%2C/g,",").replace(/%2B/g," ");
   // console.log(query);
-  return JSON.parse('{"' + decodeURI(query).replace(/"/g, '\\"').replace(/%2C/g,",").replace(/%2B/g," ").replace(/&/g, '","').replace(/=/g,'":"') + '"}')
+  return JSON.parse('{' + decodeURI(query).replace(/"/g, '\\"').replace(/%2C/g,",").replace(/%2B/g," ").replace(/&/g, '","').replace(/=/g,'":"') + '}');
   }
 
-function obj2query(obj, prefix) { 
+function obj2query(obj, prefix) {
     var str = [];
     for(var p in obj) {
       var k = prefix ? prefix + "[" + p + "]" : p, v = obj[p];
@@ -58,17 +58,18 @@ function query_param(name) {
     name = name.replace(/[\[]/, "\\[").replace(/[\]]/, "\\]");
     var regex = new RegExp("[\\?&]" + name + "=([^&#]*)"),
         results = regex.exec(location.search);
-    return results == null ? "" : decodeURIComponent(results[1].replace(/\+/g, " "));
+    return results === null ? "" : decodeURIComponent(results[1].replace(/\+/g, " "));
 }
 
 // globals used by mouseover and mouseout for tooltips, etc
+var plot_element_id = "plot_div";
 var margin = {top: 30, right: 80, bottom: 30, left: 50};
 var  width = 960 - margin.left - margin.right;
 var height = 500 - margin.top - margin.bottom;
-var x_scale = d3.scale.linear().range([0, 1]);
-var y_scale = d3.scale.linear().range([1, 0]);
-var ylabel = "Vertical Value"
-var xlabel = "Horizontal Value (Time?)"
+var x_scale = d3.scale.linear().range([0, width]);
+var y_scale = d3.scale.linear().range([height, 0]);
+var ylabel = "Vertical Value";
+var xlabel = "Horizontal Value (Time?)";
 
 // FIXME: put all globals in a plot conf object/namespace
 var conf = {margin: margin, width: width, height: height, x_scale: x_scale, xlabel: xlabel, y_scale: y_scale, ylabel: ylabel};
@@ -76,13 +77,18 @@ var conf = {margin: margin, width: width, height: height, x_scale: x_scale, xlab
 console.log("conf");
 console.log(conf);
 // tooltips
-var svg = d3.select("#linegraph").append("svg")
+var svg = d3.select("#" + plot_element_id).append("svg")
             .attr("width",  width + margin.left + margin.right)
             .attr("height", height + margin.top + margin.bottom)
       .append("g")
         .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+
 console.log("svg");
 console.log(svg);
+
+console.log("focus");
+console.log(focus);
+
 var focus = svg.append("g")
     .attr("transform", "translate(-100,-100)")  // make sure initial tool-tip circle is located outside (upper left) of the plot (svg element)
     .attr("class", "focus");
@@ -91,7 +97,7 @@ var focus = svg.append("g")
 
 // query object used to set the HTTP GET query for the URI when the user clicks on a region/circle
 var query_obj = query2obj();
-delete query_obj.plot
+delete query_obj.plot;
 query_obj.table = "fast";
 
 
@@ -99,8 +105,8 @@ function mouseover(d) {
   // displays tip at center of voronoi region instead of near point
   // tip.show(d);
 
-  console.log('mouseover')
-  console.log(d)
+  console.log('mouseover');
+  console.log(d);
   // doesn't work
   d.series.line.parentNode.appendChild(d.series.line);
   d3.select(d.series.line).classed("series-hover", true);
@@ -108,7 +114,7 @@ function mouseover(d) {
   // tip.attr("transform", "translate(" + x_scale(d.x) + "," + y_scale(d.y) + ")");
   console.log("transform", "translate(" + x_scale(d.x) + "," + y_scale(d.y) + ")");
   focus.attr("transform", "translate(" + x_scale(d.x) + "," + y_scale(d.y) + ")");
-  series_name = d.series.name.length ? d.series.name : ylabel
+  series_name = d.series.name.length ? d.series.name : ylabel;
   tt = (xlabel.length ? xlabel : "bin") + ": " + d.x + "\u00A0\u00A0\u00A0\u00A0" + series_name + ": " + d.y;
   focus.select("text").text(tt);
 
@@ -171,34 +177,28 @@ function line_plot(d3data, new_xlabel, new_ylabel) {
 
     var ans = arrays_as_d3_series(d3data);
     xlabel = new_xlabel.length ? new_xlabel : ans.xlabel;
-    var ylabels = [ylabel];
-    ylabel = new_ylabel.length ? new_ylabel : ans.ylabels[0];
+    var ylabels = [new_ylabel];  // FIXME
+    ylabel = new_ylabel.length ? new_ylabel : ans.ylabels[0]; // FIXME
     var data = ans.data;
-    data.sort(function(a, b) { return a.x - b.x; });
 
-        console.log('data_obj that contains the data bit')
-        console.log(ans)
-        console.log('d3data after grabbing data bit')
-        console.log(data)
-        console.log(data)
+    console.log('data');
+    console.log(data);
+    data.sort(function(a, b) { return a.x - b.x; });
 
     var color = d3.scale.category10().domain(ans.ylabels);
 
-    x_scale = d3.scale.linear().range([0, width]);
     // parse xdata as datetimes if the xlabel starts with the word "date" or "time" 
-    if ((xlabel.substring(0, 4).toUpperCase() == "DATE") 
+    if ((xlabel.substring(0, 4).toUpperCase() == "DATE")
         // || (xlabel.substring(0, 4).toUpperCase() == "TIME")
       ) {
       x_scale = d3.time.scale().range([0, width]);
       
-      data.forEach(function(d) { 
+      data.forEach(function(d) {
         console.log(d);
         console.log(d.x);
         d.x = d3_parse_date(d.x); }
         );
     }
-
-    y_scale = d3.scale.linear().range([height, 0]);
 
     var xAxis = d3.svg.axis().scale(x_scale).orient("bottom");
 

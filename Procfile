@@ -1,1 +1,1 @@
-web: gunicorn hellodjango.wsgi --log-file -
+web: gunicorn pug.crawlnmine.crawlnmine.wsgi --log-file -

@@ -1,16 +1,31 @@
-# HL: unused
-# import sys, pickle
+"""Dimension reduction and binary classification of nongaussian data
+
+Gradually increases the number of dimensions until the "score" captures most of the information content, i.e.,
+the mean squared error between the force-directed graph distance matrix (p_matrix) and the true position matrix
+(observed vectors) is below some arbitrary threshold or ceases to be reduced significantly by adding more dimensions.
+Test and training data records are classified in 2 categories with score proportional to likelihood of being in either category
+(+1 for one category -1 for the other) and test/training data
+
+NOT PEP-8 compliant (e.g. 2-space indentation instead of 4)
+"""
+
+# HL: these imports aren't used
+# import sys
+# import pickle
+
 import numpy
 import matplotlib.pyplot as pyplot
+
 zeros = numpy.zeros
 ones = numpy.ones
 rand = numpy.random.rand
 
 
-# This function returns a projection vector for binary decision. p_matrix is a n_training x n_dimensions
-# numpy array with the positions achieved from the spring function. labels is a n_training x 1 numpy array
-# of +/-1 labels.
 def projection_vector(p_matrix, labels):
+  """Returns a projection vector for binary decision. p_matrix is a n_training x n_dimensions
+  numpy array with the positions achieved from the spring function. labels is a n_training x 1 numpy array
+  of +/-1 labels.
+  """
   assert p_matrix.shape[0] == labels.shape[0]
   temp = numpy.copy(p_matrix)
   for idx in range(p_matrix.shape[0]):
@@ -18,14 +33,14 @@ def projection_vector(p_matrix, labels):
   unnormalized_pv = temp.sum(axis = 0)
   return unnormalized_pv/pow(numpy.dot(unnormalized_pv, unnormalized_pv.T), 0.5)
   
-# MAIN function
-# This function returns the final position matrix. d_matrix is a n_training x n_training numpy array
-# with all the pairwise distances. Drift is a function that uses labels to vary the drift between each
-# iteration. labels is a n_training x 1 numpy array of +/-1 labels.
-# which direction is steepest in your training data
-# average of blue points and red points, the vectors between the groups to say which group the node is closer too
 def spring(d_matrix, drift, labels, n_dimensions=5, n_iteration=555):
   """Propagate the p_matrix (positions of the nodes) for n_iterations printing out the MSE matrix at the end.
+
+    Returns the final position matrix after the force-directed graph settles out.
+    d_matrix is a n_training x n_training numpy array with all the pairwise distances.
+    Drift is a function that uses labels to vary the drift between each iteration.
+    Which direction is steepest in your training data average of blue points and red points,
+    the vectors between the groups to say which group the node is closer too
       
     Returns:
       p_matrix (np.matrix of float): each row is a node position?  the eigenvectors of the reduced dimensional space?
@@ -106,7 +121,7 @@ def outcome_map1(outcome):
     return -1
 
 
-def main():
+def run_test():
   """Attempt to find the optimal clusters and dimensions for a set of documents
   To create a test distance matrix with say 100 documents just:
     1. create 100 1000-D points (high dimension) that are Gaussian iid
@@ -170,4 +185,4 @@ def main():
   pyplot.show()
   
 if __name__ == '__main__':
-  main()
+  run_test()
