@@ -229,7 +229,7 @@ def context_from_request(request, context=None, Form=GetLagForm, delim=',', verb
 
     # whether the FK join queries should be short-circuited
     print 'aggregate_ids: ', context['aggregate_ids']
-    context['quick'] = context.get('quick') or (context['aggregate_ids'] and not (context['aggregate_ids'] == [-1]) and not context['table'] == 'fast')
+    context['quick'] = context.get('quick') or (context['table'].startswith('agg') and context['aggregate_ids'] and not (context['aggregate_ids'][-1] == -1) and not context['table'] == 'fast')
     print context['quick']
 
     # lag values can't be used directly in a django filter so don't put them in context['filter']
