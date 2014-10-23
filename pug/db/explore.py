@@ -7,7 +7,7 @@ import datetime
 
 import numpy as np
 import matplotlib.pyplot as plt
-from dateutil import parser
+from dateutil import parser as dateutil
 import progressbar as pb  # import ProgressBar, Bar, Percentage, ETA, RotatingMarker
 
 from django.core.exceptions import ImproperlyConfigured
@@ -728,7 +728,7 @@ def try_convert(value, datetime_to_ms=False, precise=False):
     except:
         pass
     try:
-        dt = parser.parse(value)
+        dt = dateutil.parse(value)
         if dt and isinstance(dt, datetime.datetime) and (3000 >= dt.year >= 1900):
             if datetime_to_ms:
                 return db.datetime_in_milliseconds(dt)
@@ -738,7 +738,7 @@ def try_convert(value, datetime_to_ms=False, precise=False):
     return value
 
 
-def make_serializable(data, mutable=True, key_stringifier=lambda x:x):
+def make_serializable(data, mutable=True, key_stringifier=lambda x:x, simplify_midnight_datetime=True):
     r"""Make sure the data structure is json serializable (json.dumps-able), all they way down to scalars in nested structures.
 
     If mutable=False then return tuples for all iterables, except basestrings (strs),
@@ -753,11 +753,21 @@ def make_serializable(data, mutable=True, key_stringifier=lambda x:x):
     ...                  ) == {'ABCs': ['2014-10-16 00:00:00', 'b', 'c'], '2014-10-31 00:00:00': '2014-10-31 23:59:59'}
     True
     """
-    #print 'serializabling: ' + repr(data)
+    # print 'serializabling: ' + repr(data)
     # print 'type: ' + repr(type(data))
 
+
     if isinstance(data, (datetime.datetime, datetime.date, datetime.time)):
-        return str(data)
+        if isinstance(data, datetime.datetime):
+            if not any((data.hour, data.miniute, data.seconds)):
+                return datetime.date(data.year, data.month, data.day)
+            elif data.year == data.month == data.seconds == 1:
+                return datetime.time(data.hour, data.minute, data.second)
+        return data
+        # s = unicode(data)
+        # if s.endswith('00:00:00'):
+        #     return s[:8]
+        # return s
     #print 'nonstring type: ' + repr(type(data))
     elif isinstance(data, Mapping):
         mapping = tuple((make_serializable(k, mutable=False, key_stringifier=key_stringifier), make_serializable(v, mutable=mutable)) for (k, v) in data.iteritems())
@@ -777,8 +787,8 @@ def make_serializable(data, mutable=True, key_stringifier=lambda x:x):
     elif isinstance(data, (float, Decimal)):
         return float(data)
     elif isinstance(data, basestring):
+        # Data is either a string or some other object class Django.db.models.Model etc
         data = db.clean_utf8(data)
-    # Data is either a string or some other object class Django.db.models.Model etc
     try:
         return int(data)
     except:
@@ -787,19 +797,14 @@ def make_serializable(data, mutable=True, key_stringifier=lambda x:x):
         except:
             try:
                 # see if can be coerced into datetime by first coercing to a string
-                return make_serializable(parser.parse(str(data)))
+                return make_serializable(dateutil.parse(unicode(data)))
             except:
                 try:
                     # see if can be coerced into a dict (e.g. Dajngo Model or custom user module or class)
                     return make_serializable(data.__dict__)
                 except:
                     # stringify it and give up
-                    return str(data)
-            # try:
-            #     # try to parse a date or datetime string
-            #     return parser.parse(str(data))
-            # except:
-            #     return str(try_convert(data))
+                    return unicode(data)
 
 
 def convert_loaded_json(js):

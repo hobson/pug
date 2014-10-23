@@ -3,32 +3,27 @@
 {% load staticfiles %}
 {% load static %}
 
+
 {% block extra_head %}
-    <script src="{% static "d3/d3.min.js" %}"></script>
+    <script src="//cdnjs.cloudflare.com/ajax/libs/d3/3.4.13/d3.js"></script>
+    {# <script src="//cdnjs.cloudflare.com/ajax/libs/d3/3.4.13/d3.min.js"></script> #}
+
+    {# <script src="{% static "d3/d3.min.js" %}"></script> #}
     {#  <script src="{% static "d3-tip/index.js" %}"></script> #}
     <link rel="stylesheet" href="{% static "miner/css/hist.css" %}">
 {% endblock %}
 
 {% block content %}
 
-    {% include "case/bootstrap_case_form.html" %}
 
-    {# block graph #}
-    <div class="row"><div id="linegraph" class="graph"></div></div> 
-    {# the linegraph attribute ID must be created before this line-plot.js globals are created #}
+    <div class="row"><div id="plot_div" class="graph"></div></div> 
+    {# a div with a plot_div attribute ID must be created before this line-plot.js globals are created #}
 
     {% block plot %}
-
+        <pre>{{ data|safe|escape }}</pre>
         <script src="{% static "miner/js/line-plot.js" %}"></script>
         <script> line_plot({{ data.d3data|safe }}, "{{ data.xlabel|escapejs }}", "{{ data.ylabel|escapejs }}"); </script>
 
     {% endblock plot %}
-    {# endblock graph #}
-
 
 {% endblock %}
-
-
-
- 
-

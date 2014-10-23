@@ -33,7 +33,7 @@ import ascii
 import decimal
 import random
 from decimal import Decimal
-# import math
+import math
 
 from progressbar import ProgressBar
 from pytz import timezone
@@ -390,7 +390,6 @@ def generate_slices(sliceable_set, batch_len=1, length=None, start_batch=0):
       >>> [batch for batch in generate_slices(range(7), 3)]
       [(0, 1, 2), (3, 4, 5), (6,)]
       >>> from django.contrib.auth.models import User, Permission
-      >>> import math
       >>> len(list(generate_slices(User.objects.all(), 2)))       == max(math.ceil(User.objects.count() / 2.), 1)
       True
       >>> len(list(generate_slices(Permission.objects.all(), 2))) == max(math.ceil(Permission.objects.count() / 2.), 1)
@@ -478,33 +477,42 @@ def fuzzy_get(dict_obj, approximate_key, default=None, similarity=0.6, tuple_joi
       ('word', ('w', 'o', 'r', 'd'))
       >>> fuzzy_get({'word': tuple('word'), 'noun': tuple('noun')}, 'woh!', similarity=.9, key_and_value=True)
       (None, None)
-      >>> fuzzy_get({'word': tuple('word'), 'noun': tuple('noun')}, 'woh!', similarity=.9, default='darn :-(', key_and_value=True)
-      (None, 'darn :-(')
+      >>> fuzzy_get({'word': tuple('word'), 'noun': tuple('noun')}, 'woh!', similarity=.9, default='darn :-()', key_and_value=True)
+      (None, 'darn :-()')
     """
     fuzzy_key, value = None, default
     if approximate_key in dict_obj:
         fuzzy_key, value = approximate_key, dict_obj[approximate_key]
     else:
-        if any(isinstance(k, (tuple, list)) for k in dict_obj):
-            dict_obj = dict((tuple_joiner.join(str(k2) for k2 in k), v) for (k, v) in dict_obj.iteritems())
-            if isinstance(approximate_key, (tuple, list)):
-                approximate_key = tuple_joiner.join(approximate_key)
-        dict_keys = set(dict_keys if dict_keys else dict_obj)
-        strkey = str(approximate_key)
-        if strkey in dict_keys:
-            fuzzy_key, value = strkey, dict_obj[strkey]
-        else:
-            strkey = strkey.strip()
+        strkey = unicode(approximate_key)
+        if approximate_key and strkey and strkey.strip():
+            # print 'no exact match was found for {0} in {1} so preprocessing keys'.format(approximate_key, dict_obj.keys()) 
+            if any(isinstance(k, (tuple, list)) for k in dict_obj):
+                dict_obj = dict((tuple_joiner.join(str(k2) for k2 in k), v) for (k, v) in dict_obj.iteritems())
+                if isinstance(approximate_key, (tuple, list)):
+                    approximate_key = tuple_joiner.join(approximate_key)
+            dict_keys = set(dict_keys if dict_keys else dict_obj)
             if strkey in dict_keys:
                 fuzzy_key, value = strkey, dict_obj[strkey]
             else:
-                fuzzy_key_score = fuzzy.extractOne(str(approximate_key), dict_keys, score_cutoff=max(min(similarity*100, 100), 0))
-                if fuzzy_key_score:
-                    fuzzy_key, fuzzy_score = fuzzy_key_score
-                    value = dict_obj[fuzzy_key]
-    print 'key and value'
-    print key_and_value
-    print fuzzy_key, value
+                strkey = strkey.strip()
+                if strkey in dict_keys:
+                    fuzzy_key, value = strkey, dict_obj[strkey]
+                else:
+                    # print 'no exact match was found for {0} in {1} so checking with fuzzy'.format(strkey, dict_keys) 
+                    fuzzy_key_scores = fuzzy.extractBests(strkey, dict_keys, score_cutoff=max(min(similarity*100, 100), 0), limit=6)
+                    if fuzzy_key_scores:
+                        # print fuzzy_key_scores
+                        fuzzy_score_keys = []
+                        # add length similarity as part of score
+                        for (i, (k, score)) in enumerate(fuzzy_key_scores):
+                            fuzzy_score_keys += [(score *  math.sqrt(len(strkey)**2 / float((len(k)**2 + len(strkey)**2) or 1)), k)]
+                        # print fuzzy_score_keys
+                        fuzzy_score, fuzzy_key = sorted(fuzzy_score_keys)[-1]
+                        value = dict_obj[fuzzy_key]
+    # print 'key and value'
+    # print key_and_value
+    # print fuzzy_key, value
     if key_and_value:
         return fuzzy_key, value
     else:
@@ -1401,7 +1409,7 @@ def string_stats(strs, valid_chars='012346789', left_pad='0', right_pad='', stri
     max_length = max(lengths.keys())
 
     for i in range(max_length):
-        print i
+        # print i
         for s in strs:
             if i < len(s):
                 counts[ i]   = counts.get( i  , 0) + int(s[ i  ] in valid_chars)

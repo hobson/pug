@@ -1,14 +1,11 @@
-<div class="row">
-  <div id="linegraph" class="graph"></div>
-</div> 
+{% extends 'miner/hist.html' %}
+{% load i18n %}
+{% load staticfiles %}
+{% load static %}
 
-<script>
-  var d3data = {{ data.d3data|safe }};
-  line_plot(d3data, 'xlabel', 'ylabel');
-</script>
+{% block plot %}
 
+<script src="{% static "miner/js/line-plot.js" %}"></script>
+<script> line_plot({{ data.d3data|safe }}, "{{ data.xlabel|escapejs }}", "{{ data.ylabel|escapejs }}"); </script>
 
-
-
- 
-
+{% endblock %}

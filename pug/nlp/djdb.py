@@ -2632,6 +2632,8 @@ def clean_filter_dict(filter_dict, strip=False):
       >>> del_null_in_filter({'num__in': [0], 'bool__in': [False], 'str__in': [' \t \r \n ']}, strip=True) ==  {'bool__in': [False], 'num__in': [0]}
       True
     """
+    print 'uncleaned_filter_or_exclude_dict:'
+    print filter_dict
     if not strip:
         strip = lambda s: s
     elif not callable(strip):
@@ -2643,6 +2645,8 @@ def clean_filter_dict(filter_dict, strip=False):
                 keys_to_del.add(k)
     for k in keys_to_del:
         del filter_dict[k]
+    print 'cleaned_filter_dict:'
+    print filter_dict
     return filter_dict
 
 def dump_json(model, batch_len=200000, use_natural_keys=True, verbosity=1):
