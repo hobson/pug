@@ -40,11 +40,7 @@ function query2obj(query) {
   // console.log(query);
   query = query.replace(/%2C/g,",").replace(/%2B/g," ");
   // console.log(query);
-  return JSON.parse('{' + decodeURI(query).replace(/"/g, '\\"') + '}');
-                    // .replace(/%2C/g,",")
-                    // .replace(/%2B/g," ")
-                    // .replace(/&/g, '","')
-                    // .replace(/=/g,'":"') + '"}'
+  return JSON.parse('{' + decodeURI(query).replace(/"/g, '\\"').replace(/%2C/g,",").replace(/%2B/g," ").replace(/&/g, '","').replace(/=/g,'":"') + '}');
   }
 
 function obj2query(obj, prefix) {
@@ -69,8 +65,8 @@ function query_param(name) {
 var margin = {top: 30, right: 80, bottom: 30, left: 50};
 var  width = 960 - margin.left - margin.right;
 var height = 500 - margin.top - margin.bottom;
-var x_scale = d3.scale.linear().range([0, 1]);
-var y_scale = d3.scale.linear().range([1, 0]);
+var x_scale = d3.scale.linear().range([0, width]);
+var y_scale = d3.scale.linear().range([height, 0]);
 var ylabel = "Vertical Value";
 var xlabel = "Horizontal Value (Time?)";
 
@@ -183,31 +179,30 @@ function line_plot(d3data, new_xlabel, new_ylabel) {
     var ylabels = [ylabel];
     ylabel = new_ylabel.length ? new_ylabel : ans.ylabels[0];
     var data = ans.data;
+    console.log('data');
+    console.log(data);
     data.sort(function(a, b) { return a.x - b.x; });
 
-        console.log('data_obj that contains the data bit')
-        console.log(ans)
-        console.log('d3data after grabbing data bit')
-        console.log(data)
-        console.log(data)
+        console.log('data_obj that contains the data bit');
+        console.log(ans);
+        console.log('d3data after grabbing data bit');
+        console.log(data);
+        console.log(data);
 
     var color = d3.scale.category10().domain(ans.ylabels);
 
-    x_scale = d3.scale.linear().range([0, width]);
     // parse xdata as datetimes if the xlabel starts with the word "date" or "time" 
-    if ((xlabel.substring(0, 4).toUpperCase() == "DATE") 
+    if ((xlabel.substring(0, 4).toUpperCase() == "DATE")
         // || (xlabel.substring(0, 4).toUpperCase() == "TIME")
       ) {
       x_scale = d3.time.scale().range([0, width]);
       
-      data.forEach(function(d) { 
+      data.forEach(function(d) {
         console.log(d);
         console.log(d.x);
         d.x = d3_parse_date(d.x); }
         );
     }
-
-    y_scale = d3.scale.linear().range([height, 0]);
 
     var xAxis = d3.svg.axis().scale(x_scale).orient("bottom");
 
