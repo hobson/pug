@@ -121,6 +121,10 @@ STATIC_URL = '/static/'
 # Example: "/var/www/example.com/static/"
 STATIC_ROOT = os.path.join(ROOT_PROJECT_PATH, 'collected_static_files')
 
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': True,
+}
 
 # List of modules to import when celery starts.  But crawlnmine.crawlnmine.__init__ will do this
 #CELERY_IMPORTS = ("testcele.tasks",)
