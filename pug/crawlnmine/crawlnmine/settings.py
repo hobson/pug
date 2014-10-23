@@ -125,7 +125,7 @@ STATIC_ROOT = os.path.join(ROOT_PROJECT_PATH, 'collected_static_files')
 # I guess heroku default logging settings aren't compatible with Django 1.5
 LOGGING = {
     'version': 1,
-    'disable_existing_loggers': True,
+    'disable_existing_loggers': False,
 }
 
 # List of modules to import when celery starts.  But crawlnmine.crawlnmine.__init__ will do this
