@@ -69,7 +69,7 @@ MIDDLEWARE_CLASSES = (
 
 ROOT_URLCONF = 'pug.crawlnmine.urls'
 
-WSGI_APPLICATION = 'pug.crawlnmine.wsgi.application'
+WSGI_APPLICATION = 'crawlnmine.wsgi.application'
 
 
 # Database
