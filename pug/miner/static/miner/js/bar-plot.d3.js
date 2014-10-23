@@ -46,24 +46,16 @@ function bar_plot(d3data, new_xlabel, new_ylabel) {
     data.sort(function(a, b) { return a.x - b.x; });
 
     var n = d3data.length - 1, // number of layers or series
-        m = data.length - 1, // number of samples per layer
+        m = data.length, // number of samples per layer
         stack = d3.layout.stack(),
         layers = stack(d3.range(n).map(function(j) {
-            console.log('j = ' + j);
-            l = [];
-            for (var i=1; i < data.length; i++) {
-                console.log('i = ' + i);
-                obj = {};
-                obj.x = d3data[0][i];
-                obj.y = d3data[j+1][i];
-                //obj.y0 = 0;
-                l.push(obj);
-                //console.log(obj);
-            } // for i 
-            console.log(l);
-            l2 = [{x:1,y:5},{x:2,y:6},{x:3,y:3}];
-            console.log(l2);
-            return l; })),
+            l = new Array();
+            for (var i=1; i <= m; i++) {
+                l.push({"x": d3data[0][i], "y": d3data[j+1][i]});
+                //console.log('layers['+i+']['+j+'] = ' + obj + ' = ' + '(' + obj.x + ',' + obj.y + ',' + obj.y0 + ')');
+            } // for i
+            return l;
+            return bumpLayer(m ,.1); })),
         yGroupMax = d3.max(layers, function(layer) { return d3.max(layer, function(d) { return d.y; }); }),
         yStackMax = d3.max(layers, function(layer) { return d3.max(layer, function(d) { return d.y0 + d.y; }); });
     console.log('layers');

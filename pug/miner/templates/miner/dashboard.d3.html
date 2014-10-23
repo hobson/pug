@@ -22,6 +22,7 @@
     {% block plot %}
         <pre>{{ data|safe|escape }}</pre>
         <script src="{% static "miner/js/line-plot.js" %}"></script>
+        <script src="{% static "miner/js/bar-plot.js" %}"></script>
         <script> line_plot({{ data.d3data|safe }}, "{{ data.xlabel|escapejs }}", "{{ data.ylabel|escapejs }}"); </script>
 
     {% endblock plot %}
