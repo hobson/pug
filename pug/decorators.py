@@ -15,7 +15,46 @@ from types import NoneType
 from nlp.db import representation
 from inspect import getmodule
 from nlp.util import make_name
-from django.db.models.fields.related import RelatedField
+# from django.db.models.fields.related import RelatedField
+# from django.conf import settings
+#from exceptions import TypeError
+
+def force_hashable(obj, recursive=True):
+    """Force frozenset() command to freeze the order and contents of multables and iterables like lists, dicts, generators
+
+    Useful for memoization and constructing dicts or hashtables where keys must be immutable.
+
+    >>> force_hashable([1,2.,['3']])
+    (1, 2.0, ('3',))    
+    >>> force_hashable(i for i in range(3))
+    (1, 2, 3)
+    >>> from collections import Counter
+    >>> force_hashable(Counter('abbccc')) ==  (('a', 1), ('c', 3), ('b', 2))
+    True
+    """
+    try:
+        hash(obj)
+        return obj
+    except:
+        if hasattr(obj, '__iter__'):
+            # looks like a Mapping if it has .get() and .items(), so should treat it like one
+            if hasattr(obj, 'get') and hasattr(obj, 'items'):
+                # tuples don't have an 'items' method so this should recurse forever
+                return force_hashable(tuple(obj.items()))
+            if recursive:
+                return tuple(force_hashable(item) for item in obj)
+            return tuple(obj)
+    # strings are hashable so this ends the recursion
+    return unicode(obj)
+
+
+def force_frozenset(obj):
+    """Force frozenset() command to freeze the order and contents of multables and iterables like lists, dicts, generators
+
+    Useful for memoization and constructing dicts or hashtables where keys must be immutable
+    """ 
+    # make it a set/tuple of 1 if it is a scalar and not a set already
+    return tuple(force_hashable(obj))
 
 
 class memoize(object):
@@ -32,11 +71,7 @@ class memoize(object):
         self.func = func
         self.cache = {}
     def __call__(self, *args, **kwargs):
-        if not isinstance(args, collections.Hashable):
-            # uncacheable. a list, for instance.
-            # better to not cache than blow up.
-            return self.func(*args, **kwargs)
-        cache_key = (args, frozenset(kwargs.items()))
+        cache_key = (force_hashable(args), force_hashable(kwargs.items()))
         if cache_key in self.cache:
             return self.cache[cache_key]
         else:
@@ -53,6 +88,7 @@ class memoize(object):
 
 log = logging.getLogger(__name__)
 log.setLevel(logging.DEBUG)
+
 
 class log_with(object):
     '''Logging decorator that allows you to specify a specific logger.
@@ -87,7 +123,7 @@ class log_with(object):
 
 
 class dbname(object):
-    'Decorator to add _db_name and _db_alias attributes to a class definition'
+    'Decorator to add _db_name and _db_alias attributes to a class definition (typically a django Model)'
 
     def __init__(self, db_name=None, alias_prefix=''):
         self.db_name = db_name
@@ -208,13 +244,13 @@ def represent(cls):
     setattr(cls, '__unicode__', representation)
     return cls
 
-# FIXME, DRY these 3 models up by just adding a kwarg to select between them  decorators
+# FIXME, DRY these 3 models up by just adding a kwarg to select between the 2 decorators
 #        very unDRY (only a few characters changed in each!)
 def _link_rels(obj, fields=None, save=False, overwrite=False):
     """Populate any database related fields (ForeignKeyField, OneToOneField) that have `_get`ters to populate them with"""
     if not fields:
         meta = obj._meta
-        fields = [f.name for f in meta.fields if isinstance(f, RelatedField) and not f.primary_key and hasattr(meta, '_get_' + f.name) and hasattr(meta, '_' + f.name)]
+        fields = [f.name for f in meta.fields if hasattr(f, 'do_related_class') and not f.primary_key and hasattr(meta, '_get_' + f.name) and hasattr(meta, '_' + f.name)]
     for field in fields:
         # skip fields if they contain non-null data and `overwrite` option wasn't set
         if not overwrite and not isinstance(getattr(obj, field, None), NoneType):
@@ -230,7 +266,7 @@ def _denormalize(obj, fields=None, save=False, overwrite=False):
     """Update/populate any database fields that are not related fields (FKs) but have `_get`ters to populate them with"""
     if not fields:
         meta = obj._meta
-        fields = [f.name for f in meta.fields if not isinstance(f, RelatedField) and not f.primary_key and hasattr(meta, '_get_' + f.name) and hasattr(meta, '_' + f.name)]
+        fields = [f.name for f in meta.fields if not hasattr(f, 'do_related_class') and not f.primary_key and hasattr(meta, '_get_' + f.name) and hasattr(meta, '_' + f.name)]
     for field in fields:
         # skip fields if they contain non-null data and `overwrite` option wasn't set
         if not overwrite and not isinstance(getattr(obj, field, None), NoneType):

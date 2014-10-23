@@ -49,9 +49,9 @@ MIDDLEWARE_CLASSES = (
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 )
 
-ROOT_URLCONF = 'crawlnmine.urls'
+ROOT_URLCONF = 'pug.crawlnmine.urls'
 
-WSGI_APPLICATION = 'crawlnmine.wsgi.application'
+WSGI_APPLICATION = 'pug.crawlnmine.wsgi.application'
 
 
 # Database

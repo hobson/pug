@@ -5,9 +5,9 @@ from django.db import models
 #from django_hstore import hstore
 from jsonfield import JSONField
 
-from pug.nlp import db
+from pug.nlp.db import representation
 # FIXME: simplify circular import/dependencies with miner app 
-from pug import miner
+#from pug.miner import explore
 from model_mixin import DateMixin
 
 
@@ -23,7 +23,7 @@ class Connection(models.Model):
     port     = models.IntegerField(null=False)
 
     def __unicode__(self):
-        return db.representation(self)
+        return representation(self)
 
 
 class AggregatedResults(DateMixin):
@@ -52,7 +52,7 @@ class Database(models.Model):
     date = models.DateTimeField(help_text='Timestamp when the metadata was calculated', auto_now_add=True, default=datetime.datetime.now, null=False)
     connection = models.ForeignKey(Connection, null=True, default=None)
 
-    __unicode__ = db.representation
+    __unicode__ = representation
 
 
 class Table(models.Model):
@@ -66,7 +66,7 @@ class Table(models.Model):
     primary_key  = models.OneToOneField('Field', null=True, default=None)
     count        = models.IntegerField(null=True, default=None)
 
-    __unicode__ = db.representation
+    __unicode__ = representation
 
 
 class ChangeLog(models.Model):
@@ -170,7 +170,7 @@ class Type(models.Model):
     django_type = models.CharField(choices=CHOICES_DJANGO_TYPE, default=None, max_length=20, null=True)
     ansi_type = models.CharField(choices=CHOICES_ANSI_TYPE, max_length=20, null=True)
 
-    __unicode__ = db.representation
+    __unicode__ = representation
 
 
 class Field(models.Model):
@@ -255,12 +255,12 @@ def import_meta(db_meta, db_name, db_date=None, verbosity=1):
             table_obj.save()
 
 
-def explore_app(app_name='call_center', verbosity=1):
-    db_meta = miner.explore.get_db_meta(app_name, verbosity=verbosity)
-    try:
-        print '&'*100
-        print db_meta
-        print '&'*100
-        return import_meta(db_meta, db_name=app_name)
-    except:
-        return db_meta
+# def explore_app(app_name='call_center', verbosity=1):
+#     db_meta = explore.get_db_meta(app_name, verbosity=verbosity)
+#     try:
+#         print '&'*100
+#         print db_meta
+#         print '&'*100
+#         return import_meta(db_meta, db_name=app_name)
+#     except:
+#         return db_meta
