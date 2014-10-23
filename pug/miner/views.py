@@ -27,6 +27,27 @@ from pug.nlp import db
 #import call_center.models as SLAmodels
 from forms import GetLagForm
 
+from django.utils import timezone
+
+logfile='miner.views.log'
+def log(filename, message):
+    '''log messages to file for review.
+    sjw 2014-10-20 quick and dirty logger
+    '''
+    logdir='/tmp/'
+
+    try:
+        with open(os.path.join(logdir, filename), 'a') as logfile:
+            now = timezone.now().isoformat()
+            fullmessage = '%s %s\n' % (now, message)
+            logfile.write(fullmessage)
+    except IOError: #permission denied, etc.
+        pass
+
+
+
+
+
 # format options for lag histograms:
 #   hist = ff = fd = Frequency Distribution/Function (histogram of counts)
 #   pmf = pdf = Probability Mass/Distribution Function (or PDF, probability distribution/density function)
@@ -432,26 +453,37 @@ def csv_response_from_context(context=None, filename=None, field_names=None, nul
 
     If the input data is a list of lists (table) that has more columns that rows it will be trasposed before being processed
     """
+    log(logfile, 'START csv_response_from_context')
     filename = filename or context.get('filename') or 'table_download.csv'
     field_names = field_names or context.get('field_names', [])
     # FIXME: too slow!
+    log(logfile, 'START cycle through fields')
     if field_names and all(field_names) and all(all(c in (string.letters + string.digits + '_.') for c in s) for s in field_names):
         eval_python=False
+    log(logfile, 'DONE cycle through fields')
 
     data = context
 
     # find the data table within the context dict. should be named 'data.cases' or 'data.d3data'
     if not (isinstance(data, (tuple, list)) and isinstance(data[0], (tuple, list))):
+        log(logfile, 'START data.get')
         data = json.loads(data.get('data', {}).get('d3data', '[[]]'))
         if not data or not any(data):
             data = context.get('data', {}).get('cases', [[]])
+        log(logfile, 'DONE data.get')
 
     if not isinstance(data, (list, tuple)) or not isinstance(data[0], (list, tuple)):
+        log(logfile, 'START table_generator_from_list_of_instances')
         data = table_generator_from_list_of_instances(data, field_names=field_names, eval_python=eval_python)
+    log(logfile, 'DONE table_generator_from_list_of_instances')
+
 
     try:
         if len(data) < len(data[0]):
+            log(logfile, 'START transposed_lists')
             data = util.transposed_lists(data)  # list(list(row) for row in data)
+            log(logfile, 'DONE transposed_lists')
+
     except TypeError:
         # no need to transpose if a generator was provided instead of a list or tuple (anything with a len attribute)
         pass
@@ -461,7 +493,11 @@ def csv_response_from_context(context=None, filename=None, field_names=None, nul
     response['Content-Disposition'] = 'attachment; filename="%s"' % filename
 
     writer = csv.writer(response)
+    log(logfile, 'START write rows to CSV')
+    #i = 0
     for row in data:
+        #i += 1
+        #log(logfile, 'row %s' % i)
         #writer.writerow([unicode(s if not s == None else null_string).encode('UTF-8') for s in row])
         newrow = []
         for s in row:
@@ -474,6 +510,7 @@ def csv_response_from_context(context=None, filename=None, field_names=None, nul
         writer.writerow(newrow)
         #except:
         #    return HttpResponse(newrow)
-
+    log(logfile, 'DONE write rows to CSV')
+    log(logfile, 'RETURNING RESPONSE TO CLIENT. END OF FUNCTION')
     return response
 
