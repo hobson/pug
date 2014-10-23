@@ -17,7 +17,7 @@ import os
 # Heroku: Honor the 'X-Forwarded-Proto' header for request.is_secure()
 SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
 
-PROJECT_SETTINGS_PATH = os.path.realpath(os.path.dirname(__file__))
+PROJECT_SETTINGS_PATH = os.path.realpath(os.path.dirname(os.path.abspath(__file__)))
 
 # because the apps we want in INSTALLED are "external" to this project (two directories up) we have to add them to the python path manually
 ROOT_PROJECT_PATH = os.path.realpath(os.path.join(PROJECT_SETTINGS_PATH,'..','..','..'))
