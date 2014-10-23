@@ -1,6 +1,5 @@
 {% load i18n %}
 {% load staticfiles %}
-{% load nvd3_tags %}
 {% load url from future %}
 <!DOCTYPE html>
 <!--[if lt IE 7]> <html class="no-js lt-ie9 lt-ie8 lt-ie7" lang="{{ LANGUAGE_CODE }}"> <![endif]-->
@@ -40,7 +39,12 @@
                 <div class="content">{% block content %}
                     <div class="row-fluid">
                         Nothing to see here (at miner/templates/miner/base.html)... Keep moving right along.
-                    </div>{% endblock %}
+                    <div class="row">
+                        {% block plot %}
+                            Plot (Chart) Goes Here
+                        {% endblock plot %}
+                    </div>
+                    </div>{% endblock content %}
                 </div>
 
                 <div class="extra-content">{% block extra_content %}{% endblock %}</div>

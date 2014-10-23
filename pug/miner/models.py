@@ -212,7 +212,7 @@ class Field(models.Model):
 
     # most_frequent = hstore.DictionaryField(db_index=True, default=None, null=True)
 
-    __unicode__ = db.representation
+    __unicode__ = representation
 
 
 class Correlation(models.Model):
@@ -226,7 +226,7 @@ class Correlation(models.Model):
     shared_distinct_words = models.IntegerField(help_text='For strings, the number of unique words that are shared between all the strings in each field=') 
     shared_tokens = models.IntegerField(help_text='For strings, the number of unique tokens (words) that are shared between the two fields, including duplicate occurrences of the same value') 
 
-    __unicode__ = db.representation
+    __unicode__ = representation
 
 
 def import_meta(db_meta, db_name, db_date=None, verbosity=1):
