@@ -225,7 +225,7 @@ def context_from_request(request, context=None, Form=GetLagForm, delim=',', verb
     context['columns'] = [s.strip() for s in context['columns'].split(';')] or []
 
     context['aggregate_ids'] = request.GET.get('agg') or request.GET.get('ids') or request.GET.get('aggids') or request.GET.get('aggregates') or request.GET.get('aggregate_ids') or '-1'
-    context['aggregate_ids'] = [int(s.strip()) for s in context['aggregate_ids'].split(',')] or [-1]
+    context['aggregate_ids'] = [int(s.strip()) for s in context['aggregate_ids'].split(',') if s and s.strip()] or [-1]
 
     # whether the FK join queries should be short-circuited
     print 'aggregate_ids: ', context['aggregate_ids']

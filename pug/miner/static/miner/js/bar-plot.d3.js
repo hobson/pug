@@ -31,8 +31,15 @@ function arrays_as_d3_series(d3data) {
 
 // FIXME: implement this:
 function split_d3_series(d3data) {
-    ans = [];
-    for (var i=0; i < d3data.length; i++) {console.log(d3data[i]);}
+    n = d3data[0].length - 1;
+    return d3.layout.stack().stack(d3.range(n).map(function(j) {
+        l = new Array();
+        for (var i=1; i <= m; i++) {
+            l.push({"x": d3data[0][i], "y": d3data[j+1][i]});
+            //console.log('layers['+i+']['+j+'] = ' + obj + ' = ' + '(' + obj.x + ',' + obj.y + ',' + obj.y0 + ')');
+        } // for i
+        return l;
+    }
 }
 
 function bar_plot(d3data, new_xlabel, new_ylabel) {
@@ -46,17 +53,17 @@ function bar_plot(d3data, new_xlabel, new_ylabel) {
     data.sort(function(a, b) { return a.x - b.x; });
 
     var n = d3data.length - 1, // number of layers or series
-        m = data.length, // number of samples per layer
-        stack = d3.layout.stack(),
-        layers = stack(d3.range(n).map(function(j) {
-            l = new Array();
-            for (var i=1; i <= m; i++) {
-                l.push({"x": d3data[0][i], "y": d3data[j+1][i]});
-                //console.log('layers['+i+']['+j+'] = ' + obj + ' = ' + '(' + obj.x + ',' + obj.y + ',' + obj.y0 + ')');
-            } // for i
-            return l;
-            return bumpLayer(m ,.1); })),
-        yGroupMax = d3.max(layers, function(layer) { return d3.max(layer, function(d) { return d.y; }); }),
+        m = data.length; // number of samples per layer
+
+        layers = split_d3_series(d3data);
+        // stack(d3.range(n).map(function(j) {
+        //     l = new Array();
+        //     for (var i=1; i <= m; i++) {
+        //         l.push({"x": d3data[0][i], "y": d3data[j+1][i]});
+        //         //console.log('layers['+i+']['+j+'] = ' + obj + ' = ' + '(' + obj.x + ',' + obj.y + ',' + obj.y0 + ')');
+        //     } // for i
+        //     return l;
+    var yGroupMax = d3.max(layers, function(layer) { return d3.max(layer, function(d) { return d.y; }); }),
         yStackMax = d3.max(layers, function(layer) { return d3.max(layer, function(d) { return d.y0 + d.y; }); });
     console.log('layers');
     console.log(layers);
