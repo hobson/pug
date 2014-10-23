@@ -121,6 +121,8 @@ STATIC_URL = '/static/'
 # Example: "/var/www/example.com/static/"
 STATIC_ROOT = os.path.join(ROOT_PROJECT_PATH, 'collected_static_files')
 
+# This is required for Heroku to prevent "ValueError: dictionary doesn't specify a version"
+# I guess heroku default logging settings aren't compatible with Django 1.5
 LOGGING = {
     'version': 1,
     'disable_existing_loggers': True,
