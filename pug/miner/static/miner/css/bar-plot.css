@@ -1,0 +1,23 @@
+/* d3 bar plot based on Bostock's http://bl.ocks.org/3943967/ */
+body {
+  font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+}
+
+/*text {
+  font: 10px sans-serif;
+}*/
+
+.axis path,
+.axis line {
+  fill: none;
+  stroke: #000;
+  shape-rendering: crispEdges;
+}
+
+form {
+  position: relative;
+  left: 66%;
+  top: 10px;
+}
+
+
