@@ -5,8 +5,8 @@
 
 {% block plot %}
 
-<script src="{% static "miner/js/plot-util.js" %}"></script>
-<script src="{% static "miner/js/line-plot.js" %}"></script>
+<script src="{% static "miner/js/plot-util.d3.js" %}"></script>
+<script src="{% static "miner/js/line-plot.d3.js" %}"></script>
 <script> line_plot({{ data.d3data|safe }}, "{{ data.xlabel|escapejs }}", "{{ data.ylabel|escapejs }}"); </script>
 
 {% endblock %}
