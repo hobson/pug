@@ -32,7 +32,7 @@ if ROOT_PROJECT_PATH not in sys.path:
 SECRET_KEY = '5s3an_jk9pd5hc229r1icz1l(_3zt6rhaqr=#(+@b5@&79wzqc'
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = False
+DEBUG = True
 
 TEMPLATE_DEBUG = True
 
@@ -67,9 +67,9 @@ MIDDLEWARE_CLASSES = (
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 )
 
-ROOT_URLCONF = 'pug.crawlnmine.crawlnmine.urls'
+ROOT_URLCONF = 'crawlnmine.urls'
 
-WSGI_APPLICATION = 'pug.crawlnmine.crawlnmine.wsgi.application'
+WSGI_APPLICATION = 'crawlnmine.wsgi.application'
 
 
 # Database
