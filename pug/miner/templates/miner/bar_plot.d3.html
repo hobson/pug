@@ -22,21 +22,14 @@
     <div class="row">
       <div id="plot_div" class="graph"></div>
     </div>
-
     <div class="row">
         <pre>{{ data|safe|escape }}</pre>
     </div>
-    <!-- <div class="row"><div id="linegraph" class="graph"></div></div>  -->
-    {# the linegraph attribute ID must be created before this line-plot.js globals are created #}
 
     {% block plot %}
+        <script src="{% static "miner/js/plot-util.d3.js" %}"></script> 
         <script src="{% static "miner/js/bar-plot.d3.js" %}"></script> 
-        <script> 
-
-
-bar_plot({{ data.d3data|safe }}, "{{ data.xlabel|escapejs }}", "{{ data.ylabel|escapejs }}");
-
-</script>
+        <script>bar_plot({{ data.d3data|safe }}, "{{ data.xlabel|escapejs }}", "{{ data.ylabel|escapejs }}");</script>
     {% endblock plot %}
 {% endblock content %}
 

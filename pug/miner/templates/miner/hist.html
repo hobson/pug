@@ -13,13 +13,14 @@
 
     {% include "case/bootstrap_case_form.html" %}
 
-    {# block graph #}
-    <div class="row"><div id="linegraph" class="graph"></div></div> 
-    {# the linegraph attribute ID must be created before this line-plot.js globals are created #}
+    <div class="row">
+      <div id="plot_div" class="graph"></div>
+    </div>
 
     {% block plot %}
 
-        <script src="{% static "miner/js/line-plot.js" %}"></script>
+        <script src="{% static "miner/js/plot-util.d3.js" %}"></script>
+        <script src="{% static "miner/js/line-plot.d3.js" %}"></script>
         <script> line_plot({{ data.d3data|safe }}, "{{ data.xlabel|escapejs }}", "{{ data.ylabel|escapejs }}"); </script>
 
     {% endblock plot %}
