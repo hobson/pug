@@ -413,7 +413,7 @@ def csv_response_from_context(context=None, filename=None, field_names=None, nul
     * context as a list of lists of python values (strings for headers in first list)
     * context['data']['d3data'] as a string in json format (python) for a list of lists of repr(python_value)s
     * context['data']['cases'] as a list of lists of python values (strings for headers in first list)
-    * context['data']['d3data'] as a django queryset or iterable of model instances (list, tuple, generator)
+    * context['data']['aggregates'] as a django queryset or iterable of model instances (list, tuple, generator)
 
     If the input data is a list of lists (table) that has more columns that rows it will be trasposed before being processed
     """
