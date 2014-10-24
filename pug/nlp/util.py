@@ -449,6 +449,31 @@ def get_key_for_value(dict_obj, value, default=None):
     return default
 
 
+def list_set(seq):
+    """Similar to `list(set(seq))`, but maintains the order of `seq` while eliminating duplicates
+
+    In general list(set(L)) will not have the same order as the original list.
+    This is a list(set(L)) function that will preserve the order of L.
+
+    Arguments:
+      seq (iterable): list, tuple, or other iterable to be used to produce an ordered `set()`
+
+    Returns:
+      iterable: A copy of `seq` but with duplicates removed, and distinct elements in the same order as in `seq`
+
+    Examples:
+      >>> list_set([2.7,3,2,2,2,1,1,2,3,4,3,2,42,1])
+      [2.7, 3, 2, 1, 4, 42]
+      >>> list_set(['Zzz','abc', ('what.', 'ever.'), 0, 0.0, 'Zzz', 0.00, 'ABC'])
+      ['Zzz', 'abc', ('what.', 'ever.'), 0, 'ABC']
+    """
+    new_list = []
+    for i in seq:
+        if i not in new_list:
+            new_list += [i]
+    return type(seq)(new_list)
+
+
 def fuzzy_get(dict_obj, approximate_key, default=None, similarity=0.6, tuple_joiner='|', key_and_value=False, dict_keys=None, ):
     r"""Find the closest matching key and/or value in a dictionary (must have all string keys!)
 
