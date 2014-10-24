@@ -29,7 +29,10 @@
     {% block plot %}
         <script src="{% static "miner/js/plot-util.d3.js" %}"></script> 
         <script src="{% static "miner/js/bar-plot.d3.js" %}"></script> 
-        <script>bar_plot({{ data.d3data|safe }}, "{{ data.xlabel|escapejs }}", "{{ data.ylabel|escapejs }}");</script>
+        <script>
+            bar_plot({{ data.d3data|safe }}, 
+                {"tag_id": "plot_div_1", "xlabel": "{{ data.xlabel|escapejs }}", "ylabel": "{{ data.ylabel|default_if_none:"[]"|escapejs }}", "header": {{ data.header|default:"[]"|default_if_none:"[]"|safe }}});
+        </script>
     {% endblock plot %}
 {% endblock content %}
 

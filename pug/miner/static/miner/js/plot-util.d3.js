@@ -1,3 +1,24 @@
+function mouseover(d) {
+  // displays tip at center of voronoi region instead of near point
+  // tip.show(d);
+
+  console.log('mouseover');
+  console.log(d);
+
+//  d.series.line.parentNode.appendChild(d.series.line);
+  //d3.select(d.series.line).classed("series-hover", true);
+}
+
+
+function mouseout(d) {
+  // tip.hide(d);
+  console.log('mouseout')
+  console.log(d);
+
+  //d3.select(d.series.line).classed("series-hover", false);
+}
+
+
 function d3_parse_date(date_or_time) {
   return d3.time.format("%Y%m%d").parse(date_or_time);
 }

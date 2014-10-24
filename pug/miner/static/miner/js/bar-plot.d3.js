@@ -1,23 +1,75 @@
 // requires functions from miner/js/plot-util.js
 
-function bar_plot(d3data, new_xlabel, new_ylabel) {
+// function mouseover(d) {
+//   // displays tip at center of voronoi region instead of near point
+//   // tip.show(d);
+
+//   console.log('mouseover');
+//   console.log(d);
+//   // doesn't work
+//   // d.series.line.parentNode.appendChild(d.series.line);
+//   d3.select(d.series.line).classed("series-hover", true);
+
+//   // tip.attr("transform", "translate(" + x_scale(d.x) + "," + y_scale(d.y) + ")");
+//   console.log("transform", "translate(" + x_scale(d.x) + "," + y_scale(d.y) + ")");
+//   focus.attr("transform", "translate(" + x_scale(d.x) + "," + y_scale(d.y) + ")");
+//   series_name = d.series.name.length ? d.series.name : ylabel;
+//   tt = (xlabel.length ? xlabel : "bin") + ": " + d.x + "\u00A0\u00A0\u00A0\u00A0" + series_name + ": " + d.y;
+//   focus.select("text").text(tt);
+
+//   query_obj.min_lag = d.x-5;
+//   query_obj.max_lag = d.x+5;
+
+//   // This generates the right link, but the SVG doesn't respond to clicks on the circle or anywhere nearby
+//   focus.select("a").attr("xlink:href", "?"+obj2query(query_obj));
+//   console.log(focus.select("a"));
+//   console.log(focus.select("a").attr("xlink:href"));
+//   // FIXME: for this link to be visible/clickable the mouseout function has to be triggered when the mouse enters the circle and leaves the voronoi region
+// }
+
+
+// function mouseout(d) {
+//   // tip.hide(d);
+//   console.log('mouseout')
+//   console.log(d);
+
+//   d3.select(d.series.line).classed("series-hover", false);
+//   focus.select("text").text("");
+// }
+
+
+function bar_plot(d3data, conf) {
     var ans = arrays_as_d3_series(d3data);
-    xlabel = new_xlabel.length ? new_xlabel : ans.xlabel;
-    var ylabels = [new_ylabel];
-    ylabel = new_ylabel.length ? new_ylabel : ans.ylabels[0];
+    xlabel = conf.xlabel.length ? conf.xlabel : ans.xlabel;
+    var ylabels = [conf.ylabel];
+    ylabel = conf.ylabel.length ? conf.ylabel : ans.ylabels[0];
     var data = ans.data;
 
     data.sort(function(a, b) { return a.x - b.x; });
-    var n = d3data.length - 1, // number of layers or series
+    var n = d3data.length - 1, // number of stack layers or group members or data sequences or serieses
         m = data.length; // number of samples per layer
     var layers = split_d3_series(d3data);
-    console.log(layers);
+
 
     var yGroupMax = d3.max(layers, function(layer) { return d3.max(layer, function(d) { return d.y; }); }),
         yStackMax = d3.max(layers, function(layer) { return d3.max(layer, function(d) { return d.y0 + d.y; }); });
 
+    console.log('conf.header');
+    console.log(conf.header);
+    console.log(conf.header.length);
+    conf.header = (conf.header === 'undefined' || conf.header.length != n + 1) ? d3.range(n) : conf.header;
+    
+    for (var i=0; i<layers.length; i++) {
+        for (var j=0; j<layers[i].length; j++) {
+            layers[i][j].column = i; 
+            layers[i][j].row = j; 
+            layers[i][j].heading = conf.header[i+1];
+        }
+    }
 
-    var plot_element_id = "plot_div";
+    console.log('layers');
+    console.log(layers);
+
     var margin = {top: 40, right: 10, bottom: 20, left: 10},
         width = 960 - margin.left - margin.right,
         height = 500 - margin.top - margin.bottom;
@@ -40,7 +92,14 @@ function bar_plot(d3data, new_xlabel, new_ylabel) {
         .tickPadding(6)
         .orient("bottom");
 
-    var svg = d3.select("#" + plot_element_id).append("svg")
+    // // need something like this here to append the series data to each rect
+    // var series = svg.selectAll(".series")
+    //     .data(all_series)
+    //   .enter().append("g")
+    //     .attr("class", "series");
+
+
+    var svg = d3.select("#" + conf.plot_container_id).append("svg")
         .attr("width", width + margin.left + margin.right)
         .attr("height", height + margin.top + margin.bottom)
       .append("g")
@@ -58,7 +117,10 @@ function bar_plot(d3data, new_xlabel, new_ylabel) {
         .attr("x", function(d) { return x(d.x); })
         .attr("y", height)
         .attr("width", x.rangeBand())
-        .attr("height", 0);
+        .attr("height", 0)
+        .on("mouseover", mouseover)
+    //    .on("click", mouseclick)
+        .on("mouseout", mouseout);
 
     rect.transition()
         .delay(function(d, i) { return i * 10; })
