@@ -7,6 +7,13 @@ conf.xscale = d3.scale.linear().range([0, conf.width]);
 conf.xlabel = "Horizontal Value (Time?)";
 conf.yscale = d3.scale.linear().range([conf.height, 0]);
 conf.ylabel = "Vertical Value";
+// retrieve the GET query from the URI of this page:
+conf.query = query2obj();  
+
+// Change the query to request a table view instead of the plot view that got us to this page/plot
+delete conf.query.plot;
+conf.query.table = "fast";
+
 
 console.log("conf");
 console.log(conf);
@@ -45,11 +52,14 @@ function mouseover(d) {
   tt = (conf.xlabel.length ? conf.xlabel : "bin") + ": " + d.x + "\u00A0\u00A0\u00A0\u00A0" + series_name + ": " + d.y;
   focus.select("text").text(tt);
 
-  query_obj.min_lag = d.x-5;
-  query_obj.max_lag = d.x+5;
+  // conf.query is a global dictionary of the query parameters for this page, previously obtained using plot-util.query2obj();
+  // Need to set the Lag window for the table query to a range likely to capture the points near where the user clicked:
+  conf.query.min_lag = d.x-5;
+  conf.query.max_lag = d.x+5;
+
 
   // This generates the right link, but the SVG doesn't respond to clicks on the circle or anywhere nearby
-  focus.select("a").attr("xlink:href", "?"+obj2query(query_obj));
+  focus.select("a").attr("xlink:href", "?"+obj2query(conf.query));
   console.log(focus.select("a"));
   console.log(focus.select("a").attr("xlink:href"));
   // FIXME: for this link to be visible/clickable the mouseout function has to be triggered when the mouse enters the circle and leaves the voronoi region
