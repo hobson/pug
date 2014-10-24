@@ -14,6 +14,16 @@ pre {
   width: 940px;
 }
 
+
+.bar:hover {
+  fill: brown;
+}
+
+.axis {
+  font: 10px sans-serif;
+}
+
+
 .axis path,
 .axis line {
   fill: none;
