@@ -17,9 +17,9 @@ function bar_plot(d3data, conf) {
     conf.yscale = d3.scale.linear().range([conf.height, 0]);
     conf.ylabel = "Vertical Value";
 
-    var margin = {top: 20, right: 30, bottom: 30, left: 40},
-        width = 960 - margin.left - margin.right,
-        height = 500 - margin.top - margin.bottom;
+    var margin = conf.margin;
+    var width = conf.width;
+    var height = conf.height;
 
     var x = d3.scale.ordinal()
         .rangeRoundBands([0, width], 0.1);
