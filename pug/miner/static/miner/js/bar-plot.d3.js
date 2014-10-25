@@ -39,11 +39,17 @@
 
 
 function bar_plot(d3data, conf) {
+    conf = typeof conf == 'undefined' ? {"plot_container_id": "plot_container", 
+            "margin": {top: 30, right: 80, bottom: 30, left: 50}} : conf;
+
     var ans = arrays_as_d3_series(d3data);
     xlabel = conf.xlabel.length ? conf.xlabel : ans.xlabel;
     var ylabels = [conf.ylabel];
     ylabel = conf.ylabel.length ? conf.ylabel : ans.ylabels[0];
     var data = ans.data;
+
+    console.log("conf.plot_container_id");
+    console.log(conf.plot_container_id);
 
     data.sort(function(a, b) { return a.x - b.x; });
     var n = d3data.length - 1, // number of stack layers or group members or data sequences or serieses
@@ -91,6 +97,12 @@ function bar_plot(d3data, conf) {
         .tickSize(0)
         .tickPadding(6)
         .orient("bottom");
+
+
+    var yAxis = d3.svg.axis()
+        .scale(y)
+        .orient("left")
+        .ticks(10, "%");
 
     // // need something like this here to append the series data to each rect
     // var series = svg.selectAll(".series")
@@ -172,17 +184,6 @@ function bar_plot(d3data, conf) {
 
 } // function bar_plot(d3data)
 
-
-
-// var margin = {top: 20, right: 20, bottom: 30, left: 40},
-//     width = 960 - margin.left - margin.right,
-//     height = 500 - margin.top - margin.bottom;
-
-// var x = d3.scale.ordinal()
-//     .rangeRoundBands([0, width], .1);
-
-// var y = d3.scale.linear()
-//     .range([height, 0]);
 
 // var xAxis = d3.svg.axis()
 //     .scale(x)

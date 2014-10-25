@@ -1,14 +1,25 @@
+
+function line_plot(d3data, conf) {
 // FIXME: put all globals in a plot conf object/namespace
-var conf = {"plot_container_id": "plot_container", 
-            "margin": {top: 30, right: 80, bottom: 30, left: 50}};
+console.log(conf);
+var conf               = typeof conf                   == "undefined" ? {}                                                 : conf;
+conf.plot_container_id = typeof conf.plot_container_id == "undefined" ? "plot_container"                                   : conf.plot_container_id;
+conf.margin            = typeof conf.margin            == "undefined" ? {"top": 30, "right": 80, "bottom": 30, "left": 50} : conf.margin;
 conf.width = 960 - conf.margin.left - conf.margin.right;
 conf.height = 500 - conf.margin.top - conf.margin.bottom;
 conf.xscale = d3.scale.linear().range([0, conf.width]);
 conf.xlabel = "Horizontal Value (Time?)";
 conf.yscale = d3.scale.linear().range([conf.height, 0]);
 conf.ylabel = "Vertical Value";
+
+console.log(conf);
+
+xlabel = conf.xlabel.length ? conf.xlabel : ans.xlabel;
+var ylabels = [conf.ylabel];
+ylabel = conf.ylabel.length ? conf.ylabel : ans.ylabels[0];
+
 // retrieve the GET query from the URI of this page:
-conf.query = query2obj();  
+conf.query = query2obj();
 
 // Change the query to request a table view instead of the plot view that got us to this page/plot
 delete conf.query.plot;
@@ -90,8 +101,6 @@ function mouseout(d) {
   focus.select("text").text("");
 }
 
-
-
 // Line plot with clickable Voronoi regions and mouse-over tool tips showing the coordinate values
 // 
 // Arguments:
@@ -102,7 +111,7 @@ function mouseout(d) {
 //     d3data[1][1..M] (Number): y-coordinate values
 //   x-axis (String, optional): horizontal x-axis label (overrides d3data[0][0])
 //   y-axis (String, optional): vertical y-axis label (overrides d3data[0][0])
-function line_plot(d3data, new_xlabel, new_ylabel) {
+function draw_plot(d3data, new_xlabel, new_ylabel) {
     var ans = arrays_as_d3_series(d3data);
     console.log(ans);
     conf.xlabel = new_xlabel.length ? new_xlabel : ans.xlabel;
@@ -235,6 +244,9 @@ function line_plot(d3data, new_xlabel, new_ylabel) {
 
     focus.append("a").attr("xlink:href", "/")
       .append("circle").attr("r", 6.5).style("fill", "steelblue").style("fill-opacity", 0.3);
+}
+
+draw_plot(d3data, xlabel, ylabel);
 }
 
 

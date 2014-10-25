@@ -73,13 +73,18 @@ function split_d3_series(d3data) {
 
 function query2obj(query) {
   query = query ? query : location.search;
+  console.log(query);
   // ignore the questionmark in the search (query) string part of the URI
   if (query[0] == '?') { 
     query = query.substring(1); }
   // console.log(query);
   query = query.replace(/%2C/g,",").replace(/%2B/g," ");
   // console.log(query);
-  return JSON5.parse('{"' + decodeURI(query).replace(/"/g, '\\"').replace(/%2C/g,",").replace(/%2B/g," ").replace(/&/g, '","').replace(/=/g,'":"') + '"}');
+  query = '{"' + decodeURI(query).replace(/"/g, '\\"').replace(/%2C/g,",").replace(/%2B/g," ").replace(/&/g, '","').replace(/=/g,'":"') + '"}';
+  // deal with a zero-length or malformed query without any GET keys
+  if (query.length > 4 && query.indexOf(':') > 1) { 
+    return JSON5.parse(query); }
+  else { return {}; } 
   }
 
 

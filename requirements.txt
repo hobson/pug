@@ -57,7 +57,7 @@ pytz==2014.3
 python-dateutil==2.2
 # pytz==2014.3
 # # queuelib==1.1.1
-# # selenium==2.39.0
+selenium==2.39.0
 six==1.8.0
 
 sqlparse==0.1.13
