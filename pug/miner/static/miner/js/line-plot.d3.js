@@ -2,7 +2,7 @@
 function line_plot(d3data, conf) {
 // FIXME: put all globals in a plot conf object/namespace
 console.log(conf);
-var conf               = typeof conf                   == "undefined" ? {}                                                 : conf;
+conf               = typeof conf                   == "undefined" ? {}                                                 : conf;
 conf.plot_container_id = typeof conf.plot_container_id == "undefined" ? "plot_container"                                   : conf.plot_container_id;
 conf.margin            = typeof conf.margin            == "undefined" ? {"top": 30, "right": 80, "bottom": 30, "left": 50} : conf.margin;
 conf.width = 960 - conf.margin.left - conf.margin.right;

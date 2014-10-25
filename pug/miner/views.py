@@ -428,7 +428,7 @@ class LinePlotView(DashboardView):
     template_name = 'miner/line_plot.d3.html'
 
 
-class BlockView(TemplateView):
+class BlockView(DashboardView):
     """Query the miner.AggregateResults table to retrieve values for plotting in a bar chart"""
     template_name = 'miner/block.d3.html'
 

@@ -39,9 +39,9 @@
 
 
 function bar_plot(d3data, conf) {
-    conf = typeof conf == 'undefined' ? {"plot_container_id": "plot_container", 
+    conf = typeof conf == 'undefined' ? {"plot_container_id": "plot_container",
             "margin": {top: 30, right: 80, bottom: 30, left: 50}} : conf;
-
+    conf.plot_container_id = typeof conf.plot_container_id == 'undefined' ? "plot_container" : plot_container_id;
     var ans = arrays_as_d3_series(d3data);
     xlabel = conf.xlabel.length ? conf.xlabel : ans.xlabel;
     var ylabels = [conf.ylabel];
@@ -67,8 +67,8 @@ function bar_plot(d3data, conf) {
     
     for (var i=0; i<layers.length; i++) {
         for (var j=0; j<layers[i].length; j++) {
-            layers[i][j].column = i; 
-            layers[i][j].row = j; 
+            layers[i][j].column = i;
+            layers[i][j].row = j;
             layers[i][j].heading = conf.header[i+1];
         }
     }
@@ -82,7 +82,7 @@ function bar_plot(d3data, conf) {
 
     var x = d3.scale.ordinal()
         .domain(d3.range(m))
-        .rangeRoundBands([0, width], .08);
+        .rangeRoundBands([0, width], 0.08);
 
     var y = d3.scale.linear()
         .domain([0, yStackMax])
@@ -123,16 +123,25 @@ function bar_plot(d3data, conf) {
         .attr("class", "layer")
         .style("fill", function(d, i) { return color(i); });
 
+      // chart.selectAll(".bar")
+      //     .data(d3data)
+      //   .enter().append("rect")
+      //     .attr("class", "bar")
+      //     .attr("x", function(d) { return x(d.name); })
+      //     .attr("y", function(d) { return y(d.value); })
+      //     .attr("height", function(d) { return height - y(d.value); })
+      //     .attr("width", x.rangeBand());
+
     var rect = layer.selectAll("rect")
         .data(function(d) { return d; })
       .enter().append("rect")
         .attr("x", function(d) { return x(d.x); })
         .attr("y", height)
         .attr("width", x.rangeBand())
-        .attr("height", 0)
-        .on("mouseover", mouseover)
+        .attr("height", 0);
+        //.on("mouseover", mouseover)
     //    .on("click", mouseclick)
-        .on("mouseout", mouseout);
+        //.on("mouseout", mouseout);
 
     rect.transition()
         .delay(function(d, i) { return i * 10; })
