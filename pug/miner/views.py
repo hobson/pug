@@ -430,7 +430,7 @@ class LinePlotView(DashboardView):
 
 class BlockView(TemplateView):
     """Query the miner.AggregateResults table to retrieve values for plotting in a bar chart"""
-    template_name = 'miner/blocks.d3.html'
+    template_name = 'miner/block.d3.html'
 
 
 def csv_response_from_context(context=None, filename=None, field_names=None, null_string='', eval_python=True):
