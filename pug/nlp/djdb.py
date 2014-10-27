@@ -277,8 +277,8 @@ def get_model(model=DEFAULT_MODEL, app=None, fuzziness=False):
 
       >>> from django.db import transaction
       >>> transaction.rollback() 
-      >>> get_model('mission', fuzziness=.7).__name__.startswith('Permi')
-      True
+      >>> get_model('mission', fuzziness=.7).__name__
+      'Permission'
       >>> transaction.rollback() 
       >>> isinstance(get_model('ser', fuzziness=.5), djmodels.base.ModelBase)
       True
@@ -335,11 +335,10 @@ def get_model(model=DEFAULT_MODEL, app=None, fuzziness=False):
 
 def get_queryset(qs=None, app=DEFAULT_APP, db_alias=None):
     """
-    >>> from django.db import transaction
-    >>> transaction.rollback() 
-    >>> get_queryset('WikiI').count() > 0
+    >>> get_queryset('Permission', app='django.contrib.auth').count() > 0
     True
     """
+    # app = get_app(app);
     # print 'get_model' + repr(model) + ' app ' + repr(app)
     if isinstance(qs, (djmodels.Manager, djmodels.query.QuerySet)):
         qs = qs.all()
@@ -349,7 +348,6 @@ def get_queryset(qs=None, app=DEFAULT_APP, db_alias=None):
         return qs.using(db_alias)
     else:
         return qs  # .using(router.db_for_read(model))
-
 
 
 def get_db_alias(app=DEFAULT_APP):
@@ -641,13 +639,13 @@ def sum_in_date(x='date', y='net_sales', filter_dict=None, model='WikiItem', app
     """
     Count the number of records for each discrete (categorical) value of a field and return a dict of two lists, the field values and the counts.
 
-    >>> from django.db import transaction
-    >>> transaction.rollback()
-    >>> x, y = sum_in_date(y='net_sales', filter_dict={'model__startswith': 'LC60'}, model='WikiItem', limit=5, sort=1)
-    >>> len(x) == len(y) == 5
-    True
-    >>> y[1] >= y[0]
-    True
+    FIXME: Tests need models with a date field:
+    Examples:
+      >> x, y = sum_in_date(y='net_sales', filter_dict={'model__startswith': 'LC60'}, model='Permission', limit=5, sort=1)
+      >> len(x) == len(y) == 5
+      True
+      >> y[1] >= y[0]
+      True
     """
     sort = sort_prefix(sort)
     model = get_model(model, app)
@@ -2576,13 +2574,13 @@ def optimize_filter_dict(filter_dict, trgm=True):
 
     Examples:
       >>> # This is nothing different than what Django already does:
-      >>> optimize_filter_dict({'name__in': ['Smith', 'Jones', 'Smith']}) == {'name__in': set('Smith', 'Jones')}  
+      >>> optimize_filter_dict({'name__in': ['Smith', 'Jones', 'Smith']}) == {'name__in': set(('Smith', 'Jones'))}  
       True
       >>> # This is an optimjization that Django doesn't do yet, probably because it actually slows `filter` queries down by 0.4%!:
       >>> # However, it does speed up an `objects.exclude` query by about 1%:
       >>> optimize_filter_dict({'name__in': ['Smith']}) == {'name': 'Smith'}
       True
-      >>> # This is the only optimization that actually does some good, but it requires `djorm-trgm`
+      >>> # This is the only optimization that actually does significant good, but it requires `djorm-trgm`
       >>> optimize_filter_dict({'name__contains': 'ith'}) == {'name__similar': 'ith', 'name__contains': 'ith'}
       True
     """
@@ -2608,7 +2606,7 @@ def optimize_filter_dict(filter_dict, trgm=True):
 
 
 def clean_filter_dict(filter_dict, strip=False):
-    """Clear/del Django ORM filter kwargs dict queries like `filter({"<field>__in": member_list` where `member_list` is empty
+    r"""Clear/del Django ORM filter kwargs dict queries like `filter({"<field>__in": member_list` where `member_list` is empty
 
     Brute force processing of user-entered lists of query parameters can often produce null `__in` filters
       which will return no results if not "cleaned" by deleting these dict entries.

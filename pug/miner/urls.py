@@ -6,6 +6,7 @@ from django.conf.urls import patterns, url  #, include
 import views
 
 from pug.nlp.util import HIST_NAME
+import re
 
 hist_name_re = '|'.join([name for name in HIST_NAME])
 
@@ -13,8 +14,10 @@ urlpatterns = patterns('',
     #url(r'^$', home, name='home'),
     #url(r'^(?:chart/)?(?:[Cc]onnect(?:ion)?s?|[Gg]raph)/(?P<edges>[^/]*)', views.connections, name='connections'),
     url(r'^$', views.home, name='home'),
-    url(r'^dashboard/', views.DashboardView.as_view(), name='dashboard'),
-    url(r'^bar/', views.BarPlotView.as_view(), name='bar'),
+    url(re.compile(r'^dashboards?/', re.IGNORECASE), views.DashboardView.as_view(), name='dashboard'),
+    url(r'(?i)^lines?/', views.LinePlotView.as_view(), name='line'),
+    url(r'(?i)^bars?/', views.BarPlotView.as_view(), name='bar'),
+    url(r'(?i)^blocks?/', views.BlockView.as_view(), name='block'),
     # url(r'^explorer?/', views.explorer, name='explorer'),
     #  # url(r'^lag[-]?('+ hist_name_re +r')?/', views.lag, name='lag'),
     #  # url(r'^hist[-]?('+ hist_name_re +r')?/', views.hist, name='hist'),

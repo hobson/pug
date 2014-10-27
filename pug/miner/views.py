@@ -90,10 +90,14 @@ class StaticView(View):
     def get(self, request, *args, **kwargs):
         template_name = ''
         try:
-            template_name += 'miner/staticview/' + kwargs.get('page', '') + '.html'
+            template_name += 'miner/staticview/' + kwargs.get('page', 'index.html')
             get_template(template_name) 
         except:
-            raise Http404()
+            try:
+                template_name += 'miner/staticview/' + kwargs.get('page', '') + '.html'
+                get_template(template_name)
+            except:
+                raise Http404()
         return TemplateResponse(request, template_name)
 
 
@@ -415,8 +419,18 @@ class DashboardView(TemplateView):
         print context
         return context
 
+
 class BarPlotView(DashboardView):
     template_name = 'miner/bar_plot.d3.html'
+
+
+class LinePlotView(DashboardView):
+    template_name = 'miner/line_plot.d3.html'
+
+
+class BlockView(DashboardView):
+    """Query the miner.AggregateResults table to retrieve values for plotting in a bar chart"""
+    template_name = 'miner/block.d3.html'
 
 
 def csv_response_from_context(context=None, filename=None, field_names=None, null_string='', eval_python=True):

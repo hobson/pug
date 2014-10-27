@@ -42,9 +42,9 @@ function mouseout(d) {
 
 
 function bar_plot(d3data, conf) {
-    conf = typeof conf == 'undefined' ? {"plot_container_id": "plot_container", 
+    conf = typeof conf == 'undefined' ? {"plot_container_id": "plot_container",
             "margin": {top: 30, right: 80, bottom: 30, left: 50}} : conf;
-
+    conf.plot_container_id = typeof conf.plot_container_id == 'undefined' ? "plot_container" : plot_container_id;
     var ans = arrays_as_d3_series(d3data);
     xlabel = conf.xlabel.length ? conf.xlabel : ans.xlabel;
     var ylabels = [conf.ylabel];
@@ -70,8 +70,8 @@ function bar_plot(d3data, conf) {
     
     for (var i=0; i<layers.length; i++) {
         for (var j=0; j<layers[i].length; j++) {
-            layers[i][j].column = i; 
-            layers[i][j].row = j; 
+            layers[i][j].column = i;
+            layers[i][j].row = j;
             layers[i][j].heading = conf.header[i+1];
         }
     }
@@ -85,7 +85,7 @@ function bar_plot(d3data, conf) {
 
     var x = d3.scale.ordinal()
         .domain(d3.range(m))
-        .rangeRoundBands([0, width], .08);
+        .rangeRoundBands([0, width], 0.08);
 
     var y = d3.scale.linear()
         .domain([0, yStackMax])
@@ -126,16 +126,39 @@ function bar_plot(d3data, conf) {
         .attr("class", "layer")
         .style("fill", function(d, i) { return color(i); });
 
+      // chart.selectAll(".bar")
+      //     .data(d3data)
+      //   .enter().append("rect")
+      //     .attr("class", "bar")
+      //     .attr("x", function(d) { return x(d.name); })
+      //     .attr("y", function(d) { return y(d.value); })
+      //     .attr("height", function(d) { return height - y(d.value); })
+      //     .attr("width", x.rangeBand());
+
     var rect = layer.selectAll("rect")
         .data(function(d) { return d; })
       .enter().append("rect")
         .attr("x", function(d) { return x(d.x); })
         .attr("y", height)
         .attr("width", x.rangeBand())
+<<<<<<< HEAD
         .attr("height", 0)
     //    .on("mouseover", mouseover)
+||||||| merged common ancestors
+        .attr("height", 0)
+        .on("mouseover", mouseover)
+=======
+        .attr("height", 0);
+        //.on("mouseover", mouseover)
+>>>>>>> b62d265efd22096d45fd3ee459a60d45eac9017f
     //    .on("click", mouseclick)
+<<<<<<< HEAD
     //    .on("mouseout", mouseout);
+||||||| merged common ancestors
+        .on("mouseout", mouseout);
+=======
+        //.on("mouseout", mouseout);
+>>>>>>> b62d265efd22096d45fd3ee459a60d45eac9017f
 
     rect.transition()
         .delay(function(d, i) { return i * 10; })
@@ -186,56 +209,3 @@ function bar_plot(d3data, conf) {
     }
 
 } // function bar_plot(d3data)
-
-
-// var xAxis = d3.svg.axis()
-//     .scale(x)
-//     .orient("bottom");
-
-// var yAxis = d3.svg.axis()
-//     .scale(y)
-//     .orient("left")
-//     .ticks(10, "%");
-
-// var svg = d3.select("body").append("svg")
-//     .attr("width", width + margin.left + margin.right)
-//     .attr("height", height + margin.top + margin.bottom)
-//   .append("g")
-//     .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
-
-// d3.tsv("data.tsv", type, function(error, data) {
-//   x.domain(data.map(function(d) { return d.letter; }));
-//   y.domain([0, d3.max(data, function(d) { return d.frequency; })]);
-
-//   svg.append("g")
-//       .attr("class", "x axis")
-//       .attr("transform", "translate(0," + height + ")")
-//       .call(xAxis);
-
-//   svg.append("g")
-//       .attr("class", "y axis")
-//       .call(yAxis)
-//     .append("text")
-//       .attr("transform", "rotate(-90)")
-//       .attr("y", 6)
-//       .attr("dy", ".71em")
-//       .style("text-anchor", "end")
-//       .text("Frequency");
-
-//   svg.selectAll(".bar")
-//       .data(data)
-//     .enter().append("rect")
-//       .attr("class", "bar")
-//       .attr("x", function(d) { return x(d.letter); })
-//       .attr("width", x.rangeBand())
-//       .attr("y", function(d) { return y(d.frequency); })
-//       .attr("height", function(d) { return height - y(d.frequency); });
-
-// });
-
-// function type(d) {
-//   d.frequency = +d.frequency;
-//   return d;
-// }
-
-// </script>
