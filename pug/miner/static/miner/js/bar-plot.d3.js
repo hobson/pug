@@ -9,7 +9,7 @@ function mouseover(d) {
   console.log(d);
   // doesn't work
   // d.series.line.parentNode.appendChild(d.series.line);
-  d3.select(d.series.line).classed("hover", true);
+  // d3.select(d.series.rect).classed("hover", true);
 }
 
 //   // tip.attr("transform", "translate(" + x_scale(d.x) + "," + y_scale(d.y) + ")");
@@ -36,14 +36,13 @@ function mouseout(d) {
   console.log('mouseout')
   console.log(d);
 
-  d3.select(d.series.line).classed("hover", false);
-  focus.select("text").text("");
+  // d3.select(d.series.line).classed("hover", false);
+  // focus.select("text").text("");
 }
 
 
 function bar_plot(d3data, conf) {
-    conf = typeof conf == 'undefined' ? {"plot_container_id": "plot_container",
-            "margin": {top: 30, right: 80, bottom: 30, left: 50}} : conf;
+    conf = typeof conf == 'undefined' ? {"plot_container_id": "plot_container", "margin": {top: 30, right: 80, bottom: 30, left: 50}} : conf;
     conf.plot_container_id = typeof conf.plot_container_id == 'undefined' ? "plot_container" : plot_container_id;
     var ans = arrays_as_d3_series(d3data);
     xlabel = conf.xlabel.length ? conf.xlabel : ans.xlabel;
@@ -59,7 +58,6 @@ function bar_plot(d3data, conf) {
         m = data.length; // number of samples per layer
     var layers = split_d3_series(d3data);
 
-
     var yGroupMax = d3.max(layers, function(layer) { return d3.max(layer, function(d) { return d.y; }); }),
         yStackMax = d3.max(layers, function(layer) { return d3.max(layer, function(d) { return d.y0 + d.y; }); });
 
@@ -70,9 +68,11 @@ function bar_plot(d3data, conf) {
     
     for (var i=0; i<layers.length; i++) {
         for (var j=0; j<layers[i].length; j++) {
+            layers[i][j].series = layers[i]
             layers[i][j].column = i;
             layers[i][j].row = j;
             layers[i][j].heading = conf.header[i+1];
+            layers[i][j].layer = layers[i];
         }
     }
 
@@ -134,6 +134,7 @@ function bar_plot(d3data, conf) {
       //     .attr("y", function(d) { return y(d.value); })
       //     .attr("height", function(d) { return height - y(d.value); })
       //     .attr("width", x.rangeBand());
+    var rect_element;
 
     var rect = layer.selectAll("rect")
         .data(function(d) { return d; })
@@ -141,24 +142,19 @@ function bar_plot(d3data, conf) {
         .attr("x", function(d) { return x(d.x); })
         .attr("y", height)
         .attr("width", x.rangeBand())
-<<<<<<< HEAD
         .attr("height", 0)
-    //    .on("mouseover", mouseover)
-||||||| merged common ancestors
-        .attr("height", 0)
-        .on("mouseover", mouseover)
-=======
-        .attr("height", 0);
-        //.on("mouseover", mouseover)
->>>>>>> b62d265efd22096d45fd3ee459a60d45eac9017f
+        .on("mouseover", function(d) { 
+            rect_element=d3.select(this); 
+            console.log("mouseover"); 
+            console.log(rect_element);
+            rect_element.classed("hover", true); 
+        } )
     //    .on("click", mouseclick)
-<<<<<<< HEAD
-    //    .on("mouseout", mouseout);
-||||||| merged common ancestors
-        .on("mouseout", mouseout);
-=======
-        //.on("mouseout", mouseout);
->>>>>>> b62d265efd22096d45fd3ee459a60d45eac9017f
+        .on("mouseout", function(d) {
+            rect_element=d3.select(this);
+            console.log("mouseout");
+            console.log(rect_element);
+            rect_element.classed("hover", false); });
 
     rect.transition()
         .delay(function(d, i) { return i * 10; })
