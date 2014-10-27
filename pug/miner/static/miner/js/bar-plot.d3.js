@@ -1,14 +1,16 @@
 // requires functions from miner/js/plot-util.js
 
-// function mouseover(d) {
-//   // displays tip at center of voronoi region instead of near point
-//   // tip.show(d);
+function mouseover(d) {
+  console.log('bar hover');
+  // displays tip at center of voronoi region instead of near point
+  // tip.show(d);
 
-//   console.log('mouseover');
-//   console.log(d);
-//   // doesn't work
-//   // d.series.line.parentNode.appendChild(d.series.line);
-//   d3.select(d.series.line).classed("series-hover", true);
+  console.log('mouseover');
+  console.log(d);
+  // doesn't work
+  // d.series.line.parentNode.appendChild(d.series.line);
+  d3.select(d.series.line).classed("hover", true);
+}
 
 //   // tip.attr("transform", "translate(" + x_scale(d.x) + "," + y_scale(d.y) + ")");
 //   console.log("transform", "translate(" + x_scale(d.x) + "," + y_scale(d.y) + ")");
@@ -28,14 +30,15 @@
 // }
 
 
-// function mouseout(d) {
-//   // tip.hide(d);
-//   console.log('mouseout')
-//   console.log(d);
+function mouseout(d) {
+  console.log('bar mouse out');
+  // tip.hide(d);
+  console.log('mouseout')
+  console.log(d);
 
-//   d3.select(d.series.line).classed("series-hover", false);
-//   focus.select("text").text("");
-// }
+  d3.select(d.series.line).classed("hover", false);
+  focus.select("text").text("");
+}
 
 
 function bar_plot(d3data, conf) {
@@ -130,9 +133,9 @@ function bar_plot(d3data, conf) {
         .attr("y", height)
         .attr("width", x.rangeBand())
         .attr("height", 0)
-        .on("mouseover", mouseover)
+    //    .on("mouseover", mouseover)
     //    .on("click", mouseclick)
-        .on("mouseout", mouseout);
+    //    .on("mouseout", mouseout);
 
     rect.transition()
         .delay(function(d, i) { return i * 10; })
