@@ -19,9 +19,11 @@ function mouseout(d) {
 
 function bar_plot(d3data, conf) {
     default_conf = {"plot_container_id": "plot_container", "margin": {top: 30, right: 80, bottom: 30, left: 50}}
-    conf                   = typeof conf                   == 'undefined' ? default_conf                    : conf;
-    conf.margin            = typeof conf.margin            == 'undefined' ? default_conf.margin             : conf.margin;
-    conf.plot_container_id = typeof conf.plot_container_id == 'undefined' ? default_conf.plot_container_id  : plot_container_id;
+    conf                   = typeof conf                   == "undefined" ? default_conf                   : conf;
+    conf.plot_container_id = typeof conf.plot_container_id == "undefined" ? default_conf.plot_container_id : conf.plot_container_id;
+    conf.margin            = typeof conf.margin            == "undefined" ? default_conf.margin            : conf.margin;
+    conf.width  = 960 - conf.margin.left - conf.margin.right;
+    conf.height = 500 - conf.margin.top  - conf.margin.bottom;
     // FIXME: add pixel_width as conf parameter (default=960);
     conf.width  = 960 - conf.margin.left - conf.margin.right;
     conf.height = 500 - conf.margin.top  - conf.margin.bottom;
@@ -63,11 +65,11 @@ function bar_plot(d3data, conf) {
     var yGroupMax = d3.max(layers, function(layer) { return d3.max(layer, function(d) { return d.y; }); }),
         yStackMax = d3.max(layers, function(layer) { return d3.max(layer, function(d) { return d.y0 + d.y; }); });
 
+    conf.header = (conf.header === 'undefined' || conf.header.length != num_layers + 1) ? d3.range(num_layers) : conf.header;
+
     console.log('conf.header');
     console.log(conf.header);
     console.log(conf.header.length);
-    conf.header = (conf.header === 'undefined' || conf.header.length != num_layers + 1) ? d3.range(num_layers) : conf.header;
-
 
 
     // var x = d3.scale.ordinal()
@@ -142,7 +144,7 @@ function bar_plot(d3data, conf) {
     var rect_element;
 
     var rect = layer.selectAll("rect")
-        .data(function(d) { return d; })
+        .data(function(d) { console.log(d); return d; })
       .enter().append("rect")
         .attr("x", function(d) { return x(d.x); })
         .attr("y", conf.height)

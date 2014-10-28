@@ -17,9 +17,10 @@ class HomeTest(LiveServerTestCase):
         # Angeline opens her web browser, and goes to the home (root url) page
         self.browser.get(self.live_server_url + '/')
 
-        # She sees the word start somewhere
+        # She sees an HTML page that has a body tag with some non-empty string within it
         body = self.browser.find_element_by_tag_name('body')
         self.assertTrue(bool(body.text))
+
 
 
 class AdminTest(LiveServerTestCase):
