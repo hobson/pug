@@ -413,7 +413,7 @@ class DashboardView(TemplateView):
         context = super(DashboardView, self).get_context_data(**kwargs)
         print "context"
         context['data'] = {} 
-        context['data']['d3data'] = [["x", 0,1,2,3,4,5,6,7,8],["y", 99,51,72,43,54,65,76,67,98],["y0", 1,91,62,73,64,65,76,67,98]]
+        context['data']['d3data'] = [["x"] + list('abcdef') + list('xyz'),["y", 99,51,72,43,54,65,76,67,98],["y0", 1,91,62,73,64,65,76,67,98]]
         context['data']['xlabel'] = 'X-Label'
         context['data']['ylabel'] = 'Y-Label'
         print context

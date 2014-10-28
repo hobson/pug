@@ -1,62 +1,64 @@
 // requires functions from miner/js/plot-util.js
 
 function mouseover(d) {
-  console.log('bar hover');
-  // displays tip at center of voronoi region instead of near point
-  // tip.show(d);
-
-  console.log('mouseover');
-  console.log(d);
-  // doesn't work
-  // d.series.line.parentNode.appendChild(d.series.line);
-  // d3.select(d.series.rect).classed("hover", true);
+  // selector = ".bar.row-"+d.row + ".col"+d.col;
+  // console.log('mouse over selctor: ' + selector);
+  // console.log(d);
+  // d3.select(selector).classed('hover', true);
 }
-
-//   // tip.attr("transform", "translate(" + x_scale(d.x) + "," + y_scale(d.y) + ")");
-//   console.log("transform", "translate(" + x_scale(d.x) + "," + y_scale(d.y) + ")");
-//   focus.attr("transform", "translate(" + x_scale(d.x) + "," + y_scale(d.y) + ")");
-//   series_name = d.series.name.length ? d.series.name : ylabel;
-//   tt = (xlabel.length ? xlabel : "bin") + ": " + d.x + "\u00A0\u00A0\u00A0\u00A0" + series_name + ": " + d.y;
-//   focus.select("text").text(tt);
-
-//   query_obj.min_lag = d.x-5;
-//   query_obj.max_lag = d.x+5;
-
-//   // This generates the right link, but the SVG doesn't respond to clicks on the circle or anywhere nearby
-//   focus.select("a").attr("xlink:href", "?"+obj2query(query_obj));
-//   console.log(focus.select("a"));
-//   console.log(focus.select("a").attr("xlink:href"));
-//   // FIXME: for this link to be visible/clickable the mouseout function has to be triggered when the mouse enters the circle and leaves the voronoi region
-// }
 
 
 function mouseout(d) {
-  console.log('bar mouse out');
-  // tip.hide(d);
-  console.log('mouseout')
-  console.log(d);
-
-  // d3.select(d.series.line).classed("hover", false);
-  // focus.select("text").text("");
+  // FIXME: doesn't work
+  // selector = ".row-"+d.row + ".col-"+d.col;
+  // console.log('mouse out selector: ' + selector);
+  // console.log(d);
+  // d3.select().classed('hover', false);
 }
 
 
 function bar_plot(d3data, conf) {
-    conf = typeof conf == 'undefined' ? {"plot_container_id": "plot_container", "margin": {top: 30, right: 80, bottom: 30, left: 50}} : conf;
-    conf.plot_container_id = typeof conf.plot_container_id == 'undefined' ? "plot_container" : plot_container_id;
-    var ans = arrays_as_d3_series(d3data);
-    xlabel = conf.xlabel.length ? conf.xlabel : ans.xlabel;
-    var ylabels = [conf.ylabel];
-    ylabel = conf.ylabel.length ? conf.ylabel : ans.ylabels[0];
-    var data = ans.data;
+    default_conf = {"plot_container_id": "plot_container", "margin": {top: 30, right: 80, bottom: 30, left: 50}}
+    conf                   = typeof conf                   == 'undefined' ? default_conf                    : conf;
+    conf.margin            = typeof conf.margin            == 'undefined' ? default_conf.margin             : conf.margin;
+    conf.plot_container_id = typeof conf.plot_container_id == 'undefined' ? default_conf.plot_container_id  : plot_container_id;
+    // FIXME: add pixel_width as conf parameter (default=960);
+    conf.width  = 960 - conf.margin.left - conf.margin.right;
+    conf.height = 500 - conf.margin.top  - conf.margin.bottom;
+
+    var num_layers = d3data.length - 1;
+    xlabel = conf.xlabel.length ? conf.xlabel : d3data[0][0];
+    ylabel = conf.ylabel.length ? conf.ylabel : d3data[0][1];
+    var layers = split_d3_series(d3data);
+    for (var i=0; i<layers.length; i++) {
+        for (var j=0; j<layers[i].length; j++) {
+            layers[i][j].series = layers[i]
+            layers[i][j].col = i;
+            layers[i][j].row = j;
+            layers[i][j].heading = conf.header[i+1];
+            layers[i][j].layer = layers[i];
+        }
+    }
+    console.log('layers (d3data as arrays of objects with x,y properties)');
+    console.log(layers);
+
+    console.log('d3data unaltered');
+    console.log(d3data);
+    d3data = arrays_as_objects(d3data);
+    console.log('d3data as array of objects');
+    console.log(d3data);
+    var num_stacks = d3data.length; // number of samples per layer
+
+    conf.xscale = d3.scale.linear().range([0, conf.width]);
+    conf.xlabel = "Horizontal Value (Time?)";
+    conf.yscale = d3.scale.linear().range([conf.height, 0]);
+    conf.ylabel = "Vertical Value";
 
     console.log("conf.plot_container_id");
     console.log(conf.plot_container_id);
+    console.log(conf.margin);
 
-    data.sort(function(a, b) { return a.x - b.x; });
-    var n = d3data.length - 1, // number of stack layers or group members or data sequences or serieses
-        m = data.length; // number of samples per layer
-    var layers = split_d3_series(d3data);
+    d3data.sort(function(a, b) { return a.x - b.x; });
 
     var yGroupMax = d3.max(layers, function(layer) { return d3.max(layer, function(d) { return d.y; }); }),
         yStackMax = d3.max(layers, function(layer) { return d3.max(layer, function(d) { return d.y0 + d.y; }); });
@@ -64,36 +66,36 @@ function bar_plot(d3data, conf) {
     console.log('conf.header');
     console.log(conf.header);
     console.log(conf.header.length);
-    conf.header = (conf.header === 'undefined' || conf.header.length != n + 1) ? d3.range(n) : conf.header;
-    
-    for (var i=0; i<layers.length; i++) {
-        for (var j=0; j<layers[i].length; j++) {
-            layers[i][j].series = layers[i]
-            layers[i][j].column = i;
-            layers[i][j].row = j;
-            layers[i][j].heading = conf.header[i+1];
-            layers[i][j].layer = layers[i];
-        }
-    }
+    conf.header = (conf.header === 'undefined' || conf.header.length != num_layers + 1) ? d3.range(num_layers) : conf.header;
 
-    console.log('layers');
-    console.log(layers);
 
-    var margin = {top: 40, right: 10, bottom: 20, left: 10},
-        width = 960 - margin.left - margin.right,
-        height = 500 - margin.top - margin.bottom;
+
+    // var x = d3.scale.ordinal()
+    //     .domain(d3.range(num_stacks))
+    //     .rangeRoundBands([0, conf.width], 0.08);
 
     var x = d3.scale.ordinal()
-        .domain(d3.range(m))
-        .rangeRoundBands([0, width], 0.08);
+        .domain(d3data.map(function(d) { return d.x; }))
+        .rangeRoundBands([0, conf.width], 0.08);
+
 
     var y = d3.scale.linear()
         .domain([0, yStackMax])
-        .range([height, 0]);
+        .range([conf.height, 0]);
+
+
+    // var y = d3.scale.linear()
+    //     .range([height, 0]);
 
     var color = d3.scale.linear()
-        .domain([0, n - 1])
+        .domain([0, num_layers - 1])
         .range(["#aad", "#556"]);
+
+    // var xAxis = d3.svg.axis()
+    //     .scale(x)
+    //     .tickSize(0)
+    //     .tickPadding(6)
+    //     .orient("bottom");
 
     var xAxis = d3.svg.axis()
         .scale(x)
@@ -101,11 +103,14 @@ function bar_plot(d3data, conf) {
         .tickPadding(6)
         .orient("bottom");
 
-
     var yAxis = d3.svg.axis()
         .scale(y)
         .orient("left")
         .ticks(10, "%");
+
+    // var yAxis = d3.svg.axis()
+    //     .scale(y)
+    //     .orient("left");
 
     // // need something like this here to append the series data to each rect
     // var series = svg.selectAll(".series")
@@ -115,10 +120,10 @@ function bar_plot(d3data, conf) {
 
 
     var svg = d3.select("#" + conf.plot_container_id).append("svg")
-        .attr("width", width + margin.left + margin.right)
-        .attr("height", height + margin.top + margin.bottom)
+        .attr("width", conf.width + conf.margin.left + conf.margin.right)
+        .attr("height", conf.height + conf.margin.top + conf.margin.bottom)
       .append("g")
-        .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+        .attr("transform", "translate(" + conf.margin.left + "," + conf.margin.top + ")");
 
     var layer = svg.selectAll(".layer")
         .data(layers)
@@ -132,7 +137,7 @@ function bar_plot(d3data, conf) {
       //     .attr("class", "bar")
       //     .attr("x", function(d) { return x(d.name); })
       //     .attr("y", function(d) { return y(d.value); })
-      //     .attr("height", function(d) { return height - y(d.value); })
+      //     .attr("height", function(d) { return conf.height - y(d.value); })
       //     .attr("width", x.rangeBand());
     var rect_element;
 
@@ -140,21 +145,13 @@ function bar_plot(d3data, conf) {
         .data(function(d) { return d; })
       .enter().append("rect")
         .attr("x", function(d) { return x(d.x); })
-        .attr("y", height)
+        .attr("y", conf.height)
         .attr("width", x.rangeBand())
+        .attr("class", function(d) { return "bar row-" + d.row + " col-" + d.col; })
         .attr("height", 0)
-        .on("mouseover", function(d) { 
-            rect_element=d3.select(this); 
-            console.log("mouseover"); 
-            console.log(rect_element);
-            rect_element.classed("hover", true); 
-        } )
-    //    .on("click", mouseclick)
-        .on("mouseout", function(d) {
-            rect_element=d3.select(this);
-            console.log("mouseout");
-            console.log(rect_element);
-            rect_element.classed("hover", false); });
+        .on("mouseover", mouseout)
+        .on("mouseout", mouseout);
+    //    .on("click", mouseclick);
 
     rect.transition()
         .delay(function(d, i) { return i * 10; })
@@ -163,7 +160,7 @@ function bar_plot(d3data, conf) {
 
     svg.append("g")
         .attr("class", "x axis")
-        .attr("transform", "translate(0," + height + ")")
+        .attr("transform", "translate(0," + conf.height + ")")
         .call(xAxis);
 
     d3.selectAll("input").on("change", change);
@@ -184,11 +181,11 @@ function bar_plot(d3data, conf) {
       rect.transition()
           .duration(500)
           .delay(function(d, i) { return i * 10; })
-          .attr("x", function(d, i, j) { return x(d.x) + x.rangeBand() / n * j; })
-          .attr("width", x.rangeBand() / n)
+          .attr("x", function(d, i, j) { return x(d.x) + x.rangeBand() / num_layers * j; })
+          .attr("width", x.rangeBand() / num_layers)
         .transition()
           .attr("y", function(d) { return y(d.y); })
-          .attr("height", function(d) { return height - y(d.y); });
+          .attr("height", function(d) { return conf.height - y(d.y); });
     }
 
     function transitionStacked() {

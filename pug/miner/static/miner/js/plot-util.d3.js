@@ -74,27 +74,54 @@ function arrays_as_objects(columns) {
     for (var i=0; i<columns.length; i++) {
         var column = columns[i];
         var name = column[0];
-        console.log(name);
+        // console.log(name);
         for (var j=1; j<column.length; j++) {
-            console.log(' ' + i + ', ' + j + ', ' + objects.length );
+            // console.log(' ' + i + ', ' + j + ', ' + objects.length );
             if (i === 0) { objects.push({}); }
-            console.log(objects[j-1]);
+            // console.log(objects[j-1]);
             objects[j-1][name] = column[j];
-            console.log(objects[j-1]);
+            // console.log(objects[j-1]);
         }
     }
     return objects;
 }
 
-// FIXME: implement this:
+function properties(d) {
+    props = Array()
+    for (var property in d) {
+            if (d.hasOwnProperty(property)) {
+                props.push(property);
+            }
+        }
+    return props;
+    }
+
+function split_objects(d3data) {
+    // convert an array of objects n arrays of objects, each with attributes like x, y, name, uri
+    var stack = d3.layout.stack();
+    var props = properties(d3data[0]);
+    var n = props.length;  // number of dimensions or columns (in addition to the x coordinate)
+    var m = d3data.length; // number of records
+    layers = stack(d3.range(n).map(function(j) {
+        var l = [];
+        for (var i=0; i < m; i++) {
+            l.push({"x": i, "y": d3data[j][props[i]], "y0": 0});
+            //console.log('layers['+i+']['+j+'] = ' + obj + ' = ' + '(' + obj.x + ',' + obj.y + ',' + obj.y0 + ')');
+        } // for i
+        return l;
+    })); // .map(function(j)
+    return layers;
+}
+
 function split_d3_series(d3data) {
+    // convert an array of arrays into an array of objects, each with attributes like x, y, name, uri
     var stack = d3.layout.stack();
     var n = d3data.length - 1;  // number of dimensions or columns (in addition to the x coordinate)
     var m = d3data[0].length - 1; // number of records
     layers = stack(d3.range(n).map(function(j) {
         var l = [];
         for (var i=0; i < m; i++) {
-            l.push({"x": i, "y": d3data[j+1][i+1], "y0": 0});
+            l.push({"x": d3data[0][i+1], "y": d3data[j+1][i+1], "y0": 0});
             //console.log('layers['+i+']['+j+'] = ' + obj + ' = ' + '(' + obj.x + ',' + obj.y + ',' + obj.y0 + ')');
         } // for i
         return l;
