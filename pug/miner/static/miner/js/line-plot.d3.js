@@ -29,9 +29,6 @@ console.log("conf");
 console.log(conf);
 
 
-
-
-
 function mouseover(d) {
   // displays tip at center of voronoi region instead of near point
   // tip.show(d);

@@ -181,3 +181,13 @@ function create_yaxis(conf) {
 function create_xaxis(conf) {
     return d3.svg.axis().scale(conf.xscale).orient("bottom");
 }
+
+
+// d3 selection method to move it to the top of the graphics layer stack (so it displays on top)
+// Example:
+//   `svg.select("circle").moveToFront();`
+d3.selection.prototype.moveToFront = function() {
+  return this.each(function(){
+    this.parentNode.appendChild(this);
+  });
+};

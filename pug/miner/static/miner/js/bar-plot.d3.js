@@ -1,17 +1,24 @@
-// requires functions from miner/js/plot-util.js
+// Dependencies:
+//   miner/js/plot-util.js
+//   d3.js
 
 function mouseover(d) {
-    var focus = svg.select("g.focus")
-        .append("text").attr("y", -12);
-
-  // selector = ".bar.row-"+d.row + ".col"+d.col;
-  // console.log('mouse over selctor: ' + selector);
-  // console.log(d);
-  // d3.select(selector).classed('hover', true);
+    var focus = d3.select("g.focus");
+    var text_anchor = mouseover.conf.xscale(d.x) > d3.mean(mouseover.conf.xscale.range()) ? "end" : "start";
+    focus.attr("transform", "translate(" + mouseover.conf.xscale(d.x) + "," + mouseover.conf.yscale(d.y) + ")");
+    var tt = d.heading + ": " + (d.y).toFixed(1) + "%"; 
+    focus.select("text").text(tt);
+    console.log(d);
+    console.log(mouseover.conf.xscale(d.x));
+    console.log(d3.mean(mouseover.conf.xscale.range()));
+    console.log("translate(" + mouseover.conf.xscale(d.x) + "," + mouseover.conf.yscale(d.y) + ")");
 }
+mouseover.conf = null;
 
 
 function mouseout(d) {
+  var focus = d3.select("g.focus");
+  focus.select("text").text("");
   // FIXME: doesn't work
   // selector = ".row-"+d.row + ".col-"+d.col;
   // console.log('mouse out selector: ' + selector);
@@ -110,7 +117,6 @@ function bar_plot(d3data, conf) {
     //   .enter().append("g")
     //     .attr("class", "series");
 
-    var focus = svg.append("g").attr("class", "focus");
 
     var layer = svg.selectAll(".layer")
         .data(layers)
@@ -128,6 +134,8 @@ function bar_plot(d3data, conf) {
       //     .attr("width", x.rangeBand());
     var rect_element;
 
+    mouseover.conf = conf;
+    mouseout.conf = conf;
     var rect = layer.selectAll("rect")
         .data(function(d) { console.log(d); return d; })
       .enter().append("rect")
@@ -136,7 +144,7 @@ function bar_plot(d3data, conf) {
         .attr("width", conf.xscale.rangeBand())
         .attr("class", function(d) { return "bar row-" + d.row + " col-" + d.col; })
         .attr("height", 0)
-        .on("mouseover", mouseout)
+        .on("mouseover", mouseover)
         .on("mouseout", mouseout);
     //    .on("click", mouseclick);
 
@@ -151,6 +159,10 @@ function bar_plot(d3data, conf) {
         .call(xAxis);
 
     d3.selectAll("input").on("change", change);
+
+    // focus must be the last SVG element so it will be on top
+    var focus = svg.append("g").attr("class", "focus");
+    focus.append("text").attr("x", 0).attr("y", -12).attr("text-anchor", "start");
 
     var timeout = setTimeout(function() {
       d3.select("input[value=\"grouped\"]").property("checked", true).each(change);
