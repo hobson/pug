@@ -16,11 +16,9 @@
           <label><input type="radio" name="mode" value="stacked" checked> Stacked</label>
         </form>
     </div>
+
     <div class="row">
       <div id="plot_container" class="graph"></div>
-    </div>
-    <div class="row">
-        <pre>{{ data|safe|escape }}</pre>
     </div>
 
     {% block plot %}
