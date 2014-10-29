@@ -27,23 +27,15 @@ conf.query.table = "fast";
 
 console.log("conf");
 console.log(conf);
-// tooltips
-var svg = d3.select("#" + conf.plot_container_id).append("svg")
-            .attr("width",  conf.width + conf.margin.left + conf.margin.right)
-            .attr("height", conf.height + conf.margin.top + conf.margin.bottom)
-      .append("g")
-        .attr("transform", "translate(" + conf.margin.left + "," + conf.margin.top + ")");
 
 
-var focus = svg.append("g")
-    .attr("transform", "translate(-100,-100)")  // make sure initial tool-tip circle is located outside (upper left) of the plot (svg element)
-    .attr("class", "focus");
+
 
 
 function mouseover(d) {
   // displays tip at center of voronoi region instead of near point
   // tip.show(d);
-
+  var focus = d3.select("g.focus");
   console.log('mouseover');
   console.log(d);
   // doesn't work
@@ -88,6 +80,7 @@ function mouseover(d) {
 
 
 function mouseout(d) {
+  var focus = d3.select("g.focus");
   // tip.hide(d);
   console.log('mouseout');
   d3.select(d.series.line).classed("series-hover", false);
@@ -174,6 +167,15 @@ function draw_plot(d3data, new_xlabel, new_ylabel) {
     console.log(data.map(function(d) { return [d.y, conf.yscale(d.y)] }));
 
 
+    // To display mouseover tooltips, we need an SVG element in the DOM with a g.focus element 
+    // to move and add text to within the mouseover/mouseout callbacks
+    // TODO: use the element ID (conf.plot_container_id) to select it locally within the mouseover and mouseout functions
+    var svg = d3.select("#" + conf.plot_container_id).append("svg")
+            .attr("width",  conf.width + conf.margin.left + conf.margin.right)
+            .attr("height", conf.height + conf.margin.top + conf.margin.bottom)
+      .append("g")
+        .attr("transform", "translate(" + conf.margin.left + "," + conf.margin.top + ")");
+
     var xAxis = d3.svg.axis().scale(conf.xscale).orient("bottom");
 
     // FIXME: use autoscale function to find domain/ranges that are approximately 0-100 or 0-1 or 0 to -1 or 0 to -100 and make percentages of them
@@ -247,10 +249,10 @@ function draw_plot(d3data, new_xlabel, new_ylabel) {
     //    .on("click", mouseclick)
         .on("mouseout", mouseout);
 
-    // reappend the svg with a focus circle and see if it'll mouse-out from the veronoi
-    focus = svg.append("g")
-        .attr("transform", "translate(-100,-100)")  // make sure initial tool-tip circle is located outside (upper left) of the plot (svg element)
-        .attr("class", "focus");
+    var focus = svg.append("g").attr("class", "focus")
+        .attr("transform", "translate(" + -100 + "," + -100 + ")");
+
+    focus = svg.select("g.focus");
 
     focus.append("text").attr("y", -12);
 

@@ -1,6 +1,9 @@
 // requires functions from miner/js/plot-util.js
 
 function mouseover(d) {
+    var focus = svg.select("g.focus")
+        .append("text").attr("y", -12);
+
   // selector = ".bar.row-"+d.row + ".col"+d.col;
   // console.log('mouse over selctor: ' + selector);
   // console.log(d);
@@ -109,11 +112,17 @@ function bar_plot(d3data, conf) {
     //     .tickSize(0)
     //     .tickPadding(6)
     //     .orient("bottom");
+    var svg = d3.select("#" + conf.plot_container_id).append("svg")
+            .attr("width",  conf.width + conf.margin.left + conf.margin.right)
+            .attr("height", conf.height + conf.margin.top + conf.margin.bottom)
+      .append("g")
+        .attr("transform", "translate(" + conf.margin.left + "," + conf.margin.top + ")");
+
+    // don't put a tick mark on bar-plots
+    var xAxis = d3.svg.axis().scale(x).tickSize(0).tickPadding(6).orient("bottom");
 
     var xAxis = d3.svg.axis()
         .scale(x)
-        .tickSize(0)
-        .tickPadding(6)
         .orient("bottom");
 
     var yAxis = d3.svg.axis()
@@ -131,12 +140,7 @@ function bar_plot(d3data, conf) {
     //   .enter().append("g")
     //     .attr("class", "series");
 
-
-    var svg = d3.select("#" + conf.plot_container_id).append("svg")
-        .attr("width", conf.width + conf.margin.left + conf.margin.right)
-        .attr("height", conf.height + conf.margin.top + conf.margin.bottom)
-      .append("g")
-        .attr("transform", "translate(" + conf.margin.left + "," + conf.margin.top + ")");
+    var focus = svg.append("g").attr("class", "focus");
 
     var layer = svg.selectAll(".layer")
         .data(layers)
