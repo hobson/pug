@@ -164,3 +164,20 @@ function query_param(name) {
     return results === null ? "" : decodeURIComponent(results[1].replace(/\+/g, " "));
 }
 
+
+function create_svg_element(conf) {
+    return d3.select("#" + conf.plot_container_id).append("svg")
+                .attr("width",  conf.width + conf.margin.left + conf.margin.right)
+                .attr("height", conf.height + conf.margin.top + conf.margin.bottom)
+          .append("g")
+            .attr("transform", "translate(" + conf.margin.left + "," + conf.margin.top + ")");
+   
+    }
+
+function create_yaxis(conf) {
+    return d3.svg.axis().scale(conf.yscale).orient("left"); }
+
+
+function create_xaxis(conf) {
+    return d3.svg.axis().scale(conf.xscale).orient("bottom");
+}

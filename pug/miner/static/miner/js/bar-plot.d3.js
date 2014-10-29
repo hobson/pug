@@ -59,7 +59,7 @@ function bar_plot(d3data, conf) {
 
     conf.xscale = d3.scale.ordinal()
         .domain(d3data.map(function(d) { return d[xfield]; }))
-        .rangeRoundBands([0, conf.width], 0.08);
+        .rangeRoundBands([0, conf.width], 0.1);
     conf.xlabel = "Horizontal Value (Time?)";
     conf.yscale = d3.scale.linear().range([conf.height, 0]);
     conf.ylabel = "Vertical Value";
@@ -89,49 +89,19 @@ function bar_plot(d3data, conf) {
     var yGroupMax = ymax;
     var yStackMax = d3.max(layers, function(layer) { return d3.max(layer, function(d) { return d.y0 + d.y; }); });
 
-
-    // var x = d3.scale.ordinal()
-    //     .domain(d3.range(num_stacks))
-    //     .rangeRoundBands([0, conf.width], 0.08);
-
-    var x = conf.xscale;
-
-
-    var y = d3.scale.linear()
+    conf.yscale = d3.scale.linear()
         .domain([0, yStackMax])
         .range([conf.height, 0]);
 
-
-    // var y = d3.scale.linear()
-    //     .range([height, 0]);
-
-
-
-    // var xAxis = d3.svg.axis()
-    //     .scale(x)
-    //     .tickSize(0)
-    //     .tickPadding(6)
-    //     .orient("bottom");
-    var svg = d3.select("#" + conf.plot_container_id).append("svg")
-            .attr("width",  conf.width + conf.margin.left + conf.margin.right)
-            .attr("height", conf.height + conf.margin.top + conf.margin.bottom)
-      .append("g")
-        .attr("transform", "translate(" + conf.margin.left + "," + conf.margin.top + ")");
+    var svg = create_svg_element(conf);
 
     // don't put a tick mark on bar-plots
-    var xAxis = d3.svg.axis().scale(x).tickSize(0).tickPadding(6).orient("bottom");
+    var xAxis = create_xaxis(conf).tickSize(0).tickPadding(6).orient("bottom");
 
-    var xAxis = d3.svg.axis()
-        .scale(x)
-        .orient("bottom");
-
-    var yAxis = d3.svg.axis()
-        .scale(y)
-        .orient("left")
-        .ticks(10, "%");
+    var yAxis = create_yaxis(conf).ticks(10, "%");
 
     // var yAxis = d3.svg.axis()
-    //     .scale(y)
+    //     .scale(conf.yscale)
     //     .orient("left");
 
     // // need something like this here to append the series data to each rect
@@ -153,7 +123,7 @@ function bar_plot(d3data, conf) {
       //   .enter().append("rect")
       //     .attr("class", "bar")
       //     .attr("x", function(d) { return x(d.name); })
-      //     .attr("y", function(d) { return y(d.value); })
+      //     .attr("y", function(d) { return conf.yscale(d.value); })
       //     .attr("height", function(d) { return conf.height - y(d.value); })
       //     .attr("width", x.rangeBand());
     var rect_element;
@@ -161,9 +131,9 @@ function bar_plot(d3data, conf) {
     var rect = layer.selectAll("rect")
         .data(function(d) { console.log(d); return d; })
       .enter().append("rect")
-        .attr("x", function(d) { return x(d[xfield]); })
+        .attr("x", function(d) { return conf.xscale(d[xfield]); })
         .attr("y", conf.height)
-        .attr("width", x.rangeBand())
+        .attr("width", conf.xscale.rangeBand())
         .attr("class", function(d) { return "bar row-" + d.row + " col-" + d.col; })
         .attr("height", 0)
         .on("mouseover", mouseout)
@@ -172,8 +142,8 @@ function bar_plot(d3data, conf) {
 
     rect.transition()
         .delay(function(d, i) { return i * 10; })
-        .attr("y", function(d) { return y(d.y0 + d.y); })
-        .attr("height", function(d) { return y(d.y0) - y(d.y0 + d.y); });
+        .attr("y", function(d) { return conf.yscale(d.y0 + d.y); })
+        .attr("height", function(d) { return conf.yscale(d.y0) - conf.yscale(d.y0 + d.y); });
 
     svg.append("g")
         .attr("class", "x axis")
@@ -193,28 +163,28 @@ function bar_plot(d3data, conf) {
     }
 
     function transitionGrouped() {
-      y.domain([0, yGroupMax]);
+      conf.yscale.domain([0, yGroupMax]);
 
       rect.transition()
           .duration(500)
           .delay(function(d, i) { return i * 10; })
-          .attr("x", function(d, i, j) { return x(d[xfield]) + x.rangeBand() / num_layers * j; })
-          .attr("width", x.rangeBand() / num_layers)
+          .attr("x", function(d, i, j) { return conf.xscale(d[xfield]) + conf.xscale.rangeBand() / num_layers * j; })
+          .attr("width", conf.xscale.rangeBand() / num_layers)
         .transition()
-          .attr("y", function(d) { return y(d.y); })
-          .attr("height", function(d) { return conf.height - y(d.y); });
+          .attr("y", function(d) { return conf.yscale(d.y); })
+          .attr("height", function(d) { return conf.height - conf.yscale(d.y); });
     }
 
     function transitionStacked() {
-      y.domain([0, yStackMax]);
+      conf.yscale.domain([0, yStackMax]);
 
       rect.transition()
           .duration(500)
           .delay(function(d, i) { return i * 10; })
-          .attr("y", function(d) { return y(d.y0 + d.y); })
-          .attr("height", function(d) { return y(d.y0) - y(d.y0 + d.y); })
+          .attr("y", function(d) { return conf.yscale(d.y0 + d.y); })
+          .attr("height", function(d) { return conf.yscale(d.y0) - conf.yscale(d.y0 + d.y); })
         .transition()
-          .attr("x", function(d) { return x(d[xfield]); })
+          .attr("x", function(d) { return conf.xscale(d[xfield]); })
           .attr("width", x.rangeBand());
     }
 

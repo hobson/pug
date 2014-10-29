@@ -170,16 +170,12 @@ function draw_plot(d3data, new_xlabel, new_ylabel) {
     // To display mouseover tooltips, we need an SVG element in the DOM with a g.focus element 
     // to move and add text to within the mouseover/mouseout callbacks
     // TODO: use the element ID (conf.plot_container_id) to select it locally within the mouseover and mouseout functions
-    var svg = d3.select("#" + conf.plot_container_id).append("svg")
-            .attr("width",  conf.width + conf.margin.left + conf.margin.right)
-            .attr("height", conf.height + conf.margin.top + conf.margin.bottom)
-      .append("g")
-        .attr("transform", "translate(" + conf.margin.left + "," + conf.margin.top + ")");
+    var svg = create_svg_element(conf);
 
-    var xAxis = d3.svg.axis().scale(conf.xscale).orient("bottom");
+    var xAxis = create_xaxis(conf);
 
     // FIXME: use autoscale function to find domain/ranges that are approximately 0-100 or 0-1 or 0 to -1 or 0 to -100 and make percentages of them
-    var yAxis = d3.svg.axis().scale(conf.yscale).orient("left");  //.ticks(10, "%");
+    var yAxis = create_yaxis(conf);  //.ticks(10, "%");
 
     var voronoi = d3.geom.voronoi()
         .x(function(d) { console.log("voronoi x"); console.log(conf.xscale(d.x)); return conf.xscale(d.x); })
