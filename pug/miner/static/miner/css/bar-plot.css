@@ -31,7 +31,7 @@ pre {
   shape-rendering: crispEdges;
 }
 
-form {
+form.plot {
   position: relative;
   left: 800px;
   top: 10px;

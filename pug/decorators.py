@@ -15,7 +15,7 @@ from types import NoneType
 from nlp.db import representation
 from inspect import getmodule
 from nlp.util import make_name
-# from django.db.models.fields.related import RelatedField
+from django.db.models.fields.related import RelatedField
 # from django.conf import settings
 #from exceptions import TypeError
 
