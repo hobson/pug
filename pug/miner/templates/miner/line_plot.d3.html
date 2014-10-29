@@ -1,11 +1,29 @@
-{% extends 'miner/hist.html' %}
+{% extends 'miner/base.html' %}
 {% load i18n %}
 {% load staticfiles %}
 {% load static %}
 
-{% block plot %}
 
-<script src="{% static "miner/js/line-plot.js" %}"></script>
-<script> line_plot({{ data.d3data|safe }}, "{{ data.xlabel|escapejs }}", "{{ data.ylabel|escapejs }}"); </script>
+{% block extra_head %}
+    <script src="//cdnjs.cloudflare.com/ajax/libs/d3/3.4.13/d3.js"></script>
+    {# <script src="//cdnjs.cloudflare.com/ajax/libs/d3/3.4.13/d3.min.js"></script> #}
 
+    {# <script src="{% static "d3/d3.min.js" %}"></script> #}
+    {#  <script src="{% static "d3-tip/index.js" %}"></script> #}
+    <link rel="stylesheet" href="{% static "miner/css/line-plot.css" %}">
 {% endblock %}
+
+{% block content %}
+    <div class="row">
+        <H1>Example Line Plot</H1>
+        <div id="plot_container" class="graph"></div>
+    {% block plot %}
+        <pre>{{ data|safe|escape }}</pre>
+        <script src="{% static "miner/js/plot-util.d3.js" %}"></script>
+        <script src="{% static "miner/js/line-plot.d3.js" %}"></script>
+        <script> line_plot({{ data.d3data|safe }}, {"xlabel": "{{ data.xlabel|escapejs }}", "ylabel": "{{ data.ylabel|escapejs }}", "plot_container_id": "plot_container"}); </script>
+        </script>
+
+    {% endblock plot %}
+
+{% endblock content %}

@@ -1,90 +1,103 @@
-// Expects d3data to be an array of arrays (columns of data)
-// The first element of each array is it's label (header/name)
-// Returns a d3-compatible object with an xlabel, ylabels = header with xlabel removed
-// and data which is an array of objects with elements x and y (y attribute is named by the header/ylabels)
-function arrays_as_d3_series(d3data) {
-    console.log('d3data before transpose');
-    console.log(d3data);
-    var ans = {};
-    d3data = d3.transpose(d3data);
-    // console.log(d3data);
-    ans.data = [];
-    ans.header = d3data[0];
-    // console.log(header);
-    for (var i=1; i < d3data.length; i++) {
-        var obj = {};
-        obj.x = d3data[i][0];
-        for (var k=1; k < ans.header.length; k++) {
-            obj[ans.header[k]] = d3data[i][k];
-            }
-        // console.log(i);
-        // console.log(obj);
-        ans.data.push(obj);
-        }
-    // console.log(data);
+// requires functions from miner/js/plot-util.js
 
-    ans.xlabel = ans.header[0];
-    ans.header.shift();
-    ans.ylabels = ans.header;
-    return ans;
-    }
-
-// FIXME: implement this:
-function split_d3_series(d3data) {
-    ans = [];
-    for (var i=0; i < d3data.length; i++) {console.log(d3data[i]);}
+function mouseover(d) {
+  // selector = ".bar.row-"+d.row + ".col"+d.col;
+  // console.log('mouse over selctor: ' + selector);
+  // console.log(d);
+  // d3.select(selector).classed('hover', true);
 }
 
-function bar_plot(d3data, new_xlabel, new_ylabel) {
-    var ans = arrays_as_d3_series(d3data);
-    xlabel = new_xlabel.length ? new_xlabel : ans.xlabel;
-    var ylabels = [new_ylabel];
-    ylabel = new_ylabel.length ? new_ylabel : ans.ylabels[0];
-    var data = ans.data;
-    console.log('data');
-    console.log(data);
-    data.sort(function(a, b) { return a.x - b.x; });
 
-    var n = d3data.length - 1, // number of layers or series
-        m = data.length - 1, // number of samples per layer
-        stack = d3.layout.stack(),
-        layers = stack(d3.range(n).map(function(j) {
-            console.log('j = ' + j);
-            l = [];
-            for (var i=1; i < data.length; i++) {
-                console.log('i = ' + i);
-                obj = {};
-                obj.x = d3data[0][i];
-                obj.y = d3data[j+1][i];
-                //obj.y0 = 0;
-                l.push(obj);
-                //console.log(obj);
-            } // for i 
-            console.log(l);
-            l2 = [{x:1,y:5},{x:2,y:6},{x:3,y:3}];
-            console.log(l2);
-            return l; })),
-        yGroupMax = d3.max(layers, function(layer) { return d3.max(layer, function(d) { return d.y; }); }),
-        yStackMax = d3.max(layers, function(layer) { return d3.max(layer, function(d) { return d.y0 + d.y; }); });
-    console.log('layers');
+function mouseout(d) {
+  // FIXME: doesn't work
+  // selector = ".row-"+d.row + ".col-"+d.col;
+  // console.log('mouse out selector: ' + selector);
+  // console.log(d);
+  // d3.select().classed('hover', false);
+}
+
+
+function bar_plot(d3data, conf) {
+    default_conf = {"plot_container_id": "plot_container", "margin": {top: 30, right: 80, bottom: 30, left: 50}}
+    conf                   = typeof conf                   == "undefined" ? default_conf                   : conf;
+    conf.plot_container_id = typeof conf.plot_container_id == "undefined" ? default_conf.plot_container_id : conf.plot_container_id;
+    conf.margin            = typeof conf.margin            == "undefined" ? default_conf.margin            : conf.margin;
+    conf.width  = 960 - conf.margin.left - conf.margin.right;
+    conf.height = 500 - conf.margin.top  - conf.margin.bottom;
+    // FIXME: add pixel_width as conf parameter (default=960);
+    conf.width  = 960 - conf.margin.left - conf.margin.right;
+    conf.height = 500 - conf.margin.top  - conf.margin.bottom;
+
+    var num_layers = d3data.length - 1;
+    xlabel = conf.xlabel.length ? conf.xlabel : d3data[0][0];
+    ylabel = conf.ylabel.length ? conf.ylabel : d3data[0][1];
+    var layers = split_d3_series(d3data);
+    for (var i=0; i<layers.length; i++) {
+        for (var j=0; j<layers[i].length; j++) {
+            layers[i][j].series = layers[i]
+            layers[i][j].col = i;
+            layers[i][j].row = j;
+            layers[i][j].heading = conf.header[i+1];
+            layers[i][j].layer = layers[i];
+        }
+    }
+    console.log('layers (d3data as arrays of objects with x,y properties)');
     console.log(layers);
 
-    var plot_element_id = "plot_div";
-    var margin = {top: 40, right: 10, bottom: 20, left: 10},
-        width = 960 - margin.left - margin.right,
-        height = 500 - margin.top - margin.bottom;
+    console.log('d3data unaltered');
+    console.log(d3data);
+    d3data = arrays_as_objects(d3data);
+    console.log('d3data as array of objects');
+    console.log(d3data);
+    var num_stacks = d3data.length; // number of samples per layer
+
+    conf.xscale = d3.scale.linear().range([0, conf.width]);
+    conf.xlabel = "Horizontal Value (Time?)";
+    conf.yscale = d3.scale.linear().range([conf.height, 0]);
+    conf.ylabel = "Vertical Value";
+
+    console.log("conf.plot_container_id");
+    console.log(conf.plot_container_id);
+    console.log(conf.margin);
+
+    d3data.sort(function(a, b) { return a.x - b.x; });
+
+    var yGroupMax = d3.max(layers, function(layer) { return d3.max(layer, function(d) { return d.y; }); }),
+        yStackMax = d3.max(layers, function(layer) { return d3.max(layer, function(d) { return d.y0 + d.y; }); });
+
+    conf.header = (conf.header === 'undefined' || conf.header.length != num_layers + 1) ? d3.range(num_layers) : conf.header;
+
+    console.log('conf.header');
+    console.log(conf.header);
+    console.log(conf.header.length);
+
+
+    // var x = d3.scale.ordinal()
+    //     .domain(d3.range(num_stacks))
+    //     .rangeRoundBands([0, conf.width], 0.08);
 
     var x = d3.scale.ordinal()
-        .domain(d3.range(m))
-        .rangeRoundBands([0, width], .08);
+        .domain(d3data.map(function(d) { return d.x; }))
+        .rangeRoundBands([0, conf.width], 0.08);
+
 
     var y = d3.scale.linear()
         .domain([0, yStackMax])
-        .range([height, 0]);
+        .range([conf.height, 0]);
+
+
+    // var y = d3.scale.linear()
+    //     .range([height, 0]);
 
     var color = d3.scale.linear()
-        .domain([0, n - 1])
+        .domain([0, num_layers - 1])
         .range(["#aad", "#556"]);
+
+    // var xAxis = d3.svg.axis()
+    //     .scale(x)
+    //     .tickSize(0)
+    //     .tickPadding(6)
+    //     .orient("bottom");
 
     var xAxis = d3.svg.axis()
         .scale(x)
@@ -92,11 +105,27 @@ function bar_plot(d3data, new_xlabel, new_ylabel) {
         .tickPadding(6)
         .orient("bottom");
 
-    var svg = d3.select("#" + plot_element_id).append("svg")
-        .attr("width", width + margin.left + margin.right)
-        .attr("height", height + margin.top + margin.bottom)
+    var yAxis = d3.svg.axis()
+        .scale(y)
+        .orient("left")
+        .ticks(10, "%");
+
+    // var yAxis = d3.svg.axis()
+    //     .scale(y)
+    //     .orient("left");
+
+    // // need something like this here to append the series data to each rect
+    // var series = svg.selectAll(".series")
+    //     .data(all_series)
+    //   .enter().append("g")
+    //     .attr("class", "series");
+
+
+    var svg = d3.select("#" + conf.plot_container_id).append("svg")
+        .attr("width", conf.width + conf.margin.left + conf.margin.right)
+        .attr("height", conf.height + conf.margin.top + conf.margin.bottom)
       .append("g")
-        .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+        .attr("transform", "translate(" + conf.margin.left + "," + conf.margin.top + ")");
 
     var layer = svg.selectAll(".layer")
         .data(layers)
@@ -104,13 +133,27 @@ function bar_plot(d3data, new_xlabel, new_ylabel) {
         .attr("class", "layer")
         .style("fill", function(d, i) { return color(i); });
 
+      // chart.selectAll(".bar")
+      //     .data(d3data)
+      //   .enter().append("rect")
+      //     .attr("class", "bar")
+      //     .attr("x", function(d) { return x(d.name); })
+      //     .attr("y", function(d) { return y(d.value); })
+      //     .attr("height", function(d) { return conf.height - y(d.value); })
+      //     .attr("width", x.rangeBand());
+    var rect_element;
+
     var rect = layer.selectAll("rect")
-        .data(function(d) { return d; })
+        .data(function(d) { console.log(d); return d; })
       .enter().append("rect")
         .attr("x", function(d) { return x(d.x); })
-        .attr("y", height)
+        .attr("y", conf.height)
         .attr("width", x.rangeBand())
-        .attr("height", 0);
+        .attr("class", function(d) { return "bar row-" + d.row + " col-" + d.col; })
+        .attr("height", 0)
+        .on("mouseover", mouseout)
+        .on("mouseout", mouseout);
+    //    .on("click", mouseclick);
 
     rect.transition()
         .delay(function(d, i) { return i * 10; })
@@ -119,7 +162,7 @@ function bar_plot(d3data, new_xlabel, new_ylabel) {
 
     svg.append("g")
         .attr("class", "x axis")
-        .attr("transform", "translate(0," + height + ")")
+        .attr("transform", "translate(0," + conf.height + ")")
         .call(xAxis);
 
     d3.selectAll("input").on("change", change);
@@ -140,11 +183,11 @@ function bar_plot(d3data, new_xlabel, new_ylabel) {
       rect.transition()
           .duration(500)
           .delay(function(d, i) { return i * 10; })
-          .attr("x", function(d, i, j) { return x(d.x) + x.rangeBand() / n * j; })
-          .attr("width", x.rangeBand() / n)
+          .attr("x", function(d, i, j) { return x(d.x) + x.rangeBand() / num_layers * j; })
+          .attr("width", x.rangeBand() / num_layers)
         .transition()
           .attr("y", function(d) { return y(d.y); })
-          .attr("height", function(d) { return height - y(d.y); });
+          .attr("height", function(d) { return conf.height - y(d.y); });
     }
 
     function transitionStacked() {
@@ -160,24 +203,4 @@ function bar_plot(d3data, new_xlabel, new_ylabel) {
           .attr("width", x.rangeBand());
     }
 
-    // Inspired by Lee Byron's test data generator.
-    function bumpLayer(n, o) {
-
-      function bump(a) {
-        var x = 1 / (.1 + Math.random()),
-            y = 2 * Math.random() - .5,
-            z = 10 / (.1 + Math.random());
-        for (var i = 0; i < n; i++) {
-          var w = (i / n - y) * z;
-          a[i] += x * Math.exp(-w * w);
-        }
-      }
-
-      var a = [], i;
-      for (i = 0; i < n; ++i) a[i] = o + o * Math.random();
-      for (i = 0; i < 5; ++i) bump(a);
-      return a.map(function(d, i) { return {x: i, y: Math.max(0, d)}; });
-    }
 } // function bar_plot(d3data)
-
-

@@ -112,10 +112,14 @@ class StaticView(View):
     def get(self, request, *args, **kwargs):
         template_name = ''
         try:
-            template_name += 'miner/staticview/' + kwargs.get('page', '') + '.html'
+            template_name += 'miner/staticview/' + kwargs.get('page', 'index.html')
             get_template(template_name) 
         except:
-            raise Http404()
+            try:
+                template_name += 'miner/staticview/' + kwargs.get('page', '') + '.html'
+                get_template(template_name)
+            except:
+                raise Http404()
         return TemplateResponse(request, template_name)
 
 
@@ -247,7 +251,7 @@ def context_from_request(request, context=None, Form=GetLagForm, delim=',', verb
     context['columns'] = [s.strip() for s in context['columns'].split(';')] or []
 
     context['aggregate_ids'] = request.GET.get('agg') or request.GET.get('ids') or request.GET.get('aggids') or request.GET.get('aggregates') or request.GET.get('aggregate_ids') or '-1'
-    context['aggregate_ids'] = [int(s.strip()) for s in context['aggregate_ids'].split(',')] or [-1]
+    context['aggregate_ids'] = [int(s.strip()) for s in context['aggregate_ids'].split(',') if s and s.strip()] or [-1]
 
     # whether the FK join queries should be short-circuited
     print 'aggregate_ids: ', context['aggregate_ids']
@@ -431,14 +435,24 @@ class DashboardView(TemplateView):
         context = super(DashboardView, self).get_context_data(**kwargs)
         print "context"
         context['data'] = {} 
-        context['data']['d3data'] = [["x", 1,2,3,4,5,6,7,8],["y", 51,72,43,54,65,76,67,98],["y0", 91,62,73,64,65,76,67,98]]
+        context['data']['d3data'] = [["x"] + list('abcdef') + list('xyz'),["y", 99,51,72,43,54,65,76,67,98],["y0", 1,91,62,73,64,65,76,67,98]]
         context['data']['xlabel'] = 'X-Label'
         context['data']['ylabel'] = 'Y-Label'
         print context
         return context
 
+
 class BarPlotView(DashboardView):
     template_name = 'miner/bar_plot.d3.html'
+
+
+class LinePlotView(DashboardView):
+    template_name = 'miner/line_plot.d3.html'
+
+
+class BlockView(DashboardView):
+    """Query the miner.AggregateResults table to retrieve values for plotting in a bar chart"""
+    template_name = 'miner/block.d3.html'
 
 
 def csv_response_from_context(context=None, filename=None, field_names=None, null_string='', eval_python=True):
