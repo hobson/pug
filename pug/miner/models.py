@@ -34,8 +34,7 @@ class AggregatedResults(DateMixin):
     """
     name           = models.CharField(max_length=2000, default='', blank=False)
     slug           = models.CharField(max_length=2000, default='', blank=False)
-    uri            = models.URLField(
-        help_text='Base service URI without the GET API query')
+    uri            = models.URLField(max_length=2000, help_text='Base service URI without the GET API query')
     get_dict       = JSONField(
         help_text='Complete GET Request URI')
     filter_dict    = JSONField(
