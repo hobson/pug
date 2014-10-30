@@ -191,3 +191,17 @@ d3.selection.prototype.moveToFront = function() {
     this.parentNode.appendChild(this);
   });
 };
+
+
+function insert_text_background(focus) {
+    var textElm = focus.select("text").node();
+    console.log(textElm);
+    var SVGRect = textElm.getBBox();
+
+    var rect = focus.insert("rect", "text")
+      .attr("x", SVGRect.x).attr("y", SVGRect.y)
+      .attr("width", SVGRect.width).attr("height", SVGRect.height)
+      .attr("rx", 4).attr("ry", 4);
+    rect.attr("class", "tooltip-box");
+    return focus;
+}

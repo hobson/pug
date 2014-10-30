@@ -4,14 +4,16 @@
 
 function mouseover(d) {
     var focus = d3.select("g.focus");
-    var text_anchor = mouseover.conf.xscale(d.x) > d3.mean(mouseover.conf.xscale.range()) ? "end" : "start";
-    focus.attr("transform", "translate(" + mouseover.conf.xscale(d.x) + "," + mouseover.conf.yscale(d.y) + ")");
+    // var text_anchor = mouseover.conf.xscale(d.x) > d3.mean(mouseover.conf.xscale.range()) ? "end" : "start";
+    focus.attr("transform", "translate(" + mouseover.conf.xscale(d.x) + "," + mouseover.conf.yscale(d3.max([d.y0, d.y])) + ")");
     var tt = d.heading + ": " + (d.y).toFixed(1) + "%"; 
-    focus.select("text").text(tt);
+    var text = focus.select("text").text(tt).node();
+    var SVGRect = text.getBBox();
+    focus.select("rect").attr("x", SVGRect.x).attr("y", SVGRect.y).attr("width", SVGRect.width).attr("height", SVGRect.height);
     console.log(d);
     console.log(mouseover.conf.xscale(d.x));
     console.log(d3.mean(mouseover.conf.xscale.range()));
-    console.log("translate(" + mouseover.conf.xscale(d.x) + "," + mouseover.conf.yscale(d.y) + ")");
+    console.log("translate(" + mouseover.conf.xscale(d.x) + "," + mouseover.conf.yscale(d.y0) + ")");
 }
 mouseover.conf = null;
 
@@ -19,6 +21,8 @@ mouseover.conf = null;
 function mouseout(d) {
   var focus = d3.select("g.focus");
   focus.select("text").text("");
+  focus.select("rect").attr("width", 0).attr("height", 0);
+    
   // FIXME: doesn't work
   // selector = ".row-"+d.row + ".col-"+d.col;
   // console.log('mouse out selector: ' + selector);
@@ -93,11 +97,12 @@ function bar_plot(d3data, conf) {
 
     console.log([ymin, ymax]);
 
-    var yGroupMax = ymax;
-    var yStackMax = d3.max(layers, function(layer) { return d3.max(layer, function(d) { return d.y0 + d.y; }); });
+    conf.yGroupMax = ymax;
+    conf.yStackMax = d3.max(layers, function(layer) { return d3.max(layer, function(d) { return d.y0 + d.y; }); });
 
+    // plot starts out stacked
     conf.yscale = d3.scale.linear()
-        .domain([0, yStackMax])
+        .domain([0, conf.yStackMax])
         .range([conf.height, 0]);
 
     var svg = create_svg_element(conf);
@@ -162,20 +167,25 @@ function bar_plot(d3data, conf) {
 
     // focus must be the last SVG element so it will be on top
     var focus = svg.append("g").attr("class", "focus");
-    focus.append("text").attr("x", 0).attr("y", -12).attr("text-anchor", "start");
+    var text = focus.append("text").attr("x", 0).attr("y", -12).attr("text-anchor", "start");
+    focus = insert_text_background(focus);
 
-    var timeout = setTimeout(function() {
-      d3.select("input[value=\"grouped\"]").property("checked", true).each(change);
-    }, 2000);
+    if (typeof conf.stacked == "undefined") {
+        var timeout = setTimeout(function() {
+          d3.select("input[value=\"grouped\"]").property("checked", true).each(change);
+        }, 2000); }
+    else {
+        d3.select(conf.stacked == true ? "input[value=\"stacked\"]" : "input[value=\"grouped\"]").property("checked", true).each(change);
+    }
 
     function change() {
       clearTimeout(timeout);
-      if (this.value === "grouped") transitionGrouped();
-      else transitionStacked();
+      if (this.value === "grouped") { transitionGrouped(); }
+      else { transitionStacked(); }
     }
 
     function transitionGrouped() {
-      conf.yscale.domain([0, yGroupMax]);
+      conf.yscale.domain([0, conf.yGroupMax]);
 
       rect.transition()
           .duration(500)
@@ -185,10 +195,11 @@ function bar_plot(d3data, conf) {
         .transition()
           .attr("y", function(d) { return conf.yscale(d.y); })
           .attr("height", function(d) { return conf.height - conf.yscale(d.y); });
+      conf.stacked = false;
     }
 
     function transitionStacked() {
-      conf.yscale.domain([0, yStackMax]);
+      conf.yscale.domain([0, conf.yStackMax]);
 
       rect.transition()
           .duration(500)
@@ -197,7 +208,8 @@ function bar_plot(d3data, conf) {
           .attr("height", function(d) { return conf.yscale(d.y0) - conf.yscale(d.y0 + d.y); })
         .transition()
           .attr("x", function(d) { return conf.xscale(d[xfield]); })
-          .attr("width", x.rangeBand());
+          .attr("width", conf.xscale.rangeBand());
+      conf.stacked = true;
     }
 
 } // function bar_plot(d3data)
