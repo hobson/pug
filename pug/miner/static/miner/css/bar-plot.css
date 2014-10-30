@@ -23,6 +23,17 @@ pre {
   font: 10px sans-serif;
 }
 
+g.focus text {
+  fill: brown;
+  font-weight: bold;
+}
+
+rect.tooltip-box {
+  fill: white;
+  opacity: 0.8;
+  rx: "10";
+  ry: "10";
+}
 
 .axis path,
 .axis line {
@@ -31,7 +42,7 @@ pre {
   shape-rendering: crispEdges;
 }
 
-form {
+form.plot {
   position: relative;
   left: 800px;
   top: 10px;

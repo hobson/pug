@@ -8,22 +8,17 @@
 {% endblock %} 
 
 {% block content %}
+    <script src="http://d3js.org/d3.v3.min.js"></script>
 
-</style>
+    <div class="row">
+        <form class="plot">
+          <label><input type="radio" name="mode" value="grouped"> Grouped</label>
+          <label><input type="radio" name="mode" value="stacked" checked> Stacked</label>
+        </form>
+    </div>
 
-<script src="http://d3js.org/d3.v3.min.js"></script>
-
-<div class="row">
-<form>
-  <label><input type="radio" name="mode" value="grouped"> Grouped</label>
-  <label><input type="radio" name="mode" value="stacked" checked> Stacked</label>
-</form>
-</div>
     <div class="row">
       <div id="plot_container" class="graph"></div>
-    </div>
-    <div class="row">
-        <pre>{{ data|safe|escape }}</pre>
     </div>
 
     {% block plot %}
@@ -31,7 +26,12 @@
         <script src="{% static "miner/js/bar-plot.d3.js" %}"></script> 
         <script>
             bar_plot({{ data.d3data|safe }}, 
-                {"tag_id": "plot_div_1", "xlabel": "{{ data.xlabel|escapejs }}", "ylabel": "{{ data.ylabel|default_if_none:"[]"|escapejs }}", "header": {{ data.header|default:"[]"|default_if_none:"[]"|safe }}});
+                {
+                 "plot_container_id": "plot_container", 
+//                 "xlabel": "{{ data.xlabel|escapejs }}", 
+//                 "ylabel": "{{ data.ylabel|default_if_none:"[]"|escapejs }}", 
+                 "header": {{ data.header|default:"[]"|default_if_none:"[]"|safe }}
+                });
         </script>
     {% endblock plot %}
 {% endblock content %}

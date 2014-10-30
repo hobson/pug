@@ -1,18 +1,17 @@
 
 function line_plot(d3data, conf) {
 // FIXME: put all globals in a plot conf object/namespace
-console.log(conf);
 conf                   = typeof conf                   == "undefined" ? {}                                                 : conf;
 conf.plot_container_id = typeof conf.plot_container_id == "undefined" ? "plot_container"                                   : conf.plot_container_id;
 conf.margin            = typeof conf.margin            == "undefined" ? {"top": 30, "right": 80, "bottom": 30, "left": 50} : conf.margin;
 conf.width = 960 - conf.margin.left - conf.margin.right;
 conf.height = 500 - conf.margin.top - conf.margin.bottom;
 conf.xscale = d3.scale.linear().range([0, conf.width]);
+
 conf.xlabel = "Horizontal Value (Time?)";
 conf.yscale = d3.scale.linear().range([conf.height, 0]);
 conf.ylabel = "Vertical Value";
 
-console.log(conf);
 
 xlabel = conf.xlabel.length ? conf.xlabel : ans.xlabel;
 var ylabels = [conf.ylabel];
@@ -28,28 +27,12 @@ conf.query.table = "fast";
 
 console.log("conf");
 console.log(conf);
-// tooltips
-var svg = d3.select("#" + conf.plot_container_id).append("svg")
-            .attr("width",  conf.width + conf.margin.left + conf.margin.right)
-            .attr("height", conf.height + conf.margin.top + conf.margin.bottom)
-      .append("g")
-        .attr("transform", "translate(" + conf.margin.left + "," + conf.margin.top + ")");
-
-console.log("svg");
-console.log(svg);
-
-console.log("focus");
-console.log(focus);
-
-var focus = svg.append("g")
-    .attr("transform", "translate(-100,-100)")  // make sure initial tool-tip circle is located outside (upper left) of the plot (svg element)
-    .attr("class", "focus");
 
 
 function mouseover(d) {
   // displays tip at center of voronoi region instead of near point
   // tip.show(d);
-
+  var focus = d3.select("g.focus");
   console.log('mouseover');
   console.log(d);
   // doesn't work
@@ -94,9 +77,9 @@ function mouseover(d) {
 
 
 function mouseout(d) {
+  var focus = d3.select("g.focus");
   // tip.hide(d);
-  console.log('mouseout')
-  console.log(d);
+  console.log('mouseout');
   d3.select(d.series.line).classed("series-hover", false);
   focus.select("text").text("");
 }
@@ -113,18 +96,17 @@ function mouseout(d) {
 //   y-axis (String, optional): vertical y-axis label (overrides d3data[0][0])
 function draw_plot(d3data, new_xlabel, new_ylabel) {
     var ans = arrays_as_d3_series(d3data);
-    console.log(ans);
     conf.xlabel = new_xlabel.length ? new_xlabel : ans.xlabel;
     var ylabels = [new_ylabel];  // FIXME
     conf.ylabel = new_ylabel.length ? new_ylabel : ans.ylabels[0]; // FIXME
     var data = ans.data;
 
-    console.log('data');
-    console.log(data);
     data.sort(function(a, b) { return a.x - b.x; });
+
 
     var color = d3.scale.category10().domain(ans.ylabels);
 
+    // TODO: check for other types of x-axis values (floats, ints, dates, times) and produce the appropriate x-scale in an autoscale function
     // parse xdata as datetimes if the xlabel starts with the word "date" or "time" 
     if ((conf.xlabel.substring(0, 4).toUpperCase() == "DATE")
         // || (conf.xlabel.substring(0, 4).toUpperCase() == "TIME")
@@ -133,26 +115,22 @@ function draw_plot(d3data, new_xlabel, new_ylabel) {
       
       data.forEach(function(d) {
         console.log(d);
-        console.log(d.x);
         d.x = d3_parse_date(d.x); }
         );
     }
-
-    var xAxis = d3.svg.axis().scale(conf.xscale).orient("bottom");
-
-    var yAxis = d3.svg.axis().scale(conf.yscale).orient("left");
-
-    var voronoi = d3.geom.voronoi()
-        .x(function(d) { return conf.xscale(d.x); })
-        .y(function(d) { return conf.yscale(d.y); })
-        .clipExtent([[-conf.margin.left, -conf.margin.top], [conf.width + conf.margin.right, conf.height + conf.margin.bottom]]);
-
-    var line = d3.svg.line()
-        .x(function(d) { return conf.xscale(d.x); })
-        .y(function(d) { return conf.yscale(d.y); });
+    // else {
+        conf.xscale = d3.scale.ordinal()
+            // .domain(data.map(function(d) { console.log(d.x); return d.x; }))
+            .rangePoints([0, conf.width]);
+        // data.forEach(function(d) {
+        //     console.log(d);
+        //     d.x = conf.xscale(d.x);
+        //     console.log(d);
+        // });
+    // }
 
 
-
+    console.log('all_series');
     var all_series = color.domain().map(function(name) {
       var series = { 
         name: name,
@@ -168,14 +146,43 @@ function draw_plot(d3data, new_xlabel, new_ylabel) {
       }); // data.map(function(d) {
       return series;
     });
+    console.log(all_series);
+    
+    conf.xscale = d3.scale.ordinal()
+        .domain(data.map(function(d) { return d.x; }))
+        .rangeRoundBands([0, conf.width]);
+
+    var ymin = d3.min(all_series, function(series) { return d3.min(series.values, function(d) { console.log(d); return d.y; }); });
+    var ymax = d3.max(all_series, function(series) { return d3.max(series.values, function(d) { console.log(d); return d.y; }); });
 
 
-    conf.xscale.domain(d3.extent(data, function(d) { return d.x; }));
+    conf.yscale = d3.scale.linear()
+        .domain([ymin, ymax])
+        .range([conf.height, 0]);
 
-    conf.yscale.domain([
-      d3.min(all_series, function(c) { return d3.min(c.values, function(v) { return v.y; }); }),
-      d3.max(all_series, function(c) { return d3.max(c.values, function(v) { return v.y; }); })
-    ]);
+    console.log(data.map(function(d) { return [d.x, conf.xscale(d.x)] }));
+    console.log(data.map(function(d) { return [d.y, conf.yscale(d.y)] }));
+
+
+    // To display mouseover tooltips, we need an SVG element in the DOM with a g.focus element 
+    // to move and add text to within the mouseover/mouseout callbacks
+    // TODO: use the element ID (conf.plot_container_id) to select it locally within the mouseover and mouseout functions
+    var svg = create_svg_element(conf);
+
+    var xAxis = create_xaxis(conf);
+
+    // FIXME: use autoscale function to find domain/ranges that are approximately 0-100 or 0-1 or 0 to -1 or 0 to -100 and make percentages of them
+    var yAxis = create_yaxis(conf);  //.ticks(10, "%");
+
+    var voronoi = d3.geom.voronoi()
+        .x(function(d) { console.log("voronoi x"); console.log(conf.xscale(d.x)); return conf.xscale(d.x); })
+        .y(function(d) { console.log("voronoi y"); console.log(conf.yscale(d.y)); return conf.yscale(d.y); })
+        .clipExtent([[-conf.margin.left, -conf.margin.top], [conf.width + conf.margin.right, conf.height + conf.margin.bottom]]);
+
+    var line = d3.svg.line()
+        .x(function(d) { console.log("line x"); console.log(d.x); console.log(conf.xscale(d.x)); return conf.xscale(d.x); })
+        .y(function(d) { console.log("line y"); console.log(d.y); console.log(conf.yscale(d.y)); return conf.yscale(d.y); });
+
 
     svg.append("g")
         .attr("class", "y axis")
@@ -235,10 +242,10 @@ function draw_plot(d3data, new_xlabel, new_ylabel) {
     //    .on("click", mouseclick)
         .on("mouseout", mouseout);
 
-    // reappend the svg with a focus circle and see if it'll mouse-out from the veronoi
-    focus = svg.append("g")
-        .attr("transform", "translate(-100,-100)")  // make sure initial tool-tip circle is located outside (upper left) of the plot (svg element)
-        .attr("class", "focus");
+    var focus = svg.append("g").attr("class", "focus")
+        .attr("transform", "translate(" + -100 + "," + -100 + ")");
+
+    focus = svg.select("g.focus");
 
     focus.append("text").attr("y", -12);
 

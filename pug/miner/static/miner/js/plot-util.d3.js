@@ -164,3 +164,44 @@ function query_param(name) {
     return results === null ? "" : decodeURIComponent(results[1].replace(/\+/g, " "));
 }
 
+
+function create_svg_element(conf) {
+    return d3.select("#" + conf.plot_container_id).append("svg")
+                .attr("width",  conf.width + conf.margin.left + conf.margin.right)
+                .attr("height", conf.height + conf.margin.top + conf.margin.bottom)
+          .append("g")
+            .attr("transform", "translate(" + conf.margin.left + "," + conf.margin.top + ")");
+   
+    }
+
+function create_yaxis(conf) {
+    return d3.svg.axis().scale(conf.yscale).orient("left"); }
+
+
+function create_xaxis(conf) {
+    return d3.svg.axis().scale(conf.xscale).orient("bottom");
+}
+
+
+// d3 selection method to move it to the top of the graphics layer stack (so it displays on top)
+// Example:
+//   `svg.select("circle").moveToFront();`
+d3.selection.prototype.moveToFront = function() {
+  return this.each(function(){
+    this.parentNode.appendChild(this);
+  });
+};
+
+
+function insert_text_background(focus) {
+    var textElm = focus.select("text").node();
+    console.log(textElm);
+    var SVGRect = textElm.getBBox();
+
+    var rect = focus.insert("rect", "text")
+      .attr("x", SVGRect.x).attr("y", SVGRect.y)
+      .attr("width", SVGRect.width).attr("height", SVGRect.height)
+      .attr("rx", 4).attr("ry", 4);
+    rect.attr("class", "tooltip-box");
+    return focus;
+}
