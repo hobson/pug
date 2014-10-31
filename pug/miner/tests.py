@@ -7,37 +7,49 @@ import pug.nlp.djdb
 class HomeTest(LiveServerTestCase):
 
     def setUp(self):
-        self.browser = webdriver.Firefox()
-        self.browser.implicitly_wait(1)
+        self.page = webdriver.Firefox()
+        self.page.implicitly_wait(1)
 
     def tearDown(self):
-        self.browser.quit()
+        self.page.quit()
 
     def test_home_page(self):
-        # Angeline opens her web browser, and goes to the home (root url) page
-        self.browser.get(self.live_server_url + '/')
+        # User opens web browser, and goes to the home (root url) page
+        self.page.get(self.live_server_url + '/')
 
         # She sees an HTML page that has a body tag with some non-empty string within it
-        body = self.browser.find_element_by_tag_name('body')
+        body = self.page.find_element_by_tag_name('body')
         self.assertTrue(bool(body.text))
 
+    def test_dashboard(self):
+        # User browses to dashboard URL
+        self.page.get(self.live_server_url + '/dashboard')
 
+        # HTML page with more than 1 SVG element and more than 100 bytes for the first 2 plots
+        plots = self.page.find_elements_by_name('svg')
+        self.assertGreater(len(plots), 1)
+        self.assertGreater(len(plots[0]), 100)
+        self.assertGreater(len(plots[1]), 100)
+
+        # HTML page with more than 6 rect elements classed "bar"
+        bars = self.page.find_elements_by_css_selector('rect.bar')
+        self.assertGreater(len(bars), 5)
 
 class AdminTest(LiveServerTestCase):
     pass
     # def setUp(self):
-    #     self.browser = webdriver.Firefox()
-    #     self.browser.implicitly_wait(1)
+    #     self.page = webdriver.Firefox()
+    #     self.page.implicitly_wait(1)
 
     # def tearDown(self):
-    #     self.browser.quit()
+    #     self.page.quit()
 
     # def test_admin_interface_login_page(self):
-    #     # Angeline opens her web browser, and goes to the admin page
-    #     self.browser.get(self.live_server_url + '/admin')
+    #     # Angeline opens her web page, and goes to the admin page
+    #     self.page.get(self.live_server_url + '/admin')
 
     #     # She sees the phrase 'Django administration' somewhere in the body
-    #     body = self.browser.find_element_by_tag_name('body')
+    #     body = self.page.find_element_by_tag_name('body')
     #     self.assertIn('Django administration', body.text)
 
 
