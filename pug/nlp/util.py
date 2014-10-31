@@ -1025,19 +1025,45 @@ def mapped_transposed_lists(lists, default=None):
     return map(lambda *row: [el if isinstance(el, (float, int)) else default for el in row], *lists)
 
 
-def make_name(s, camel=None, lower=None, space='_', remove_prefix=None):
+def make_name(s, camel=None, lower=None, space='_', remove_prefix=None, language='python', string_type=unicode):
     """Process a string to produce a valid python variable/class/type name
 
-    Useful for producing Django model names out of file names, or Django field names out of a csv file headers
+    Arguments:
+      space (str): string to substitute for spaces ('' to delete all whitespace)
+      camel (bool): whether to camel-case names, Django Model Name style (first letter capitalized)
+      lower (bool): whether to lowercase all strings 
+      language (str): case-insensitive language identifier (to deterimine allowable identifier characters)
+        e.g. 'Python', 'Python2', 'Python3', 'Javascript', 'ECMA'
 
-    >>> make_name("PD / SZ")
-    'pd_sz'
+    Examples:
+      Generate Django model names out of file names
+      >>> make_name('women in IT.csv', camel=True)
+      'WomenInItCsv'
+      
+      Generate Django field names out of CSV header strings
+      >>> make_name('ID Number (9-digits)')
+      'id_number_9_digits'
+      >>> make_name("PD / SZ")
+      'pd_sz'
+
+      Generate Javscript object attribute names from CSV header strings
+      >>> make_name(u'pi (\u03C0)', space = '', language='javascript')
+      u'pi\u03c0'
+      >>> make_name(u'pi (\u03C0)', space = '', language='javascript')
+      u'pi\u03c0'
     """
     if camel is None and lower is None:
         lower = True
     if not s:
         return None
-    s = str(s)  # TODO: encode in ASCII, UTF-8, or the charset used for this file!
+    ecma_languages = ['ecma', 'javasc']
+    unicode_languages = ecma_languages
+    language = language or 'python'
+    language = language.lower().strip()[:6]
+    string_type = string_type or str
+    if language in unicode_languages:
+        string_type = unicode
+    s = string_type(s)  # TODO: encode in ASCII, UTF-8, or the charset used for this file!
     if remove_prefix and s.startswith(remove_prefix):
         s = s[len(remove_prefix):]
     if camel:
@@ -1047,11 +1073,19 @@ def make_name(s, camel=None, lower=None, space='_', remove_prefix=None):
             s = s.title()
     elif lower:
         s = s.lower()
+    # TODO: add language Regexes to filter characters appropriately for python or javascript
+    space_escape = '\\' if space and space not in ' _' else ''
+    if not language in ecma_languages:
+        invalid_char_regex = re.compile('[^a-zA-Z0-9' + space_escape + space +']+')
+    else:
+        # FIXME: Unicode categories and properties only works in Perl Regexes!
+        invalid_char_regex = re.compile('[\W' + space_escape + space +']+', re.UNICODE)
     if space is not None:
-        escape = '\\' if space and space not in ' _' else ''
-        s = re.sub('[^a-zA-Z0-9' + escape + space +']+', space, s)
+        # get rid of all invalid characters, substitting the space-filler for them all
+        s = invalid_char_regex.sub(space, s)
+        # get rid of duplicate space-filler characters
         if space:
-            s = re.sub('[' + escape + space + ']{2,}', space, s)
+            s = re.sub('[' + space_escape + space + ']{2,}', space, s)
     return s
 make_name.DJANGO_FIELD = {'camel': False, 'lower': True, 'space': '_'}
 make_name.DJANGO_MODEL = {'camel': True, 'lower': False, 'space': '', 'remove_prefix': 'models'}

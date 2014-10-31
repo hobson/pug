@@ -52,7 +52,11 @@ function bar_plot(d3data, conf) {
     console.log(xfield);
 
     // TODO: standardize on the "series" data structure below which is also used in the line-plot
-    var layers = split_d3_series(d3data);
+    var ans = arrays_as_d3_series(d3data);
+    conf.xlabel = typeof conf.xlabel == "undefined" ? ans.xlabel : conf.xlabel;
+    conf.ylabel = typeof conf.ylabel == "undefined" ? ans.ylabel : conf.ylabel;
+    var ylabels = [conf.ylabel];  // FIXME
+    var layers = ans.data;
     for (var i=0; i<layers.length; i++) {
         for (var j=0; j<layers[i].length; j++) {
             layers[i][j].series = layers[i];
@@ -65,7 +69,7 @@ function bar_plot(d3data, conf) {
     console.log('layers (d3data as arrays of objects with x,y properties)');
     console.log(layers);
 
-    d3data = arrays_as_objects(d3data);
+    d3data = arrays_as_d3_series(d3data).data;
     var num_stacks = d3data.length; // number of samples per layer
 
     conf.xscale = d3.scale.ordinal()

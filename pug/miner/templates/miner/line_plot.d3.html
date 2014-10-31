@@ -15,13 +15,17 @@
 
 {% block content %}
     <div class="row">
-        <H1>Example Line Plot</H1>
+        <H1>{{ data.title }}</H1>
         <div id="plot_container" class="graph"></div>
     {% block plot %}
         <pre>{{ data|safe|escape }}</pre>
         <script src="{% static "miner/js/plot-util.d3.js" %}"></script>
         <script src="{% static "miner/js/line-plot.d3.js" %}"></script>
-        <script> line_plot({{ data.d3data|safe }}, {"xlabel": "{{ data.xlabel|escapejs }}", "ylabel": "{{ data.ylabel|escapejs }}", "plot_container_id": "plot_container"}); </script>
+        <script> line_plot({{ data.d3data|safe }}, 
+                {
+                 "plot_container_id": "plot_container",
+                 "header": {{ data.header|default:"[]"|default_if_none:"[]"|safe }}
+                }); </script>
         </script>
 
     {% endblock plot %}

@@ -309,8 +309,57 @@ def context_from_request(request, context=None, Form=GetLagForm, delim=',', verb
     return context
 
 
+def d3_plot_context(context, table=((0, 0),), title='Line Chart', xlabel='Time', ylabel='Value', header=None):
+    """
+
+    Arguments:
+      table (list of lists of values): A CSV/Excel style table with an optional header row as the first list
+      title (str): String to display atop the plot
+      xlabel (str): Text to display along the bottom axis
+      ylabel (str): Text to display along the vertical axis
+    """
+    N, M = len(table), max(len(row) for row in table)
+    print 'first_row'
+    first_row = list(table[0])
+    identifiers = header
+    descriptions = header
+    if not header and not all(isinstance(col, basestring) and col.strip() for col in first_row):
+        print first_row
+        if isinstance(header, bool):
+            header = []
+        else:
+            header = [('y{0}'.format(i-1) if i else 'x') for i in range(M)]
+    else:
+        header = first_row
+        table = table[1:]
+
+    print header
+    # header should now be a list of one list of strings or an empty list,
+    # So now just need to make sure the names of the columns are valid javascript identifiers
+    if header:
+        identifiers = [util.make_name(h, language='javascript', space='') for h in header]
+        table = [header] + table
+        descriptions = [unicode(h) for h in header]
+
+    print identifiers
+    context['data'] = context.get('data', {})
+    context['data'].update({
+        #'lags_dict': {hist_type: lags},
+        'title': title,
+        'header': json.dumps(identifiers),
+        'descriptions': json.dumps(descriptions),
+        'xlabel': xlabel,
+        'ylabel': ylabel,
+        'd3data': json.dumps(util.transposed_lists(table)), 
+        'form': {},
+    })
+    print context['data']
+    return context
+    # print context['data']
+
+
 re_model_instance_dot = re.compile('__|[.]+')
-    
+
 
 def follow_double_underscores(obj, field_name=None, excel_dialect=True, eval_python=False, index_error_value=None):
     '''Like getattr(obj, field_name) only follows model relationships through "__" or "." as link separators
@@ -411,14 +460,10 @@ class DashboardView(TemplateView):
     def get_context_data(self, context, **kwargs):
         # Call the base implementation first to get a context
         context = super(DashboardView, self).get_context_data(**kwargs)
-        print "context"
-        context['data'] = {} 
-        context['data']['d3data'] = [["x"] + list('abcdef') + list('xyz'),["y", 99,51,72,43,54,65,76,67,98],["y0", 1,91,62,73,64,65,76,67,98]]
-        context['data']['d3data'] = [["x"] + [907,901,855,902,903,904,905,906,900],["y", 99,51,72,43,54,65,76,67,98],["z", 1,91,62,73,64,65,76,67,98]]
-        context['data']['xlabel'] = 'X-Label'
-        context['data']['ylabel'] = 'Y-Label'
-        print context['data']
-        return context
+        return d3_plot_context(context, 
+            table= util.transposed_lists([["x index"] + [907,901,855,902,903,904,905,906,900],["y value (units)", 99,51,72,43,54,65,76,67,98],["z-value (units)", 1,91,62,73,64,65,76,67,98],["abc's", 10,20,30,40,50,60,70,80,90]]),
+            title='Line Chart', xlabel='Time', ylabel='Value', 
+            header=None)
 
 
 class BarPlotView(DashboardView):
