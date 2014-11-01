@@ -26,10 +26,10 @@ class HomeTest(LiveServerTestCase):
         self.page.get(self.live_server_url + '/dashboard')
 
         # HTML page with more than 1 SVG element and more than 100 bytes for the first 2 plots
-        plots = self.page.find_elements_by_name('svg')
+        plots = self.page.find_elements_by_tag_name('svg')
         self.assertGreater(len(plots), 1)
-        self.assertGreater(len(plots[0]), 100)
-        self.assertGreater(len(plots[1]), 100)
+        self.assertGreater(len(plots[0].text), 50)
+        self.assertGreater(len(plots[1].text), 50)
 
         # HTML page with more than 6 rect elements classed "bar"
         bars = self.page.find_elements_by_css_selector('rect.bar')
