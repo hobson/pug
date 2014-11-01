@@ -142,10 +142,10 @@ function line_plot(d3data, conf) {
             .domain([ymin, ymax])
             .range([conf.height, 0]);
 
-        console.log('xscaled x values');
-        console.log(d3data.map(function(d) { return [d.x, conf.xscale(d.x)] }));
-        console.log('yscaled x values');
-        console.log(d3data.map(function(d) { return [d.y, conf.yscale(d.y)] }));
+        // console.log('xscaled x values');
+        // console.log(d3data.map(function(d) { return [d.x, conf.xscale(d.x)] }));
+        // console.log('yscaled x values');
+        // console.log(d3data.map(function(d) { return [d.y, conf.yscale(d.y)] }));
 
 
         // To display mouseover tooltips, we need an SVG element in the DOM with a g.focus element 
@@ -167,7 +167,6 @@ function line_plot(d3data, conf) {
             .x(function(d) { console.log("line x"); console.log(d.x); console.log(conf.xscale(d.x)); return conf.xscale(d.x); })
             .y(function(d) { console.log("line y"); console.log(d.y); console.log(conf.yscale(d.y)); return conf.yscale(d.y); });
 
-
         svg.append("g")
             .attr("class", "y axis")
             .attr("transform", "translate(0," + conf.height + ")")
@@ -175,9 +174,8 @@ function line_plot(d3data, conf) {
           .append("text")
             .attr("y", conf.yscale.range()[1])
             .style("text-anchor", "end")
-            .attr("x", conf.xscale.range()[1])
+            .attr("x", conf.xscale.range()[conf.xscale.range().length-1])
             .attr("dy", "-.3em")
-
             .text(conf.xlabel);
 
         svg.append("g")
