@@ -1,5 +1,6 @@
 
 function line_plot(d3data, conf) {
+    console.log('==================== LINE PLOT =======================');
     default_conf         = {"plot_container_id": "plot_container", "container_width": 960, "container_height": 500, "margin": {top: 30, right: 80, bottom: 30, left: 50}};
 
     conf                   = typeof conf                   == "undefined" ? default_conf                                : conf;
@@ -11,19 +12,20 @@ function line_plot(d3data, conf) {
     conf.height            = typeof conf.height            == "undefined" ? conf.container_height - conf.margin.top  - conf.margin.bottom : conf.height;
 
     xlabel  = typeof conf.xlabel == "undefined" ? d3data[0][0] : conf.xlabel;
+    conf.xlabel = xlabel;
     xfield  = typeof d3data[0][0] == "string" ? d3data[0][0] : conf.xlabel;
     ylabel  = typeof conf.ylabel == "undefined" ? d3data[1][0] : conf.ylabel;
+    conf.ylabel = ylabel;
+
     ylabels = ((typeof conf.ylabel == "object") && (d3data.length == (1 + conf.ylabel.length))) ? conf.ylabel : d3data.slice(1).map(function(d) {return d[0];});
-    var num_layers = ylabels.length;
+    conf.ylabels = ylabels;
+    var num_layers = conf.ylabels.length;
+    conf.color = d3.scale.category10().domain(conf.ylabels);
 
     console.log('line plot ylabels and xfield');
-    console.log(ylabels);
+    console.log(conf.ylabels);
     console.log(xfield);
     console.log(xlabel);
-
-    conf.xscale = d3.scale.linear().range([0, conf.width]);
-    conf.yscale = d3.scale.linear().range([conf.height, 0]);
-
 
     // retrieve the GET query from the URI of this page:
     conf.query = query2obj();
@@ -32,10 +34,12 @@ function line_plot(d3data, conf) {
     delete conf.query.plot;
     conf.query.table = "fast";
 
-
     console.log("conf");
     console.log(conf);
 
+
+    conf.xscale = d3.scale.linear().range([0, conf.width]);
+    conf.yscale = d3.scale.linear().range([conf.height, 0]);
 
     function mouseover(d) {
       // displays tip at center of voronoi region instead of near point
@@ -67,22 +71,6 @@ function line_plot(d3data, conf) {
       // FIXME: for this link to be visible/clickable the mouseout function has to be triggered when the mouse enters the circle and leaves the voronoi region
     }
 
-    // // FIXME: Unused!
-    // function mouseclick(d) {
-    //   console.log('mouseclick')
-    //   console.log(d);
-    //   var url = document.URL + "&lag=" + d.x + "&series=" + d.series.name;
-    //   var hist_formats = ["", "-pmf", "-cmf", "-cfd"];
-    //   hist_formats.forEach(function(hf) { 
-    //     url = url.replace("/hist"+hf+"/", "/cases/");
-    //   });
-    //   var plot_types = ["linked", "link", "l", "zoomable", "zoom", "z"];
-    //   plot_types.forEach(function(pt) { 
-    //     url = url.replace("&plot="+pt, "&table=quick");
-    //   });
-    //   window.location = url;
-    // }
-
 
     function mouseout(d) {
       var focus = d3.select("g.focus");
@@ -100,18 +88,9 @@ function line_plot(d3data, conf) {
     //     d3data[1][0] (String or Null): y-axis label (vertical, dependent axis or range)
     //     d3data[0][1..M] (Number or String): x-coordinate values, Strings are converted to dates in seconds since epoch
     //     d3data[1][1..M] (Number): y-coordinate values
-    //   x-axis (String, optional): horizontal x-axis label (overrides d3data[0][0])
-    //   y-axis (String, optional): vertical y-axis label (overrides d3data[0][0])
     function draw_plot(d3data, conf) {
-        var ans = arrays_as_d3_series(d3data);
-        conf.xlabel = xlabel;
-        conf.ylabel = ylabel;
-        var data = ans.data;
-
+        var data = arrays_as_d3_series(d3data).data;
         data.sort(function(a, b) { return a.x - b.x; });
-
-
-        var color = d3.scale.category10().domain(ans.ylabels);
 
         // TODO: check for other types of x-axis values (floats, ints, dates, times) and produce the appropriate x-scale in an autoscale function
         // parse xdata as datetimes if the xlabel starts with the word "date" or "time" 
@@ -138,7 +117,7 @@ function line_plot(d3data, conf) {
 
 
         console.log('line plot all_series');
-        var all_series = color.domain().map(function(name) {
+        var all_series = conf.ylabels.map(function(name) {
           var series = { 
             name: name,
             values: null 
@@ -221,7 +200,7 @@ function line_plot(d3data, conf) {
         series.append("path")
             .attr("class", "line")
             .attr("d", function(d) { d.line=this; return line(d.values); })
-            .style("stroke", function(d) { return color(d.name); });
+            .style("stroke", function(d) { return conf.color(d.name); });
 
 
         // legend (series label at the end of each line)

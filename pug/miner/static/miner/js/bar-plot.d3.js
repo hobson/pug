@@ -32,6 +32,7 @@ function mouseout(d) {
 
 
 function bar_plot(d3data, conf) {
+    console.log('==================== BAR PLOT =======================');
     default_conf         = {"plot_container_id": "plot_container", "container_width": 960, "container_height": 500, "margin": {top: 30, right: 80, bottom: 30, left: 50}};
 
     conf                   = typeof conf                   == "undefined" ? default_conf                                : conf;
@@ -43,22 +44,36 @@ function bar_plot(d3data, conf) {
     conf.height            = typeof conf.height            == "undefined" ? conf.container_height - conf.margin.top  - conf.margin.bottom : conf.height;
 
     xlabel  = typeof conf.xlabel == "undefined" ? d3data[0][0] : conf.xlabel;
+    conf.xlabel = xlabel;
     xfield  = typeof d3data[0][0] == "string" ? d3data[0][0] : conf.xlabel;
     ylabel  = typeof conf.ylabel == "undefined" ? d3data[1][0] : conf.ylabel;
+    conf.ylabel = ylabel;
+
     ylabels = ((typeof conf.ylabel == "object") && (d3data.length == (1 + conf.ylabel.length))) ? conf.ylabel : d3data.slice(1).map(function(d) {return d[0];});
-    var num_layers = ylabels.length;
+    conf.ylabels = ylabels;
+    var num_layers = conf.ylabels.length;
+    var color = d3.scale.linear().domain([0, num_layers - 1]).range(["#aad", "#556"]);
 
     console.log('bar plot ylables and xfield');
     console.log(ylabels);
     console.log(xfield);
     console.log(xlabel);
 
+    // retrieve the GET query from the URI of this page:
+    conf.query = query2obj();
+
+    // Change the query to request a table view instead of the plot view that got us to this page/plot
+    delete conf.query.plot;
+    conf.query.table = "fast";
+
+    console.log("conf");
+    console.log(conf);
+
+    conf.xscale = d3.scale.linear().range([0, conf.width]);
+    conf.yscale = d3.scale.linear().range([conf.height, 0]);
+
     // TODO: standardize on the "series" data structure below which is also used in the line-plot
-    var ans = arrays_as_d3_series(d3data);
-    conf.xlabel = typeof conf.xlabel == "undefined" ? ans.xlabel : conf.xlabel;
-    conf.ylabel = typeof conf.ylabel == "undefined" ? ans.ylabel : conf.ylabel;
-    var ylabels = [conf.ylabel];  // FIXME
-    var layers = ans.data;
+    var layers = arrays_as_d3_series(d3data).data;
     for (var i=0; i<layers.length; i++) {
         for (var j=0; j<layers[i].length; j++) {
             layers[i][j].series = layers[i];
@@ -74,6 +89,7 @@ function bar_plot(d3data, conf) {
     d3data = arrays_as_d3_series(d3data).data;
     var num_stacks = d3data.length; // number of samples per layer
 
+
     conf.xscale = d3.scale.ordinal()
         .domain(d3data.map(function(d) { return d[xfield]; }))
         .rangeRoundBands([0, conf.width], 0.1);
@@ -84,9 +100,7 @@ function bar_plot(d3data, conf) {
 
     d3data.sort(function(a, b) { return a[xfield] - b[xfield]; });
 
-    var color = d3.scale.linear()
-        .domain([0, num_layers - 1])
-        .range(["#aad", "#556"]);
+
 
     console.log('bar plot all_series');
     var all_series = ylabels.map(function(name) {
