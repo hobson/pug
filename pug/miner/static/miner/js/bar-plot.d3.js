@@ -48,8 +48,10 @@ function bar_plot(d3data, conf) {
     ylabels = ((typeof conf.ylabel == "object") && (d3data.length == (1 + conf.ylabel.length))) ? conf.ylabel : d3data.slice(1).map(function(d) {return d[0];});
     var num_layers = ylabels.length;
 
+    console.log('bar plot ylables and xfield');
     console.log(ylabels);
     console.log(xfield);
+    console.log(xlabel);
 
     // TODO: standardize on the "series" data structure below which is also used in the line-plot
     var ans = arrays_as_d3_series(d3data);
@@ -86,7 +88,7 @@ function bar_plot(d3data, conf) {
         .domain([0, num_layers - 1])
         .range(["#aad", "#556"]);
 
-    console.log('all_series');
+    console.log('bar plot all_series');
     var all_series = ylabels.map(function(name) {
       var series = { name: name, values: null };
       series.values = d3data.map(function(d) {

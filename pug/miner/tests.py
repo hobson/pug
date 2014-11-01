@@ -28,11 +28,16 @@ class HomeTest(LiveServerTestCase):
         # HTML page with more than 1 SVG element and more than 100 bytes for the first 2 plots
         plots = self.page.find_elements_by_tag_name('svg')
         self.assertGreater(len(plots), 1)
+
+        # line chart with at least some text
         self.assertGreater(len(plots[0].text), 50)
+
+        # bar chart with at least some text
         self.assertGreater(len(plots[1].text), 50)
 
-        # HTML page with more than 6 rect elements classed "bar"
         bars = self.page.find_elements_by_css_selector('rect.bar')
+
+        # HTML page with more than 6 rect elements classed "bar"
         self.assertGreater(len(bars), 5)
 
 class AdminTest(LiveServerTestCase):
