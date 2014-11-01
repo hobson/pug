@@ -89,8 +89,10 @@ function line_plot(d3data, conf) {
     //     d3data[0][1..M] (Number or String): x-coordinate values, Strings are converted to dates in seconds since epoch
     //     d3data[1][1..M] (Number): y-coordinate values
     function draw_plot(d3data, conf) {
-        var data = arrays_as_d3_series(d3data).data;
-        data.sort(function(a, b) { return a.x - b.x; });
+        var d3data = arrays_as_d3_series(d3data).data;
+        d3data.sort(function(a, b) { return a.x - b.x; });
+        console.log("line plot d3data after conversion to d3_series");
+        console.log(d3data);
 
         // TODO: check for other types of x-axis values (floats, ints, dates, times) and produce the appropriate x-scale in an autoscale function
         // parse xdata as datetimes if the xlabel starts with the word "date" or "time" 
@@ -99,22 +101,11 @@ function line_plot(d3data, conf) {
           ) {
           conf.xscale = d3.time.scale().range([0, conf.width]);
           
-          data.forEach(function(d) {
+          d3data.forEach(function(d) {
             console.log(d);
             d.x = d3_parse_date(d.x); }
             );
         }
-        // else {
-            conf.xscale = d3.scale.ordinal()
-                // .domain(data.map(function(d) { console.log(d.x); return d.x; }))
-                .rangePoints([0, conf.width]);
-            // data.forEach(function(d) {
-            //     console.log(d);
-            //     d.x = conf.xscale(d.x);
-            //     console.log(d);
-            // });
-        // }
-
 
         console.log('line plot all_series');
         var all_series = conf.ylabels.map(function(name) {
@@ -122,32 +113,39 @@ function line_plot(d3data, conf) {
             name: name,
             values: null 
           };
-          series.values = data.map(function(d) {
+          series.values = d3data.map(function(d) {
                 return {
                   series: series,
                   //name: name,  // unnecesary?
                   x: d.x,
                   y: +d[name]
                 }; // return {
-          }); // data.map(function(d) {
+          }); // d3data.map(function(d) {
           return series;
         });
         console.log(all_series);
         
+        console.log(d3data.map(function(d) { return d.x; }));
         conf.xscale = d3.scale.ordinal()
-            .domain(data.map(function(d) { return d.x; }))
-            .rangeRoundBands([0, conf.width]);
+            .domain(d3data.map(function(d) { console.log(d.x); return d.x; }))
+            .rangePoints([0, conf.width]);
 
-        var ymin = d3.min(all_series, function(series) { return d3.min(series.values, function(d) { console.log(d); return d.y; }); });
-        var ymax = d3.max(all_series, function(series) { return d3.max(series.values, function(d) { console.log(d); return d.y; }); });
+        console.log('xscale domain and range')
+        console.log(conf.xscale.domain());
+        console.log(conf.xscale.range());
+
+        var ymin = d3.min(all_series, function(series) { return d3.min(series.values, function(d) { return d.y; }); });
+        var ymax = d3.max(all_series, function(series) { return d3.max(series.values, function(d) { return d.y; }); });
 
 
         conf.yscale = d3.scale.linear()
             .domain([ymin, ymax])
             .range([conf.height, 0]);
 
-        console.log(data.map(function(d) { return [d.x, conf.xscale(d.x)] }));
-        console.log(data.map(function(d) { return [d.y, conf.yscale(d.y)] }));
+        console.log('xscaled x values');
+        console.log(d3data.map(function(d) { return [d.x, conf.xscale(d.x)] }));
+        console.log('yscaled x values');
+        console.log(d3data.map(function(d) { return [d.y, conf.yscale(d.y)] }));
 
 
         // To display mouseover tooltips, we need an SVG element in the DOM with a g.focus element 

@@ -88,6 +88,7 @@ function bar_plot(d3data, conf) {
 
     d3data = arrays_as_d3_series(d3data).data;
     var num_stacks = d3data.length; // number of samples per layer
+    d3data.sort(function(a, b) { return a[xfield] - b[xfield]; });
 
 
     conf.xscale = d3.scale.ordinal()
@@ -98,7 +99,6 @@ function bar_plot(d3data, conf) {
     conf.ylabel = "Vertical Value";
 
 
-    d3data.sort(function(a, b) { return a[xfield] - b[xfield]; });
 
 
 
