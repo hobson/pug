@@ -493,11 +493,11 @@ def fuzzy_get(dict_obj, approximate_key, default=None, similarity=0.6, tuple_joi
 
     Examples:
       >>> fuzzy_get({'seller': 2.7, 'sailor': set('e')}, 'sail')
-      {'e'}
+      set(['e'])
       >>> fuzzy_get({'seller': 2.7, 'sailor': set('e'), 'camera': object()}, 'SLR')
-      {'e'}
+      2.7
       >>> fuzzy_get({'seller': 2.7, 'sailor': set('e'), 'camera': object()}, 'I')
-      None
+      set(['e'])
       >>> fuzzy_get({'word': tuple('word'), 'noun': tuple('noun')}, 'woh!', similarity=.3, key_and_value=True)
       ('word', ('w', 'o', 'r', 'd'))
       >>> fuzzy_get({'word': tuple('word'), 'noun': tuple('noun')}, 'woh!', similarity=.9, key_and_value=True)
@@ -515,8 +515,9 @@ def fuzzy_get(dict_obj, approximate_key, default=None, similarity=0.6, tuple_joi
             if any(isinstance(k, (tuple, list)) for k in dict_obj):
                 dict_obj = dict((tuple_joiner.join(str(k2) for k2 in k), v) for (k, v) in dict_obj.iteritems())
                 if isinstance(approximate_key, (tuple, list)):
-                    approximate_key = tuple_joiner.join(approximate_key)
-            dict_keys = set(dict_keys if dict_keys else dict_obj)
+                    strkey = tuple_joiner.join(approximate_key)
+            # WARN: fuzzywuzzy requires that the second argument be a list (sets and tuples fail!)
+            dict_keys = list(set(dict_keys if dict_keys else dict_obj))
             if strkey in dict_keys:
                 fuzzy_key, value = strkey, dict_obj[strkey]
             else:
@@ -524,8 +525,10 @@ def fuzzy_get(dict_obj, approximate_key, default=None, similarity=0.6, tuple_joi
                 if strkey in dict_keys:
                     fuzzy_key, value = strkey, dict_obj[strkey]
                 else:
-                    # print 'no exact match was found for {0} in {1} so checking with fuzzy'.format(strkey, dict_keys) 
-                    fuzzy_key_scores = fuzzy.extractBests(strkey, dict_keys, score_cutoff=max(min(similarity*100, 100), 0), limit=6)
+                    #print 'no exact match was found for {0} in {1} so checking with similarity cutoff of {2}'.format(strkey, dict_keys, similarity) 
+                    # WARN: extractBests will return [] if dict_keys is anything other than a list (even sets and tuples fail!)
+                    fuzzy_key_scores = fuzzy.extractBests(strkey, dict_keys, score_cutoff=min(max(similarity*100.0 - 1, 0), 100), limit=6)
+                    #print strkey, fuzzy_key_scores
                     if fuzzy_key_scores:
                         # print fuzzy_key_scores
                         fuzzy_score_keys = []
