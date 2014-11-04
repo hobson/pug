@@ -40,7 +40,8 @@ from django.core.exceptions import ImproperlyConfigured
 settings = None
 try:
     # FIXME Only 1 function that requires settings: all other functions should be moved to nlp.db module?
-    from django.conf import settings  
+    from django.conf import settings
+    settings.configure()
 except ImproperlyConfigured:
     print print_exc()
     print 'WARNING: The module named %r from file %r' % (__name__, __file__)

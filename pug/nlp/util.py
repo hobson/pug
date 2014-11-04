@@ -34,6 +34,8 @@ import decimal
 import random
 from decimal import Decimal
 import math
+from dateutil.parser import parse as parse_date
+
 
 from progressbar import ProgressBar
 from pytz import timezone
@@ -1669,6 +1671,27 @@ def make_tz_aware(dt, tz='UTC'):
     except AttributeError:
         pass
     return tz.localize(dt)
+
+
+def normalize_datetime(t, time=datetime.timedelta(hours=16)):
+    if isinstance(t, datetime.datetime):
+        if not t.hours + t.seconds:
+            if time:
+                t += time
+        return t
+    if isinstance(t, datetime.date):
+        return normalize_datetime(datetime.datetime(t), time=time)
+    if isinstance(t, basestring):
+        return normalize_datetime(parse_date(t))
+    return normalize_datetime(datetime.datetime(*[int(i) for i in t]))
+
+
+def normalize_date(d):
+    if isinstance(d, datetime.datetime):
+        return datetime.date(d.year, d.month, d.day)
+    if isinstance(d, basestring):
+        return normalize_date(parse_date(d))
+    return normalize_date(datetime.datetime(*[int(i) for i in d]))
 
 
 def clean_wiki_datetime(dt, squelch=True):
