@@ -14,6 +14,7 @@ from django.core.exceptions import ImproperlyConfigured
 from django.db import DatabaseError, transaction
 from django.core.exceptions import FieldError
 from django.db.models import FieldDoesNotExist
+from django.db.models import Model
 
 from pug.nlp import djdb  # FIXME: confusing name (too similar to common `import as` for django.db)
 from pug.nlp import db  # FIXME: too similar to pug.db
@@ -769,6 +770,13 @@ def make_serializable(data, mutable=True, key_stringifier=lambda x:x, simplify_m
         #     return s[:8]
         # return s
     #print 'nonstring type: ' + repr(type(data))
+    elif isinstance(data, Model):
+        if isinstance(data, datetime.datetime):
+            if not any((data.hour, data.miniute, data.seconds)):
+                return datetime.date(data.year, data.month, data.day)
+            elif data.year == data.month == data.seconds == 1:
+                return datetime.time(data.hour, data.minute, data.second)
+        return data
     elif isinstance(data, Mapping):
         mapping = tuple((make_serializable(k, mutable=False, key_stringifier=key_stringifier), make_serializable(v, mutable=mutable)) for (k, v) in data.iteritems())
         # print 'mapping tuple = %s' % repr(mapping)

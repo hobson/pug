@@ -29,25 +29,6 @@ from forms import GetLagForm
 
 from django.utils import timezone
 
-logfile='miner.views.log'
-def log(filename, message):
-    '''log messages to file for review.
-    sjw 2014-10-20 quick and dirty logger
-    '''
-    logdir='/tmp/'
-
-    try:
-        with open(os.path.join(logdir, filename), 'a') as logfile:
-            now = timezone.now().isoformat()
-            fullmessage = '%s %s\n' % (now, message)
-            logfile.write(fullmessage)
-    except IOError: #permission denied, etc.
-        pass
-
-
-
-
-
 # format options for lag histograms:
 #   hist = ff = fd = Frequency Distribution/Function (histogram of counts)
 #   pmf = pdf = Probability Mass/Distribution Function (or PDF, probability distribution/density function)
@@ -112,10 +93,14 @@ class StaticView(View):
     def get(self, request, *args, **kwargs):
         template_name = ''
         try:
-            template_name += 'miner/staticview/' + kwargs.get('page', '') + '.html'
+            template_name += 'miner/staticview/' + kwargs.get('page', 'index.html')
             get_template(template_name) 
         except:
-            raise Http404()
+            try:
+                template_name += 'miner/staticview/' + kwargs.get('page', '') + '.html'
+                get_template(template_name)
+            except:
+                raise Http404()
         return TemplateResponse(request, template_name)
 
 
@@ -247,7 +232,7 @@ def context_from_request(request, context=None, Form=GetLagForm, delim=',', verb
     context['columns'] = [s.strip() for s in context['columns'].split(';')] or []
 
     context['aggregate_ids'] = request.GET.get('agg') or request.GET.get('ids') or request.GET.get('aggids') or request.GET.get('aggregates') or request.GET.get('aggregate_ids') or '-1'
-    context['aggregate_ids'] = [int(s.strip()) for s in context['aggregate_ids'].split(',')] or [-1]
+    context['aggregate_ids'] = [int(s.strip()) for s in context['aggregate_ids'].split(',') if s and s.strip()] or [-1]
 
     # whether the FK join queries should be short-circuited
     print 'aggregate_ids: ', context['aggregate_ids']
@@ -431,14 +416,25 @@ class DashboardView(TemplateView):
         context = super(DashboardView, self).get_context_data(**kwargs)
         print "context"
         context['data'] = {} 
-        context['data']['d3data'] = [["x", 1,2,3,4,5,6,7,8],["y", 51,72,43,54,65,76,67,98],["y0", 91,62,73,64,65,76,67,98]]
+        context['data']['d3data'] = [["x"] + list('abcdef') + list('xyz'),["y", 99,51,72,43,54,65,76,67,98],["y0", 1,91,62,73,64,65,76,67,98]]
+        context['data']['d3data'] = [["x"] + [907,901,855,902,903,904,905,906,900],["y", 99,51,72,43,54,65,76,67,98],["z", 1,91,62,73,64,65,76,67,98]]
         context['data']['xlabel'] = 'X-Label'
         context['data']['ylabel'] = 'Y-Label'
-        print context
+        print context['data']
         return context
+
 
 class BarPlotView(DashboardView):
     template_name = 'miner/bar_plot.d3.html'
+
+
+class LinePlotView(DashboardView):
+    template_name = 'miner/line_plot.d3.html'
+
+
+class BlockView(DashboardView):
+    """Query the miner.AggregateResults table to retrieve values for plotting in a bar chart"""
+    template_name = 'miner/block.d3.html'
 
 
 def csv_response_from_context(context=None, filename=None, field_names=None, null_string='', eval_python=True):
@@ -453,36 +449,26 @@ def csv_response_from_context(context=None, filename=None, field_names=None, nul
 
     If the input data is a list of lists (table) that has more columns that rows it will be trasposed before being processed
     """
-    log(logfile, 'START csv_response_from_context')
     filename = filename or context.get('filename') or 'table_download.csv'
     field_names = field_names or context.get('field_names', [])
     # FIXME: too slow!
-    log(logfile, 'START cycle through fields')
     if field_names and all(field_names) and all(all(c in (string.letters + string.digits + '_.') for c in s) for s in field_names):
         eval_python=False
-    log(logfile, 'DONE cycle through fields')
 
     data = context
 
     # find the data table within the context dict. should be named 'data.cases' or 'data.d3data'
     if not (isinstance(data, (tuple, list)) and isinstance(data[0], (tuple, list))):
-        log(logfile, 'START data.get')
         data = json.loads(data.get('data', {}).get('d3data', '[[]]'))
         if not data or not any(data):
             data = context.get('data', {}).get('cases', [[]])
-        log(logfile, 'DONE data.get')
 
     if not isinstance(data, (list, tuple)) or not isinstance(data[0], (list, tuple)):
-        log(logfile, 'START table_generator_from_list_of_instances')
         data = table_generator_from_list_of_instances(data, field_names=field_names, eval_python=eval_python)
-    log(logfile, 'DONE table_generator_from_list_of_instances')
-
 
     try:
         if len(data) < len(data[0]):
-            log(logfile, 'START transposed_lists')
             data = util.transposed_lists(data)  # list(list(row) for row in data)
-            log(logfile, 'DONE transposed_lists')
 
     except TypeError:
         # no need to transpose if a generator was provided instead of a list or tuple (anything with a len attribute)
@@ -493,12 +479,7 @@ def csv_response_from_context(context=None, filename=None, field_names=None, nul
     response['Content-Disposition'] = 'attachment; filename="%s"' % filename
 
     writer = csv.writer(response)
-    log(logfile, 'START write rows to CSV')
-    #i = 0
     for row in data:
-        #i += 1
-        #log(logfile, 'row %s' % i)
-        #writer.writerow([unicode(s if not s == None else null_string).encode('UTF-8') for s in row])
         newrow = []
         for s in row:
             try:
@@ -508,9 +489,5 @@ def csv_response_from_context(context=None, filename=None, field_names=None, nul
             except: #not sure it ever will be touched.
                 newrow.append(unicode(s))
         writer.writerow(newrow)
-        #except:
-        #    return HttpResponse(newrow)
-    log(logfile, 'DONE write rows to CSV')
-    log(logfile, 'RETURNING RESPONSE TO CLIENT. END OF FUNCTION')
     return response
 

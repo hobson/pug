@@ -20,6 +20,7 @@
         {% block script_head %}
             {# required first, because some libs, like nvd3, use the jquery on_page_load_finished callback #}
             <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.0/jquery.min.js"></script>
+            <script src="//cdnjs.cloudflare.com/ajax/libs/json5/0.3.0/json5.js"></script>
         {% endblock %}
 
         {% block viewport %}<meta name="viewport" content="width=device-width, initial-scale=1.0">{% endblock %}
@@ -55,7 +56,6 @@
 
                 {% block script_footer %}
                     <link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.1.1/css/bootstrap.min.css">
-                    <link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.1.1/css/bootstrap-responsive.min.css">
                     <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.0/jquery.min.js"></script>
                     <script src="//cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.1.1/js/bootstrap.min.js"></script>
                 {% endblock %}

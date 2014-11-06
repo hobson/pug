@@ -10,19 +10,29 @@
 
     {# <script src="{% static "d3/d3.min.js" %}"></script> #}
     {#  <script src="{% static "d3-tip/index.js" %}"></script> #}
-    <link rel="stylesheet" href="{% static "miner/css/hist.css" %}">
+    <link rel="stylesheet" href="{% static "miner/css/line-plot.css" %}">
 {% endblock %}
 
 {% block content %}
 
 
-    <div class="row"><div id="plot_div" class="graph"></div></div> 
+    <div class="row">
+        <H1>Default Dashboard Plots</H1>
+        <div id="plot_container" class="graph"></div>
+        <div id="plot_container_1" class="graph"></div>
+    </div> 
     {# a div with a plot_div attribute ID must be created before this line-plot.js globals are created #}
 
     {% block plot %}
         <pre>{{ data|safe|escape }}</pre>
-        <script src="{% static "miner/js/line-plot.js" %}"></script>
-        <script> line_plot({{ data.d3data|safe }}, "{{ data.xlabel|escapejs }}", "{{ data.ylabel|escapejs }}"); </script>
+        <script src="{% static "miner/js/plot-util.d3.js" %}"></script>
+        <script src="{% static "miner/js/line-plot.d3.js" %}"></script>
+        <script src="{% static "miner/js/bar-plot.d3.js" %}"></script>
+        <script> line_plot({{ data.d3data|safe }}, {"xlabel": "{{ data.xlabel|escapejs }}", "ylabel": "{{ data.ylabel|escapejs }}", "plot_container_id": "plot_container"}); </script>
+        <script>
+            bar_plot({{ data.d3data|safe }}, 
+                {"plot_container_id": "plot_container_1", "xlabel": "{{ data.xlabel|escapejs }}", "ylabel": "{{ data.ylabel|default_if_none:"[]"|escapejs }}", "header": {{ data.header|default:"[]"|default_if_none:"[]"|safe }}});
+        </script>
 
     {% endblock plot %}
 

@@ -1,4 +1,4 @@
-# Copyright (C) 2013-2014  Hobson Lane <hobson@totalgood.com>
+# Copyright (C) 2012-2014  Hobson Lane <hobson@totalgood.com>
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
@@ -19,7 +19,7 @@
 # THE SOFTWARE.
 """pug -- Package of Utilities written by and for the PDX Python User's Group"""
 
-__version__ = '0.0.7'
+__version__ = '0.0.8'
 __authors__ = [
     'Hobson <hobson@totalgood.com>'
     'Steve  <walkers@sharplabs.com>'

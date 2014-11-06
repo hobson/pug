@@ -3,61 +3,36 @@
 {% load staticfiles %}
 {% load static %}
 
+{% block extra_head %}
+    <link rel="stylesheet" href="{% static "miner/css/bar-plot.css" %}">
+{% endblock %} 
+
 {% block content %}
-<style>
+    <script src="http://d3js.org/d3.v3.min.js"></script>
 
-body {
-  font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
-  margin: auto;
-  position: relative;
-  width: 960px;
-}
-
-text {
-  font: 10px sans-serif;
-}
-
-.axis path,
-.axis line {
-  fill: none;
-  stroke: #000;
-  shape-rendering: crispEdges;
-}
-
-form {
-/*  position: absolute; */
-  right: 10px;
-  top: 10px;
-}
-
-</style>
-
-<script src="http://d3js.org/d3.v3.min.js"></script>
-
-<div class="row">
-<form>
-  <label><input type="radio" name="mode" value="grouped"> Grouped</label>
-  <label><input type="radio" name="mode" value="stacked" checked> Stacked</label>
-</form>
-</div>
     <div class="row">
-      <div id="plot_div" class="graph"></div>
+        <form class="plot">
+          <label><input type="radio" name="mode" value="grouped"> Grouped</label>
+          <label><input type="radio" name="mode" value="stacked" checked> Stacked</label>
+        </form>
     </div>
 
     <div class="row">
-        <pre>{{ data|safe|escape }}</pre>
+      <div id="plot_container" class="graph"></div>
     </div>
-    <!-- <div class="row"><div id="linegraph" class="graph"></div></div>  -->
-    {# the linegraph attribute ID must be created before this line-plot.js globals are created #}
 
     {% block plot %}
+        <script src="{% static "miner/js/plot-util.d3.js" %}"></script> 
         <script src="{% static "miner/js/bar-plot.d3.js" %}"></script> 
-        <script> 
-
-
-bar_plot({{ data.d3data|safe }}, "{{ data.xlabel|escapejs }}", "{{ data.ylabel|escapejs }}");
-
-</script>
+        <script>
+            bar_plot({{ data.d3data|safe }}, 
+                {
+                 "plot_container_id": "plot_container", 
+//                 "xlabel": "{{ data.xlabel|escapejs }}", 
+//                 "ylabel": "{{ data.ylabel|default_if_none:"[]"|escapejs }}", 
+                 "header": {{ data.header|default:"[]"|default_if_none:"[]"|safe }}
+                });
+        </script>
     {% endblock plot %}
 {% endblock content %}
 

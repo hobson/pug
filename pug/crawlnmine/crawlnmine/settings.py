@@ -17,7 +17,7 @@ import os
 # Heroku: Honor the 'X-Forwarded-Proto' header for request.is_secure()
 SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
 
-PROJECT_SETTINGS_PATH = os.path.realpath(os.path.dirname(__file__))
+PROJECT_SETTINGS_PATH = os.path.realpath(os.path.dirname(os.path.abspath(__file__)))
 
 # because the apps we want in INSTALLED are "external" to this project (two directories up) we have to add them to the python path manually
 ROOT_PROJECT_PATH = os.path.realpath(os.path.join(PROJECT_SETTINGS_PATH,'..','..','..'))
@@ -50,6 +50,8 @@ INSTALLED_APPS = (
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+
+    'gunicorn',  # adds run_gunicorn command
     #'django_nvd3',
     # 'celery',
 
@@ -119,7 +121,48 @@ STATIC_URL = '/static/'
 # Example: "/var/www/example.com/static/"
 STATIC_ROOT = os.path.join(ROOT_PROJECT_PATH, 'collected_static_files')
 
-
+# This is required for Heroku to prevent "ValueError: dictionary doesn't specify a version"
+# I guess heroku default logging settings aren't compatible with Django 1.5
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': True,
+    'formatters': {
+        'verbose': {
+            'format': '%(levelname)s %(asctime)s %(module)s %(process)d %(thread)d %(message)s'
+        },
+        'simple': {
+            'format': '%(levelname)s %(message)s'
+        },
+    },
+    'handlers': {
+        'null': {
+            'level': 'DEBUG',
+            'class': 'logging.NullHandler',
+        },
+        'console':{
+            'level': 'DEBUG',
+            'class': 'logging.StreamHandler',
+            'formatter': 'simple'
+        },
+        'mail_admins': {
+            'level': 'ERROR',
+            'class': 'django.utils.log.AdminEmailHandler',
+            'filters': [],
+        }
+    },
+    'loggers': {
+        'django': {
+            'handlers': ['null'],
+            'propagate': True,
+            'level': 'INFO',
+        },
+        'django.request': {
+            'handlers': ['mail_admins'],
+            'level': 'ERROR',
+            'propagate': False,
+        },
+    }
+}
 # List of modules to import when celery starts.  But crawlnmine.crawlnmine.__init__ will do this
 #CELERY_IMPORTS = ("testcele.tasks",)
 
