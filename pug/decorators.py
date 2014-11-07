@@ -7,16 +7,28 @@ https://wiki.python.org/moin/PythonDecoratorLibrary#Logging_decorator_with_speci
 
 import os
 import re
-import collections
+# import collections
 import functools
 import logging
 from types import NoneType
+from traceback import print_exc
+
+from django.core.exceptions import ImproperlyConfigured
+try:
+    # FIXME Only 1 function that requires settings: all other functions should be moved to nlp.db module?
+    from django.conf import settings
+    settings.configure()
+except ImproperlyConfigured:
+    print print_exc()
+    print 'WARNING: The module named %r from file %r' % (__name__, __file__)
+    print '         can only be used within a Django project!'
+    print '         Though the module was imported, some of its functions may raise exceptions.'
 
 from nlp.db import representation
 from inspect import getmodule
 from nlp.util import make_name
 from django.db.models.fields.related import RelatedField
-# from django.conf import settings
+
 #from exceptions import TypeError
 
 def force_hashable(obj, recursive=True):

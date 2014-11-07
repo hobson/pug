@@ -40,13 +40,17 @@ from django.core.exceptions import ImproperlyConfigured
 settings = None
 try:
     # FIXME Only 1 function that requires settings: all other functions should be moved to nlp.db module?
-    from django.conf import settings  
+    from django.conf import settings
+    settings.configure()
 except ImproperlyConfigured:
-    print print_exc()
+    print_exc()
     print 'WARNING: The module named %r from file %r' % (__name__, __file__)
     print '         can only be used within a Django project!'
     print '         Though the module was imported, some of its functions may raise exceptions.'
-
+except RuntimeError:
+    print_exc()
+    print 'WARNING: Unable to configure settings (cirular import perhaps?)'
+    print '         Django settings may have already been configured elsewhere'
 
 from pug.nlp import util  # import listify, generate_slices, transposed_lists #, sod_transposed, dos_from_table
 from pug.nlp.words import synonyms
@@ -2606,7 +2610,7 @@ def optimize_filter_dict(filter_dict, trgm=True):
 
 
 def clean_filter_dict(filter_dict, strip=False):
-    r"""Clear/del Django ORM filter kwargs dict queries like `filter({"<field>__in": member_list` where `member_list` is empty
+    '''Clear/del Django ORM filter kwargs dict queries like `filter({"<field>__in": member_list` where `member_list` is empty
 
     Brute force processing of user-entered lists of query parameters can often produce null `__in` filters
       which will return no results if not "cleaned" by deleting these dict entries.
@@ -2614,24 +2618,22 @@ def clean_filter_dict(filter_dict, strip=False):
       so they usually do not need to be cleaned.
 
     Examples:
-      >>> del_null_in_filter({'acctno__in': None, 'serialno': None})
+      >>> clean_filter_dict({'acctno__in': None, 'serialno': None})
       {'serialno': None}
-      >>> del_null_in_filter({'acctno__in': [], 'name': None, 'serialno__in': [u'', None, ''], 'serialno__in': ['', None, 0]})
+      >>> clean_filter_dict({'acctno__in': [], 'name': None, 'serialno__in': [u'', None, ''], 'serialno__in': ['', None, 0]})
       {'serialno__in': ['', None, 0]}
       >>> exclude_dict = {'acctno__in': [], 'serialno__in': [u'', None, r" "]}
-      >>> del_null_in_filter(exclude_dict)
+      >>> clean_filter_dict(exclude_dict)
       {'serialno__in': [u'', None, ' ']}
       >>> print exclude_dict
       {'serialno__in': [u'', None, ' ']}
-      >>> del_null_in_filter(exclude_dict, strip=True)
+      >>> clean_filter_dict(exclude_dict, strip=True)
       {}
       >>> print exclude_dict
       {}
-      >>> del_null_in_filter({'num__in': [0], 'bool__in': [False], 'str__in': [' \t \r \n ']}, strip=True) ==  {'bool__in': [False], 'num__in': [0]}
+      >>> clean_filter_dict({'num__in': [0], 'bool__in': [False], 'str__in': [' \t \r \n ']}, strip=True) ==  {'bool__in': [False], 'num__in': [0]}
       True
-    """
-    print 'uncleaned_filter_or_exclude_dict:'
-    print filter_dict
+    '''
     if not strip:
         strip = lambda s: s
     elif not callable(strip):
@@ -2646,6 +2648,7 @@ def clean_filter_dict(filter_dict, strip=False):
     print 'cleaned_filter_dict:'
     print filter_dict
     return filter_dict
+
 
 def dump_json(model, batch_len=200000, use_natural_keys=True, verbosity=1):
     """Dump database records to .json Django fixture file, one file for each batch of `batch_len` records

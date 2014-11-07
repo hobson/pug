@@ -34,6 +34,8 @@ import decimal
 import random
 from decimal import Decimal
 import math
+from dateutil.parser import parse as parse_date
+
 
 from progressbar import ProgressBar
 from pytz import timezone
@@ -1656,19 +1658,45 @@ def make_real(list_of_lists):
 
 
 def imported_modules():
-    for name, val in globals().items():
+    for name, val in globals().iteritems():
         if isinstance(val, types.ModuleType):
             yield val
 
 
-def make_tz_aware(dt, tz='UTC'):
-    """Add timezone information to a datetime object, only if it is naive."""
+def make_tz_aware(dt, tz='UTC', is_dst=None):
+    """Add timezone information to a datetime object, only if it is naive.
+
+    >>> make_tz_aware(datetime.datetime(2001,9,1,1))
+    datetime.datetime(2001, 9, 1, 1, tzinfo=<UTC>)
+    """
     tz = dt.tzinfo or tz
     try:
         tz = pytz.timezone(tz)
     except AttributeError:
         pass
-    return tz.localize(dt)
+    return tz.localize(dt, is_dst=is_dst) 
+
+
+
+def normalize_datetime(t, time=datetime.timedelta(hours=16)):
+    if isinstance(t, datetime.datetime):
+        if not t.hours + t.seconds:
+            if time:
+                t += time
+        return t
+    if isinstance(t, datetime.date):
+        return normalize_datetime(datetime.datetime(t), time=time)
+    if isinstance(t, basestring):
+        return normalize_datetime(parse_date(t))
+    return normalize_datetime(datetime.datetime(*[int(i) for i in t]))
+
+
+def normalize_date(d):
+    if isinstance(d, datetime.datetime):
+        return datetime.date(d.year, d.month, d.day)
+    if isinstance(d, basestring):
+        return normalize_date(parse_date(d))
+    return normalize_date(datetime.datetime(*[int(i) for i in d]))
 
 
 def clean_wiki_datetime(dt, squelch=True):
