@@ -1,31 +1,13 @@
 
 function line_plot(d3data, conf) {
     console.log('==================== LINE PLOT =======================');
-    default_conf         = {"plot_container_id": "plot_container", "container_width": 960, "container_height": 500, "margin": {top: 30, right: 80, bottom: 30, left: 50}};
 
-    conf                   = typeof conf                   == "undefined" ? default_conf                                : conf;
-    conf.plot_container_id = typeof conf.plot_container_id == "undefined" ? default_conf.plot_container_id              : conf.plot_container_id;
-    conf.margin            = typeof conf.margin            == "undefined" ? default_conf.margin                         : conf.margin;
-    conf.container_width   = typeof conf.container_width   == "undefined" ? default_conf.container_width                : conf.container_width;
-    conf.container_height  = typeof conf.container_height  == "undefined" ? default_conf.container_height               : conf.container_height;
-    conf.width             = typeof conf.width             == "undefined" ? conf.container_width - conf.margin.left - conf.margin.right  : conf.width;
-    conf.height            = typeof conf.height            == "undefined" ? conf.container_height - conf.margin.top  - conf.margin.bottom : conf.height;
-
-    xlabel  = typeof conf.xlabel == "undefined" ? d3data[0][0] : conf.xlabel;
-    conf.xlabel = xlabel;
-    xfield  = typeof d3data[0][0] == "string" ? d3data[0][0] : conf.xlabel;
-    ylabel  = typeof conf.ylabel == "undefined" ? d3data[1][0] : conf.ylabel;
-    conf.ylabel = ylabel;
-
-    ylabels = ((typeof conf.ylabel == "object") && (d3data.length == (1 + conf.ylabel.length))) ? conf.ylabel : d3data.slice(1).map(function(d) {return d[0];});
-    conf.ylabels = ylabels;
-    var num_layers = conf.ylabels.length;
-    conf.color = d3.scale.category10().domain(conf.ylabels);
+    conf = normalize_conf(d3data, conf);
 
     console.log('line plot ylabels and xfield');
     console.log(conf.ylabels);
-    console.log(xfield);
-    console.log(xlabel);
+    console.log(conf.xfield);
+    console.log(conf.xlabel);
 
     // retrieve the GET query from the URI of this page:
     conf.query = query2obj();
@@ -95,7 +77,7 @@ function line_plot(d3data, conf) {
         console.log(d3data);
 
         // TODO: check for other types of x-axis values (floats, ints, dates, times) and produce the appropriate x-scale in an autoscale function
-        // parse xdata as datetimes if the xlabel starts with the word "date" or "time" 
+        // parse xdata as datetimes if the conf.xlabel starts with the word "date" or "time" 
         if ((conf.xlabel.substring(0, 4).toUpperCase() == "DATE")
             // || (conf.xlabel.substring(0, 4).toUpperCase() == "TIME")
           ) {
@@ -108,21 +90,7 @@ function line_plot(d3data, conf) {
         }
 
         console.log('line plot all_series');
-        var all_series = conf.ylabels.map(function(name) {
-          var series = { 
-            name: name,
-            values: null 
-          };
-          series.values = d3data.map(function(d) {
-                return {
-                  series: series,
-                  //name: name,  // unnecesary?
-                  x: d.x,
-                  y: +d[name]
-                }; // return {
-          }); // d3data.map(function(d) {
-          return series;
-        });
+        all_series = d3_series_as_xy_series(d3data, conf.ylabels);
         console.log(all_series);
         
         console.log(d3data.map(function(d) { return d.x; }));
