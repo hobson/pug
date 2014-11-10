@@ -57,3 +57,24 @@ gem install jekyll
 jekyll new static-jekyll-site
 cd static-jekyll-site
 jekyll serve
+
+
+####### git repos
+mkdir -p ~/src
+mkdir -p ~/bin
+mkdir -p ~/tmp
+cd ~/src
+git config --global user.name "Lane Hobson"
+git config --global user.email "laneh@sharplabs.com"
+git config --global receive.denyDeleteCurrent 'warn'
+git config --global credential.helper 'cache --timeout 36000'
+# attempt to clone repos with write priveleges (will only work if SSH key's have been uploaded to github and stash)
+# but fall back to read-only clones if necessary
+for repo in ("pug.git" "coursera.git" "pycon2015-everyday-ai.git"); do
+   git clone "git@github.com:hobson/$repo" || git clone "https://github.com/hobson/$repo"
+done
+for repo in ("sasbd/ssp.git" "sasbd/ssg.git"); do
+   git clone "ssh://git@stash.sharplabs.com:7999/$repo" || git clone "http://stash.sharplabs.com:7990/scm/$repo"
+done
+
+
