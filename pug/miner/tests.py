@@ -1,8 +1,8 @@
 from django.test import LiveServerTestCase, TestCase
 from selenium import webdriver
-import doctest
 import pug.nlp.util
 import pug.nlp.djdb
+
 
 class HomeTest(LiveServerTestCase):
 
@@ -58,21 +58,33 @@ class AdminTest(LiveServerTestCase):
     #     self.assertIn('Django administration', body.text)
 
 
+# Django 1.7 recommends following following python 2.4 unittest+doctest recommendations
+#  https://docs.djangoproject.com/en/dev/releases/1.6/#new-test-runner
+#  https://docs.python.org/2/library/doctest.html#unittest-api
+import unittest
+import doctest
 
-class DocTest(TestCase):
+def load_tests(loader, tests, ignore):
+    tests.addTests(doctest.DocTestSuite(pug.nlp.util))
+    return tests
 
-    def test_util(self, module=pug.nlp.util):
-        failure_count, test_count = doctest.testmod(module, raise_on_error=False, verbose=True)
-        msg = "Ran {0} tests in {3} and {1} passed ({2} failed)".format(test_count, test_count-failure_count, failure_count, module.__file__)
-        print msg
-        if failure_count:
-            print "Ignoring pug.nlp.util doctest failures..."
-            #self.fail(msg)
 
-    def test_djdb(self, module=pug.nlp.djdb):
-        failure_count, test_count = doctest.testmod(module, raise_on_error=False, verbose=True)
-        msg = "Ran {0} tests in {3} and {1} passed ({2} failed)".format(test_count, test_count-failure_count, failure_count, module.__file__)
-        print msg
-        if failure_count:
-            print "Ignoring pug.nlp.djdb doctest failures..."
-            # self.fail(msg)
+# # This was clunky...
+
+# class DocTest(TestCase):
+
+#     def test_util(self, module=pug.nlp.util):
+#         failure_count, test_count = doctest.testmod(module, raise_on_error=False, verbose=True)
+#         msg = "Ran {0} tests in {3} and {1} passed ({2} failed)".format(test_count, test_count-failure_count, failure_count, module.__file__)
+#         print msg
+#         if failure_count:
+#             print "Ignoring pug.nlp.util doctest failures..."
+#             #self.fail(msg)
+
+#     def test_djdb(self, module=pug.nlp.djdb):
+#         failure_count, test_count = doctest.testmod(module, raise_on_error=False, verbose=True)
+#         msg = "Ran {0} tests in {3} and {1} passed ({2} failed)".format(test_count, test_count-failure_count, failure_count, module.__file__)
+#         print msg
+#         if failure_count:
+#             print "Ignoring pug.nlp.djdb doctest failures..."
+#             # self.fail(msg)

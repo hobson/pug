@@ -69,6 +69,29 @@ function arrays_as_object(columns) {
 }
 
 
+function normalize_conf(d3data, conf) {
+    default_conf         = {"plot_container_id": "plot_container", "container_width": 960, "container_height": 500, "margin": {top: 30, right: 80, bottom: 30, left: 50}};
+
+    conf                   = typeof conf                   == "undefined" ? default_conf                                : conf;
+    conf.plot_container_id = typeof conf.plot_container_id == "undefined" ? default_conf.plot_container_id              : conf.plot_container_id;
+    conf.margin            = typeof conf.margin            == "undefined" ? default_conf.margin                         : conf.margin;
+    conf.container_width   = typeof conf.container_width   == "undefined" ? default_conf.container_width                : conf.container_width;
+    conf.container_height  = typeof conf.container_height  == "undefined" ? default_conf.container_height               : conf.container_height;
+    conf.width             = typeof conf.width             == "undefined" ? conf.container_width - conf.margin.left - conf.margin.right  : conf.width;
+    conf.height            = typeof conf.height            == "undefined" ? conf.container_height - conf.margin.top  - conf.margin.bottom : conf.height;
+
+    conf.xlabel = typeof conf.xlabel == "undefined" ? d3data[0][0] : conf.xlabel;
+    conf.xfield  = typeof d3data[0][0] == "string" ? d3data[0][0] : conf.xlabel;
+    conf.ylabel = typeof conf.ylabel == "undefined" ? d3data[1][0] : conf.ylabel;
+
+    ylabels = ((typeof conf.ylabel == "object") && (d3data.length == (1 + conf.ylabel.length))) ? conf.ylabel : d3data.slice(1).map(function(d) {return d[0];});
+    conf.ylabels = ylabels;
+    conf.num_layers = conf.ylabels.length;
+    conf.color = d3.scale.category10().domain(conf.ylabels);
+    return conf;
+    }
+
+
 function arrays_as_objects(columns) {
     var objects = Array();
     for (var i=0; i<columns.length; i++) {
@@ -85,6 +108,23 @@ function arrays_as_objects(columns) {
     }
     return objects;
 }
+
+
+function d3_series_as_xy_series(d3data, ylabels) {
+    var all_series = ylabels.map(function(name) {
+        var series = { 
+            name: name, 
+            values: null };
+        series.values = d3data.map(function(d) {
+            return { 
+                "series": series,
+                "x": d.x,
+                "y": +d[name] }; // return {
+            }); // d3data.map(function(d) {
+        return series;
+        });
+    return all_series; }
+
 
 function properties(d) {
     props = Array()
