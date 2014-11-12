@@ -45,7 +45,7 @@ South>=0.8.4
 # https://python-progressbar.googlecode.com/files/progressbar-2.3-dev.tar.gz
 # # --editable=https://python-progressbar.googlecode.com/files/progressbar-2.3.tar.gz
 progressbar-latest>=2.4
-psycopg2>=2.5.4
+# psycopg2>=2.5.4
 
 # ipython==2.0.0
 
