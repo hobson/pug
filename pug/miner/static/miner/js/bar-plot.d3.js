@@ -10,10 +10,10 @@ function mouseover(d) {
     var text = focus.select("text").text(tt).node();
     var SVGRect = text.getBBox();
     focus.select("rect").attr("x", SVGRect.x).attr("y", SVGRect.y).attr("width", SVGRect.width).attr("height", SVGRect.height);
-    console.log(d);
-    console.log(mouseover.conf.xscale(d.x));
-    console.log(d3.mean(mouseover.conf.xscale.range()));
-    console.log("translate(" + mouseover.conf.xscale(d.x) + "," + mouseover.conf.yscale(d.y0) + ")");
+    // console.log(d);
+    // console.log(mouseover.conf.xscale(d.x));
+    // console.log(d3.mean(mouseover.conf.xscale.range()));
+    // console.log("translate(" + mouseover.conf.xscale(d.x) + "," + mouseover.conf.yscale(d.y0) + ")");
 }
 mouseover.conf = null;
 
@@ -48,8 +48,8 @@ function bar_plot(d3data, conf) {
     ylabels = ((typeof conf.ylabel == "object") && (d3data.length == (1 + conf.ylabel.length))) ? conf.ylabel : d3data.slice(1).map(function(d) {return d[0];});
     var num_layers = ylabels.length;
 
-    console.log(ylabels);
-    console.log(xfield);
+    // console.log(ylabels);
+    // console.log(xfield);
 
     // TODO: standardize on the "series" data structure below which is also used in the line-plot
     var layers = split_d3_series(d3data);
@@ -62,8 +62,8 @@ function bar_plot(d3data, conf) {
             layers[i][j].heading = ylabels[i];
         }
     }
-    console.log('layers (d3data as arrays of objects with x,y properties)');
-    console.log(layers);
+    // console.log('layers (d3data as arrays of objects with x,y properties)');
+    // console.log(layers);
 
     d3data = arrays_as_objects(d3data);
     var num_stacks = d3data.length; // number of samples per layer
@@ -82,7 +82,7 @@ function bar_plot(d3data, conf) {
         .domain([0, num_layers - 1])
         .range(["#aad", "#556"]);
 
-    console.log('all_series');
+    // console.log('all_series');
     var all_series = ylabels.map(function(name) {
       var series = { name: name, values: null };
       series.values = d3data.map(function(d) {
@@ -90,7 +90,7 @@ function bar_plot(d3data, conf) {
       }); // d3data.map(function(d) {
       return series;
     });
-    console.log(all_series);
+    // console.log(all_series);
 
     var ymin = d3.min(all_series, function(series) { return d3.min(series.values, function(d) { console.log(d); return d.y; }); });
     var ymax = d3.max(all_series, function(series) { return d3.max(series.values, function(d) { console.log(d); return d.y; }); });
