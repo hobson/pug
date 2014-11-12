@@ -34,7 +34,7 @@ BASE_DIR = os.path.realpath(os.path.join(os.path.dirname(os.path.abspath(__file_
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/1.7/howto/deployment/checklist/
 
-SECRET_KEY = env("DJANGO_SECRET_KEY", default=''.join(random.choice(string.printable) for _ in range(32)))
+SECRET_KEY = env("DJANGO_SECRET_KEY", default=''.join(random.choice(string.printable) for _ in range(32)))  # os.urandom(32) isn't terminal printable
 
 # Heroku: Honor the 'X-Forwarded-Proto' header for request.is_secure()
 SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
