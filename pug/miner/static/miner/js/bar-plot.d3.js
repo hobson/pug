@@ -7,10 +7,10 @@ function mouseover(d) {
     translate_value = "translate(" + mouseover.conf.xscale(d.x);
     // var text_anchor = mouseover.conf.xscale(d.x) > d3.mean(mouseover.conf.xscale.range()) ? "end" : "start";
     if (mouseover.conf.stacked) { 
-      translate_value = translate_value + mouseover.conf.yscale(d3.max([d.y0, d.y])) + ")";
+      translate_value = translate_value + "," + mouseover.conf.yscale(d3.max([d.y0, d.y])) + ")";
       }
     else {
-      translate_value = translate_value + mouseover.conf.yscale(d.y0) + ")";
+      translate_value = translate_value + "," + mouseover.conf.yscale(d.y) + ")";
       }
     focus.attr("transform", translate_value);
     console.log('translate = ' + translate_value + '   stacked = ' + mouseover.conf.stacked);
@@ -20,9 +20,9 @@ function mouseover(d) {
     var SVGRect = text.getBBox();
     focus.select("rect").attr("x", SVGRect.x).attr("y", SVGRect.y).attr("width", SVGRect.width).attr("height", SVGRect.height);
     console.log(d);
-    console.log(mouseover.conf.xscale(d.x));
-    console.log(d3.mean(mouseover.conf.xscale.range()));
-    console.log("translate(" + mouseover.conf.xscale(d.x) + "," + mouseover.conf.yscale(d.y0) + ")");
+    console.log(mouseover.conf.yscale(d.y));
+    console.log(d3.mean(mouseover.conf.yscale.range()));
+    console.log(d3.mean(mouseover.conf.yscale.domain()));
 }
 mouseover.conf = null;
 
