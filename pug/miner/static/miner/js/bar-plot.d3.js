@@ -7,10 +7,10 @@ function mouseover(d) {
     translate_value = "translate(" + mouseover.conf.xscale(d.x);
     // var text_anchor = mouseover.conf.xscale(d.x) > d3.mean(mouseover.conf.xscale.range()) ? "end" : "start";
     if (conf.stacked) { 
-      translate_value = translate_value + mouseover.conf.yscale(d3.max([d.y0, d.y])) + ")");
+      translate_value = translate_value + mouseover.conf.yscale(d3.max([d.y0, d.y])) + ")";
       }
     else {
-      translate_value = translate_value + mouseover.conf.yscale(d.y) + ")");
+      translate_value = translate_value + mouseover.conf.yscale(d.y) + ")";
       }
     focus.attr("transform", translate_value);
     console.log('translate = ' + translate_value);
