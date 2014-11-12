@@ -28,6 +28,21 @@ def env(var_name, default=False):
         sys.stderr.write(msg)
         return default
 
+# from nlp.django_settings import env
+def env(var_name, default=False):
+    """ Get the environment variable or assume a default, but let the user know about the error."""
+    try:
+        value = os.environ[var_name]
+        if str(value).strip().lower() in ['false', 'no', 'off' '0', 'none', 'null']:
+            return None
+        return value
+    except:
+        from traceback import format_exc
+        msg = "Unable to find the %s environment variable.\nUsing the value %s (the default) instead.\n" % (var_name, default)
+        sys.stderr.write(format_exc())
+        sys.stderr.write(msg)
+        return default
+
 # Build paths inside the project like this: os.path.join(BASE_DIR, ...)
 BASE_DIR = os.path.realpath(os.path.join(os.path.dirname(os.path.abspath(__file__)), '..'))
 
