@@ -10,6 +10,8 @@ fi
 
 yum update -y
 
+mkdir -p ~/tmp ~/bin ~/src
+
 
 ########## linux utilities
 yum install -y python-devel nano git git-core ipython dconf-editor meld parcellite
@@ -32,7 +34,7 @@ yum install -y gnome-tweak-tool gnome-shell-extension*
 
 ########## dropbox
 cd ~ && \
-mkdir -P tmp && \
+mkdir -p tmp && \
 cd ~/tmp && \
 wget -O - "https://www.dropbox.com/download?plat=lnx.x86_64" | tar xzf - && \
 cd .dropbox-dist && \
@@ -55,12 +57,12 @@ yum install -y "@Administration Tools"
 # basics to get started
 yum install -y git nano rsync curl wget traceback whois
 # database and libs for python bindings
-yum install -y postgresql postgresql-devel
 
 
 ######### Sublime Text 2 ##########
-cd /tmp
-wget https://gist.githubusercontent.com/hobson/7416d96df16ce4509dae/raw/8eb64f1436111876b1255450cba76f6ec9dbbde1/install-sublime-text-x64.sh -O install-sublime-text-x64.sh
+cd ~/tmp
+rm -f install-sublime-text-x64
+wget https://gist.githubusercontent.com/hobson/7416d96df16ce4509dae/raw/59d461c6c930b1a8fb5356501c7526f98443cbfa/install-sublime-text-x64.sh
 chmod +x install-sublime-text-x64.sh
 ./install-sublime-text-x64.sh
 
@@ -85,11 +87,27 @@ export PROJECT_HOME=$HOME/src
 source /usr/bin/virtualenvwrapper.sh 
 ' >> /etc/profile.d/install_virtualenvwrapper.sh
 
+################ Django apps #################
 
-########## scipy ###############
+# postgres
+yum install -y postgresql postgresql-devel geos geos-devel
+sudo pip install psycopg2
+
+# django-extensions (model_graph)
+sudo yum install -y graphviz graphviz-devel
+
+# matplotlib
+# sudo yum -y install latex* gtk3-devel pygtk2-devel png agg-devel jpeg8-devel freetype6-devel png12-devel
+sudo yum -y install freetype-devel libXft-devel pygtk2-devel tcl-devel tk tk-devel tkinter tkinter-devel python-mtTkinter
+sudo pip install pyparsing mock
+sudo pip install matplotlib
+
+# scipy 
 sudo yum install -y gcc-gfortran blas-static lapack-static numpy-f2py numpy scipy && \
-pip install --upgrade numpy && \
-pip install --upgrade pandas scipy
+sudo pip install --upgrade numpy && \
+sudo pip install --upgrade pytz six && \
+sudo pip install --upgrade pandas && \
+sudo pip install --upgrade scipy
 
 
 # ########### ODBC ###############

@@ -19,10 +19,14 @@ try:
     from django.conf import settings
     settings.configure()
 except ImproperlyConfigured:
-    print print_exc()
+    print_exc()
     print 'WARNING: The module named %r from file %r' % (__name__, __file__)
     print '         can only be used within a Django project!'
     print '         Though the module was imported, some of its functions may raise exceptions.'
+except RuntimeError:
+    print_exc()
+    print 'WARNING: Unable to configure settings (cirular import perhaps?)'
+    print '         Django settings may have already been configured elsewhere'
 
 from nlp.db import representation
 from inspect import getmodule
