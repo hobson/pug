@@ -10,10 +10,11 @@ function mouseover(d) {
       translate_value = translate_value + mouseover.conf.yscale(d3.max([d.y0, d.y])) + ")";
       }
     else {
-      translate_value = translate_value + mouseover.conf.yscale(d.y) + ")";
+      translate_value = translate_value + mouseover.conf.yscale(d.y0) + ")";
       }
     focus.attr("transform", translate_value);
-    console.log('translate = ' + translate_value);
+    console.log('translate = ' + translate_value + '   stacked = ' + stacked);
+    console.log(yscale);
     var tt = d.heading + ": " + (d.y).toFixed(1) + "%"; 
     var text = focus.select("text").text(tt).node();
     var SVGRect = text.getBBox();
