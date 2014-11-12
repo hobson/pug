@@ -1,3 +1,36 @@
+// Dependencies:
+//   miner/js/plot-util.js
+//   d3.js
+
+function mouseover(d) {
+    var focus = d3.select("g.focus");
+    // var text_anchor = mouseover.conf.xscale(d.x) > d3.mean(mouseover.conf.xscale.range()) ? "end" : "start";
+    focus.attr("transform", "translate(" + mouseover.conf.xscale(d.x) + "," + mouseover.conf.yscale(d3.max([d.y0, d.y])) + ")");
+    var tt = d.heading + ": " + (d.y).toFixed(1) + "%"; 
+    var text = focus.select("text").text(tt).node();
+    var SVGRect = text.getBBox();
+    focus.select("rect").attr("x", SVGRect.x).attr("y", SVGRect.y).attr("width", SVGRect.width).attr("height", SVGRect.height);
+    // console.log(d);
+    // console.log(mouseover.conf.xscale(d.x));
+    // console.log(d3.mean(mouseover.conf.xscale.range()));
+    // console.log("translate(" + mouseover.conf.xscale(d.x) + "," + mouseover.conf.yscale(d.y0) + ")");
+}
+mouseover.conf = null;
+
+
+function mouseout(d) {
+  var focus = d3.select("g.focus");
+  focus.select("text").text("");
+  focus.select("rect").attr("width", 0).attr("height", 0);
+    
+  // FIXME: doesn't work
+  // selector = ".row-"+d.row + ".col-"+d.col;
+  // console.log('mouse out selector: ' + selector);
+  // console.log(d);
+  // d3.select().classed('hover', false);
+}
+
+
 function bar_plot(d3data, conf) {
     conf = normalize_conf(d3data, conf);
     // default_conf         = {"plot_container_id": "plot_container", "container_width": 960, "container_height": 500, "margin": {top: 30, right: 80, bottom: 30, left: 50}};
@@ -30,8 +63,8 @@ function bar_plot(d3data, conf) {
             layers[i][j].heading = conf.ylabels[i];
         }
     }
-    console.log('layers (d3data as arrays of objects with x,y properties)');
-    console.log(layers);
+    // console.log('layers (d3data as arrays of objects with x,y properties)');
+    // console.log(layers);
 
     //d3data = arrays_as_objects(d3data);
     var num_stacks = d3data.length; // number of samples per layer
@@ -49,15 +82,15 @@ function bar_plot(d3data, conf) {
         .domain([0, conf.num_layers - 1])
         .range(["#aad", "#556"]);
 
-    console.log('all_series');
-    var all_series = conf.ylabels.map(function(name) {
+    // console.log('all_series');
+    var all_series = ylabels.map(function(name) {
       var series = { name: name, values: null };
       series.values = d3data.map(function(d) {
             return { series: series, x: d[conf.xfield], y: +d[name] };
       }); // d3data.map(function(d) {
       return series;
     });
-    console.log(all_series);
+    // console.log(all_series);
 
     var ymin = d3.min(all_series, function(series) { return d3.min(series.values, function(d) { console.log(d); return d.y; }); });
     var ymax = d3.max(all_series, function(series) { return d3.max(series.values, function(d) { console.log(d); return d.y; }); });
