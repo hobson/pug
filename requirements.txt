@@ -49,8 +49,6 @@ psycopg2>=2.5.4
 
 # ipython==2.0.0
 
-# # psycopg2==2.5.3
-# psycopg2==2.4.5
 # # pycparser==2.10
 # pyOpenSSL==0.14
 python-slugify>=0.0.9
@@ -58,10 +56,10 @@ pytz>=2014.3
 python-dateutil>=2.2
 # pytz==2014.3
 # # queuelib==1.1.1
-selenium>=2.39.0
+# selenium>=2.39.0
 six>=1.8.0
 
-sqlparse>=0.1.13
+# sqlparse>=0.1.13
 # tabulate==0.7.1
 # w3lib==1.5
 # zope.interface==4.0.5
