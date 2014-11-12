@@ -8,11 +8,20 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/1.6/ref/settings/
 """
 
-
+import os
 import sys
+from pug.nlp.django_settings import env
 
 # Build paths inside the project like this: os.path.join(BASE_DIR, ...)
-import os
+BASE_DIR = os.path.realpath(os.path.join(os.path.dirname(os.path.abspath(__file__)), '..'))
+
+
+
+
+# Quick-start development settings - unsuitable for production
+# See https://docs.djangoproject.com/en/1.7/howto/deployment/checklist/
+
+SECRET_KEY = env("CRAWLNMINE_SECRET_KEY", default=os.urandom(32))
 
 # Heroku: Honor the 'X-Forwarded-Proto' header for request.is_secure()
 SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
@@ -25,15 +34,10 @@ ROOT_PROJECT_PATH = os.path.realpath(os.path.join(PROJECT_SETTINGS_PATH,'..','..
 if ROOT_PROJECT_PATH not in sys.path:
     sys.path.insert(1, ROOT_PROJECT_PATH)
 
-# Quick-start development settings - unsuitable for production
-# See https://docs.djangoproject.com/en/1.6/howto/deployment/checklist/
-
-SECRET_KEY = os.environ.get('CRAWLNMINE_SECRET_KEY', os.urandom(32))
-
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = bool(env("DJANGO_DEBUG", default=False))
 
-TEMPLATE_DEBUG = True
+TEMPLATE_DEBUG = DEBUG
 
 
 # ALLOWED_HOSTS = []
