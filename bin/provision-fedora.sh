@@ -1,28 +1,33 @@
+#!/usr/bin/env bash
 # source this file as superuser!
+# suitable to use as a bootstrap.sh provisioning script by vagrant
+
+if [ -z "$0" ]; then
+    :
+else
+	HOME="/home/$0"
+fi
+
+yum update -y
+
 
 ########## linux utilities
-sudo yum install -y python-devel nano git git-core ipython dconf-editor meld parcellite
+yum install -y python-devel nano git git-core ipython dconf-editor meld parcellite
+
 
 ########## linux development
-sudo yum install -y "@Development Tools" gcc-c++ dconf-editor
-sudo yum install -y open-ssl openssl-libs openssl-devel
-sudo yum install -y patch byacc textinfo bison autoconf gettext ncurses-devel
-sudo yum install -y libffi-devel  kernel-devel kernel-headers dkms make bzip2 perl ruby ruby-devel rubygems rubygem-execjs
+yum install -y "@Development Tools" gcc-c++ dconf-editor
+yum install -y open-ssl openssl-libs openssl-devel
+yum install -y patch byacc textinfo bison autoconf gettext ncurses-devel
+yum install -y libffi-devel  kernel-devel kernel-headers dkms make bzip2 perl ruby ruby-devel rubygems rubygem-execjs
+
+
+########## VNC Server
+yum install -y vnc-server
+
 
 ######### gnome tweaks like notification in top 
-yum install gnome-tweak-tool gnome-shell-extension*
-
-
-########## move notification icons to top like in fedora 16
-git clone https://github.com/MrTheodor/gnome-shell-ext-icon-manager.git && \
-cp -r gnome-shell-ext-icon-manager/icon-manager@krajniak.info/ ~/.local/share/gnome-shell/extensions/ && \
-sudo cp gnome-shell-ext-icon-manager/org.gnome.shell.extensions.icon-manager.gschema.xml /usr/share/glib-2.0/schemas/ && \
-sudo glib-compile-schemas /usr/share/glib-2.0/schemas && \
-rm -rf gnome-shell-ext-icon-manager/
-
-
-########## scipy
-sudo yum install gcc-gfortran blas-static lapack-static numpy-f2py numpy scipy && pip install --upgrade scipy
+yum install -y gnome-tweak-tool gnome-shell-extension*
 
 
 ########## dropbox
@@ -32,6 +37,64 @@ cd ~/tmp && \
 wget -O - "https://www.dropbox.com/download?plat=lnx.x86_64" | tar xzf - && \
 cd .dropbox-dist && \
 ./dropboxd &
+
+
+######## web server
+yum install -y nginx
+systemctl enable nginx.service
+systemctl start nginx.service
+# rm -rf /usr/share/nginx/html
+# ln -fs /vagrant /usr/share/nginx/html
+
+####### GUI desktop
+yum install -y "@Administration Tools"
+# systemctl enable gdm
+# systemctl set-default graphical.target
+
+######## admin
+# basics to get started
+yum install -y git nano rsync curl wget traceback whois
+# database and libs for python bindings
+yum install -y postgresql postgresql-devel
+
+
+######### Sublime Text 2 ##########
+cd /tmp
+wget https://gist.githubusercontent.com/hobson/7416d96df16ce4509dae/raw/8eb64f1436111876b1255450cba76f6ec9dbbde1/install-sublime-text-x64.sh -O install-sublime-text-x64.sh
+chmod +x install-sublime-text-x64.sh
+./install-sublime-text-x64.sh
+
+
+# ########## move notification icons to top like in fedora 16
+# git clone https://github.com/MrTheodor/gnome-shell-ext-icon-manager.git && \
+# cp -r gnome-shell-ext-icon-manager/icon-manager@krajniak.info/ ~/.local/share/gnome-shell/extensions/ && \
+# sudo cp gnome-shell-ext-icon-manager/org.gnome.shell.extensions.icon-manager.gschema.xml /usr/share/glib-2.0/schemas/ && \
+# sudo glib-compile-schemas /usr/share/glib-2.0/schemas && \
+# rm -rf gnome-shell-ext-icon-manager/
+
+########## pip & virtualenvwrapper ################
+cd /tmp
+# `curl -O` fails
+wget http://raw.github.com/pypa/pip/master/contrib/get-pip.py
+python get-pip.py
+# get the latest version of scipy installed at the system level
+pip install virtualenvwrapper
+echo '
+export WORKON_HOME=$HOME/.virtualenvs
+export PROJECT_HOME=$HOME/src
+source /usr/local/bin/virtualenvwrapper.sh 
+' >> /etc/profile.d/install_virtualenvwrapper.sh
+
+
+########## scipy ###############
+sudo yum install -y gcc-gfortran blas-static lapack-static numpy-f2py numpy scipy && \
+pip install --upgrade numpy && \
+pip install --upgrade pandas scipy
+
+
+# ########### ODBC ###############
+# # for accessing Microsoft sqlserver databases
+# sudo yum install -y unixODBC unixODBC-devel freetds-devel
 
 
 ########## node
@@ -70,10 +133,10 @@ git config --global receive.denyDeleteCurrent 'warn'
 git config --global credential.helper 'cache --timeout 36000'
 # attempt to clone repos with write priveleges (will only work if SSH key's have been uploaded to github and stash)
 # but fall back to read-only clones if necessary
-for repo in ("pug.git" "coursera.git" "pycon2015-everyday-ai.git"); do
+for repo in "pug.git" "coursera.git" "pycon2015-everyday-ai.git"; do
    git clone "git@github.com:hobson/$repo" || git clone "https://github.com/hobson/$repo"
 done
-for repo in ("sasbd/ssp.git" "sasbd/ssg.git"); do
+for repo in "sasbd/ssp.git" "sasbd/ssg.git" "boostrap.git" "ansible-django-fedora.git"; do
    git clone "ssh://git@stash.sharplabs.com:7999/$repo" || git clone "http://stash.sharplabs.com:7990/scm/$repo"
 done
 
