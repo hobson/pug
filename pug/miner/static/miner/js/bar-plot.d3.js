@@ -6,7 +6,7 @@ function mouseover(d) {
     var focus = d3.select("g.focus");
     translate_value = "translate(" + mouseover.conf.xscale(d.x);
     // var text_anchor = mouseover.conf.xscale(d.x) > d3.mean(mouseover.conf.xscale.range()) ? "end" : "start";
-    if (conf.stacked) { 
+    if (mouseover.conf.stacked) { 
       translate_value = translate_value + mouseover.conf.yscale(d3.max([d.y0, d.y])) + ")";
       }
     else {
@@ -204,6 +204,8 @@ function bar_plot(d3data, conf) {
           .attr("y", function(d) { return conf.yscale(d.y); })
           .attr("height", function(d) { return conf.height - conf.yscale(d.y); });
       conf.stacked = false;
+      mouseover.conf = conf;
+      mouseout.conf = conf;
     }
 
     function transitionStacked() {
@@ -218,6 +220,8 @@ function bar_plot(d3data, conf) {
           .attr("x", function(d) { return conf.xscale(d[xfield]); })
           .attr("width", conf.xscale.rangeBand());
       conf.stacked = true;
+      mouseover.conf = conf;
+      mouseout.conf = conf;
     }
 
 } // function bar_plot(d3data)
