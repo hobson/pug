@@ -10,7 +10,23 @@ https://docs.djangoproject.com/en/1.6/ref/settings/
 
 import os
 import sys
-from nlp.django_settings import env
+import string
+import random
+# import pug.nlp.django_settings
+
+def env(var_name, default=False):
+    """ Get the environment variable or assume a default, but let the user know about the error."""
+    try:
+        value = os.environ[var_name]
+        if str(value).strip().lower() in ['false', 'no', 'off' '0', 'none', 'null']:
+            return None
+        return value
+    except:
+        from traceback import format_exc
+        msg = "Unable to find the %s environment variable.\nUsing the value %s (the default) instead.\n" % (var_name, default)
+        sys.stderr.write(format_exc())
+        sys.stderr.write(msg)
+        return default
 
 # Build paths inside the project like this: os.path.join(BASE_DIR, ...)
 BASE_DIR = os.path.realpath(os.path.join(os.path.dirname(os.path.abspath(__file__)), '..'))
@@ -18,7 +34,7 @@ BASE_DIR = os.path.realpath(os.path.join(os.path.dirname(os.path.abspath(__file_
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/1.7/howto/deployment/checklist/
 
-SECRET_KEY = env("CRAWLNMINE_SECRET_KEY", default=os.urandom(32))
+SECRET_KEY = env("DJANGO_SECRET_KEY", default=''.join(random.choice(string.printable) for _ in range(32)))
 
 # Heroku: Honor the 'X-Forwarded-Proto' header for request.is_secure()
 SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
