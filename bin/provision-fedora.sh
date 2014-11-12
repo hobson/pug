@@ -82,7 +82,7 @@ pip install virtualenvwrapper
 echo '
 export WORKON_HOME=$HOME/.virtualenvs
 export PROJECT_HOME=$HOME/src
-source /usr/local/bin/virtualenvwrapper.sh 
+source /usr/bin/virtualenvwrapper.sh 
 ' >> /etc/profile.d/install_virtualenvwrapper.sh
 
 
@@ -134,10 +134,11 @@ git config --global credential.helper 'cache --timeout 36000'
 # attempt to clone repos with write priveleges (will only work if SSH key's have been uploaded to github and stash)
 # but fall back to read-only clones if necessary
 for repo in "pug.git" "coursera.git" "pycon2015-everyday-ai.git"; do
-   git clone "git@github.com:hobson/$repo" || git clone "https://github.com/hobson/$repo"
+   git clone "git@github.com:hobson/$repo" || git clone "https://github.com/hobson/$repo" || echo "unable to install $repo"
 done
-for repo in "sasbd/ssp.git" "sasbd/ssg.git" "boostrap.git" "ansible-django-fedora.git"; do
-   git clone "ssh://git@stash.sharplabs.com:7999/$repo" || git clone "http://stash.sharplabs.com:7990/scm/$repo"
+for repo in "sasbd/ssp.git" "sasbd/ssg.git" "bootstrap.git" "sasbd/ansible-django-fedora.git"; do
+   # ssh://git@stash.sharplabs.com:7999/sasbd/ansible-django-fedora.git
+   git clone "ssh://git@stash.sharplabs.com:7999/$repo" || git clone "http://stash.sharplabs.com:7990/scm/$repo" || echo "unable to install $repo"
 done
 
 
