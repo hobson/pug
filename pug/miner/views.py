@@ -7,6 +7,8 @@ import collections
 import re
 import string
 
+import pandas as pd
+
 from django.shortcuts import render_to_response
 from django.views.generic import View, TemplateView
 from django.template import RequestContext
@@ -318,9 +320,14 @@ def d3_plot_context(context, table=((0, 0),), title='Line Chart', xlabel='Time',
       xlabel (str): Text to display along the bottom axis
       ylabel (str): Text to display along the vertical axis
     """
+    if isinstance(table, pd.DataFrame):
+        df = table
+        table = list(df.to_records())
+        first_row = ['Date'] + list(str(c).strip() for c in df.columns)
+        header = None
+    else:
+        first_row = list(table[0])
     N, M = len(table), max(len(row) for row in table)
-    print 'first_row'
-    first_row = list(table[0])
     identifiers = header
     descriptions = header
     if not header and not all(isinstance(col, basestring) and col.strip() for col in first_row):
