@@ -4,16 +4,25 @@
 
 function mouseover(d) {
     var focus = d3.select("g.focus");
+    translate_value = "translate(" + mouseover.conf.xscale(d.x);
     // var text_anchor = mouseover.conf.xscale(d.x) > d3.mean(mouseover.conf.xscale.range()) ? "end" : "start";
-    focus.attr("transform", "translate(" + mouseover.conf.xscale(d.x) + "," + mouseover.conf.yscale(d3.max([d.y0, d.y])) + ")");
-    var tt = d.heading + ": " + (d.y).toFixed(1) + "%"; 
+    if (mouseover.conf.stacked) {
+      translate_value = translate_value + "," + mouseover.conf.yscale(d3.max([d.y0, d.y])) + ")";
+      }
+    else {
+      translate_value = translate_value + "," + mouseover.conf.yscale(d.y) + ")";
+      }
+    focus.attr("transform", translate_value);
+    console.log('translate = ' + translate_value + '   stacked = ' + mouseover.conf.stacked);
+    console.log(mouseover.conf.yscale);
+    var tt = d.heading + ": " + (d.y).toFixed(1) + "%";
     var text = focus.select("text").text(tt).node();
     var SVGRect = text.getBBox();
     focus.select("rect").attr("x", SVGRect.x).attr("y", SVGRect.y).attr("width", SVGRect.width).attr("height", SVGRect.height);
-    // console.log(d);
-    // console.log(mouseover.conf.xscale(d.x));
-    // console.log(d3.mean(mouseover.conf.xscale.range()));
-    // console.log("translate(" + mouseover.conf.xscale(d.x) + "," + mouseover.conf.yscale(d.y0) + ")");
+    console.log(d);
+    console.log(mouseover.conf.yscale(d.y));
+    console.log(d3.mean(mouseover.conf.yscale.range()));
+    console.log(d3.mean(mouseover.conf.yscale.domain()));
 }
 mouseover.conf = null;
 
@@ -33,24 +42,6 @@ function mouseout(d) {
 
 function bar_plot(d3data, conf) {
     conf = normalize_conf(d3data, conf);
-    // default_conf         = {"plot_container_id": "plot_container", "container_width": 960, "container_height": 500, "margin": {top: 30, right: 80, bottom: 30, left: 50}};
-
-    // conf                   = typeof conf                   == "undefined" ? default_conf                                : conf;
-    // conf.plot_container_id = typeof conf.plot_container_id == "undefined" ? default_conf.plot_container_id              : conf.plot_container_id;
-    // conf.margin            = typeof conf.margin            == "undefined" ? default_conf.margin                         : conf.margin;
-    // conf.container_width   = typeof conf.container_width   == "undefined" ? default_conf.container_width                : conf.container_width;
-    // conf.container_height  = typeof conf.container_height  == "undefined" ? default_conf.container_height               : conf.container_height;
-    // conf.width             = typeof conf.width             == "undefined" ? conf.container_width - conf.margin.left - conf.margin.right  : conf.width;
-    // conf.height            = typeof conf.height            == "undefined" ? conf.container_height - conf.margin.top  - conf.margin.bottom : conf.height;
-
-    // conf.xlabel  = typeof conf.xlabel == "undefined" ? d3data[0][0] : conf.xlabel;
-    // xfield  = typeof d3data[0][0] == "string" ? d3data[0][0] : conf.xlabel;
-    // conf.ylabel  = typeof conf.ylabel == "undefined" ? d3data[1][0] : conf.ylabel;
-    // conf.ylabels = ((typeof conf.ylabel == "object") && (d3data.length == (1 + conf.ylabel.length))) ? conf.ylabel : d3data.slice(1).map(function(d) {return d[0];});
-    // var conf.num_layers = conf.ylabels.length;
-
-    console.log(conf.ylabels);
-    console.log(conf.xfield);
 
     // TODO: standardize on the "series" data structure below which is also used in the line-plot
     var layers = split_d3_series(d3data);
@@ -63,8 +54,8 @@ function bar_plot(d3data, conf) {
             layers[i][j].heading = conf.ylabels[i];
         }
     }
-    // console.log('layers (d3data as arrays of objects with x,y properties)');
-    // console.log(layers);
+    console.log('layers (d3data as arrays of objects with x,y properties)');
+    console.log(layers);
 
     //d3data = arrays_as_objects(d3data);
     var num_stacks = d3data.length; // number of samples per layer
@@ -82,7 +73,7 @@ function bar_plot(d3data, conf) {
         .domain([0, conf.num_layers - 1])
         .range(["#aad", "#556"]);
 
-    // console.log('all_series');
+    console.log('all_series');
     var all_series = ylabels.map(function(name) {
       var series = { name: name, values: null };
       series.values = d3data.map(function(d) {
@@ -90,7 +81,7 @@ function bar_plot(d3data, conf) {
       }); // d3data.map(function(d) {
       return series;
     });
-    // console.log(all_series);
+    console.log(all_series);
 
     var ymin = d3.min(all_series, function(series) { return d3.min(series.values, function(d) { console.log(d); return d.y; }); });
     var ymax = d3.max(all_series, function(series) { return d3.max(series.values, function(d) { console.log(d); return d.y; }); });
@@ -113,7 +104,7 @@ function bar_plot(d3data, conf) {
         var focus = d3.select("g.focus");
         // var text_anchor = conf.xscale(d.x) > d3.mean(conf.xscale.range()) ? "end" : "start";
         focus.attr("transform", "translate(" + conf.xscale(d.x) + "," + conf.yscale(d3.max([d.y0, d.y])) + ")");
-        var tt = d.heading + ": " + (d.y).toFixed(1) + "%"; 
+        var tt = d.heading + ": " + (d.y).toFixed(1) + "%";
         var text = focus.select("text").text(tt).node();
         var SVGRect = text.getBBox();
         focus.select("rect").attr("x", SVGRect.x).attr("y", SVGRect.y).attr("width", SVGRect.width).attr("height", SVGRect.height);
@@ -226,6 +217,8 @@ function bar_plot(d3data, conf) {
           .attr("y", function(d) { return conf.yscale(d.y); })
           .attr("height", function(d) { return conf.height - conf.yscale(d.y); });
       conf.stacked = false;
+      mouseover.conf = conf;
+      mouseout.conf = conf;
     }
 
     function transitionStacked() {
@@ -240,6 +233,8 @@ function bar_plot(d3data, conf) {
           .attr("x", function(d) { return conf.xscale(d[xfield]); })
           .attr("width", conf.xscale.rangeBand());
       conf.stacked = true;
+      mouseover.conf = conf;
+      mouseout.conf = conf;
     }
 
 } // function bar_plot(d3data)
