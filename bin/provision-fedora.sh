@@ -60,10 +60,10 @@ yum install -y git nano rsync curl wget traceback whois
 
 
 ######### Sublime Text 2 ##########
-cd ~/tmp
-rm -f install-sublime-text-x64
-wget https://gist.githubusercontent.com/hobson/7416d96df16ce4509dae/raw/59d461c6c930b1a8fb5356501c7526f98443cbfa/install-sublime-text-x64.sh
-chmod +x install-sublime-text-x64.sh
+cd ~/tmp && \
+rm -f install-sublime-text-x64.sh && \
+wget https://gist.githubusercontent.com/hobson/7416d96df16ce4509dae/raw/59d461c6c930b1a8fb5356501c7526f98443cbfa/install-sublime-text-x64.sh && \
+chmod +x install-sublime-text-x64.sh && \
 ./install-sublime-text-x64.sh
 
 

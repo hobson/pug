@@ -26,6 +26,8 @@ from django.db import models as djmodels
 import progressbar as pb  # import ProgressBar, Percentage, RotatingMarker, Bar, ETA
 from fuzzywuzzy import process as fuzzy
 import numpy as np
+import pandas as pd
+from dateutil.parser import parse as parse_date
 import logging
 logger = logging.getLogger('bigdata.info')
 
@@ -49,8 +51,9 @@ except ImproperlyConfigured:
     print '         Though the module was imported, some of its functions may raise exceptions.'
 except RuntimeError:
     print_exc()
-    print 'WARNING: Unable to configure settings (cirular import perhaps?)'
-    print '         Django settings may have already been configured elsewhere'
+    print 'WARNING: Unable to configure settings.'
+    print '         Django settings may have already been configured elsewhere.'
+    print '         Circular import perhaps?'
 
 from pug.nlp import util  # import listify, generate_slices, transposed_lists #, sod_transposed, dos_from_table
 from pug.nlp.words import synonyms
@@ -1771,6 +1774,73 @@ def find_files(path, ext='', level=None, verbosity=0):
         print files_in_queue
     return files_in_queue
 
+
+def flatten_csv(path='.', ext='csv', date_parser=parse_date, verbosity=0, output_ext=None):
+    """Load all CSV files in the given path, write .flat.csv files, return `DataFrame`s
+
+    Arguments:
+      path (str): file or folder to retrieve CSV files and `pandas.DataFrame`s from
+      ext (str): file name extension (to filter files by)
+      date_parser (function): if the MultiIndex can be interpretted as a datetime, this parser will be used
+
+
+    Returns:
+      dict of DataFrame: { file_path: flattened_data_frame }
+    """
+    date_parser = date_parser or (lambda x: x)
+    dotted_ext, dotted_output_ext = None, None
+    if ext != None and output_ext != None:
+        dotted_ext = ('' if ext.startswith('.') else '.') + ext
+        dotted_output_ext = ('' if output_ext.startswith('.') else '.') + output_ext
+    table = {}
+    for file_properties in find_files(path, ext=ext or '', verbosity=verbosity):
+        file_path = file_properties['path']
+        if output_ext and (dotted_output_ext + '.') in file_path:
+            continue
+        df = pd.DataFrame.from_csv(file_path, parse_dates=False)
+        df = df[pd.notnull(df.index)]
+        df = df.transpose().unstack()
+        dt = None
+        dt_stepsize = datetime.timedelta(hours=0, minutes=15)
+        parse_date_exception = False
+        index = []
+        for i, d in enumerate(df.index.values):
+            if verbosity > 2:
+                print d
+            try:
+                s = ' '.join(str(idx) for idx in d)
+                dt = date_parser(s)
+                if verbosity > 2:
+                    print '{0} -> {1}'.format(d, dt)
+                dt_stepsize = datetime.timedelta(hours=dt.hour, minutes=dt.minute, seconds=dt.second)
+            except TypeError:
+                if verbosity > 1:
+                    print_exc()
+                    print 'file with error: {0}\ndate-time tuple that caused the problem: {1}'.format(file_properties, d)
+                if s:
+                    if dt and isinstance(dt, datetime.datetime):
+                        dt += dt_stepsize
+                    else:
+                        dt = s
+                        parse_date_exception = True
+                else:
+                    dt = i
+                    parse_date_exception = True
+            except:
+                if verbosity:
+                    print_exc()
+                    print 'file with error: {0}\ndate-time tuple that caused the problem: {1}'.format(file_properties, d)
+                dt = i
+            index += [dt]
+        if parse_date_exception:
+            df.index = index
+        else:
+            df.index = list(pd.Timestamp(d) for d in index)
+        if dotted_ext != None and dotted_output_ext != None:
+            df.to_csv(file_path[:-len(dotted_ext)] + dotted_output_ext + dotted_ext)
+        table[file_path] = df
+    return table
+    
 
 def clean_duplicates(model, unique_together=('serial_number',), date_field='created_on',
                      seq_field='seq', seq_max_field='seq_max', ignore_existing=True, verbosity=1):
