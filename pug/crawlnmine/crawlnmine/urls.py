@@ -9,8 +9,8 @@ from django.conf.urls import patterns, include, url
 urlpatterns = patterns('',
     # Examples:
     #url(r'^$', views.home, name='crawlnmine-home'),
-    url(r'^', include('pug.miner.urls'), namespace='miner'),
-    url(r'^invest/', include('pug.invest.urls'), namespace='invest'),
+    url(r'^', include('pug.miner.urls'), name='miner'),
+    url(r'^invest/', include('pug.invest.urls')),
     #url(r'^crawler/', include('pug.crawler.urls', namespace='crawler')),
 
     #url(r'^admin/', include(admin.site.urls)),
