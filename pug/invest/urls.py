@@ -6,5 +6,5 @@ from django.conf.urls import patterns, url  #, include
 import views
 
 urlpatterns = patterns('',
-    url(r'^plot/(?P<symbol>[A-Z]{1,5})$', views.PlotSymbolView.as_view()),
+    url(r'^plot/(?P<symbols>[A-Z,$]+)$', views.PlotSymbolView.as_view()),
 )

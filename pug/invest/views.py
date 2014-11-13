@@ -6,9 +6,9 @@ from pug.miner.views import d3_plot_context
 
 class PlotSymbolView(TemplateView):
     """Query the miner.AggregateResults table to retrieve values for plotting in a bar chart"""
-    template_name = 'miner/dashboard.d3.html'
+    template_name = 'miner/line_plot.d3.html'
 
-    def get_context_data(self, context, **kwargs):
+    def get_context_data(self, **kwargs):
         # Call the base implementation first to get a context
         context = super(PlotSymbolView, self).get_context_data(**kwargs)
         symbols = sim.normalize_symbols(self.kwargs['symbols'])
@@ -18,5 +18,4 @@ class PlotSymbolView(TemplateView):
             price_type='close')
         context['df'] = df
         return d3_plot_context(context,
-            table=df, title='Price History', xlabel='Date', ylabel='Adjusted Close', 
-            header=['Date'] + df.columns)
+            table=df, title='Price History', xlabel='Date', ylabel='Adjusted Close')

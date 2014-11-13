@@ -323,6 +323,10 @@ def d3_plot_context(context, table=((0, 0),), title='Line Chart', xlabel='Time',
     if isinstance(table, pd.DataFrame):
         df = table
         table = list(df.to_records())
+        for i, row in enumerate(table):
+            d = row[0]
+            if isinstance(d, datetime.date):
+                table[i][0] = "{1}/{2}/{0}".format(d.year, d.month, d.day)
         first_row = ['Date'] + list(str(c).strip() for c in df.columns)
         header = None
     else:

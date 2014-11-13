@@ -71,9 +71,11 @@ function line_plot(d3data, conf) {
     //     d3data[0][1..M] (Number or String): x-coordinate values, Strings are converted to dates in seconds since epoch
     //     d3data[1][1..M] (Number): y-coordinate values
     function draw_plot(d3data, conf) {
-        var d3data = arrays_as_d3_series(d3data).data;
+        d3data = arrays_as_d3_series(d3data).data;
+        console.log("line plot d3data after conversion to d3_series ...");
+        console.log(d3data);
         d3data.sort(function(a, b) { return a.x - b.x; });
-        console.log("line plot d3data after conversion to d3_series");
+        console.log("after sorting...");
         console.log(d3data);
 
         // TODO: check for other types of x-axis values (floats, ints, dates, times) and produce the appropriate x-scale in an autoscale function
@@ -85,7 +87,11 @@ function line_plot(d3data, conf) {
           
           d3data.forEach(function(d) {
             console.log(d);
-            d.x = d3_parse_date(d.x); }
+            dt = d3_parse_date(d["x"]);
+            if (dt === null) {
+                dt = d["x"]; }
+            d["x"] = dt;
+            }
             );
         }
 
@@ -98,7 +104,7 @@ function line_plot(d3data, conf) {
             .domain(d3data.map(function(d) { console.log(d.x); return d.x; }))
             .rangePoints([0, conf.width]);
 
-        console.log('xscale domain and range')
+        console.log('xscale domain and range');
         console.log(conf.xscale.domain());
         console.log(conf.xscale.range());
 

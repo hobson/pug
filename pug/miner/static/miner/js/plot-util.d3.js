@@ -12,7 +12,7 @@ function mouseover(d) {
 
 function mouseout(d) {
   // tip.hide(d);
-  console.log('mouseout')
+  console.log('mouseout');
   console.log(d);
 
   //d3.select(d.series.line).classed("series-hover", false);
@@ -20,7 +20,15 @@ function mouseout(d) {
 
 
 function d3_parse_date(date_or_time) {
-  return d3.time.format("%Y%m%d").parse(date_or_time);
+  dt = null;
+  dt = d3.time.format("%m/%d/%Y").parse(date_or_time);
+  if (dt !== null)
+    return dt;
+  dt = d3.time.format("%m/%d/%y").parse(date_or_time);
+  if (dt !== null)
+    return dt;
+  dt = d3.time.format("%Y%m%d").parse(date_or_time);
+  return dt;
 }
 
 // Expects d3data to be an array of arrays (columns of data)
@@ -35,10 +43,11 @@ function arrays_as_d3_series(d3data) {
     // console.log(d3data);
     ans.data = [];
     ans.header = d3data[0];
-    // console.log(header);
+    console.log("header in arrays_as_d3_series()");
+    console.log(ans.header);
     for (var i=1; i < d3data.length; i++) {
         var obj = {};
-        obj.x = d3data[i][0];
+        obj["x"] = d3data[i][0];
         for (var k=1; k < ans.header.length; k++) {
             obj[ans.header[k]] = d3data[i][k];
             }
@@ -112,13 +121,13 @@ function arrays_as_objects(columns) {
 
 function d3_series_as_xy_series(d3data, ylabels) {
     var all_series = ylabels.map(function(name) {
-        var series = { 
-            name: name, 
+        var series = {
+            name: name,
             values: null };
         series.values = d3data.map(function(d) {
-            return { 
+            return {
                 "series": series,
-                "x": d.x,
+                "x": d["x"],
                 "y": +d[name] }; // return {
             }); // d3data.map(function(d) {
         return series;
@@ -127,7 +136,7 @@ function d3_series_as_xy_series(d3data, ylabels) {
 
 
 function properties(d) {
-    props = Array()
+    props = Array();
     for (var property in d) {
             if (d.hasOwnProperty(property)) {
                 props.push(property);
@@ -173,16 +182,16 @@ function query2obj(query) {
   query = query ? query : location.search;
   console.log(query);
   // ignore the questionmark in the search (query) string part of the URI
-  if (query[0] == '?') { 
+  if (query[0] == '?') {
     query = query.substring(1); }
   // console.log(query);
   query = query.replace(/%2C/g,",").replace(/%2B/g," ");
   // console.log(query);
   query = '{"' + decodeURI(query).replace(/"/g, '\\"').replace(/%2C/g,",").replace(/%2B/g," ").replace(/&/g, '","').replace(/=/g,'":"') + '"}';
   // deal with a zero-length or malformed query without any GET keys
-  if (query.length > 4 && query.indexOf(':') > 1) { 
+  if (query.length > 4 && query.indexOf(':') > 1) {
     return JSON5.parse(query); }
-  else { return {}; } 
+  else { return {}; }
   }
 
 
