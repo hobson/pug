@@ -31,6 +31,7 @@ function d3_parse_date(date_or_time) {
   return dt;
 }
 
+
 // Expects d3data to be an array of arrays (columns of data)
 // The first element of each array is it's label (header/name)
 // Returns a d3-compatible object with an xlabel, ylabels = header with xlabel removed

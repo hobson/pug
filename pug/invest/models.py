@@ -8,5 +8,6 @@ class Day(models.Model):
     date = models.DateField(null=False)
     high = models.FloatField(null=True, default=None, blank=True)
     low = models.FloatField(null=True, default=None, blank=True)
+    symbol = models.CharField(max_length=10, null=False, blank=False)
 
 
