@@ -3,3 +3,4 @@ pug.egg-info/
 MANIFEST
 *.pyc
 *.sql*
+pug/nlp/pca.pickled
