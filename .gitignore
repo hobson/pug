@@ -3,5 +3,5 @@ pug.egg-info/
 MANIFEST
 *.pyc
 *.sql*
-pug/miner/static/*.json
-*.pickled
+pug/nlp/pca.pickled
+nohup.out
