@@ -183,7 +183,7 @@ class Field(models.Model):
     django_field = models.CharField(max_length=255, null=False, default='', blank=True) 
 
     max_length = models.IntegerField(null=True)
-    blank = models.BooleanField()
+    blank = models.BooleanField(default=False)
     choices = models.TextField(null=True)
 
     django_type = models.ForeignKey(Type, null=True, default=None)

@@ -6,6 +6,7 @@ import math
 import collections
 import re
 import string
+import json
 
 import pandas as pd
 
@@ -16,7 +17,7 @@ from django.template.response import TemplateResponse #, HttpResponse
 from django.template.loader import get_template
 from django.http import Http404, HttpResponse
 from django import http
-from django.utils import simplejson as json
+
 # from django.shortcuts import render
 # from django.conf import settings
 
