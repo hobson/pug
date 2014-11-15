@@ -321,9 +321,11 @@ def d3_plot_context(context, table=((0, 0),), title='Line Chart', xlabel='Time',
       xlabel (str): Text to display along the bottom axis
       ylabel (str): Text to display along the vertical axis
     """
+    if isinstance(table, pd.Series):
+        table = pd.DataFrame(table, columns=header or [ylabel])
     if isinstance(table, pd.DataFrame):
-        df = table
-        table = list(df.to_records())
+        df = table.sort()
+        table = list(table.sort().to_records())
         for i, row in enumerate(table):
             d = row[0]
             if isinstance(d, datetime.date):
