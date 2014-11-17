@@ -30,7 +30,25 @@ yum install -y libffi-devel  kernel-devel kernel-headers dkms make bzip2 perl ru
 yum install -y vnc-server
 sudo cp /lib/systemd/system/vncserver@.service /etc/systemd/system/vncserver@:5.service
 sudo sed -i 's/<USER>/'$USER_'/g' /lib/systemd/system/vncserver@:5.service
+xset -dpms &
+xset s noblank & 
+xset s off &
+# # Need to do this in xorg.conf, but no longer there in FC20:
+# for xsetting in '"BlankTime"' '"StandbyTime"' '"SuspendTime"' '"OffTime"'; do
+#    grep 'Option' /etc/X11/xorg.conf.d/*.conf
+#    # sed 's/Option\s+'$xsetting'\s+"\d*"/Option          '$xsetting     "0"'/g' -i /etc/xorg.conf
+# done
+for xsetting in '"BlankTime"' '"StandbyTime"' '"SuspendTime"' '"OffTime"'; do
+    #echo "hello" | sudo tee >> world.txt
+    sudo echo 'Section "Monitor"' >> sudo tee /etc/X11/xorg.conf.d/01-monitor.conf
+    sudo echo '    Optionection "Monitor"' >> sudo tee /etc/X11/xorg.conf.d/01-monitor.conf
+    sudo echo 'EndSection' >> sudo tee /etc/X11/xorg.conf.d/01-monitor.conf
+    # sed 's/Option\s+'$xsetting'\s+"\d*"/Option          '$xsetting     "0"'/g' -i /etc/xorg.conf
+done
 
+echo "hello" | sudo tee >> /etc/X11/xorg.conf.d/01-disable-screensaver
+
+sed 's/"DPMS"/"NODPMS"/g' -i /etc/xorg.conf
 
 ######### Gnome Desktop
 sudo yum install -y gnome-session gnome-desktop 
@@ -41,6 +59,7 @@ gsettings set org.gnome.settings-daemon.plugins.updates frequency-get-updates 86
 gsettings set org.gnome.settings-daemon.plugins.updates frequency-get-upgrades 8640000
 gsettings set org.gnome.settings-daemon.plugins.updates frequency-refresh-cache 8640000
 gsettings set org.gnome.settings-daemon.plugins.updates frequency-updates-notification 8640000
+
 
 # parcellite and other notifications in top bar 
 sudo yum install -y gnome-tweak-tool

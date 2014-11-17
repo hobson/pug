@@ -78,13 +78,14 @@ function line_plot(d3data, conf) {
         console.log("after sorting...");
         console.log(d3data);
 
+        conf.xmin = d3.min(d3data, function(d) { return d["x"]; });
+        conf.xmax = d3.max(d3data, function(d) { return d["x"]; });
+
         // TODO: check for other types of x-axis values (floats, ints, dates, times) and produce the appropriate x-scale in an autoscale function
         // parse xdata as datetimes if the conf.xlabel starts with the word "date" or "time" 
         if ((conf.xlabel.substring(0, 4).toUpperCase() == "DATE")
             // || (conf.xlabel.substring(0, 4).toUpperCase() == "TIME")
           ) {
-          conf.xscale = d3.time.scale().range([0, conf.width]);
-          
           d3data.forEach(function(d) {
             console.log(d);
             dt = d3_parse_date(d["x"]);
@@ -93,16 +94,26 @@ function line_plot(d3data, conf) {
             d["x"] = dt;
             }
             );
+          conf.xmin = d3.min(d3data, function(d) { return d["x"]; });
+          conf.xmax = d3.max(d3data, function(d) { return d["x"]; });
+
+          conf.xscale = d3.time.scale()
+            .domain([xmin, xmax])
+            .range([0, conf.width]);
         }
+        else {
+          conf.xscale = d3.scale.ordinal()
+            .domain(d3data.map(function(d) { console.log(d.x); return d.x; }))
+            .rangePoints([0, conf.width]);
+        }
+
 
         console.log('line plot all_series');
         all_series = d3_series_as_xy_series(d3data, conf.ylabels);
         console.log(all_series);
         
         console.log(d3data.map(function(d) { return d.x; }));
-        conf.xscale = d3.scale.ordinal()
-            .domain(d3data.map(function(d) { console.log(d.x); return d.x; }))
-            .rangePoints([0, conf.width]);
+
 
         console.log('xscale domain and range');
         console.log(conf.xscale.domain());
