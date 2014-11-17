@@ -98,7 +98,7 @@ function line_plot(d3data, conf) {
           conf.xmax = d3.max(d3data, function(d) { return d["x"]; });
 
           conf.xscale = d3.time.scale()
-            .domain([xmin, xmax])
+            .domain([conf.xmin, conf.xmax])
             .range([0, conf.width]);
         }
         else {

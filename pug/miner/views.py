@@ -7,6 +7,7 @@ import collections
 import re
 import string
 import json
+import copy
 
 import pandas as pd
 
@@ -479,9 +480,9 @@ class DashboardView(TemplateView):
                                          ["y value (units)", 99, 51, 72, 43, 54, 65, 76, 67, 98],
                                          ["z-value (units)", 1, 91, 62, 73, 64, 65, 76, 67, 98],
                                          ["abc's", 10, 20, 30, 40, 50, 60, 70, 80, 90]]),
-            title='Line Chart', xlabel='ID Number', ylabel='Value', 
+            title='Line Chart', xlabel='DATE', ylabel='Value', 
             header=None)
-        context['data_with_dates'] = context['data']
+        context['data_with_dates'] = copy.deepcopy(context['data'])
         context = d3_plot_context(context, 
             table=util.transposed_lists([["x index"] + [907, 901, 855, 902, 903, 904, 905, 906, 900], 
                                          ["y value (units)", 99, 51, 72, 43, 54, 65, 76, 67, 98],
@@ -489,6 +490,7 @@ class DashboardView(TemplateView):
                                          ["abc's", 10, 20, 30, 40, 50, 60, 70, 80, 90]]),
             title='Line Chart', xlabel='ID Number', ylabel='Value', 
             header=None)
+        return context
 
 
 class BarPlotView(DashboardView):

@@ -27,6 +27,10 @@ function d3_parse_date(date_or_time) {
   dt = d3.time.format("%m/%d/%y").parse(date_or_time);
   if (dt !== null)
     return dt;
+  dt = d3.time.format("%Y-%m-%d").parse(date_or_time);
+  console.log(dt);
+  if (dt !== null)
+    return dt;
   dt = d3.time.format("%Y%m%d").parse(date_or_time);
   return dt;
 }
