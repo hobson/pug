@@ -325,7 +325,7 @@ def d3_plot_context(context, table=((0, 0),), title='Line Chart', xlabel='Time',
         table = pd.DataFrame(table, columns=header or [ylabel])
     if isinstance(table, pd.DataFrame):
         df = table.sort()
-        table = list(table.sort().to_records())
+        table = list(df.to_records())
         for i, row in enumerate(table):
             d = row[0]
             if isinstance(d, datetime.date):
@@ -475,15 +475,20 @@ class DashboardView(TemplateView):
         # Call the base implementation first to get a context
         context = super(DashboardView, self).get_context_data(**kwargs)
         context = d3_plot_context(context, 
-            table= util.transposed_lists([["DATE"] + ["2014-1-{0}".format(day) for day in range(1,10)],["y value (units)", 99,51,72,43,54,65,76,67,98],["z-value (units)", 1,91,62,73,64,65,76,67,98],["abc's", 10,20,30,40,50,60,70,80,90]]),
+            table=util.transposed_lists([["DATE"] + ["2014-1-{0}".format(day) for day in range(1, 10)], 
+                                         ["y value (units)", 99, 51, 72, 43, 54, 65, 76, 67, 98],
+                                         ["z-value (units)", 1, 91, 62, 73, 64, 65, 76, 67, 98],
+                                         ["abc's", 10, 20, 30, 40, 50, 60, 70, 80, 90]]),
             title='Line Chart', xlabel='ID Number', ylabel='Value', 
             header=None)
-        context['d3data_date'] = context['d3data']
+        context['data_with_dates'] = context['data']
         context = d3_plot_context(context, 
-            table= util.transposed_lists([["x index"] + [907,901,855,902,903,904,905,906,900],["y value (units)", 99,51,72,43,54,65,76,67,98],["z-value (units)", 1,91,62,73,64,65,76,67,98],["abc's", 10,20,30,40,50,60,70,80,90]]),
+            table=util.transposed_lists([["x index"] + [907, 901, 855, 902, 903, 904, 905, 906, 900], 
+                                         ["y value (units)", 99, 51, 72, 43, 54, 65, 76, 67, 98],
+                                         ["z-value (units)", 1, 91, 62, 73, 64, 65, 76, 67, 98],
+                                         ["abc's", 10, 20, 30, 40, 50, 60, 70, 80, 90]]),
             title='Line Chart', xlabel='ID Number', ylabel='Value', 
             header=None)
-        context['d3data_date'] = context['d3data']
 
 
 class BarPlotView(DashboardView):

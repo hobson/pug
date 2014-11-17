@@ -25,6 +25,8 @@ yum install -y open-ssl openssl-libs openssl-devel
 yum install -y patch byacc textinfo bison autoconf gettext ncurses-devel
 yum install -y libffi-devel  kernel-devel kernel-headers dkms make bzip2 perl ruby ruby-devel rubygems rubygem-execjs
 
+########## Heroku and development webserver
+gem install foreman
 
 ########## VNC Server
 yum install -y vnc-server
