@@ -2,7 +2,7 @@ function mouseover(d) {
   // displays tip at center of voronoi region instead of near point
   // tip.show(d);
 
-  console.log('mouseover');
+  console.log('default plot-util mouseover() callback');
   console.log(d);
 
 //  d.series.line.parentNode.appendChild(d.series.line);
@@ -12,7 +12,7 @@ function mouseover(d) {
 
 function mouseout(d) {
   // tip.hide(d);
-  console.log('mouseout');
+  console.log('default plot-util mouseout() callback');
   console.log(d);
 
   //d3.select(d.series.line).classed("series-hover", false);
@@ -28,7 +28,7 @@ function d3_parse_date(date_or_time) {
   if (dt !== null)
     return dt;
   dt = d3.time.format("%Y-%m-%d").parse(date_or_time);
-  console.log(dt);
+  // console.log(dt);
   if (dt !== null)
     return dt;
   dt = d3.time.format("%Y%m%d").parse(date_or_time);
@@ -41,8 +41,8 @@ function d3_parse_date(date_or_time) {
 // Returns a d3-compatible object with an xlabel, ylabels = header with xlabel removed
 // and data which is an array of objects with elements x and y (y attribute is named by the header/ylabels)
 function arrays_as_d3_series(d3data) {
-    console.log('line-plot.js:arrays_as_d3_series(): d3data before transpose');
-    console.log(d3data);
+    // console.log('line-plot.js:arrays_as_d3_series(): d3data before transpose');
+    // console.log(d3data);
     var ans = {};
     d3data = d3.transpose(d3data);
     // console.log(d3data);
@@ -185,7 +185,7 @@ function split_d3_series(d3data) {
 
 function query2obj(query) {
   query = query ? query : location.search;
-  console.log(query);
+  // console.log(query);
   // ignore the questionmark in the search (query) string part of the URI
   if (query[0] == '?') {
     query = query.substring(1); }
@@ -233,7 +233,14 @@ function create_yaxis(conf) {
 
 
 function create_xaxis(conf) {
-    return d3.svg.axis().scale(conf.xscale).orient("bottom");
+    axis = d3.svg.axis().scale(conf.xscale).orient("bottom");
+    axis.ticks(10);
+    axis.tickValues([conf.xmin, conf.xmax]);
+    console.log('xAxis ticks:');
+    console.log(axis.tickValues());
+    console.log(axis.ticks());
+
+    return axis;
 }
 
 
@@ -249,7 +256,7 @@ d3.selection.prototype.moveToFront = function() {
 
 function insert_text_background(focus) {
     var textElm = focus.select("text").node();
-    console.log(textElm);
+    // console.log(textElm);
     var SVGRect = textElm.getBBox();
 
     var rect = focus.insert("rect", "text")
