@@ -81,13 +81,8 @@ function line_plot(d3data, conf) {
         conf.xmin = d3.min(d3data, function(d) { return d["x"]; });
         conf.xmax = d3.max(d3data, function(d) { return d["x"]; });
 
-        // TODO: check for other types of x-axis values (floats, ints, dates, times) and produce the appropriate x-scale in an autoscale function
-        // parse xdata as datetimes if the conf.xlabel starts with the word "date" or "time" 
-        if ((conf.xlabel.substring(0, 4).toUpperCase() == "DATE")
-            // || (conf.xlabel.substring(0, 4).toUpperCase() == "TIME")
-          ) {
+        if (conf.x_is_date) {
           d3data.forEach(function(d) {
-            console.log(d);
             dt = d3_parse_date(d["x"]);
             if (dt === null) {
                 dt = d["x"]; }
@@ -103,21 +98,21 @@ function line_plot(d3data, conf) {
         }
         else {
           conf.xscale = d3.scale.ordinal()
-            .domain(d3data.map(function(d) { console.log(d.x); return d.x; }))
+            .domain(d3data.map(function(d) { return d.x; }))
             .rangePoints([0, conf.width]);
-        }
+        } // if conf.x_is_date
 
-
-        console.log('line plot all_series');
+        conf.d3data = d3data;
+        // console.log('line plot all_series');
         all_series = d3_series_as_xy_series(d3data, conf.ylabels);
-        console.log(all_series);
+        // console.log(all_series);
         
-        console.log(d3data.map(function(d) { return d.x; }));
+        // console.log(d3data.map(function(d) { return d.x; }));
 
 
-        console.log('xscale domain and range');
-        console.log(conf.xscale.domain());
-        console.log(conf.xscale.range());
+        // console.log('xscale domain and range');
+        // console.log(conf.xscale.domain());
+        // console.log(conf.xscale.range());
 
         var ymin = d3.min(all_series, function(series) { return d3.min(series.values, function(d) { return d.y; }); });
         var ymax = d3.max(all_series, function(series) { return d3.max(series.values, function(d) { return d.y; }); });

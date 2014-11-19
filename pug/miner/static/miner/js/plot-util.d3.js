@@ -21,17 +21,23 @@ function mouseout(d) {
 
 function d3_parse_date(date_or_time) {
   dt = null;
-  dt = d3.time.format("%m/%d/%Y").parse(date_or_time);
+  dt = d3.time.format("%Y%m%d").parse(date_or_time);
   if (dt !== null)
     return dt;
-  dt = d3.time.format("%m/%d/%y").parse(date_or_time);
+  dt = d3.time.format("%y%m%d").parse(date_or_time);
   if (dt !== null)
     return dt;
   dt = d3.time.format("%Y-%m-%d").parse(date_or_time);
   // console.log(dt);
   if (dt !== null)
     return dt;
-  dt = d3.time.format("%Y%m%d").parse(date_or_time);
+  dt = d3.time.format("%m/%d/%Y").parse(date_or_time);
+  if (dt !== null)
+    return dt;
+  dt = d3.time.format("%m/%d/%y").parse(date_or_time);
+  if (dt !== null)
+    return dt;
+  dt = d3.time.format("%y-%m-%d").parse(date_or_time);
   return dt;
 }
 
@@ -94,6 +100,8 @@ function normalize_conf(d3data, conf) {
     conf.width             = typeof conf.width             == "undefined" ? conf.container_width - conf.margin.left - conf.margin.right  : conf.width;
     conf.height            = typeof conf.height            == "undefined" ? conf.container_height - conf.margin.top  - conf.margin.bottom : conf.height;
 
+    conf.x_is_date         = typeof conf.x_is_date         == "undefined" ? default_conf.x_is_date                      : conf.x_is_date;
+
     conf.xlabel = typeof conf.xlabel == "undefined" ? d3data[0][0] : conf.xlabel;
     conf.xfield  = typeof d3data[0][0] == "string" ? d3data[0][0] : conf.xlabel;
     conf.ylabel = typeof conf.ylabel == "undefined" ? d3data[1][0] : conf.ylabel;
@@ -102,6 +110,13 @@ function normalize_conf(d3data, conf) {
     conf.ylabels = ylabels;
     conf.num_layers = conf.ylabels.length;
     conf.color = d3.scale.category10().domain(conf.ylabels);
+
+    // TODO: check for other types of x-axis values (floats, ints, dates, times) and produce the appropriate x-scale in an autoscale function
+    // parse xdata as datetimes if the conf.xlabel starts with the word "date" or "time" 
+    if (!conf.x_is_date && (conf.xlabel.substring(0, 4).toUpperCase() == "DATE"))
+        // || (conf.xlabel.substring(0, 4).toUpperCase() == "TIME")
+      conf.x_is_date = true;
+
     return conf;
     }
 
@@ -225,21 +240,26 @@ function create_svg_element(conf) {
                 .attr("height", conf.height + conf.margin.top + conf.margin.bottom)
           .append("g")
             .attr("transform", "translate(" + conf.margin.left + "," + conf.margin.top + ")");
-   
     }
+
 
 function create_yaxis(conf) {
     return d3.svg.axis().scale(conf.yscale).orient("left"); }
 
 
 function create_xaxis(conf) {
+    console.log('---------- create xaxis ------------');
+    console.log(conf);
     axis = d3.svg.axis().scale(conf.xscale).orient("bottom");
     axis.ticks(10);
+    var N = conf.d3data.length;
+    var midlength = Math.round(N/2);
     axis.tickValues([conf.xmin, conf.xmax]);
+    if (conf.x_is_date)
+      axis.tickFormat(d3.time.format("%y-%m-%d"));
     console.log('xAxis ticks:');
     console.log(axis.tickValues());
     console.log(axis.ticks());
-
     return axis;
 }
 

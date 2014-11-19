@@ -1532,6 +1532,14 @@ def normalize_scientific_notation(s, ignore_commas=True, verbosity=1):
     return None
 
 
+def normalize_names(names):
+    """Coerce a string or nested list of strings into a flat list of strings."""
+    if isinstance(names, basestring):
+        names = names.split(',')
+    names = listify(names)
+    return [str(name).strip() for name in names]
+
+
 def string_stats(strs, valid_chars='012346789', left_pad='0', right_pad='', strip=True):
     """Count the occurrence of a category of valid characters within an iterable of serial numbers, model numbers, or other strings"""
     if left_pad == None:

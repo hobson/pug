@@ -25,7 +25,6 @@
     {# a div with a plot_div attribute ID must be created before this line-plot.js globals are created #}
 
     {% block plot %}
-        <pre>{{ data_with_dates|safe|escape }}</pre>
         <script src="{% static "miner/js/plot-util.d3.js" %}"></script>
         <script src="{% static "miner/js/line-plot.d3.js" %}"></script>
         <script src="{% static "miner/js/bar-plot.d3.js" %}"></script>
@@ -46,6 +45,11 @@
                  "ylabel": "{{ data_with_dates.ylabel|default_if_none:"[]"|escapejs }}", 
                  "header": {{ data_with_dates.header|default:"[]"|default_if_none:"[]"|safe }}});
         </script>
+
+        {# <H3>Plot Configuration</H3> #}
+        {# <pre>{{ data|safe|escape }}</pre> #}
+        <H3>Statistics</H3>
+        <pre>{{ data_with_dates|safe|escape }}</pre>
 
     {% endblock plot %}
 
