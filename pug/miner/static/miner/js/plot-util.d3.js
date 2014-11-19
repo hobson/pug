@@ -257,9 +257,9 @@ function create_xaxis(conf) {
     axis.tickValues([conf.xmin, conf.xmax]);
     if (conf.x_is_date)
       axis.tickFormat(d3.time.format("%y-%m-%d"));
-    console.log('xAxis ticks:');
-    console.log(axis.tickValues());
-    console.log(axis.ticks());
+    // console.log('xAxis ticks:');
+    // console.log(axis.tickValues());
+    // console.log(axis.ticks());
     return axis;
 }
 
