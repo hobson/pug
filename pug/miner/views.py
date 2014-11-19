@@ -331,8 +331,15 @@ def d3_plot_context(context, table=((0, 0),), title='Line Chart', xlabel='Time',
         for i, row in enumerate(table):
             d = row[0]
             first_row = []
-            if isinstance(d, datetime.date):
-                table[i][0] = "{0:02d}{1:02d}{2:02d}".format(d.year, d.month, d.day)
+            if isinstance(d, datetime.datetime):
+                # ISO 8601 date-time format is ECMA/javascript-friendly: 
+                #    YYYY-MM-DDTHH:mm:ss.sssZ  
+                #    `T` and `Z` are literal characters, alternatively `Z` (means UTC) can be replaced with timezone info like +/-HH:mm
+                table[i][0] = d.isoformat()
+                if not first_row:
+                    first_row += ['Date-Time']
+            elif isinstance(d, datetime.date):
+                table[i][0] = "{0:02d}-{1:02d}-{2:02d}".format(d.year, d.month, d.day)
                 if not first_row:
                     first_row += ['Date']
             else:

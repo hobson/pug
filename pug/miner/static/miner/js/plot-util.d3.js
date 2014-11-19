@@ -19,27 +19,41 @@ function mouseout(d) {
 }
 
 
-function d3_parse_date(date_or_time) {
-  dt = null;
-  dt = d3.time.format("%Y%m%d").parse(date_or_time);
-  if (dt !== null)
-    return dt;
-  dt = d3.time.format("%y%m%d").parse(date_or_time);
-  if (dt !== null)
-    return dt;
-  dt = d3.time.format("%Y-%m-%d").parse(date_or_time);
-  // console.log(dt);
-  if (dt !== null)
-    return dt;
-  dt = d3.time.format("%m/%d/%Y").parse(date_or_time);
-  if (dt !== null)
-    return dt;
-  dt = d3.time.format("%m/%d/%y").parse(date_or_time);
-  if (dt !== null)
-    return dt;
-  dt = d3.time.format("%y-%m-%d").parse(date_or_time);
-  return dt;
+function d3_parse_datetime(date_or_time) {
+  // If date_or_time is an approximately valid ISO 8601 date-time string 
+  // return a javascript Date instance.
+  // Otherwise return null.
+  var acceptable_formats = [
+    "%Y-%m-%dT%H:%M:%SZ", "%Y-%m-%dT%H:%M:%S%Z", "%Y-%m-%dT%H:%M:%S",
+    "%Y-%m-%d %H:%M:%SZ", "%Y-%m-%d %H:%M:%S%Z", "%Y-%m-%d %H:%M:%S"];
+  for (index = 0; index < acceptable_formats.length; index++) {
+    format = acceptable_formats[index];
+    dt = d3.time.format("%Y%m%d").parse(date_or_time);
+    if (dt !== null)
+      return dt;
+  }
+  return null;
 }
+
+
+function d3_parse_date(date) {
+  // ISO8601-like:
+  dt = d3.time.format("%Y-%m-%d").parse(date);
+  if (dt !== null)
+    return dt;
+  // dt = d3.time.format("%y%m%d").parse(date);
+  // if (dt !== null)
+  //   return dt;
+  // dt = d3.time.format("%m/%d/%Y").parse(date);
+  // if (dt !== null)
+  //   return dt;
+  // dt = d3.time.format("%m/%d/%y").parse(date);
+  // if (dt !== null)
+  //   return dt;
+  // dt = d3.time.format("%y-%m-%d").parse(date);
+  // return dt;
+  return null;
+  }
 
 
 // Expects d3data to be an array of arrays (columns of data)
@@ -256,7 +270,8 @@ function create_xaxis(conf) {
     var midlength = Math.round(N/2);
     axis.tickValues([conf.xmin, conf.xmax]);
     if (conf.x_is_date)
-      axis.tickFormat(d3.time.format("%y-%m-%d"));
+      console.log('looks like dates in the x-axis');
+      axis.tickFormat(d3.time.format("%Y-%m-%d"));
     // console.log('xAxis ticks:');
     // console.log(axis.tickValues());
     // console.log(axis.ticks());

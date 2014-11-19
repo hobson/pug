@@ -78,25 +78,27 @@ function line_plot(d3data, conf) {
         console.log("after sorting...");
         console.log(d3data);
 
-        conf.xmin = d3.min(d3data, function(d) { return d["x"]; });
-        conf.xmax = d3.max(d3data, function(d) { return d["x"]; });
-
         if (conf.x_is_date) {
+          // FIXME: Check that ALL the elements of the array are valid datetimes before replacing the data
           d3data.forEach(function(d) {
-            dt = d3_parse_date(d["x"]);
+            dt = d3_parse_datetime(d["x"]);
             if (dt === null) {
                 dt = d["x"]; }
             d["x"] = dt;
             }
             );
+
           conf.xmin = d3.min(d3data, function(d) { return d["x"]; });
           conf.xmax = d3.max(d3data, function(d) { return d["x"]; });
-
+          console.log('xmin,xmax = ' + conf.xmin + ' , ' + conf.xmax );
           conf.xscale = d3.time.scale()
             .domain([conf.xmin, conf.xmax])
             .range([0, conf.width]);
         }
         else {
+          // needed elsewhere, even though xscale.range doesn't use them:
+          conf.xmin = d3.min(d3data, function(d) { return d["x"]; });
+          conf.xmax = d3.max(d3data, function(d) { return d["x"]; });
           conf.xscale = d3.scale.ordinal()
             .domain(d3data.map(function(d) { return d.x; }))
             .rangePoints([0, conf.width]);
