@@ -139,13 +139,21 @@ function line_plot(d3data, conf) {
         var yAxis = create_yaxis(conf);  //.ticks(10, "%");
 
         var voronoi = d3.geom.voronoi()
-            .x(function(d) { console.log("voronoi x"); console.log(conf.xscale(d.x)); return conf.xscale(d.x); })
-            .y(function(d) { console.log("voronoi y"); console.log(conf.yscale(d.y)); return conf.yscale(d.y); })
+            .x(function(d) {
+              // console.log("voronoi x"); console.log(conf.xscale(d.x));
+              return conf.xscale(d.x); })
+            .y(function(d) {
+              // console.log("voronoi y"); console.log(conf.yscale(d.y)); 
+              return conf.yscale(d.y); })
             .clipExtent([[-conf.margin.left, -conf.margin.top], [conf.width + conf.margin.right, conf.height + conf.margin.bottom]]);
 
         var line = d3.svg.line()
-            .x(function(d) { console.log("line x"); console.log(d.x); console.log(conf.xscale(d.x)); return conf.xscale(d.x); })
-            .y(function(d) { console.log("line y"); console.log(d.y); console.log(conf.yscale(d.y)); return conf.yscale(d.y); });
+            .x(function(d) { 
+              // console.log("line x"); console.log(d.x); console.log(conf.xscale(d.x)); 
+              return conf.xscale(d.x); })
+            .y(function(d) { 
+              // console.log("line y"); console.log(d.y); console.log(conf.yscale(d.y)); 
+              return conf.yscale(d.y); });
 
         svg.append("g")
             .attr("class", "y axis")
