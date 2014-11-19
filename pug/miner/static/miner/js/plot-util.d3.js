@@ -28,7 +28,9 @@ function d3_parse_datetime(date_or_time) {
     "%Y-%m-%d %H:%M:%SZ", "%Y-%m-%d %H:%M:%S%Z", "%Y-%m-%d %H:%M:%S"];
   for (index = 0; index < acceptable_formats.length; index++) {
     format = acceptable_formats[index];
-    dt = d3.time.format("%Y%m%d").parse(date_or_time);
+    dt = d3.time.format(format).parse(date_or_time);
+    // console.log('parsed datetime:');
+    console.log(dt);
     if (dt !== null)
       return dt;
   }
@@ -271,7 +273,8 @@ function create_xaxis(conf) {
     axis.tickValues([conf.xmin, conf.xmax]);
     if (conf.x_is_date)
       console.log('looks like dates in the x-axis');
-      axis.tickFormat(d3.time.format("%Y-%m-%d"));
+      axis.tickFormat(d3.time.format("%Y-%m-%d %H:%M"));
+      console.log('d3.time.format accomplished');
     // console.log('xAxis ticks:');
     // console.log(axis.tickValues());
     // console.log(axis.ticks());
