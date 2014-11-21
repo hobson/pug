@@ -50,10 +50,11 @@ except ImproperlyConfigured:
     print '         can only be used within a Django project!'
     print '         Though the module was imported, some of its functions may raise exceptions.'
 except RuntimeError:
-    print_exc()
-    print 'WARNING: Unable to configure settings.'
-    print '         Django settings may have already been configured elsewhere.'
-    print '         Circular import perhaps?'
+    pass
+    # print_exc()
+    # print 'WARNING: Unable to configure settings.'
+    # print '         Django settings may have already been configured elsewhere.'
+    # print '         Circular import perhaps?'
 
 from pug.nlp import util  # import listify, generate_slices, transposed_lists #, sod_transposed, dos_from_table
 from pug.nlp.words import synonyms
@@ -1805,15 +1806,24 @@ def flatten_csv(path='.', ext='csv', date_parser=parse_date, verbosity=0, output
     return table
 
 
-def dataframe_from_excel(file_path, sheetname=0, header=0, skiprows=None):  # , parse_dates=False):
-    """Thin wrapper for pandas.io.excel.read_excel() that accepts a file path and sheet index/name"""
+def dataframe_from_excel(path, sheetname=0, header=0, skiprows=None):  # , parse_dates=False):
+    """Thin wrapper for pandas.io.excel.read_excel() that accepts a file path and sheet index/name
+
+    Arguments:
+      path (str): file or folder to retrieve CSV files and `pandas.DataFrame`s from
+      ext (str): file name extension (to filter files by)
+      date_parser (function): if the MultiIndex can be interpretted as a datetime, this parser will be used
+
+    Returns:
+      dict of DataFrame: { file_path: flattened_data_frame }
+    """
     sheetname = sheetname or 0
     if isinstance(sheetname, (basestring, float)):
         try:
             sheetname = int(sheetname)
         except (TypeError, ValueError, OverflowError):
             sheetname = str(sheetname)
-    wb = xlrd.open_workbook(file_path)
+    wb = xlrd.open_workbook(path)
     # if isinstance(sheetname, int):
     #     sheet = wb.sheet_by_index(sheetname)
     # else:
@@ -1833,11 +1843,17 @@ def make_date(dt, date_parser=parse_date):
     Returns:
       datetime.time: Time of day portion of a `datetime` string or object
 
+    >>> make_date('')
+    datetime.date(1970, 1, 1)
+    >>> make_date(None)
+    datetime.date(1970, 1, 1)
     >>> make_date("11:59 PM") == datetime.date.today()
     True
     >>> make_date(datetime.datetime(1999, 12, 31, 23, 59, 59))
     datetime.date(1999, 12, 31)
     """
+    if not dt:
+        return datetime.date(1970, 1, 1)
     if isinstance(dt, basestring):
         dt = date_parser(dt)
     try:
@@ -1857,11 +1873,15 @@ def make_time(dt, date_parser=parse_date):
     Returns:
       datetime.time: Time of day portion of a `datetime` string or object
 
+    >>> make_time(None)
+    datetime.time(0, 0)
     >>> make_time("11:59 PM")
     datetime.time(23, 59)
     >>> make_time(datetime.datetime(1999, 12, 31, 23, 59, 59)))
     datetime.time(23, 59, 59)
     """
+    if not dt:
+        return datetime.time(0, 0)
     if isinstance(dt, basestring):
         dt = date_parser(dt)
     try:
@@ -1872,38 +1892,72 @@ def make_time(dt, date_parser=parse_date):
 
 
 def flatten_dataframe(df, date_parser=parse_date, verbosity=0):
-    # extract nonnull columns
+    """Creates 1-D timeseries (pandas.Series) coercing column labels into datetime.time objects
+
+    Assumes that the columns are strings representing times of day (or datetime.time objects)
+    Assumes that the index should be a datetime object. If it isn't already, the first column
+    with "date" (case insenstive) in its label will be used as the FataFrame index.
+    """
+
+    # extract rows with nonull, nonnan index values
     df = df[pd.notnull(df.index)]
+
+    # Make sure columns and row labels are all times and dates respectively
+    # Ignores/clears any timezone information 
+    if all(isinstance(i, int) for i in df.index):
+        for label in df.columns:
+            if 'date' in str(label).lower():
+                df.index = [make_date(d) for d in df[label]]
+                del df[label]
+                break
+    if not all(isinstance(i, pd.Timestamp) for i in df.index):
+        date_index = []
+        for i in df.index:
+            try:
+                date_index += [make_date(str(i))]
+            except:
+                date_index += [i]
+        df.index = date_index
+    df.columns = [make_time(str(c)) for c in df.columns]
+
     # flatten it
     df = df.transpose().unstack()
+
     # df.index is now a compound key (tuple) of the column labels (df.columns) and the row labels (df.index) 
+    # so lets combine them to be datetime values (pandas.Timestamp)
     dt = None
-    dt_stepsize = datetime.timedelta(hours=0, minutes=15)
+    t0 = df.index[0][1]
+    t1 = df.index[1][1]
+    try:
+        dt_stepsize = datetime.timedelta(hours=t1.hour - t0.hour, minutes=t1.minute - t0.minute, seconds=t1.second - t0.second)
+    except:
+        dt_stepsize = datetime.timedelta(hours=0, minutes=15)
     parse_date_exception = False
     index = []
     for i, d in enumerate(df.index.values):
-        d[0] = make_date(dt, date_parser=date_parser)
+        dt = i
         if verbosity > 2:
             print d
         # # TODO: assert(not parser_date_exception)
         # if isinstance(d[0], basestring):
         #     d[0] = d[0]
         try:
-            s = ' '.join(str(idx) for idx in d)
-            dt = date_parser(s)
+            datetimeargs = list(d[0].timetuple()[:3]) + [d[1].hour, d[1].minute, d[1].second, d[1].microsecond]
+            dt = datetime.datetime(*datetimeargs)
             if verbosity > 2:
                 print '{0} -> {1}'.format(d, dt)
-            dt_stepsize = datetime.timedelta(hours=dt.hour, minutes=dt.minute, seconds=dt.second)
         except TypeError:
             if verbosity > 1:
                 print_exc()
                 # print 'file with error: {0}\ndate-time tuple that caused the problem: {1}'.format(file_properties, d)
-            if s:
-                if dt and isinstance(dt, datetime.datetime):
+            if isinstance(dt, datetime.datetime):
+                if dt:
                     dt += dt_stepsize
                 else:
-                    dt = s
+                    dt = i
                     parse_date_exception = True
+                    # dt = str(d[0]) + ' ' + str(d[1])
+                    # parse_date_exception = True
             else:
                 dt = i
                 parse_date_exception = True
@@ -1912,8 +1966,9 @@ def flatten_dataframe(df, date_parser=parse_date, verbosity=0):
                 print_exc()
                 # print 'file with error: {0}\ndate-time tuple that caused the problem: {1}'.format(file_properties, d)
             dt = i
+        index += [dt]
 
-    if parse_date_exception:
+    if index and not parse_date_exception:
         df.index = index
     else:
         df.index = list(pd.Timestamp(d) for d in index)
