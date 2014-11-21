@@ -1823,20 +1823,72 @@ def dataframe_from_excel(file_path, sheetname=0, header=0, skiprows=None):  # , 
     return pd.io.excel.read_excel(wb, sheetname=sheetname, header=header, skiprows=skiprows, engine='xlrd')
 
 
+def make_date(dt, date_parser=parse_date):
+    """Coerce a datetime or string into datetime.date object
+
+    Arguments:
+      dt (str or datetime.datetime or atetime.time or numpy.Timestamp): time or date 
+        to be coerced into a `datetime.time` object
+
+    Returns:
+      datetime.time: Time of day portion of a `datetime` string or object
+
+    >>> make_date("11:59 PM") == datetime.date.today()
+    True
+    >>> make_date(datetime.datetime(1999, 12, 31, 23, 59, 59))
+    datetime.date(1999, 12, 31)
+    """
+    if isinstance(dt, basestring):
+        dt = date_parser(dt)
+    try:
+        dt = dt.timetuple()[:3]
+    except:
+        dt = tuple(dt)[:3]
+    return datetime.date(*dt)
+
+
+def make_time(dt, date_parser=parse_date):
+    """Ignore date information in a datetime string or object
+
+    Arguments:
+      dt (str or datetime.datetime or atetime.time or numpy.Timestamp): time or date 
+        to be coerced into a `datetime.time` object
+
+    Returns:
+      datetime.time: Time of day portion of a `datetime` string or object
+
+    >>> make_time("11:59 PM")
+    datetime.time(23, 59)
+    >>> make_time(datetime.datetime(1999, 12, 31, 23, 59, 59)))
+    datetime.time(23, 59, 59)
+    """
+    if isinstance(dt, basestring):
+        dt = date_parser(dt)
+    try:
+        dt = dt.timetuple()[3:6]
+    except:
+        dt = tuple(dt)[3:6]
+    return datetime.time(*dt)
+
+
 def flatten_dataframe(df, date_parser=parse_date, verbosity=0):
     # extract nonnull columns
     df = df[pd.notnull(df.index)]
     # flatten it
     df = df.transpose().unstack()
+    # df.index is now a compound key (tuple) of the column labels (df.columns) and the row labels (df.index) 
     dt = None
     dt_stepsize = datetime.timedelta(hours=0, minutes=15)
     parse_date_exception = False
     index = []
     for i, d in enumerate(df.index.values):
+        d[0] = make_date(dt, date_parser=date_parser)
         if verbosity > 2:
             print d
+        # # TODO: assert(not parser_date_exception)
+        # if isinstance(d[0], basestring):
+        #     d[0] = d[0]
         try:
-            # TODO: assert(not parser_date_exception)
             s = ' '.join(str(idx) for idx in d)
             dt = date_parser(s)
             if verbosity > 2:
@@ -1860,7 +1912,7 @@ def flatten_dataframe(df, date_parser=parse_date, verbosity=0):
                 print_exc()
                 # print 'file with error: {0}\ndate-time tuple that caused the problem: {1}'.format(file_properties, d)
             dt = i
-        index += [dt]
+
     if parse_date_exception:
         df.index = index
     else:
