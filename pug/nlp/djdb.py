@@ -1805,7 +1805,7 @@ def flatten_csv(path='.', ext='csv', date_parser=parse_date, verbosity=0, output
     return table
 
 
-def dataframe_from_excel(file_path, sheetname=0, skiprows=None, header=0):  # , parse_dates=False):
+def dataframe_from_excel(file_path, sheetname=0, header=0, skiprows=None):  # , parse_dates=False):
     """Thin wrapper for pandas.io.excel.read_excel() that accepts a file path and sheet index/name"""
     sheetname = sheetname or 0
     if isinstance(sheetname, (basestring, float)):
@@ -1820,10 +1820,10 @@ def dataframe_from_excel(file_path, sheetname=0, skiprows=None, header=0):  # , 
     #     sheet = wb.sheet_by_name(sheetname)
     # assert(not parse_dates, "`parse_dates` argument and function not yet implemented!")
     # table = [sheet.row_values(i) for i in range(sheet.nrows)]
-    return pd.io.excel.read_excel(wb, sheetname=sheetname, header=header, skiprows=skiprows)
+    return pd.io.excel.read_excel(wb, sheetname=sheetname, header=header, skiprows=skiprows, engine='xlrd')
 
 
-def flatten_dataframe(df, date_parser=parse_date):
+def flatten_dataframe(df, date_parser=parse_date, verbosity=0):
     # extract nonnull columns
     df = df[pd.notnull(df.index)]
     # flatten it
@@ -1876,7 +1876,6 @@ def flatten_excel(path='.', ext='xlsx', sheetname=0, skiprows=None, header=0, da
       ext (str): file name extension (to filter files by)
       date_parser (function): if the MultiIndex can be interpretted as a datetime, this parser will be used
 
-
     Returns:
       dict of DataFrame: { file_path: flattened_data_frame }
     """
@@ -1891,14 +1890,12 @@ def flatten_excel(path='.', ext='xlsx', sheetname=0, skiprows=None, header=0, da
         file_path = file_properties['path']
         if output_ext and (dotted_output_ext + '.') in file_path:
             continue
-
-        df = flatten_dataframe(dataframe_from_excel(file_path, ))
+        df = dataframe_from_excel(file_path, sheetname=sheetname, header=header, skiprows=skiprows)
+        df = flatten_dataframe(df, verbosity=verbosity)
         if dotted_ext != None and dotted_output_ext != None:
             df.to_csv(file_path[:-len(dotted_ext)] + dotted_output_ext + dotted_ext)
-
-
-
     return table
+
 
 def clean_duplicates(model, unique_together=('serial_number',), date_field='created_on',
                      seq_field='seq', seq_max_field='seq_max', ignore_existing=True, verbosity=1):
