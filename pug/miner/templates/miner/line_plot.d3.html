@@ -18,7 +18,6 @@
         <H1>{{ data.title }}</H1>
         <div id="plot_container" class="graph"></div>
     {% block plot %}
-        <pre>{{ data|safe|escape }}</pre>
         <script src="{% static "miner/js/plot-util.d3.js" %}"></script>
         <script src="{% static "miner/js/line-plot.d3.js" %}"></script>
         <script> line_plot({{ data.d3data|safe }}, 
@@ -27,6 +26,7 @@
                  "header": {{ data.header|default:"[]"|default_if_none:"[]"|safe }}
                 }); </script>
         </script>
+        <pre>{{ data|safe|escape }}</pre>
 
     {% endblock plot %}
 

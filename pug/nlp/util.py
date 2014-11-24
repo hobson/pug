@@ -1532,6 +1532,14 @@ def normalize_scientific_notation(s, ignore_commas=True, verbosity=1):
     return None
 
 
+def normalize_names(names):
+    """Coerce a string or nested list of strings into a flat list of strings."""
+    if isinstance(names, basestring):
+        names = names.split(',')
+    names = listify(names)
+    return [str(name).strip() for name in names]
+
+
 def string_stats(strs, valid_chars='012346789', left_pad='0', right_pad='', strip=True):
     """Count the occurrence of a category of valid characters within an iterable of serial numbers, model numbers, or other strings"""
     if left_pad == None:
@@ -1778,6 +1786,75 @@ def normalize_date(d):
     if isinstance(d, basestring):
         return normalize_date(parse_date(d))
     return normalize_date(datetime.datetime(*[int(i) for i in d]))
+
+
+def get_symbols_from_list(list_name):
+    """Retrieve a named (symbol list name) list of strings (symbols)
+
+    Example:
+      # If you installed the QSTK Quantitative analysis toolkit 
+      # you'd get a list of the symbols that were members of the S&P 500 in 2012.
+      >>> get_symbols_from_list('sp5002012')
+      []
+    """
+    try:
+        # quant software toolkit has a method for retrieving lists of symbols like S&P500 for 2012 with 'sp5002012'
+        import QSTK.qstkutil.DataAccess as da
+        dataobj = da.DataAccess('Yahoo')
+    except:
+        return []
+    try:
+        return dataobj.get_symbols_from_list(list_name)
+    except:
+        raise
+
+
+def normalize_symbols(symbols, *args, **kwargs):
+    """Coerce into a list of uppercase strings like "GOOG", "$SPX, "XOM"
+
+    Flattens nested lists in `symbols` and converts all list elements to strings
+
+    Arguments:
+      symbols (str or list of str): list of market ticker symbols to normalize
+        If `symbols` is a str a get_symbols_from_list() call is used to retrieve the list of symbols
+      postrprocess (func): function to apply to strings after they've been stripped
+        default = str.upper
+
+    FIXME:
+      - list(set(list(symbols))) and `args` separately so symbols may be duplicated in symbols and args
+      - `postprocess` should be a method to facilitate monkey-patching
+
+    Returns:
+      list of str: list of cananical ticker symbol strings (typically after .upper().strip())
+
+    Examples:
+      >>> normalize_symbols("Goog")
+      ["GOOG"]
+      >>> normalize_symbols("  $SPX   ", " aaPL ")
+      ["$SPX", "AAPL"]
+      >>> normalize_symbols("  $SPX   ", " aaPL ", postprocess=str)
+      ["$SPX", "aaPL"]
+      >>> normalize_symbols(["$SPX", ["GOOG", "AAPL"]])
+      ["$SPX", "GOOG", "AAPL"]
+      >>> normalize_symbols("$spy", ["GOOGL", "Apple"], postprocess=str)
+      ['$spy', 'GOOGL', 'Apple']
+    """
+    postprocess = kwargs.get('postprocess', None) or str.upper
+    if (      (hasattr(symbols, '__iter__') and not any(symbols))
+        or (isinstance(symbols, (list, tuple, collections.Mapping)) and not symbols)):
+        return []
+    args = normalize_symbols(args, postprocess=postprocess)
+    if isinstance(symbols, basestring):
+        # get_symbols_from_list seems robust to string normalizaiton like .upper()
+        try:
+            return list(set(get_symbols_from_list(symbols))) + args
+        except:
+            return [postprocess(s.strip()) for s in symbols.split(',')] + args
+    else:
+        ans = []
+        for sym in list(symbols):
+            ans += normalize_symbols(sym, postprocess=postprocess)
+        return list(set(ans))
 
 
 def clean_wiki_datetime(dt, squelch=True):

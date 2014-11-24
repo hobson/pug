@@ -1,6 +1,8 @@
 #!/usr/bin/env bash
 # source this file as superuser!
 # suitable to use as a bootstrap.sh provisioning script by vagrant
+export USER_=laneh
+
 
 if [ -z "$0" ]; then
     :
@@ -23,14 +25,47 @@ yum install -y open-ssl openssl-libs openssl-devel
 yum install -y patch byacc textinfo bison autoconf gettext ncurses-devel
 yum install -y libffi-devel  kernel-devel kernel-headers dkms make bzip2 perl ruby ruby-devel rubygems rubygem-execjs
 
+########## Heroku and development webserver
+gem install foreman
 
 ########## VNC Server
 yum install -y vnc-server
+sudo cp /lib/systemd/system/vncserver@.service /etc/systemd/system/vncserver@:5.service
+sudo sed -i 's/<USER>/'$USER_'/g' /lib/systemd/system/vncserver@:5.service
+xset -dpms &
+xset s noblank & 
+xset s off &
+# # Need to do this in xorg.conf, but no longer there in FC20:
+# for xsetting in '"BlankTime"' '"StandbyTime"' '"SuspendTime"' '"OffTime"'; do
+#    grep 'Option' /etc/X11/xorg.conf.d/*.conf
+#    # sed 's/Option\s+'$xsetting'\s+"\d*"/Option          '$xsetting     "0"'/g' -i /etc/xorg.conf
+# done
+for xsetting in '"BlankTime"' '"StandbyTime"' '"SuspendTime"' '"OffTime"'; do
+    #echo "hello" | sudo tee >> world.txt
+    sudo echo 'Section "Monitor"' >> sudo tee /etc/X11/xorg.conf.d/01-monitor.conf
+    sudo echo '    Optionection "Monitor"' >> sudo tee /etc/X11/xorg.conf.d/01-monitor.conf
+    sudo echo 'EndSection' >> sudo tee /etc/X11/xorg.conf.d/01-monitor.conf
+    # sed 's/Option\s+'$xsetting'\s+"\d*"/Option          '$xsetting     "0"'/g' -i /etc/xorg.conf
+done
+
+echo "hello" | sudo tee >> /etc/X11/xorg.conf.d/01-disable-screensaver
+
+sed 's/"DPMS"/"NODPMS"/g' -i /etc/xorg.conf
+
+######### Gnome Desktop
+sudo yum install -y gnome-session gnome-desktop 
+# no automatic updates
+gsettings set org.gnome.settings-daemon.plugins.updates active false
+# quarterly OS updates/upgrades instead of weekly nags
+gsettings set org.gnome.settings-daemon.plugins.updates frequency-get-updates 8640000
+gsettings set org.gnome.settings-daemon.plugins.updates frequency-get-upgrades 8640000
+gsettings set org.gnome.settings-daemon.plugins.updates frequency-refresh-cache 8640000
+gsettings set org.gnome.settings-daemon.plugins.updates frequency-updates-notification 8640000
 
 
-######### gnome tweaks like notification in top 
-yum install -y gnome-tweak-tool gnome-shell-extension*
-
+# parcellite and other notifications in top bar 
+sudo yum install -y gnome-tweak-tool
+sudo yum install -y gnome-shell-extension-window-list gnome-shell-extension-common gnome-shell-extension-user-theme gnome-shell-extension-launch-new-instance gnome-shell-extension-fedmsg gnome-shell-extension-gpaste gnome-shell-extension-pidgin gnome-shell-extension-remove-bluetooth-icon gnome-shell-extension-remove-volume-icon     
 
 ########## dropbox
 cd ~ && \
@@ -60,11 +95,14 @@ yum install -y git nano rsync curl wget traceback whois
 
 
 ######### Sublime Text 2 ##########
-cd ~/tmp
-rm -f install-sublime-text-x64
-wget https://gist.githubusercontent.com/hobson/7416d96df16ce4509dae/raw/59d461c6c930b1a8fb5356501c7526f98443cbfa/install-sublime-text-x64.sh
-chmod +x install-sublime-text-x64.sh
+sudo yum install -y pylint
+sudo pip install --upgrade pylint
+cd ~/tmp && \
+rm -f install-sublime-text-x64.sh && \
+wget https://gist.githubusercontent.com/hobson/7416d96df16ce4509dae/raw/59d461c6c930b1a8fb5356501c7526f98443cbfa/install-sublime-text-x64.sh && \
+chmod +x install-sublime-text-x64.sh && \
 ./install-sublime-text-x64.sh
+# TODO: install package control and pylinter plugin for sublime
 
 
 # ########## move notification icons to top like in fedora 16
@@ -145,8 +183,8 @@ mkdir -p ~/src
 mkdir -p ~/bin
 mkdir -p ~/tmp
 cd ~/src
-git config --global user.name "Lane Hobson"
-git config --global user.email "laneh@sharplabs.com"
+git config --global user.name "Hobson Lane"
+git config --global user.email "$USER_@sharplabs.com"
 git config --global receive.denyDeleteCurrent 'warn'
 git config --global credential.helper 'cache --timeout 36000'
 # attempt to clone repos with write priveleges (will only work if SSH key's have been uploaded to github and stash)

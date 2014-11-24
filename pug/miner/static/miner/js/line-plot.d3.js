@@ -78,35 +78,43 @@ function line_plot(d3data, conf) {
         console.log("after sorting...");
         console.log(d3data);
 
-        // TODO: check for other types of x-axis values (floats, ints, dates, times) and produce the appropriate x-scale in an autoscale function
-        // parse xdata as datetimes if the conf.xlabel starts with the word "date" or "time" 
-        if ((conf.xlabel.substring(0, 4).toUpperCase() == "DATE")
-            // || (conf.xlabel.substring(0, 4).toUpperCase() == "TIME")
-          ) {
-          conf.xscale = d3.time.scale().range([0, conf.width]);
-          
+        if (conf.x_is_date) {
+          // FIXME: Check that ALL the elements of the array are valid datetimes before replacing the data
           d3data.forEach(function(d) {
-            console.log(d);
-            dt = d3_parse_date(d["x"]);
+            dt = d3_parse_datetime(d["x"]);
             if (dt === null) {
                 dt = d["x"]; }
             d["x"] = dt;
             }
             );
+
+          conf.xmin = d3.min(d3data, function(d) { return d["x"]; });
+          conf.xmax = d3.max(d3data, function(d) { return d["x"]; });
+          console.log('xmin,xmax = ' + conf.xmin + ' , ' + conf.xmax );
+          conf.xscale = d3.time.scale()
+            .domain([conf.xmin, conf.xmax])
+            .range([0, conf.width]);
         }
-
-        console.log('line plot all_series');
-        all_series = d3_series_as_xy_series(d3data, conf.ylabels);
-        console.log(all_series);
-        
-        console.log(d3data.map(function(d) { return d.x; }));
-        conf.xscale = d3.scale.ordinal()
-            .domain(d3data.map(function(d) { console.log(d.x); return d.x; }))
+        else {
+          // needed elsewhere, even though xscale.range doesn't use them:
+          conf.xmin = d3.min(d3data, function(d) { return d["x"]; });
+          conf.xmax = d3.max(d3data, function(d) { return d["x"]; });
+          conf.xscale = d3.scale.ordinal()
+            .domain(d3data.map(function(d) { return d.x; }))
             .rangePoints([0, conf.width]);
+        } // if conf.x_is_date
 
-        console.log('xscale domain and range');
-        console.log(conf.xscale.domain());
-        console.log(conf.xscale.range());
+        conf.d3data = d3data;
+        // console.log('line plot all_series');
+        all_series = d3_series_as_xy_series(d3data, conf.ylabels);
+        // console.log(all_series);
+        
+        // console.log(d3data.map(function(d) { return d.x; }));
+
+
+        // console.log('xscale domain and range');
+        // console.log(conf.xscale.domain());
+        // console.log(conf.xscale.range());
 
         var ymin = d3.min(all_series, function(series) { return d3.min(series.values, function(d) { return d.y; }); });
         var ymax = d3.max(all_series, function(series) { return d3.max(series.values, function(d) { return d.y; }); });
@@ -128,21 +136,35 @@ function line_plot(d3data, conf) {
         var svg = create_svg_element(conf);
 
         var xAxis = create_xaxis(conf);
+        // console.log(xAxis);
 
         // FIXME: use autoscale function to find domain/ranges that are approximately 0-100 or 0-1 or 0 to -1 or 0 to -100 and make percentages of them
         var yAxis = create_yaxis(conf);  //.ticks(10, "%");
+        // console.log(yAxis);
 
         var voronoi = d3.geom.voronoi()
-            .x(function(d) { console.log("voronoi x"); console.log(conf.xscale(d.x)); return conf.xscale(d.x); })
-            .y(function(d) { console.log("voronoi y"); console.log(conf.yscale(d.y)); return conf.yscale(d.y); })
+            .x(function(d) {
+              // console.log("voronoi x"); console.log(conf.xscale(d.x));
+              return conf.xscale(d.x); })
+            .y(function(d) {
+              // console.log("voronoi y"); console.log(conf.yscale(d.y)); 
+              return conf.yscale(d.y); })
             .clipExtent([[-conf.margin.left, -conf.margin.top], [conf.width + conf.margin.right, conf.height + conf.margin.bottom]]);
 
         var line = d3.svg.line()
-            .x(function(d) { console.log("line x"); console.log(d.x); console.log(conf.xscale(d.x)); return conf.xscale(d.x); })
-            .y(function(d) { console.log("line y"); console.log(d.y); console.log(conf.yscale(d.y)); return conf.yscale(d.y); });
+            .x(function(d) {
+              // console.log("line x"); console.log(d.x); console.log(conf.xscale(d.x)); 
+              return conf.xscale(d.x); })
+            .y(function(d) {
+              // console.log("line y"); console.log(d.y); console.log(conf.yscale(d.y)); 
+              return conf.yscale(d.y); });
+
+        console.log('drawing x axis');
+        var dt = new Date('2014-01-01T01:02:03Z');
+        console.log(xAxis(dt));
 
         svg.append("g")
-            .attr("class", "y axis")
+            .attr("class", "x axis")
             .attr("transform", "translate(0," + conf.height + ")")
             .call(xAxis)
           .append("text")
@@ -152,8 +174,9 @@ function line_plot(d3data, conf) {
             .attr("dy", "-.3em")
             .text(conf.xlabel);
 
+        console.log('drawing y axis');
         svg.append("g")
-            .attr("class", "x axis")
+            .attr("class", "y axis")
             .call(yAxis)
           .append("text")
             .attr("transform", "rotate(-90)")
@@ -162,11 +185,14 @@ function line_plot(d3data, conf) {
             .style("text-anchor", "end")
             .text(conf.ylabel);
 
+
+        console.log('adding g elements for each series');
         var series = svg.selectAll(".series")
             .data(all_series)
           .enter().append("g")
             .attr("class", "series");
 
+        console.log('drawing paths (lines)');
         series.append("path")
             .attr("class", "line")
             .attr("d", function(d) { d.line=this; return line(d.values); })

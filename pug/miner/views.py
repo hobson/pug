@@ -6,6 +6,8 @@ import math
 import collections
 import re
 import string
+import json
+import copy
 
 import pandas as pd
 
@@ -16,7 +18,7 @@ from django.template.response import TemplateResponse #, HttpResponse
 from django.template.loader import get_template
 from django.http import Http404, HttpResponse
 from django import http
-from django.utils import simplejson as json
+
 # from django.shortcuts import render
 # from django.conf import settings
 
@@ -311,7 +313,7 @@ def context_from_request(request, context=None, Form=GetLagForm, delim=',', verb
     return context
 
 
-def d3_plot_context(context, table=((0, 0),), title='Line Chart', xlabel='Time', ylabel='Value', header=None):
+def d3_plot_context(context, table=((0, 0),), title='Line Chart', xlabel='Time', ylabel='Value', header=None, limit=10001):
     """
 
     Arguments:
@@ -319,15 +321,31 @@ def d3_plot_context(context, table=((0, 0),), title='Line Chart', xlabel='Time',
       title (str): String to display atop the plot
       xlabel (str): Text to display along the bottom axis
       ylabel (str): Text to display along the vertical axis
+      limit (int): Maximum number of points to include in context variable `data.d3data`
     """
+    if isinstance(table, pd.Series):
+        table = pd.DataFrame(table, columns=header or [ylabel])
     if isinstance(table, pd.DataFrame):
-        df = table
+        df = table.sort_index()
         table = list(df.to_records())
         for i, row in enumerate(table):
             d = row[0]
-            if isinstance(d, datetime.date):
-                table[i][0] = "{1}/{2}/{0}".format(d.year, d.month, d.day)
-        first_row = ['Date'] + list(str(c).strip() for c in df.columns)
+            first_row = []
+            if isinstance(d, datetime.datetime):
+                # ISO 8601 date-time format is ECMA/javascript-friendly: 
+                #    YYYY-MM-DDTHH:mm:ss.sssZ  
+                #    `T` and `Z` are literal characters, alternatively `Z` (means UTC) can be replaced with timezone info like +/-HH:mm
+                table[i][0] = d.isoformat()
+                if not first_row:
+                    first_row += ['Date-Time']
+            elif isinstance(d, datetime.date):
+                table[i][0] = "{0:02d}-{1:02d}-{2:02d}".format(d.year, d.month, d.day)
+                if not first_row:
+                    first_row += ['Date']
+            else:
+                if not first_row:
+                    first_row += ['Sample']
+        first_row += list(str(c).strip() for c in df.columns)
         header = None
     else:
         first_row = list(table[0])
@@ -344,15 +362,22 @@ def d3_plot_context(context, table=((0, 0),), title='Line Chart', xlabel='Time',
         header = first_row
         table = table[1:]
 
-    print header
     # header should now be a list of one list of strings or an empty list,
     # So now just need to make sure the names of the columns are valid javascript identifiers
     if header:
         identifiers = [util.make_name(h, language='javascript', space='') for h in header]
         table = [header] + table
         descriptions = [unicode(h) for h in header]
+    
+    # print header, identifiers
+    if len(table) > limit:
+        new_table = [table[0]]
+        step = int(float(len(table))/limit)
+        print "step = {0}".format(step)
+        for i in range(1+limit, len(table), step):
+            new_table += [table[i]]
+        table = new_table
 
-    print identifiers
     context['data'] = context.get('data', {})
     context['data'].update({
         #'lags_dict': {hist_type: lags},
@@ -364,7 +389,7 @@ def d3_plot_context(context, table=((0, 0),), title='Line Chart', xlabel='Time',
         'd3data': json.dumps(util.transposed_lists(table)), 
         'form': {},
     })
-    print context['data']
+    # print context['data']
     return context
     # print context['data']
 
@@ -471,10 +496,22 @@ class DashboardView(TemplateView):
     def get_context_data(self, context, **kwargs):
         # Call the base implementation first to get a context
         context = super(DashboardView, self).get_context_data(**kwargs)
-        return d3_plot_context(context, 
-            table= util.transposed_lists([["x index"] + [907,901,855,902,903,904,905,906,900],["y value (units)", 99,51,72,43,54,65,76,67,98],["z-value (units)", 1,91,62,73,64,65,76,67,98],["abc's", 10,20,30,40,50,60,70,80,90]]),
+        context = d3_plot_context(context, 
+            table=util.transposed_lists([["DATE"] + ["2014-1-{0}".format(day) for day in range(1, 10)], 
+                                         ["y value (units)", 99, 51, 72, 43, 54, 65, 76, 67, 98],
+                                         ["z-value (units)", 1, 91, 62, 73, 64, 65, 76, 67, 98],
+                                         ["abc's", 10, 20, 30, 40, 50, 60, 70, 80, 90]]),
+            title='Line Chart', xlabel='DATE', ylabel='Value', 
+            header=None)
+        context['data_with_dates'] = copy.deepcopy(context['data'])
+        context = d3_plot_context(context, 
+            table=util.transposed_lists([["x index"] + [907, 901, 855, 902, 903, 904, 905, 906, 900], 
+                                         ["y value (units)", 99, 51, 72, 43, 54, 65, 76, 67, 98],
+                                         ["z-value (units)", 1, 91, 62, 73, 64, 65, 76, 67, 98],
+                                         ["abc's", 10, 20, 30, 40, 50, 60, 70, 80, 90]]),
             title='Line Chart', xlabel='ID Number', ylabel='Value', 
             header=None)
+        return context
 
 
 class BarPlotView(DashboardView):

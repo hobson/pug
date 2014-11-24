@@ -2,7 +2,7 @@ function mouseover(d) {
   // displays tip at center of voronoi region instead of near point
   // tip.show(d);
 
-  console.log('mouseover');
+  console.log('default plot-util mouseover() callback');
   console.log(d);
 
 //  d.series.line.parentNode.appendChild(d.series.line);
@@ -12,24 +12,50 @@ function mouseover(d) {
 
 function mouseout(d) {
   // tip.hide(d);
-  console.log('mouseout');
+  console.log('default plot-util mouseout() callback');
   console.log(d);
 
   //d3.select(d.series.line).classed("series-hover", false);
 }
 
 
-function d3_parse_date(date_or_time) {
-  dt = null;
-  dt = d3.time.format("%m/%d/%Y").parse(date_or_time);
-  if (dt !== null)
-    return dt;
-  dt = d3.time.format("%m/%d/%y").parse(date_or_time);
-  if (dt !== null)
-    return dt;
-  dt = d3.time.format("%Y%m%d").parse(date_or_time);
-  return dt;
+function d3_parse_datetime(date_or_time) {
+  // If date_or_time is an approximately valid ISO 8601 date-time string 
+  // return a javascript Date instance.
+  // Otherwise return null.
+  var acceptable_formats = [
+    "%Y-%m-%dT%H:%M:%SZ", "%Y-%m-%dT%H:%M:%S%Z", "%Y-%m-%dT%H:%M:%S",
+    "%Y-%m-%d %H:%M:%SZ", "%Y-%m-%d %H:%M:%S%Z", "%Y-%m-%d %H:%M:%S"];
+  for (index = 0; index < acceptable_formats.length; index++) {
+    format = acceptable_formats[index];
+    dt = d3.time.format(format).parse(date_or_time);
+    // console.log('parsed datetime:');
+    console.log(dt);
+    if (dt !== null)
+      return dt;
+  }
+  return null;
 }
+
+
+function d3_parse_date(date) {
+  // ISO8601-like:
+  dt = d3.time.format("%Y-%m-%d").parse(date);
+  if (dt !== null)
+    return dt;
+  // dt = d3.time.format("%y%m%d").parse(date);
+  // if (dt !== null)
+  //   return dt;
+  // dt = d3.time.format("%m/%d/%Y").parse(date);
+  // if (dt !== null)
+  //   return dt;
+  // dt = d3.time.format("%m/%d/%y").parse(date);
+  // if (dt !== null)
+  //   return dt;
+  // dt = d3.time.format("%y-%m-%d").parse(date);
+  // return dt;
+  return null;
+  }
 
 
 // Expects d3data to be an array of arrays (columns of data)
@@ -37,8 +63,8 @@ function d3_parse_date(date_or_time) {
 // Returns a d3-compatible object with an xlabel, ylabels = header with xlabel removed
 // and data which is an array of objects with elements x and y (y attribute is named by the header/ylabels)
 function arrays_as_d3_series(d3data) {
-    console.log('line-plot.js:arrays_as_d3_series(): d3data before transpose');
-    console.log(d3data);
+    // console.log('line-plot.js:arrays_as_d3_series(): d3data before transpose');
+    // console.log(d3data);
     var ans = {};
     d3data = d3.transpose(d3data);
     // console.log(d3data);
@@ -90,6 +116,8 @@ function normalize_conf(d3data, conf) {
     conf.width             = typeof conf.width             == "undefined" ? conf.container_width - conf.margin.left - conf.margin.right  : conf.width;
     conf.height            = typeof conf.height            == "undefined" ? conf.container_height - conf.margin.top  - conf.margin.bottom : conf.height;
 
+    conf.x_is_date         = typeof conf.x_is_date         == "undefined" ? default_conf.x_is_date                      : conf.x_is_date;
+
     conf.xlabel = typeof conf.xlabel == "undefined" ? d3data[0][0] : conf.xlabel;
     conf.xfield  = typeof d3data[0][0] == "string" ? d3data[0][0] : conf.xlabel;
     conf.ylabel = typeof conf.ylabel == "undefined" ? d3data[1][0] : conf.ylabel;
@@ -98,6 +126,13 @@ function normalize_conf(d3data, conf) {
     conf.ylabels = ylabels;
     conf.num_layers = conf.ylabels.length;
     conf.color = d3.scale.category10().domain(conf.ylabels);
+
+    // TODO: check for other types of x-axis values (floats, ints, dates, times) and produce the appropriate x-scale in an autoscale function
+    // parse xdata as datetimes if the conf.xlabel starts with the word "date" or "time" 
+    if (!conf.x_is_date && (conf.xlabel.substring(0, 4).toUpperCase() == "DATE"))
+        // || (conf.xlabel.substring(0, 4).toUpperCase() == "TIME")
+      conf.x_is_date = true;
+
     return conf;
     }
 
@@ -181,7 +216,7 @@ function split_d3_series(d3data) {
 
 function query2obj(query) {
   query = query ? query : location.search;
-  console.log(query);
+  // console.log(query);
   // ignore the questionmark in the search (query) string part of the URI
   if (query[0] == '?') {
     query = query.substring(1); }
@@ -221,15 +256,29 @@ function create_svg_element(conf) {
                 .attr("height", conf.height + conf.margin.top + conf.margin.bottom)
           .append("g")
             .attr("transform", "translate(" + conf.margin.left + "," + conf.margin.top + ")");
-   
     }
+
 
 function create_yaxis(conf) {
     return d3.svg.axis().scale(conf.yscale).orient("left"); }
 
 
 function create_xaxis(conf) {
-    return d3.svg.axis().scale(conf.xscale).orient("bottom");
+    console.log('---------- create xaxis ------------');
+    console.log(conf);
+    axis = d3.svg.axis().scale(conf.xscale).orient("bottom");
+    axis.ticks(10);
+    var N = conf.d3data.length;
+    var midlength = Math.round(N/2);
+    axis.tickValues([conf.xmin, conf.xmax]);
+    if (conf.x_is_date)
+      console.log('looks like dates in the x-axis');
+      axis.tickFormat(d3.time.format("%Y-%m-%d %H:%M"));
+      console.log('d3.time.format accomplished');
+    // console.log('xAxis ticks:');
+    // console.log(axis.tickValues());
+    // console.log(axis.ticks());
+    return axis;
 }
 
 
@@ -245,7 +294,7 @@ d3.selection.prototype.moveToFront = function() {
 
 function insert_text_background(focus) {
     var textElm = focus.select("text").node();
-    console.log(textElm);
+    // console.log(textElm);
     var SVGRect = textElm.getBBox();
 
     var rect = focus.insert("rect", "text")

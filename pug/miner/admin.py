@@ -10,7 +10,7 @@ unsearchable_field_names = ['id', 'pk', 'primary_key']
 search_related_id = False
 search_related_pk = True
 
-app_names = ['miner',]  # App with label pug.miner could not be found
+app_names = [] #'crawler',]  # App with label pug.miner could not be found
 link_suffix = '____'
 
 for apps_models in [models.get_models(app) for app in (models.get_app(app_name) for app_name in app_names)]:

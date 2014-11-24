@@ -1,1 +1,1 @@
-web: python pug/crawlnmine/manage.py run_gunicorn --reload --log-file -
+web: cd pug/crawlnmine && gunicorn crawlnmine.wsgi:application --reload --log-file -

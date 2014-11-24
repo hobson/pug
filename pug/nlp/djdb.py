@@ -26,10 +26,12 @@ from django.db import models as djmodels
 import progressbar as pb  # import ProgressBar, Percentage, RotatingMarker, Bar, ETA
 from fuzzywuzzy import process as fuzzy
 import numpy as np
+import pandas as pd
+import xlrd
+from dateutil.parser import parse as parse_date
 import logging
 logger = logging.getLogger('bigdata.info')
 
-from dateutil.parser import parse as parse_date
 
 # required to monkey-patch django.utils.encoding.force_text
 from django.utils.encoding import is_protected_type, DjangoUnicodeDecodeError, six
@@ -48,9 +50,11 @@ except ImproperlyConfigured:
     print '         can only be used within a Django project!'
     print '         Though the module was imported, some of its functions may raise exceptions.'
 except RuntimeError:
-    print_exc()
-    print 'WARNING: Unable to configure settings (cirular import perhaps?)'
-    print '         Django settings may have already been configured elsewhere'
+    pass
+    # print_exc()
+    # print 'WARNING: Unable to configure settings.'
+    # print '         Django settings may have already been configured elsewhere.'
+    # print '         Circular import perhaps?'
 
 from pug.nlp import util  # import listify, generate_slices, transposed_lists #, sod_transposed, dos_from_table
 from pug.nlp.words import synonyms
@@ -1770,6 +1774,234 @@ def find_files(path, ext='', level=None, verbosity=0):
     if verbosity > 1:
         print files_in_queue
     return files_in_queue
+
+
+def flatten_csv(path='.', ext='csv', date_parser=parse_date, verbosity=0, output_ext=None):
+    """Load all CSV files in the given path, write .flat.csv files, return `DataFrame`s
+
+    Arguments:
+      path (str): file or folder to retrieve CSV files and `pandas.DataFrame`s from
+      ext (str): file name extension (to filter files by)
+      date_parser (function): if the MultiIndex can be interpretted as a datetime, this parser will be used
+
+
+    Returns:
+      dict of DataFrame: { file_path: flattened_data_frame }
+    """
+    date_parser = date_parser or (lambda x: x)
+    dotted_ext, dotted_output_ext = None, None
+    if ext != None and output_ext != None:
+        dotted_ext = ('' if ext.startswith('.') else '.') + ext
+        dotted_output_ext = ('' if output_ext.startswith('.') else '.') + output_ext
+    table = {}
+    for file_properties in find_files(path, ext=ext or '', verbosity=verbosity):
+        file_path = file_properties['path']
+        if output_ext and (dotted_output_ext + '.') in file_path:
+            continue
+        df = pd.DataFrame.from_csv(file_path, parse_dates=False)
+        df = flatten_dataframe(df)
+        if dotted_ext != None and dotted_output_ext != None:
+            df.to_csv(file_path[:-len(dotted_ext)] + dotted_output_ext + dotted_ext)
+        table[file_path] = df
+    return table
+
+
+def dataframe_from_excel(path, sheetname=0, header=0, skiprows=None):  # , parse_dates=False):
+    """Thin wrapper for pandas.io.excel.read_excel() that accepts a file path and sheet index/name
+
+    Arguments:
+      path (str): file or folder to retrieve CSV files and `pandas.DataFrame`s from
+      ext (str): file name extension (to filter files by)
+      date_parser (function): if the MultiIndex can be interpretted as a datetime, this parser will be used
+
+    Returns:
+      dict of DataFrame: { file_path: flattened_data_frame }
+    """
+    sheetname = sheetname or 0
+    if isinstance(sheetname, (basestring, float)):
+        try:
+            sheetname = int(sheetname)
+        except (TypeError, ValueError, OverflowError):
+            sheetname = str(sheetname)
+    wb = xlrd.open_workbook(path)
+    # if isinstance(sheetname, int):
+    #     sheet = wb.sheet_by_index(sheetname)
+    # else:
+    #     sheet = wb.sheet_by_name(sheetname)
+    # assert(not parse_dates, "`parse_dates` argument and function not yet implemented!")
+    # table = [sheet.row_values(i) for i in range(sheet.nrows)]
+    return pd.io.excel.read_excel(wb, sheetname=sheetname, header=header, skiprows=skiprows, engine='xlrd')
+
+
+def make_date(dt, date_parser=parse_date):
+    """Coerce a datetime or string into datetime.date object
+
+    Arguments:
+      dt (str or datetime.datetime or atetime.time or numpy.Timestamp): time or date 
+        to be coerced into a `datetime.time` object
+
+    Returns:
+      datetime.time: Time of day portion of a `datetime` string or object
+
+    >>> make_date('')
+    datetime.date(1970, 1, 1)
+    >>> make_date(None)
+    datetime.date(1970, 1, 1)
+    >>> make_date("11:59 PM") == datetime.date.today()
+    True
+    >>> make_date(datetime.datetime(1999, 12, 31, 23, 59, 59))
+    datetime.date(1999, 12, 31)
+    """
+    if not dt:
+        return datetime.date(1970, 1, 1)
+    if isinstance(dt, basestring):
+        dt = date_parser(dt)
+    try:
+        dt = dt.timetuple()[:3]
+    except:
+        dt = tuple(dt)[:3]
+    return datetime.date(*dt)
+
+
+def make_time(dt, date_parser=parse_date):
+    """Ignore date information in a datetime string or object
+
+    Arguments:
+      dt (str or datetime.datetime or atetime.time or numpy.Timestamp): time or date 
+        to be coerced into a `datetime.time` object
+
+    Returns:
+      datetime.time: Time of day portion of a `datetime` string or object
+
+    >>> make_time(None)
+    datetime.time(0, 0)
+    >>> make_time("11:59 PM")
+    datetime.time(23, 59)
+    >>> make_time(datetime.datetime(1999, 12, 31, 23, 59, 59)))
+    datetime.time(23, 59, 59)
+    """
+    if not dt:
+        return datetime.time(0, 0)
+    if isinstance(dt, basestring):
+        dt = date_parser(dt)
+    try:
+        dt = dt.timetuple()[3:6]
+    except:
+        dt = tuple(dt)[3:6]
+    return datetime.time(*dt)
+
+
+def flatten_dataframe(df, date_parser=parse_date, verbosity=0):
+    """Creates 1-D timeseries (pandas.Series) coercing column labels into datetime.time objects
+
+    Assumes that the columns are strings representing times of day (or datetime.time objects)
+    Assumes that the index should be a datetime object. If it isn't already, the first column
+    with "date" (case insenstive) in its label will be used as the FataFrame index.
+    """
+
+    # extract rows with nonull, nonnan index values
+    df = df[pd.notnull(df.index)]
+
+    # Make sure columns and row labels are all times and dates respectively
+    # Ignores/clears any timezone information 
+    if all(isinstance(i, int) for i in df.index):
+        for label in df.columns:
+            if 'date' in str(label).lower():
+                df.index = [make_date(d) for d in df[label]]
+                del df[label]
+                break
+    if not all(isinstance(i, pd.Timestamp) for i in df.index):
+        date_index = []
+        for i in df.index:
+            try:
+                date_index += [make_date(str(i))]
+            except:
+                date_index += [i]
+        df.index = date_index
+    df.columns = [make_time(str(c)) for c in df.columns]
+
+    # flatten it
+    df = df.transpose().unstack()
+
+    # df.index is now a compound key (tuple) of the column labels (df.columns) and the row labels (df.index) 
+    # so lets combine them to be datetime values (pandas.Timestamp)
+    dt = None
+    t0 = df.index[0][1]
+    t1 = df.index[1][1]
+    try:
+        dt_stepsize = datetime.timedelta(hours=t1.hour - t0.hour, minutes=t1.minute - t0.minute, seconds=t1.second - t0.second)
+    except:
+        dt_stepsize = datetime.timedelta(hours=0, minutes=15)
+    parse_date_exception = False
+    index = []
+    for i, d in enumerate(df.index.values):
+        dt = i
+        if verbosity > 2:
+            print d
+        # # TODO: assert(not parser_date_exception)
+        # if isinstance(d[0], basestring):
+        #     d[0] = d[0]
+        try:
+            datetimeargs = list(d[0].timetuple()[:3]) + [d[1].hour, d[1].minute, d[1].second, d[1].microsecond]
+            dt = datetime.datetime(*datetimeargs)
+            if verbosity > 2:
+                print '{0} -> {1}'.format(d, dt)
+        except TypeError:
+            if verbosity > 1:
+                print_exc()
+                # print 'file with error: {0}\ndate-time tuple that caused the problem: {1}'.format(file_properties, d)
+            if isinstance(dt, datetime.datetime):
+                if dt:
+                    dt += dt_stepsize
+                else:
+                    dt = i
+                    parse_date_exception = True
+                    # dt = str(d[0]) + ' ' + str(d[1])
+                    # parse_date_exception = True
+            else:
+                dt = i
+                parse_date_exception = True
+        except:
+            if verbosity:
+                print_exc()
+                # print 'file with error: {0}\ndate-time tuple that caused the problem: {1}'.format(file_properties, d)
+            dt = i
+        index += [dt]
+
+    if index and not parse_date_exception:
+        df.index = index
+    else:
+        df.index = list(pd.Timestamp(d) for d in index)
+    return df
+
+
+def flatten_excel(path='.', ext='xlsx', sheetname=0, skiprows=None, header=0, date_parser=parse_date, verbosity=0, output_ext=None):
+    """Load all Excel files in the given path, write .flat.csv files, return `DataFrame` dict
+
+    Arguments:
+      path (str): file or folder to retrieve CSV files and `pandas.DataFrame`s from
+      ext (str): file name extension (to filter files by)
+      date_parser (function): if the MultiIndex can be interpretted as a datetime, this parser will be used
+
+    Returns:
+      dict of DataFrame: { file_path: flattened_data_frame }
+    """
+
+    date_parser = date_parser or (lambda x: x)
+    dotted_ext, dotted_output_ext = None, None
+    if ext != None and output_ext != None:
+        dotted_ext = ('' if ext.startswith('.') else '.') + ext
+        dotted_output_ext = ('' if output_ext.startswith('.') else '.') + output_ext
+    table = {}
+    for file_properties in find_files(path, ext=ext or '', verbosity=verbosity):
+        file_path = file_properties['path']
+        if output_ext and (dotted_output_ext + '.') in file_path:
+            continue
+        df = dataframe_from_excel(file_path, sheetname=sheetname, header=header, skiprows=skiprows)
+        df = flatten_dataframe(df, verbosity=verbosity)
+        if dotted_ext != None and dotted_output_ext != None:
+            df.to_csv(file_path[:-len(dotted_ext)] + dotted_output_ext + dotted_ext)
+    return table
 
 
 def clean_duplicates(model, unique_together=('serial_number',), date_field='created_on',
