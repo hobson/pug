@@ -35,6 +35,10 @@ class Day(models.Model):
 
 
 def get_dataframes(symbols=("sne", "goog", "tsla"), source='yahoo', refresh=False):
+    """Retreive table of market data ("Close", "Volume", "Adj Close") for each symbol requested
+
+    >>> dfdict = get_dataframes('GOOG', 'SNE')
+    """
     symbols = util.make_symbols(list(symbols))
     if refresh:
         symbols_to_refresh = symbols
@@ -70,6 +74,10 @@ def get_dataframes(symbols=("sne", "goog", "tsla"), source='yahoo', refresh=Fals
                 )
         table[sym] = pd.io.json.read_json(path_or_buf=e.time_series, orient='columns', typ='frame', convert_dates=True)
     return table
+
+
+def get_panel(*args, **kwargs):
+    return pd.Panel(get_dataframes(*args, **kwargs))
 
 
 def price_dataframe(symbols=('sne',),

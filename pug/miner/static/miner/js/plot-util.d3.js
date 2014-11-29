@@ -260,24 +260,26 @@ function create_svg_element(conf) {
 
 
 function create_yaxis(conf) {
+    console.log('--------- create yaxis ------------')
     return d3.svg.axis().scale(conf.yscale).orient("left"); }
 
 
 function create_xaxis(conf) {
     console.log('---------- create xaxis ------------');
-    console.log(conf);
-    axis = d3.svg.axis().scale(conf.xscale).orient("bottom");
-    axis.ticks(10);
+    console.log(conf.xscale);
+    var axis = d3.svg.axis().scale(conf.xscale).orient("bottom");
+    axis = axis.ticks(10);
     var N = conf.d3data.length;
     var midlength = Math.round(N/2);
-    axis.tickValues([conf.xmin, conf.xmax]);
+    axis = axis.tickValues([conf.xmin, conf.xmax]);
+    console.log(conf);
     if (conf.x_is_date)
       console.log('looks like dates in the x-axis');
       axis.tickFormat(d3.time.format("%Y-%m-%d %H:%M"));
       console.log('d3.time.format accomplished');
     // console.log('xAxis ticks:');
     // console.log(axis.tickValues());
-    // console.log(axis.ticks());
+    console.log(axis.ticks());
     return axis;
 }
 

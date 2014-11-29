@@ -19,7 +19,6 @@ function line_plot(d3data, conf) {
     console.log("conf");
     console.log(conf);
 
-
     conf.xscale = d3.scale.linear().range([0, conf.width]);
     conf.yscale = d3.scale.linear().range([conf.height, 0]);
 
@@ -135,12 +134,12 @@ function line_plot(d3data, conf) {
         // TODO: use the element ID (conf.plot_container_id) to select it locally within the mouseover and mouseout functions
         var svg = create_svg_element(conf);
 
-        var xAxis = create_xaxis(conf);
-        // console.log(xAxis);
-
         // FIXME: use autoscale function to find domain/ranges that are approximately 0-100 or 0-1 or 0 to -1 or 0 to -100 and make percentages of them
         var yAxis = create_yaxis(conf);  //.ticks(10, "%");
         // console.log(yAxis);
+
+        var xAxis = create_xaxis(conf);
+        console.log(xAxis(new Date('2014-01-01T01:02:03Z')));
 
         var voronoi = d3.geom.voronoi()
             .x(function(d) {
@@ -160,7 +159,7 @@ function line_plot(d3data, conf) {
               return conf.yscale(d.y); });
 
         console.log('drawing x axis');
-        var dt = new Date('2014-01-01T01:02:03Z');
+        console.log(dt);
         console.log(xAxis(dt));
 
         svg.append("g")
