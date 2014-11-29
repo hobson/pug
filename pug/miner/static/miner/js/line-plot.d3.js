@@ -139,7 +139,7 @@ function line_plot(d3data, conf) {
         // console.log(yAxis);
 
         var xAxis = create_xaxis(conf);
-        console.log(xAxis(new Date('2014-01-01T01:02:03Z')));
+        // console.log(xAxis(new Date('2014-01-01T01:02:03Z')));
 
         var voronoi = d3.geom.voronoi()
             .x(function(d) {
@@ -159,8 +159,6 @@ function line_plot(d3data, conf) {
               return conf.yscale(d.y); });
 
         console.log('drawing x axis');
-        console.log(dt);
-        console.log(xAxis(dt));
 
         svg.append("g")
             .attr("class", "y axis")
@@ -173,7 +171,6 @@ function line_plot(d3data, conf) {
             .attr("dy", "-.3em")
             .text(conf.xlabel);
 
-        console.log('drawing y axis');
         svg.append("g")
             .attr("class", "x axis")
             .call(yAxis)
