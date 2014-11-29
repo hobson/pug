@@ -163,7 +163,7 @@ function line_plot(d3data, conf) {
         console.log(xAxis(dt));
 
         svg.append("g")
-            .attr("class", "x axis")
+            .attr("class", "y axis")
             .attr("transform", "translate(0," + conf.height + ")")
             .call(xAxis)
           .append("text")
@@ -175,7 +175,7 @@ function line_plot(d3data, conf) {
 
         console.log('drawing y axis');
         svg.append("g")
-            .attr("class", "y axis")
+            .attr("class", "x axis")
             .call(yAxis)
           .append("text")
             .attr("transform", "rotate(-90)")

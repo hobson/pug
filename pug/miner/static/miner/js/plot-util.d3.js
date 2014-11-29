@@ -271,12 +271,11 @@ function create_xaxis(conf) {
     axis = axis.ticks(10);
     var N = conf.d3data.length;
     var midlength = Math.round(N/2);
-    axis = axis.tickValues([conf.xmin, conf.xmax]);
-    console.log(conf);
-    if (conf.x_is_date)
-      console.log('looks like dates in the x-axis');
-      axis.tickFormat(d3.time.format("%Y-%m-%d %H:%M"));
-      console.log('d3.time.format accomplished');
+    axis.tickValues([conf.xmin, conf.xmax]);
+    if (conf.x_is_date) {
+        console.log('set tickFormat for dates in x-axis');
+        axis.tickFormat(d3.time.format("%y-%m-%d"));
+        }
     // console.log('xAxis ticks:');
     // console.log(axis.tickValues());
     console.log(axis.ticks());
