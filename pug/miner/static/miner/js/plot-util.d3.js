@@ -260,7 +260,7 @@ function create_svg_element(conf) {
 
 
 function create_yaxis(conf) {
-    console.log('--------- create yaxis ------------')
+    console.log('--------- create yaxis() ------------');
     return d3.svg.axis().scale(conf.yscale).orient("left"); }
 
 

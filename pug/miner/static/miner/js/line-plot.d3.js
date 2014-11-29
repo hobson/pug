@@ -1,23 +1,15 @@
 
 function line_plot(d3data, conf) {
     console.log('==================== LINE PLOT =======================');
-
     conf = normalize_conf(d3data, conf);
 
-    console.log('line plot ylabels and xfield');
-    console.log(conf.ylabels);
-    console.log(conf.xfield);
-    console.log(conf.xlabel);
+    // THIS IS TO ALLOW PLOT TO BE CLICAKBLE and SEND USER to a TABLE VIEW OF THE REGION CLICKED
+    // // retrieve the GET query from the URI of this page:
+    // conf.query = query2obj();
+    // // Change the query to request a table view instead of the plot view that got us to this page/plot
+    // delete conf.query.plot;
+    // conf.query.table = "fast";
 
-    // retrieve the GET query from the URI of this page:
-    conf.query = query2obj();
-
-    // Change the query to request a table view instead of the plot view that got us to this page/plot
-    delete conf.query.plot;
-    conf.query.table = "fast";
-
-    console.log("conf");
-    console.log(conf);
 
     conf.xscale = d3.scale.linear().range([0, conf.width]);
     conf.yscale = d3.scale.linear().range([conf.height, 0]);
@@ -39,11 +31,10 @@ function line_plot(d3data, conf) {
       tt = (conf.xlabel.length ? conf.xlabel : "bin") + ": " + d.x + "\u00A0\u00A0\u00A0\u00A0" + series_name + ": " + d.y;
       focus.select("text").text(tt);
 
-      // conf.query is a global dictionary of the query parameters for this page, previously obtained using plot-util.query2obj();
-      // Need to set the Lag window for the table query to a range likely to capture the points near where the user clicked:
-      conf.query.min_lag = d.x-5;
-      conf.query.max_lag = d.x+5;
-
+      // // conf.query is a global dictionary of the query parameters for this page, previously obtained using plot-util.query2obj();
+      // // Need to set the Lag window for the table query to a range likely to capture the points near where the user clicked:
+      // conf.query.min_lag = d.x-5;
+      // conf.query.max_lag = d.x+5;
 
       // This generates the right link, but the SVG doesn't respond to clicks on the circle or anywhere nearby
       focus.select("a").attr("xlink:href", "?"+obj2query(conf.query));
