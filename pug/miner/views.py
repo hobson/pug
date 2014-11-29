@@ -6,7 +6,10 @@ import math
 import collections
 import re
 import string
-import json
+try:
+    from django.util import simplejson as json
+except ImportError:
+    import json
 import copy
 
 import pandas as pd
