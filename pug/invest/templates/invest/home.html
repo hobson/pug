@@ -1,0 +1,18 @@
+{% extends 'miner/base.html' %}
+{% load staticfiles %}
+{% load url from future %}
+
+{% block content %}
+    <h3>Welcome</h3>
+    <p>This <a href="demo.html" >demo video</a> will help you get started.</p>
+    {% comment %}
+        <p>The <a href="{% url "wiki:root" %}">documentation</a> has more detail.</p>
+    {% endcomment %}
+    <H3>Tools</H3>
+    <table>
+        <tr><td>Admin Interface</td><td><a href="/admin/">/admin/</a>
+        <tr><td>Home<a href="/invest/">/invest/</a></td>
+    </table>
+
+
+{% endblock %}
