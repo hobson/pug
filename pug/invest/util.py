@@ -26,6 +26,9 @@ def make_symbols(symbols, *args):
     Returns:
       list of str: list of cananical ticker symbol strings (typically after .upper().strip())
 
+    See Also:
+      pug.nlp.djdb.normalize_names
+
     Examples:
       >>> make_symbols("Goog")
       ["GOOG"]
