@@ -5,3 +5,4 @@ MANIFEST
 *.sql*
 pug/nlp/pca.pickled
 nohup.out
+pug/crawlnmine/djangodb
