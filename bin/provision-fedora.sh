@@ -203,3 +203,7 @@ for repo in "sasbd/ssp.git" "sasbd/ssg.git" "bootstrap.git" "sasbd/ansible-djang
 done
 
 
+# for animation and video composing
+sudo yum -y localinstall --nogpgcheck http://download1.rpmfusion.org/free/fedora/rpmfusion-free-release-$(rpm -E %fedora).noarch.rpm http://download1.rpmfusion.org/nonfree/fedora/rpmfusion-nonfree-release-$(rpm -E %fedora).noarch.rpm
+sudo rpm -Uvh http://rpm.livna.org/livna-release.rpm
+sudo yum -y install gstreamer-plugins-bad gstreamer1-libav gstreamer-plugins-bad-free-extras gstreamer-plugins-bad-nonfree gstreamer-plugins-ugly gstreamer-ffmpeg ffmpeg mencoder mplayer libdvdcss
