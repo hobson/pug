@@ -724,7 +724,7 @@ def integrated_change(ts, integrator=integrate.trapz, clip_floor=None, clip_ceil
     return integrator(clipped_values, ts.index.astype(np.int64) / 10**9)
 
 
-def clipping_start_end(ts, capacity=100):
+def clipping_params(ts, capacity=100):
     """Start and end index that clips the price/value of a time series the most
 
     Assumes that the integrated maximum includes the peak (instantaneous maximum).
