@@ -1875,15 +1875,21 @@ def make_time(dt, date_parser=parse_date):
 
     >>> make_time(None)
     datetime.time(0, 0)
+    >>> make_time("")
+    datetime.time(0, 0)
     >>> make_time("11:59 PM")
     datetime.time(23, 59)
-    >>> make_time(datetime.datetime(1999, 12, 31, 23, 59, 59)))
+    >>> make_time(datetime.datetime(1999, 12, 31, 23, 59, 59))
     datetime.time(23, 59, 59)
     """
     if not dt:
         return datetime.time(0, 0)
     if isinstance(dt, basestring):
-        dt = date_parser(dt)
+        try:
+            dt = date_parser(dt)
+        except:
+            print_exc()
+            print 'Unable to parse datetime string: {0}'.format(dt)
     try:
         dt = dt.timetuple()[3:6]
     except:
@@ -1918,7 +1924,16 @@ def flatten_dataframe(df, date_parser=parse_date, verbosity=0):
             except:
                 date_index += [i]
         df.index = date_index
-    df.columns = [make_time(str(c)) for c in df.columns]
+    column_names, columns_to_del = [], []
+    for c in df.columns:
+        if str(c)[:9].lower() == 'unnamed: ':
+            column_names += [c]
+            columns_to_del += [c]
+        else:
+            column_names += [make_time(str(c))]
+    df.columns = column_names
+    for c in columns_to_del:
+        del df[c]
 
     # flatten it
     df = df.transpose().unstack()

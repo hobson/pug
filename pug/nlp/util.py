@@ -1250,7 +1250,9 @@ def make_dataframe(prices, num_prices=1, columns=('portfolio',)):
     Arguments:
       num_prices (int): if not null, the number of columns (from right) that contain numeric values
     """
-    if isinstance(prices, (pd.DataFrame, pd.Series)):
+    if isinstance(prices, pd.Series):
+        return pd.DataFrame(prices)
+    if isinstance(prices, pd.DataFrame):
         return prices
     if isinstance(prices, basestring) and os.path.isfile(prices):
         prices = open(prices, 'rU')
@@ -1263,8 +1265,11 @@ def make_dataframe(prices, num_prices=1, columns=('portfolio',)):
             values += [row]
         prices.close()
         prices = values
-    if isinstance(prices[0], basestring):
-        prices = [COLUMN_SEP.split(row) for row in prices]
+    for row0 in prices:
+        if isinstance(row, basestring):
+            # FIXME: this looks hazardous, rebuilding the sequence you're iterating through
+            prices = [COLUMN_SEP.split(row) for row in prices]
+        break
     # print prices
     index = []
     if isinstance(prices[0][0], (datetime.date, datetime.datetime, datetime.time)):

@@ -7,6 +7,7 @@ import numpy as np
 import pandas as pd
 from scipy import integrate
 from matplotlib import pyplot as plt
+from matplotlib import animation
 
 from pug.nlp.util import listify
 
@@ -60,6 +61,7 @@ def make_symbols(symbols, *args):
 
 def integrated_change(ts, integrator=integrate.trapz, clip_floor=None, clip_ceil=float('inf')):
     """Total value * time above the starting value within a TimeSeries"""
+    integrator = get_integrator(integrator)
     if clip_floor is None:
         clip_floor = ts[0]
     if clip_ceil < clip_floor:
@@ -72,14 +74,84 @@ def integrated_change(ts, integrator=integrate.trapz, clip_floor=None, clip_ceil
     print(clipped_values)
     integrator_types = set(['trapz', 'cumtrapz', 'simps', 'romb'])
     if integrator in integrator_types:
-        integrator = integrate.__getattribute__(integrator)
+        integrator = getattr(integrate, integrator)
     integrator = integrator or integrate.trapz
     # datetime units converted to seconds (since 1/1/1970)
     return integrator(clipped_values, ts.index.astype(np.int64) / 10**9)
 
 
-def clipping_start_end(ts, capacity=100):
-    """Start and end index that clips the price/value of a time series the most
+def insert_crossings(ts, thresh):
+    """Insert/append threshold crossing points (time and value) into a timeseries (pd.Series)"""
+    # value immediately before an upward thresh crossing
+    preup = ts[(ts < thresh) & (ts.shift(-1) > thresh)]
+    # values immediately after an upward thresh crossing
+    postup = ts[(ts.shift(1) < thresh) & (ts > thresh)]
+    # value immediately after a downward thresh crossing
+    postdown = ts[(ts < thresh) & (ts.shift(1) > thresh)]
+    # value immediately before an upward thresh crossing
+    predown = ts[(ts.shift(-1) < thresh) & (ts > thresh)]
+    # upward slope (always positive) between preup and postup in units of "value" per nanosecond (timestamps convert to floats as nanoseconds)
+    slopeup = (postup.values - preup.values) / (postup.index.values - preup.index.values).astype(np.float64)
+    # upward crossing point index/time
+    tup = preup.index.values +  ((thresh - preup.values) / slopeup).astype(np.timedelta64)
+    # downward slope (always negative) between predown and postdown in units of "value" per nanosecond (timestamps convert to floats as nanoseconds)
+    slopedown = (postdown.values - predown.values) / (postdown.index.values - predown.index.values).astype(np.float64)
+    # upward crossing point index/time
+    tdown = predown.index.values + ((thresh - predown.values) / slopedown).astype(np.timedelta64)
+    # insert crossing points into time-series (if it had a regular sample period before, it won't now!)
+    ts = ts.append(pd.Series(thresh*np.ones(len(tup)), index=tup))
+    # insert crossing points into time-series (if it had a regular sample period before, it won't now!)
+    ts = ts.append(pd.Series(thresh*np.ones(len(tdown)), index=tdown))
+    # if you don't `sort_index()`, numerical integrators in `scipy.integrate` will give the wrong answer
+    return ts.sort_index()
+
+
+def get_integrator(integrator):
+    """Return the scipy.integrator indicated by an index, name, or integrator_function
+
+    >>> get_integrator(0)
+    """
+    integrator_types = set(['trapz', 'cumtrapz', 'simps', 'romb'])
+    integrator_funcs = [integrate.trapz, integrate.cumtrapz, integrate.simps, integrate.romb]
+
+    if isinstance(integrator, int) and 0 <= integrator < len(integrator_types):
+        integrator = integrator_types[integrator]
+    if isinstance(integrator, basestring) and integrator in integrator_types:
+        return getattr(integrate, integrator)
+    elif integrator in integrator_funcs:
+        return integrator
+    else:
+        print('Unsupported integration rule: {0}'.format(integrator))
+        print('Expecting one of these sample-based integration rules: %s' % (str(list(integrator_types))))
+        raise AttributeError
+    return integrator
+
+
+def clipped_area(ts, thresh=0, integrator=integrate.trapz):
+    """Total value * time above the starting value within a TimeSeries
+
+    Arguments:
+      ts (pandas.Series): Time series to be integrated.
+      thresh (float): Value to clip the tops off at (crossings will be interpolated)
+
+    References:
+      http://nbviewer.ipython.org/gist/kermit666/5720498
+
+    >>> t = ['2014-12-09T00:00', '2014-12-09T00:15', '2014-12-09T00:30', '2014-12-09T00:45', '2014-12-09T01:00', '2014-12-09T01:15', '2014-12-09T01:30', '2014-12-09T01:45']
+    >>> import pandas as pd
+    >>> ts = pd.Series([217, 234, 235, 231, 219, 219, 231, 232], index=pd.to_datetime(t))
+    >>> clipped_area(ts, thresh=230)  # doctest: +ELLIPSIS
+    8598.52941...
+    """
+    integrator = get_integrator(integrator or 0)
+    ts = insert_crossings(ts, thresh) - thresh
+    ts = ts[ts >= 0]
+    # timestamp is in nanoseconds (since 1/1/1970) but this converts it to seconds (SI units)
+    return integrator(ts, ts.index.astype(np.int64) / 1e9)
+
+
+def clipping_params(ts, capacity=100):
+    """Start and end index (datetime) that clips the price/value of a time series the most
 
     Assumes that the integrated maximum includes the peak (instantaneous maximum).
 
@@ -87,22 +159,74 @@ def clipping_start_end(ts, capacity=100):
       ts (TimeSeries): Time series to attempt to clip to as low a max value as possible
       capacity (float): Total "funds" or "energy" available for clipping (integrated area under time series)
 
+    TODO:
+      Return answer as a dict
+
     Returns:
       2-tuple: Timestamp of the start and end of the period of the maximum clipped integrated increase
+
+    >>> t = ['2014-12-09T00:00', '2014-12-09T00:15', '2014-12-09T00:30', '2014-12-09T00:45', '2014-12-09T01:00', '2014-12-09T01:15', '2014-12-09T01:30', '2014-12-09T01:45']
+    >>> import pandas as pd
+    >>> ts = pd.Series([217, 234, 235, 231, 219, 219, 231, 232], index=pd.to_datetime(t))
+    >>> import numpy
+    >>> (clipping_params(ts, capacity=60000) ==
+    ... (numpy.datetime64('2014-12-09T00:15:00.000000000+0000'),
+    ... numpy.datetime64('2014-12-09T01:45:00.000000000+0000'),
+    ... 54555.882353782654,
+    ... 219))
+    True
+    >>> (clipping_params(ts, capacity=30000) ==
+    ... (numpy.datetime64('2014-12-09T00:15:00.000000000+0000'),
+    ... numpy.datetime64('2014-12-09T00:30:00.000000000+0000'),
+    ... 562.5,
+    ... 234))
+    True
     """
     ts_sorted = ts.order(ascending=False)
-    i, t0, t1, integral = 1, None, None, 0
-    while integral <= capacity and i+1 < len(ts):
+    # default is to clip right at the peak (no clipping at all)
+    i, t0, t1, integral, thresh = 1, ts_sorted.index[0], ts_sorted.index[0], 0, ts_sorted[0]
+    params = {'t0': t0, 't1': t1, 'integral': 0, 'threshold': thresh}
+    while integral <= capacity and i < len(ts):
+        params = {'t0': pd.Timestamp(t0), 't1': pd.Timestamp(t1), 'threshold': thresh, 'integral': integral}
         i += 1
-        t0_within_capacity = t0
-        t1_within_capacity = t1
-        t0 = min(ts_sorted.index[:i])
-        t1 = max(ts_sorted.index[:i])
-        integral = integrated_change(ts[t0:t1])
-        print(i, t0, ts[t0], t1, ts[t1], integral)
-    if t0_within_capacity and t1_within_capacity:
-        return t0_within_capacity, t1_within_capacity
-    # argmax = ts.argmax()  # index of the maximum value
+        times = ts_sorted.index[:i].values
+        # print(times)
+        t0 = times.min()
+        t1 = times.max()
+        thresh = min(ts[t0:t1])
+        integral = clipped_area(ts, thresh=thresh)
+    if integral <= capacity:
+        return {'t0': pd.Timestamp(t0), 't1': pd.Timestamp(t1), 'threshold': thresh, 'integral': integral}
+    return params
+
+
+def clipping_threshold(ts, capacity=100):
+    """Start and end index (datetime) that clips the price/value of a time series the most
+
+    Assumes that the integrated maximum includes the peak (instantaneous maximum).
+
+    Arguments:
+      ts (TimeSeries): Time series to attempt to clip to as low a max value as possible
+      capacity (float): Total "funds" or "energy" available for clipping (integrated area under time series)
+
+    TODO:
+      Return answer as a dict
+
+    Returns:
+      2-tuple: Timestamp of the start and end of the period of the maximum clipped integrated increase
+
+    >>> t = ['2014-12-09T00:00', '2014-12-09T00:15', '2014-12-09T00:30', '2014-12-09T00:45', '2014-12-09T01:00', '2014-12-09T01:15', '2014-12-09T01:30', '2014-12-09T01:45']
+    >>> import pandas as pd
+    >>> ts = pd.Series([217, 234, 235, 231, 219, 219, 231, 232], index=pd.to_datetime(t))
+    >>> clipping_threshold(ts, capacity=60000)
+    219
+    >>> clipping_threshold(ts, capacity=30000)
+    234
+    """
+    params = clipping_params(ts, capacity=capacity)
+    if params:
+        return params['threshold']
+    return None
 
 
 def period_boxplot(df, period='year', column='Adj Close'):
@@ -219,3 +343,92 @@ def simulate(t=1000, poly=(0.,), sinusoids=None, sigma=0, rw=0, irw=0, rrw=0):
     return pd.Series(y, index=t)
 
 
+def animate_panel(panel, keys=None, columns=None, interval=1000, titles='', path='animate_panel', xlabel='Time', ylabel='Value', **kwargs):
+    """Animate a pandas.Panel by flipping through plots of the data in each dataframe
+
+    Arguments:
+      panel (pandas.Panel): Pandas Panel of DataFrames to animate (each DataFrame is an animation video frame)
+      keys (list of str): ordered list of panel keys (pages) to animate
+      columns (list of str): ordered list of data series names to include in plot for eath video frame
+      interval (int): number of milliseconds between video frames
+      titles (str or list of str): titles to place in plot on each data frame.
+        default = `keys` so that titles changes with each frame
+      path (str): path and base file name to save *.mp4 animation video ('' to not save) 
+      kwargs (dict): pass-through kwargs for `animation.FuncAnimation(...).save(path, **kwargs)`
+        (Not used if `not path`)
+
+    TODO: Work with other 3-D data formats:
+      - dict (sorted by key) or OrderedDict
+      - list of 2-D arrays/lists
+      - 3-D arrays/lists
+      - generators of 2-D arrays/lists
+      - generators of generators of lists/arrays?
+
+    >>> import numpy as np
+    >>> import pandas as pd
+    >>> x = np.arange(0, 2*np.pi, 0.05)
+    >>> panel = pd.Panel(dict((i, pd.DataFrame({
+    ...        'T=10': np.sin(x + i/10.),
+    ...        'T=7': np.sin(x + i/7.),
+    ...        'beat': np.sin(x + i/10.) + np.sin(x + i/7.),
+    ...        }, index=x)
+    ...    ) for i in range(50)))
+    >>> ani = animate_panel(panel, interval=200, path='animate_panel_test')  # doctest: +ELLIPSIS
+    <matplotlib.animation.FuncAnimation at ...>
+    """
+
+    keys = keys or list(panel.keys())
+    if titles:
+        titles = listify(titles)
+        if len(titles) == 1:
+            titles *= len(keys)
+    else:
+        titles = keys
+    titles = dict((k, title) for k, title in zip(keys, titles))
+    columns = columns or list(panel[keys[0]].columns)
+    
+    fig, ax = plt.subplots()
+
+    i = 0
+    df = panel[keys[i]]
+    x = df.index.values
+    y = df[columns].values
+    lines = ax.plot(x, y)
+    ax.grid('on')
+    ax.title.set_text(titles[keys[0]])
+    ax.xaxis.label.set_text(xlabel)
+    ax.yaxis.label.set_text(ylabel)
+    ax.legend(columns)
+
+    def animate(k):
+        df = panel[k]
+        x = df.index.values
+        y = df[columns].values.T
+        ax.title.set_text(titles[k])
+        for i in range(len(lines)):
+            lines[i].set_xdata(x)  # all lines have to share the same x-data
+            lines[i].set_ydata(y[i])  # update the data, don't replot a new line
+        return lines
+
+    # Init masks out pixels to be redrawn/cleared which speeds redrawing of plot
+    def mask_lines():
+        print('init')
+        df = panel[0]
+        x = df.index.values
+        y = df[columns].values.T
+        for i in range(len(lines)):
+            # FIXME: why are x-values used to set the y-data coordinates of the mask?
+            lines[i].set_xdata(np.ma.array(x, mask=True))
+            lines[i].set_ydata(np.ma.array(y[i], mask=True))
+        return lines
+
+    ani = animation.FuncAnimation(fig, animate, keys, interval=interval, blit=False) #, init_func=mask_lines, blit=True)
+
+    for k, v in {'writer': 'ffmpeg', 'codec': 'mpeg4', 'dpi': 100, 'bitrate': 2000}.iteritems():
+        kwargs[k]=kwargs.get(k, v)
+    kwargs['bitrate'] = min(kwargs['bitrate'], int(5e5 / interval))  # low information rate (long interval) might make it impossible to achieve a higher bitrate ight not
+    if path and isinstance(path, basestring):
+        path += + '.mp4'
+        print('Saving video to {0}...'.format(path))
+        ani.save(path, **kwargs)
+    return ani
