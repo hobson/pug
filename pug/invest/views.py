@@ -8,6 +8,11 @@ from pug.nlp import util
 import pandas as pd
 
 
+class HomeView(TemplateView):
+    """Query the miner.AggregateResults table to retrieve values for plotting in a bar chart"""
+    template_name = 'invest/home.html'
+
+
 class PlotSymbolView(TemplateView):
     """Query the miner.AggregateResults table to retrieve values for plotting in a bar chart"""
     template_name = 'miner/line_plot.d3.html'

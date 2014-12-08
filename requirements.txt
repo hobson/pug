@@ -36,10 +36,13 @@ gunicorn>=19.1.1
 jsonfield>=1.0.0
 numpy>=1.8.1
 pandas>=0.15.0
-ConcurrentPandas>=0.14
+ConcurrentPandas>=0.1.1
 
 Scrapy>=0.22.2
 South>=0.8.4
+
+xlrd>=0.9.3
+xlwt>=0.7.5
 
 # Twisted==14.0.0
 
@@ -50,6 +53,12 @@ South>=0.8.4
 
 tornado
 
+##$ sudo yum install libjpeg-devel openjpeg-devel
+# pillow
+##$ sudo yum install cmake make gcc gcc-c++
+# Cython>=0.21.1
+# exifyay
+pyexif
 
 # # --editable=https://python-progressbar.googlecode.com/files/progressbar-2.3.tar.gz
 # # https://python-progressbar.googlecode.com/files/progressbar-2.3.tar.gz
