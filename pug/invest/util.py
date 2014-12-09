@@ -150,7 +150,7 @@ def clipped_area(ts, thresh=0, integrator=integrate.trapz):
     return integrator(ts, ts.index.astype(np.int64) / 1e9)
 
 
-def clipping_params(ts, capacity=100):
+def clipping_params(ts, capacity=100, rate_limit=10):
     """Start and end index (datetime) that clips the price/value of a time series the most
 
     Assumes that the integrated maximum includes the peak (instantaneous maximum).
@@ -186,7 +186,7 @@ def clipping_params(ts, capacity=100):
     # default is to clip right at the peak (no clipping at all)
     i, t0, t1, integral, thresh = 1, ts_sorted.index[0], ts_sorted.index[0], 0, ts_sorted[0]
     params = {'t0': t0, 't1': t1, 'integral': 0, 'threshold': thresh}
-    while integral <= capacity and i < len(ts):
+    while integral <= capacity and (ts_sorted.index[0] - ts_sorted.index[i]) <= rate_limit and i < len(ts):
         params = {'t0': pd.Timestamp(t0), 't1': pd.Timestamp(t1), 'threshold': thresh, 'integral': integral}
         i += 1
         times = ts_sorted.index[:i].values
@@ -200,14 +200,17 @@ def clipping_params(ts, capacity=100):
     return params
 
 
-def clipping_threshold(ts, capacity=100):
+def clipping_threshold(ts, capacity=100, rate_limit=10):
     """Start and end index (datetime) that clips the price/value of a time series the most
 
     Assumes that the integrated maximum includes the peak (instantaneous maximum).
 
     Arguments:
-      ts (TimeSeries): Time series to attempt to clip to as low a max value as possible
-      capacity (float): Total "funds" or "energy" available for clipping (integrated area under time series)
+      ts (TimeSeries): Time series of prices or power readings to be "clipped" as much as possible.
+      capacity (float): Total "funds" or "energy" available for clipping (in $ or Joules)
+        The maximum allowed integrated area under time series and above the clipping threshold.
+      rate_limit: Maximum rate at which funds or energy can be expended (in $/s or Watts)
+        The clipping threshold is limitted to no less than the peak power (price rate) minus this rate_limit
 
     TODO:
       Return answer as a dict
@@ -223,7 +226,7 @@ def clipping_threshold(ts, capacity=100):
     >>> clipping_threshold(ts, capacity=30000)
     234
     """
-    params = clipping_params(ts, capacity=capacity)
+    params = clipping_params(ts, capacity=capacity, rate_limit=rate_limit)
     if params:
         return params['threshold']
     return None
