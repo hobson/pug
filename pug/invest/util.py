@@ -200,6 +200,41 @@ def clipping_params(ts, capacity=100, rate_limit=10):
     return params
 
 
+def square_off(series, time_delta=None, transition_time=1):
+    """Insert samples in regularly sampled data to produce stairsteps from ramps when plotted.
+
+    New samples are 1 second (1e9 ns) before each existing samples, to facilitate plotting and sorting
+
+    >>> square_off(pd.Series(range(3), index=pd.date_range('2014-01-01', periods=3, freq='15m')), time_delta=5.5)  # doctest: +NORMALIZE_WHITESPACE
+    2014-01-31 00:00:00           0
+    2014-01-31 00:00:05.500000    0
+    2015-04-30 00:00:00           1
+    2015-04-30 00:00:05.500000    1
+    2016-07-31 00:00:00           2
+    2016-07-31 00:00:05.500000    2
+    dtype: int64
+    >>> square_off(pd.Series(range(2), index=pd.date_range('2014-01-01', periods=3, freq='15min')), transition_time=2.5)  # doctest: +NORMALIZE_WHITESPACE
+    2012-01-01 00:00:00           0
+    2012-01-01 00:14:57.500000    0
+    2012-01-01 00:15:00           1
+    2012-01-01 00:29:57.500000    1
+    dtype: int64
+    """
+    if time_delta:
+        # int, float means delta is in seconds (not years!)
+        if isinstance(time_delta, (int, float)):
+            time_delta = datetime.timedelta(0, time_delta)
+        new_times = series.index + time_delta
+    else:
+        diff = np.diff(series.index)
+        time_delta = np.append(diff, [diff[-1]])
+        new_times = series.index.values + time_delta
+        new_times -= int(transition_time * 1e9)
+    return pd.concat([series, pd.Series(series.values, index=new_times)]).sort_index()
+
+
+
+
 def clipping_threshold(ts, capacity=100, rate_limit=10):
     """Start and end index (datetime) that clips the price/value of a time series the most
 
