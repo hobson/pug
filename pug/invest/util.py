@@ -2,6 +2,7 @@
 from __future__ import print_function
 
 from collections import Mapping
+import datetime
 
 import numpy as np
 import pandas as pd
@@ -186,7 +187,7 @@ def clipping_params(ts, capacity=100, rate_limit=10):
     # default is to clip right at the peak (no clipping at all)
     i, t0, t1, integral, thresh = 1, ts_sorted.index[0], ts_sorted.index[0], 0, ts_sorted[0]
     params = {'t0': t0, 't1': t1, 'integral': 0, 'threshold': thresh}
-    while integral <= capacity and (ts_sorted.index[0] - ts_sorted.index[i]) <= rate_limit and i < len(ts):
+    while integral <= capacity and (ts_sorted[0] - ts_sorted[i]) <= rate_limit and i < len(ts):
         params = {'t0': pd.Timestamp(t0), 't1': pd.Timestamp(t1), 'threshold': thresh, 'integral': integral}
         i += 1
         times = ts_sorted.index[:i].values
@@ -200,7 +201,7 @@ def clipping_params(ts, capacity=100, rate_limit=10):
     return params
 
 
-def square_off(series, time_delta=None, transition_time=1):
+def square_off(series, time_delta=None, transition_seconds=1):
     """Insert samples in regularly sampled data to produce stairsteps from ramps when plotted.
 
     New samples are 1 second (1e9 ns) before each existing samples, to facilitate plotting and sorting
@@ -213,7 +214,7 @@ def square_off(series, time_delta=None, transition_time=1):
     2016-07-31 00:00:00           2
     2016-07-31 00:00:05.500000    2
     dtype: int64
-    >>> square_off(pd.Series(range(2), index=pd.date_range('2014-01-01', periods=3, freq='15min')), transition_time=2.5)  # doctest: +NORMALIZE_WHITESPACE
+    >>> square_off(pd.Series(range(2), index=pd.date_range('2014-01-01', periods=2, freq='15min')), transition_seconds=2.5)  # doctest: +NORMALIZE_WHITESPACE
     2012-01-01 00:00:00           0
     2012-01-01 00:14:57.500000    0
     2012-01-01 00:15:00           1
@@ -228,11 +229,9 @@ def square_off(series, time_delta=None, transition_time=1):
     else:
         diff = np.diff(series.index)
         time_delta = np.append(diff, [diff[-1]])
-        new_times = series.index.values + time_delta
-        new_times -= int(transition_time * 1e9)
+        new_times = series.index + time_delta
+        new_times = new_times - datetime.timedelta(0, transition_seconds)
     return pd.concat([series, pd.Series(series.values, index=new_times)]).sort_index()
-
-
 
 
 def clipping_threshold(ts, capacity=100, rate_limit=10):
