@@ -151,7 +151,7 @@ def clipped_area(ts, thresh=0, integrator=integrate.trapz):
     return integrator(ts, ts.index.astype(np.int64) / 1e9)
 
 
-def clipping_params(ts, capacity=100, rate_limit=10):
+def clipping_params(ts, capacity=100, rate_limit=float('inf')):
     """Start and end index (datetime) that clips the price/value of a time series the most
 
     Assumes that the integrated maximum includes the peak (instantaneous maximum).
@@ -187,7 +187,7 @@ def clipping_params(ts, capacity=100, rate_limit=10):
     # default is to clip right at the peak (no clipping at all)
     i, t0, t1, integral, thresh = 1, ts_sorted.index[0], ts_sorted.index[0], 0, ts_sorted[0]
     params = {'t0': t0, 't1': t1, 'integral': 0, 'threshold': thresh}
-    while integral <= capacity and (ts_sorted[0] - ts_sorted[i]) <= rate_limit and i < len(ts):
+    while i < len(ts) and integral <= capacity and (ts_sorted[0] - ts_sorted[i]) < rate_limit:
         params = {'t0': pd.Timestamp(t0), 't1': pd.Timestamp(t1), 'threshold': thresh, 'integral': integral}
         i += 1
         times = ts_sorted.index[:i].values
@@ -230,7 +230,7 @@ def square_off(series, time_delta=None, transition_seconds=1):
         diff = np.diff(series.index)
         time_delta = np.append(diff, [diff[-1]])
         new_times = series.index + time_delta
-        new_times = new_times - datetime.timedelta(0, transition_seconds)
+        new_times = pd.DatetimeIndex(new_times) - datetime.timedelta(0, transition_seconds)
     return pd.concat([series, pd.Series(series.values, index=new_times)]).sort_index()
 
 
