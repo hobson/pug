@@ -12,6 +12,9 @@ from matplotlib import animation
 
 from pug.nlp.util import listify
 
+from scipy.optimize import minimize
+
+
 def clean_dataframe(df):
     """Fill NaNs with the previous value, the next value or if all are NaN then 1.0"""
     df = df.fillna(method='ffill')
@@ -82,30 +85,84 @@ def integrated_change(ts, integrator=integrate.trapz, clip_floor=None, clip_ceil
 
 
 def insert_crossings(ts, thresh):
-    """Insert/append threshold crossing points (time and value) into a timeseries (pd.Series)"""
-    # value immediately before an upward thresh crossing
-    preup = ts[(ts < thresh) & (ts.shift(-1) > thresh)]
-    # values immediately after an upward thresh crossing
-    postup = ts[(ts.shift(1) < thresh) & (ts > thresh)]
-    # value immediately after a downward thresh crossing
-    postdown = ts[(ts < thresh) & (ts.shift(1) > thresh)]
-    # value immediately before an upward thresh crossing
-    predown = ts[(ts.shift(-1) < thresh) & (ts > thresh)]
-    # upward slope (always positive) between preup and postup in units of "value" per nanosecond (timestamps convert to floats as nanoseconds)
-    slopeup = (postup.values - preup.values) / (postup.index.values - preup.index.values).astype(np.float64)
-    # upward crossing point index/time
-    tup = preup.index.values +  ((thresh - preup.values) / slopeup).astype(np.timedelta64)
-    # downward slope (always negative) between predown and postdown in units of "value" per nanosecond (timestamps convert to floats as nanoseconds)
-    slopedown = (postdown.values - predown.values) / (postdown.index.values - predown.index.values).astype(np.float64)
-    # upward crossing point index/time
-    tdown = predown.index.values + ((thresh - predown.values) / slopedown).astype(np.timedelta64)
-    # insert crossing points into time-series (if it had a regular sample period before, it won't now!)
-    ts = ts.append(pd.Series(thresh*np.ones(len(tup)), index=tup))
-    # insert crossing points into time-series (if it had a regular sample period before, it won't now!)
-    ts = ts.append(pd.Series(thresh*np.ones(len(tdown)), index=tdown))
-    # if you don't `sort_index()`, numerical integrators in `scipy.integrate` will give the wrong answer
-    return ts.sort_index()
+    """Insert/append threshold crossing points (time and value) into a timeseries (pd.Series)
 
+    Arguments:
+      ts (pandas.Series): Time series of values to be interpolated at `thresh` crossings
+      thresh (float or np.float64):
+    """
+    # import time
+    # tic0 = time.clock(); tic = tic0
+
+    # int64 for fast processing, pandas.DatetimeIndex is 5-10x slower, 0.3 ms
+    index = ts.index
+    index_type = type(index)
+    ts.index = ts.index.astype(np.int64)
+    # toc = time.clock();
+    # print((toc-tic)*1000); tic = time.clock()
+    
+    # value immediately before an upward thresh crossing, 6 ms
+    preup = ts[(ts < thresh) & (ts.shift(-1) > thresh)]
+    # toc = time.clock();
+    # print((toc-tic)*1000); tic = time.clock()
+
+    # values immediately after an upward thresh crossing, 4 ms\
+    postup = ts[(ts.shift(1) < thresh) & (ts > thresh)]
+    # toc = time.clock();
+    # print((toc-tic)*1000); tic = time.clock()
+
+    # value immediately after a downward thresh crossing, 1.8 ms
+    postdown = ts[(ts < thresh) & (ts.shift(1) > thresh)]
+    # toc = time.clock();
+    # print((toc-tic)*1000); tic = time.clock()
+
+    # value immediately before an upward thresh crossing, 1.9 ms
+    predown = ts[(ts.shift(-1) < thresh) & (ts > thresh)]
+    # toc = time.clock();
+    # print((toc-tic)*1000); tic = time.clock()
+
+    # upward slope (always positive) between preup and postup in units of "value" per nanosecond (timestamps convert to floats as nanoseconds), 0.04 ms
+    slopeup = (postup.values - preup.values) / (postup.index.values - preup.index.values).astype(np.float64)
+    # toc = time.clock();
+    # print((toc-tic)*1000); tic = time.clock()
+
+    # upward crossing point index/time, 0.04 ms
+    tup = preup.index.values +  ((thresh - preup.values) / slopeup).astype(np.int64)
+    # toc = time.clock();
+    # print((toc-tic)*1000); tic = time.clock()
+
+    # downward slope (always negative) between predown and postdown in units of "value" per nanosecond (timestamps convert to floats as nanoseconds), 0.03 ms
+    slopedown = (postdown.values - predown.values) / (postdown.index.values - predown.index.values).astype(np.float64)
+    # toc = time.clock();
+    # print((toc-tic)*1000); tic = time.clock()
+
+    # upward crossing point index/time, 0.02 ms
+    tdown = predown.index.values + ((thresh - predown.values) / slopedown).astype(np.int64)
+    # toc = time.clock();
+    # print((toc-tic)*1000); tic = time.clock()
+
+    # insert crossing points into time-series (if it had a regular sample period before, it won't now!), 2.0 ms
+    ts.index = index  # pd.DatetimeIndex(ts.index)
+    # toc = time.clock();
+    # print((toc-tic)*1000); tic = time.clock()
+
+    # insert crossing points into time-series (if it had a regular sample period before, it won't now!), 2.0 ms
+    ts = ts.append(pd.Series(thresh*np.ones(len(tup)), index=index_type(tup.astype(np.int64))))
+    # toc = time.clock();
+    # print((toc-tic)*1000); tic = time.clock()
+
+    # insert crossing points into time-series (if it had a regular sample period before, it won't now!), 1.9 ms
+    ts = ts.append(pd.Series(thresh*np.ones(len(tdown)), index=index_type(tdown.astype(np.int64))))
+    # toc = time.clock();
+    # print((toc-tic)*1000); tic = time.clock()
+
+    # if you don't `sort_index()`, numerical integrators in `scipy.integrate` will give the wrong answer, 0.1 ms
+    ts = ts.sort_index()
+    # toc = time.clock();
+    # print((toc-tic)*1000); tic = time.clock()    # if you don't `sort_index()`, numerical integrators in `scipy.integrate` will give the wrong answer
+
+    # print((toc-tic0)*1000); 
+    return ts
 
 def get_integrator(integrator):
     """Return the scipy.integrator indicated by an index, name, or integrator_function
@@ -143,25 +200,29 @@ def clipped_area(ts, thresh=0, integrator=integrate.trapz):
     >>> ts = pd.Series([217, 234, 235, 231, 219, 219, 231, 232], index=pd.to_datetime(t))
     >>> clipped_area(ts, thresh=230)  # doctest: +ELLIPSIS
     8598.52941...
+    >>> clipped_area(ts, thresh=234)  # doctest: +ELLIPSIS
+    562.5
+    >>> clipped_area(pd.Series(ts.values, index=ts.index.values.astype(pd.np.int64)), thresh=234)  # doctest: +ELLIPSIS
+    562.5    
     """
     integrator = get_integrator(integrator or 0)
     ts = insert_crossings(ts, thresh) - thresh
     ts = ts[ts >= 0]
     # timestamp is in nanoseconds (since 1/1/1970) but this converts it to seconds (SI units)
-    return integrator(ts, ts.index.astype(np.int64) / 1e9)
+    return integrator(ts, ts.index.astype(np.int64))  / 1.0e9
 
 
 def clipping_params(ts, capacity=100, rate_limit=float('inf')):
-    """Start and end index (datetime) that clips the price/value of a time series the most
+    """Start, end, and threshold that clips the value of a time series the most, given a limitted "capacity" and "rate"
 
-    Assumes that the integrated maximum includes the peak (instantaneous maximum).
+    Assumes that signal can be linearly interpolated between points (trapezoidal integration)
 
     Arguments:
       ts (TimeSeries): Time series to attempt to clip to as low a max value as possible
       capacity (float): Total "funds" or "energy" available for clipping (integrated area under time series)
 
     TODO:
-      Return answer as a dict
+      Bisection search for the optimal threshold.
 
     Returns:
       2-tuple: Timestamp of the start and end of the period of the maximum clipped integrated increase
@@ -171,8 +232,6 @@ def clipping_params(ts, capacity=100, rate_limit=float('inf')):
     >>> ts = pd.Series([217, 234, 235, 231, 219, 219, 231, 232], index=pd.to_datetime(t))
     >>> import numpy
     >>> (clipping_params(ts, capacity=60000) ==
-    ... (numpy.datetime64('2014-12-09T00:15:00.000000000+0000'),
-    ... numpy.datetime64('2014-12-09T01:45:00.000000000+0000'),
     ... 54555.882353782654,
     ... 219))
     True
@@ -183,18 +242,80 @@ def clipping_params(ts, capacity=100, rate_limit=float('inf')):
     ... 234))
     True
     """
+    #index_type = ts.index.dtype
+    #ts2 = ts.copy()
+    ts.index = ts.index.astype(np.int64)
+    costs = []
+
+    def cost_fun(x, *args):
+        thresh = x[0]
+        ts, capacity, bounds = args
+        integral = clipped_area(ts, thresh=thresh)
+        terms = np.array([(10. * (integral - capacity) / capacity) ** 2,
+                        2. / 0.1**((bounds[0] - thresh) * capacity / bounds[0]),
+                        2. / 0.1**((thresh - bounds[1]) * capacity / bounds[1]),
+                        1.2 ** (integral / capacity)])
+        return sum(terms)
+
+    bounds = (ts.min(), ts.max())
+    thresh0 = 0.9*bounds[1] + 0.1*bounds[0]
+    optimum = minimize(fun=cost_fun, x0=[thresh0], bounds=[bounds], args=(ts, capacity, bounds))
+    thresh = optimum.x[0]
+    integral = clipped_area(ts, thresh=thresh)
+    return {'costs': costs, 'optimize_result': optimum, 'threshold': thresh, 'integral': integral}
+    # if integral - capacity > capacity:
+    #     return {'t0': None, 't1': None, 'threshold': 0.96*thresh + 0.06*bounds[0][1], 'integral': integral}
+
+
+def discrete_clipping_params(ts, capacity=100, rate_limit=float('inf')):
+    """Start, end, and threshold that clips the value of a time series the most, given a limitted "capacity" and "rate"
+
+    Assumes that the integrated maximum includes the peak (instantaneous maximum).
+    Assumes that the threshold can only set to one of the values of the Series.
+
+    Arguments:
+      ts (TimeSeries): Time series to attempt to clip to as low a max value as possible
+      capacity (float): Total "funds" or "energy" available for clipping (integrated area under time series)
+
+    TODO:
+      Bisection search for the optimal threshold.
+
+    Returns:
+      2-tuple: Timestamp of the start and end of the period of the maximum clipped integrated increase
+
+    >>> t = ['2014-12-09T00:00', '2014-12-09T00:15', '2014-12-09T00:30', '2014-12-09T00:45', '2014-12-09T01:00', '2014-12-09T01:15', '2014-12-09T01:30', '2014-12-09T01:45']
+    >>> import pandas as pd
+    >>> ts = pd.Series([217, 234, 235, 231, 219, 219, 231, 232], index=pd.to_datetime(t))
+    >>> import numpy
+    >>> (discrete_clipping_params(ts, capacity=60000) ==
+    ... (numpy.datetime64('2014-12-09T00:15:00.000000000+0000'),
+    ... numpy.datetime64('2014-12-09T01:45:00.000000000+0000'),
+    ... 54555.882353782654,
+    ... 219))
+    True
+    >>> (discrete_clipping_params(ts, capacity=30000) ==
+    ... (numpy.datetime64('2014-12-09T00:15:00.000000000+0000'),
+    ... numpy.datetime64('2014-12-09T00:30:00.000000000+0000'),
+    ... 562.5,
+    ... 234))
+    True
+    """
+    #index_type = ts.index.dtype
+    #ts2 = ts.copy()
+    ts.index = ts.index.astype(np.int64)
     ts_sorted = ts.order(ascending=False)
     # default is to clip right at the peak (no clipping at all)
-    i, t0, t1, integral, thresh = 1, ts_sorted.index[0], ts_sorted.index[0], 0, ts_sorted[0]
+    i, t0, t1, integral, thresh = 1, ts_sorted.index[0], ts_sorted.index[0], 0, ts_sorted.iloc[0]
     params = {'t0': t0, 't1': t1, 'integral': 0, 'threshold': thresh}
-    while i < len(ts) and integral <= capacity and (ts_sorted[0] - ts_sorted[i]) < rate_limit:
+    while i < len(ts_sorted) and integral <= capacity and (ts_sorted.iloc[0] - ts_sorted.iloc[i]) < rate_limit:
         params = {'t0': pd.Timestamp(t0), 't1': pd.Timestamp(t1), 'threshold': thresh, 'integral': integral}
         i += 1
-        times = ts_sorted.index[:i].values
+        times = ts_sorted.index[:i]
         # print(times)
         t0 = times.min()
         t1 = times.max()
-        thresh = min(ts[t0:t1])
+        # print(ts_sorted.index[:3])
+        thresh = min(ts_sorted.iloc[:i])
         integral = clipped_area(ts, thresh=thresh)
     if integral <= capacity:
         return {'t0': pd.Timestamp(t0), 't1': pd.Timestamp(t1), 'threshold': thresh, 'integral': integral}
@@ -260,7 +381,7 @@ def clipping_threshold(ts, capacity=100, rate_limit=10):
     >>> clipping_threshold(ts, capacity=30000)
     234
     """
-    params = clipping_params(ts, capacity=capacity, rate_limit=rate_limit)
+    params = discrete_clipping_params(ts, capacity=capacity, rate_limit=rate_limit)
     if params:
         return params['threshold']
     return None
