@@ -76,4 +76,4 @@ scipy>=0.14.0
 # very likely to fail on heroku
 # QSTK>=0.2.8
 # for invest.models.get_prices()
---editable=git://github.com/hobson/Concurrent-Pandas##egg=Concurrent-Pandas-0.1.2
+--editable=git://github.com/hobson/Concurrent-Pandas#egg=Concurrent-Pandas-0.1.2
