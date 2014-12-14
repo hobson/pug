@@ -9,8 +9,8 @@ from django.contrib import admin
 urlpatterns = patterns('',
     # Examples:
     #url(r'^$', views.home, name='crawlnmine-home'),
-    url(r'^', include('pug.miner.urls'), name='miner'),
-    url(r'^invest/', include('pug.invest.urls')),
+    #url(r'^', include('pug.miner.urls'), name='miner'),
+    url(r'^', include('pug.invest.urls')),
     #url(r'^crawler/', include('pug.crawler.urls', namespace='crawler')),
 
     url(r'^admin/', include(admin.site.urls)),

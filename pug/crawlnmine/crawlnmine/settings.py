@@ -78,7 +78,7 @@ INSTALLED_APPS = (
 
     # 'pug.crawler',
     #'pug.miner',
-    #'pug.invest',
+    'pug.invest',
     # 'pug.agile',
 )
 
