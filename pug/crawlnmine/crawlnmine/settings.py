@@ -77,8 +77,8 @@ INSTALLED_APPS = (
     # 'celery',
 
     # 'pug.crawler',
-    'pug.miner',
-    'pug.invest',
+    #'pug.miner',
+    #'pug.invest',
     # 'pug.agile',
 )
 
