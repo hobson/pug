@@ -21,8 +21,7 @@ class PlotSymbolView(TemplateView):
         # Call the base implementation first to get a context
         context = super(PlotSymbolView, self).get_context_data(**kwargs)
         symbols = [sym.upper() for sym in util.normalize_names(self.kwargs['symbols'])]
-        panel = get_panel(symbols=symbols)
-        series = panel[symbols[0]]['Adj Close']
+        panel = get_panel(symbols=symbols).transpose(2,1,0)
         # TODO: test!
         # qs = []
         # for i, symbol in enumerate(panel.items):
@@ -31,7 +30,8 @@ class PlotSymbolView(TemplateView):
         #         qs += [Day(date=datetime.date(row[0].year, row[0].month, row[0].day), close=row[i+1], symbol=symbol)]
         # Day.objects.bulk_create(qs)
 
-        context['df'] = pd.DataFrame(series).sort()
+
+        context['df'] = pd.DataFrame(panel['Adj Close']).sort_index()
         return d3_plot_context(context,
             table=context['df'], title='Price History', xlabel='Date', ylabel='Adjusted Close')
 

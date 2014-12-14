@@ -8,6 +8,14 @@ import string
 import random
 # import pug.nlp.django_settings
 
+SHELL_PLUS_PRE_IMPORTS = (
+    # ('module.submodule1', ('class1', 'function2')),
+    # ('module.submodule2', 'function3'),
+    ('pug.invest.models', '*'),
+    # 'module.submodule4'
+)
+
+
 def env(var_name, default=False):
     """ Get the environment variable or assume a default, but let the user know about the error."""
     try:
