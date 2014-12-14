@@ -8,8 +8,9 @@ django-extensions
 pyzmq
 tornado
 
-# quandl for finance stuff instead of QSTK
 
+# quandl for finance stuff instead of QSTK
+pandas>=0.15.0
 Quandl
 
 Unidecode>=0.04.16
@@ -40,7 +41,6 @@ gunicorn>=19.1.1
 
 jsonfield>=1.0.0
 numpy>=1.8.1
-pandas>=0.15.0
 ConcurrentPandas>=0.1.1
 
 Scrapy>=0.22.2
