@@ -1,7 +1,7 @@
-from django.test import LiveServerTestCase, TestCase
+from django.test import LiveServerTestCase #, TestCase
 from selenium import webdriver
-import pug.nlp.util
-import pug.nlp.djdb
+#import pug.nlp.util
+#import pug.nlp.djdb
 
 
 class HomeTest(LiveServerTestCase):
@@ -61,13 +61,13 @@ class AdminTest(LiveServerTestCase):
 # Django 1.7 recommends following following python 2.4 unittest+doctest recommendations
 #  https://docs.djangoproject.com/en/dev/releases/1.6/#new-test-runner
 #  https://docs.python.org/2/library/doctest.html#unittest-api
-import unittest
-import doctest
+# import unittest
+# import doctest
 
-def load_tests(loader, tests, ignore):
-    # tests.addTests(doctest.DocTestSuite(pug.nlp.util))
-    #return tests
-    return []
+# def load_tests(loader, tests, ignore):
+#     # tests.addTests(doctest.DocTestSuite(pug.nlp.util))
+#     #return tests
+#     return []
 
 
 # # This was clunky...
