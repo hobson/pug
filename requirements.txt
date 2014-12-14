@@ -6,8 +6,8 @@ django-extensions
 # ipython notebook
 pyzmq
 tornado
-# numpy must be installed before pandas and must be version available in buildpack (1.8.2 and 1.9.0 are highest available)
-numpy==1.8.2
+# numpy must be installed before pandas and must be version available in buildpack (numpy==1.8.2/1.9.0 are highest available)
+numpy==1.8.1
 # pandas must be installed before Quandl and concurrentpandas
 pandas
 # Quandl must be installed before ConcurrentPandas
