@@ -8,10 +8,16 @@ django-extensions
 pyzmq
 tornado
 
+# numpy must be installed before pandas
+numpy>=1.8.1
 
-# quandl for finance stuff instead of QSTK
-pandas>=0.15.0
-Quandl
+# pandas must be installed before concurrentpandas
+pandas
+
+# for invest.models.get_prices()
+ConcurrentPandas>=0.1.1
+
+# Quandl
 
 Unidecode>=0.04.16
 # # heroku uses pip 1.3.1
@@ -40,8 +46,7 @@ gunicorn>=19.1.1
 # django-nvd3==0.7.6
 
 jsonfield>=1.0.0
-numpy>=1.8.1
-ConcurrentPandas>=0.1.1
+
 
 Scrapy>=0.22.2
 South>=0.8.4
