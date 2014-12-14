@@ -51,8 +51,6 @@ xlwt>=0.7.5
 # django-hstore==1.3.5
 # lxml==3.3.5
 
-tornado
-
 ##$ sudo yum install libjpeg-devel openjpeg-devel
 # pillow
 ##$ sudo yum install cmake make gcc gcc-c++
