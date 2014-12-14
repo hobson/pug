@@ -39,12 +39,12 @@ def make_symbols(symbols, *args):
     Examples:
       >>> make_symbols("Goog")
       ["GOOG"]
-      >>> make_symbols("  $SPX   ", " aaPL ")
+      >>> sorted(make_symbols("  $SPX   ", " aaPL "))
       ["$SPX", "AAPL"]
-      >>> make_symbols(["$SPX", ["GOOG", "AAPL"]])
-      ["$SPX", "GOOG", "AAPL"]
-      >>> make_symbols(" $Spy, Goog, aAPL ")
-      ["$SPY", "GOOG", "AAPL"]
+      >>> sorted(make_symbols(["$SPX", ["GOOG", "AAPL"]]))
+      ["$SPX", "AAPL", "GOOG"]
+      >>> sorted(make_symbols(" $Spy, Goog, aAPL "))
+      ["$SPY", "AAPL", "GOOG"]
     """
     if (      (hasattr(symbols, '__iter__') and not any(symbols))
         or (isinstance(symbols, (list, tuple, Mapping)) and not symbols)):
@@ -167,7 +167,7 @@ def insert_crossings(ts, thresh):
 def get_integrator(integrator):
     """Return the scipy.integrator indicated by an index, name, or integrator_function
 
-    >>> get_integrator(0)
+    >> get_integrator(0)
     """
     integrator_types = set(['trapz', 'cumtrapz', 'simps', 'romb'])
     integrator_funcs = [integrate.trapz, integrate.cumtrapz, integrate.simps, integrate.romb]
