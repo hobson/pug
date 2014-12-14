@@ -3,7 +3,6 @@ Django>=1.7.1
 # ipython must be installed before Quandl and ConcurrentPandas
 ipython>=2.3.1
 django-extensions
-numpy>=1.9.0
 Unidecode>=0.04.16
 cffi==0.8.6
 chardet==2.3.0
@@ -30,9 +29,3 @@ progressbar-latest>=2.4
 w3lib==1.5
 zope.interface==4.0.5
 wsgiref>=0.1.2
-# ConcurrentPandas used in invest.models.get_prices()
-# pandas must be installed before Quandl and concurrentpandas
-pandas
-# Quandl must be installed before ConcurrentPandas
---editable=git://github.com/hobson/quandl#egg=Quandl-1.5.1
---editable=git://github.com/hobson/Concurrent-Pandas#egg=Concurrent-Pandas-0.1.2
