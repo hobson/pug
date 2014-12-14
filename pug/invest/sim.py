@@ -142,7 +142,6 @@ def chart(
 def chart_series(series, market_sym='$SPX', price='actual_close', normalize=True):
     """Display a graph of the price history for the list of ticker symbols provided
 
-
     Arguments:
       series (dataframe, list of str, or list of tuples): 
         datafram (Timestamp or Datetime for index)
