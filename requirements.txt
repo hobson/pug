@@ -1,9 +1,8 @@
 Django>=1.7.1
-# shell_plus --notebook
 # ipython must be installed before Quandl and ConcurrentPandas
 ipython>=2.3.1
 django-extensions
-# ipython notebook
+# needed for ipython notebook
 pyzmq
 tornado
 # numpy must be installed before pandas and must be version available in buildpack (numpy==1.8.2/1.9.0 are highest available)
