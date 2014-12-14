@@ -1,31 +1,30 @@
-# requirements1.txt is for Django, numpy
-Django>=1.7.1
-# ipython must be installed before Quandl and ConcurrentPandas
-ipython>=2.3.1
-django-extensions
-Unidecode>=0.04.16
+-e git://github.com/hobson/Concurrent-Pandas@ca8d4f6112bc8fe92b86e1337f1560dd9b2882e4#egg=ConcurrentPandas-master
+Django==1.7.1
+-e git://github.com/hobson/quandl@6a16cf06a51abd3e0376927c62ec64a479dcc187#egg=Quandl-origin/master
+South==1.0.1
+Unidecode==0.04.16
 cffi==0.8.6
 chardet==2.3.0
-dj-database-url>=0.3.0
-# run_gunicorn locally needs dj_static.Cling (Heroku reocommends as well)
-static3==0.5.1
+cryptography==0.6.1
+dj-database-url==0.3.0
 dj-static==0.0.6
-django-toolbelt>=0.0.1
+django-extensions==1.4.8
+django-toolbelt==0.0.1
 fuzzywuzzy==0.3.2
-gunicorn>=19.1.1
-jsonfield>=1.0.0
-South>=0.8.4
-psycopg2>=2.5.4
+gunicorn==19.1.1
+ipython==2.3.1
+jsonfield==1.0.0
+progressbar-latest==2.4
+psycopg2==2.5.4
 pyOpenSSL==0.14
-python-slugify>=0.0.9
-pytz>=2014.3
-python-dateutil>=2.2
-selenium>=2.39.0
-six>=1.8.0
-sqlparse>=0.1.13
+pycparser==2.10
+python-dateutil==2.3
+python-slugify==0.1.0
+pytz==2014.10
+six==1.8.0
+sqlparse==0.1.14
+static3==0.5.1
 tabulate==0.7.1
-# pug.nlp.util imports progressbar
-progressbar-latest>=2.4
 w3lib==1.5
+wsgiref==0.1.2
 zope.interface==4.0.5
-wsgiref>=0.1.2
