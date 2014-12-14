@@ -25,6 +25,14 @@ selenium>=2.39.0
 six>=1.8.0
 sqlparse>=0.1.13
 tabulate==0.7.1
+# pug.nlp.util imports progressbar
+progressbar-latest>=2.4
 w3lib==1.5
 zope.interface==4.0.5
 wsgiref>=0.1.2
+# ConcurrentPandas used in invest.models.get_prices()
+# pandas must be installed before Quandl and concurrentpandas
+pandas
+# Quandl must be installed before ConcurrentPandas
+--editable=git://github.com/hobson/quandl#egg=Quandl-1.5.1
+--editable=git://github.com/hobson/Concurrent-Pandas#egg=Concurrent-Pandas-0.1.2
