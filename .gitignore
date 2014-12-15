@@ -7,3 +7,4 @@ pug/nlp/pca.pickled
 nohup.out
 pug/crawlnmine/djangodb
 pug/miner/static/miner/js/diagnostics/
+.elasticbeanstalk/
