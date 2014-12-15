@@ -1,6 +1,6 @@
--e git://github.com/hobson/Concurrent-Pandas@ca8d4f6112bc8fe92b86e1337f1560dd9b2882e4#egg=ConcurrentPandas-master
+-e git://github.com/hobson/Concurrent-Pandas@master#egg=ConcurrentPandas-master
 Django==1.7.1
--e git://github.com/hobson/quandl@6a16cf06a51abd3e0376927c62ec64a479dcc187#egg=Quandl-origin/master
+-e git://github.com/hobson/quandl@master#egg=Quandl-master
 South==1.0.1
 Unidecode==0.04.16
 cffi==0.8.6
