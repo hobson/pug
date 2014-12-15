@@ -25,9 +25,9 @@ from django import http
 # from django.shortcuts import render
 # from django.conf import settings
 
-from pug.nlp import parse
-from pug.nlp import util
-from pug.nlp import db
+from nlp import parse
+from nlp import util
+from nlp import db
 
 # from sec_sharp_refurb.models import Refrefurb as SECRef
 #import call_center.models as SLAmodels
@@ -518,11 +518,11 @@ class DashboardView(TemplateView):
 
 
 class BarPlotView(DashboardView):
-    template_name = 'miner/bar_plot.d3.html'
+    template_name = 'bar_plot.d3.html'
 
 
 class LinePlotView(DashboardView):
-    template_name = 'miner/line_plot.d3.html'
+    template_name = 'line_plot.d3.html'
 
 
 class BlockView(DashboardView):

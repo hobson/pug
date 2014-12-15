@@ -5,8 +5,7 @@ from os.path import basename, dirname
 from django.db.models import get_app, get_models
 from django.conf.urls import url, patterns, include
 
-#from pug.db import more_django_filters
-from pug.nlp.util import listify
+from util import listify
 
 def append_urls(local, app_names=None):
     app_names = listify(app_names or basename(dirname(local.get('__file__', None))))

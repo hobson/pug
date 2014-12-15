@@ -7,7 +7,7 @@ Replace this with more appropriate tests for your application.
 
 from django.test import TestCase
 import pandas as pd
-from pug.invest.util import clipped_area
+from invest.util import clipped_area
 from scipy.optimize import minimize
 np = pd.np
 

@@ -2,9 +2,9 @@
 import datetime
 from django.views.generic import TemplateView
 # import sim
-from pug.miner.views import d3_plot_context
+from miner.views import d3_plot_context
 from models import Day, get_panel #, get_dataframes, 
-from pug.nlp import util
+from nlp import util
 import pandas as pd
 
 
@@ -15,7 +15,7 @@ class HomeView(TemplateView):
 
 class PlotSymbolView(TemplateView):
     """Query the miner.AggregateResults table to retrieve values for plotting in a bar chart"""
-    template_name = 'miner/line_plot.d3.html'
+    template_name = 'line_plot.d3.html'
 
     def get_context_data(self, **kwargs):
         # Call the base implementation first to get a context
@@ -38,7 +38,7 @@ class PlotSymbolView(TemplateView):
 
 # class PlotPredictionView(TemplateView):
 #     """Query the miner.AggregateResults table to retrieve values for plotting in a bar chart"""
-#     template_name = 'miner/line_plot.d3.html'
+#     template_name = 'line_plot.d3.html'
 
 #     def get_context_data(self, **kwargs):
 #         # Call the base implementation first to get a context

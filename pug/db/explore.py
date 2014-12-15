@@ -16,9 +16,9 @@ from django.core.exceptions import FieldError
 from django.db.models import FieldDoesNotExist
 from django.db.models import Model
 
-from pug.nlp import djdb  # FIXME: confusing name (too similar to common `import as` for django.db)
-from pug.nlp import db  # FIXME: too similar to pug.db
-from pug.nlp import util
+from nlp import djdb  # FIXME: confusing name (too similar to common `import as` for django.db)
+from nlp import db  # FIXME: too similar to pug.db
+from nlp import util
 
 import sqlserver as sql
 
@@ -868,7 +868,7 @@ def print_cursor_table_names(cursor=None):
 class QueryTimer(object):
     r"""Based on https://github.com/jfalkner/Efficient-Django-QuerySet-Use
 
-    >>> from pug.miner.models import Database
+    >>> from miner.models import Database
     >>> qt = QueryTimer()
     >>> print 'If this fails, you may need to `manage.py syncdb`: %r' % list(Database.objects.values()[:1])  # doctest: +ELLIPSIS
     If this fails, you may need to `manage.py syncdb`:...

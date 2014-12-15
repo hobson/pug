@@ -1,4 +1,4 @@
-from pug.invest.util import clipped_area
+from invest.util import clipped_area
 # from scipy.optimize import minimize
 import pandas as pd
 from matplotlib import pyplot as plt

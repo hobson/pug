@@ -6,12 +6,11 @@ import os
 import sys
 import string
 import random
-# import pug.nlp.django_settings
 
 SHELL_PLUS_PRE_IMPORTS = (
     # ('module.submodule1', ('class1', 'function2')),
     # ('module.submodule2', 'function3'),
-    ('pug.invest.models', '*'),
+    ('invest.models', '*'),
     # 'module.submodule4'
 )
 
@@ -32,7 +31,10 @@ def env(var_name, default=False):
 
 
 # Build paths inside the project like this: os.path.join(BASE_DIR, ...)
-BASE_DIR = os.path.realpath(os.path.join(os.path.dirname(os.path.abspath(__file__)), '..'))
+PROJECT_SETTINGS_PATH = os.path.realpath(os.path.dirname(os.path.abspath(__file__)))
+BASE_DIR = os.path.realpath(os.path.join(PROJECT_SETTINGS_PATH, '..', '..'))
+# because the apps we want in INSTALLED are "external" to this project (two directories up) we have to add them to the python path manually
+ROOT_PROJECT_PATH = os.path.realpath(os.path.join(BASE_DIR, '..'))
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/1.7/howto/deployment/checklist/
@@ -42,10 +44,7 @@ SECRET_KEY = env("DJANGO_SECRET_KEY", default=''.join(random.choice(string.print
 # Heroku: Honor the 'X-Forwarded-Proto' header for request.is_secure()
 SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
 
-PROJECT_SETTINGS_PATH = os.path.realpath(os.path.dirname(os.path.abspath(__file__)))
 
-# because the apps we want in INSTALLED are "external" to this project (two directories up) we have to add them to the python path manually
-ROOT_PROJECT_PATH = os.path.realpath(os.path.join(PROJECT_SETTINGS_PATH,'..','..','..'))
 
 if ROOT_PROJECT_PATH not in sys.path:
     sys.path.insert(1, ROOT_PROJECT_PATH)
@@ -76,8 +75,9 @@ INSTALLED_APPS = (
     #'django_nvd3',
     # 'celery',
 
+    'crawlnmine',
     # 'pug.crawler',
-    #'pug.miner',
+    #'miner',
     'invest',
     # 'pug.agile',
 )
@@ -108,6 +108,9 @@ DATABASES = {
     }
 }
 
+TEMPLATE_DIRS = (
+    BASE_DIR + '/templates/',
+    )
 
 if DEBUG or 'test' in sys.argv or 'test_coverage' in sys.argv: #Covers regular testing and django-coverage
     pass

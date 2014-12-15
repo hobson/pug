@@ -7,5 +7,5 @@ import views
 
 urlpatterns = patterns('',
     url(r'plot/(?P<symbols>[A-Z,$]+)$', views.PlotSymbolView.as_view()),
-    url(r'(index|home)?.*$', views.HomeView.as_view()),
+    url(r'$', views.HomeView.as_view()),
 )
