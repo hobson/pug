@@ -8,7 +8,7 @@ import numpy as np
 import pandas as pd
 from scipy import integrate
 
-from pug.nlp.util import listify
+from nlp.util import listify
 
 from scipy.optimize import minimize
 
