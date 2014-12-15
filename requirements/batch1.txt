@@ -1,0 +1,39 @@
+# requirements1.txt is for Django, numpy
+Django==1.7.1
+# ipython must be installed before Quandl and ConcurrentPandas
+ipython==2.3.1
+django-extensions
+numpy==1.9.0
+Unidecode==0.04.16
+cffi==0.8.6
+chardet==2.3.0
+dj-database-url==0.3.0
+# run_gunicorn locally needs dj_static.Cling (Heroku reocommends as well)
+static3==0.5.1
+dj-static==0.0.6
+django-toolbelt==0.0.1
+fuzzywuzzy==0.3.2
+gunicorn==19.1.1
+jsonfield==1.0.0
+South==0.8.4
+psycopg2==2.5.4
+pyOpenSSL==0.14
+python-slugify==0.0.9
+pytz==2014.3
+python-dateutil==2.2
+selenium==2.39.0
+six==1.8.0
+sqlparse==0.1.13
+tabulate==0.7.1
+w3lib==1.5
+zope.interface==4.0.5
+# pug.nlp.util imports progressbar
+progressbar-latest>=2.4
+wsgiref==0.1.2
+# ConcurrentPandas used in invest.models.get_prices()
+# pandas must be installed before Quandl and concurrentpandas
+pandas
+# Quandl must be installed before ConcurrentPandas
+--editable=git://github.com/hobson/quandl#egg=Quandl-1.5.1
+--editable=git://github.com/hobson/Concurrent-Pandas#egg=Concurrent-Pandas-0.1.2
+
