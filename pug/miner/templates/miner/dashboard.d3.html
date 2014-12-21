@@ -10,7 +10,7 @@
 
     {# <script src="{% static "d3/d3.min.js" %}"></script> #}
     {#  <script src="{% static "d3-tip/index.js" %}"></script> #}
-    <link rel="stylesheet" href="{% static "miner/css/line-plot.css" %}">
+    <link rel="stylesheet" href="{% static "css/line-plot.css" %}">
 {% endblock %}
 
 {% block content %}
@@ -25,9 +25,9 @@
     {# a div with a plot_div attribute ID must be created before this line-plot.js globals are created #}
 
     {% block plot %}
-        <script src="{% static "miner/js/plot-util.d3.js" %}"></script>
-        <script src="{% static "miner/js/line-plot.d3.js" %}"></script>
-        <script src="{% static "miner/js/bar-plot.d3.js" %}"></script>
+        <script src="{% static "js/plot-util.d3.js" %}"></script>
+        <script src="{% static "js/line-plot.d3.js" %}"></script>
+        <script src="{% static "js/bar-plot.d3.js" %}"></script>
         <script> line_plot({{ data.d3data|safe }}, 
                             {"xlabel": "{{ data.xlabel|escapejs }}", 
                              "ylabel": "{{ data.ylabel|escapejs }}", 

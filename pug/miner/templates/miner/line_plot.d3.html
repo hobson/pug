@@ -10,7 +10,7 @@
 
     {# <script src="{% static "d3/d3.min.js" %}"></script> #}
     {#  <script src="{% static "d3-tip/index.js" %}"></script> #}
-    <link rel="stylesheet" href="{% static "miner/css/line-plot.css" %}">
+    <link rel="stylesheet" href="{% static "css/line-plot.css" %}">
 {% endblock %}
 
 {% block content %}
@@ -18,8 +18,8 @@
         <H1>{{ data.title }}</H1>
         <div id="plot_container" class="graph"></div>
     {% block plot %}
-        <script src="{% static "miner/js/plot-util.d3.js" %}"></script>
-        <script src="{% static "miner/js/line-plot.d3.js" %}"></script>
+        <script src="{% static "js/plot-util.d3.js" %}"></script>
+        <script src="{% static "js/line-plot.d3.js" %}"></script>
         <script> line_plot({{ data.d3data|safe }}, 
                 {
                  "plot_container_id": "plot_container",
