@@ -82,14 +82,13 @@ INSTALLED_APPS = (
     'django_extensions',
 
     'gunicorn',  # adds run_gunicorn command
-    #'django_nvd3',
-    # 'celery',
 
-    PROJECT_NAME,
-    # 'pug.crawler',
-    #'miner',
-    'invest',
-    # 'pug.agile',
+    PROJECT_NAME, # to provide access to crawlnmine/static and crawlnmine/templates
+    'invest',     # draws line plots of financial data and predicts futures finance statists
+
+    # 'crawler',  # crawls wikipedia using Scrapy
+    # 'miner',    # mines databases with NLP and draws line/bar plots
+    # 'agile',    # jira command-line tool to create tickets?
 )
 
 MIDDLEWARE_CLASSES = (
