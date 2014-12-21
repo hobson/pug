@@ -4,8 +4,8 @@ Django>=1.7.1
 django-extensions
 
 # ipython notebook
-pyzmq
-tornado
+# pyzmq
+# tornado
 
 Unidecode>=0.04.16
 # # heroku uses pip 1.3.1
