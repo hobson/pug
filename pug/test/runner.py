@@ -4,7 +4,7 @@ from django.test.simple import DjangoTestSuiteRunner
 class NullTestRunner(DjangoTestSuiteRunner):
     """ A test runner to test without database creation or automatic test*.py discovery"""
 
-    def run_tests(self, **kwargs):
+    def run_tests(self, *args, **kwargs):
         """Override the running of tests entirely (including discovery, and DB maintenance)"""
         pass
     
