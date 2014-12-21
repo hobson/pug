@@ -43,7 +43,8 @@ class HomeTest(TestCase):
         # # HTML page with more than 6 rect elements classed "bar"
         # # self.assertGreater(len(bars), 5)
 
-class AdminTest(LiveServerTestCase):
+# class AdminTest(LiveServerTestCase):
+class AdminTest(TestCase):
     pass
     # def setUp(self):
     #     self.page = webdriver.Firefox()
