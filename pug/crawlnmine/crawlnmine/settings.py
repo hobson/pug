@@ -82,6 +82,8 @@ INSTALLED_APPS = (
     # 'pug.agile',
 )
 
+TEST_RUNNER = 'pug.test.runner.NullTestRunner'  # 'django.test.runner.DiscoverRunner'
+
 MIDDLEWARE_CLASSES = (
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
