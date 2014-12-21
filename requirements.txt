@@ -35,7 +35,9 @@ gunicorn>=19.1.1
 
 jsonfield==1.0.0
 numpy==1.9.0
-pandas==0.15.0
+# pandas 0.15.0 needs numpy>=1.9.1 which isn't in heroku buildpack
+# ConcurrentPandas needs pandas>=0.14.0, both 0.14.0 and 0.14.1 are in the heroku buildpack
+pandas==0.14.1  
 ConcurrentPandas==0.1.1
 
 Scrapy>=0.22.2
