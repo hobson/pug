@@ -3,6 +3,8 @@ from __future__ import print_function
 
 from collections import Mapping
 import datetime
+import itertools
+import random
 
 import numpy as np
 import pandas as pd
@@ -212,7 +214,7 @@ def clipped_area(ts, thresh=0, integrator=integrate.trapz):
     return integrator(ts, ts.index.astype(np.int64))  / 1.0e9
 
 
-def clipping_params(ts, capacity=100, rate_limit=float('inf')):
+def clipping_params(ts, capacity=100, rate_limit=float('inf'), method=None, max_attempts=100):
     """Start, end, and threshold that clips the value of a time series the most, given a limitted "capacity" and "rate"
 
     Assumes that signal can be linearly interpolated between points (trapezoidal integration)
@@ -220,6 +222,11 @@ def clipping_params(ts, capacity=100, rate_limit=float('inf')):
     Arguments:
       ts (TimeSeries): Time series to attempt to clip to as low a max value as possible
       capacity (float): Total "funds" or "energy" available for clipping (integrated area under time series)
+      method (str): scipy optimization algorithm name, one of:
+        'L-BFGS-B': Byrd, 1995, "A Limited Memory Algorithm for Bound Constrained Optimization"
+        'TNC':      Truncated Newton in C, or Newton Conjugate-Gradient, each variable may be constrained with upper and lower bounds
+        'COBYLA':   Constrained Optimization by Linear Approximation. Fortran implementation.
+        'SLSQP':    Kraft, 1988, Sequential Least Squares Programming or Quadratic Programming, infinite bounds converted to large floats
 
     TODO:
       Bisection search for the optimal threshold.
@@ -230,20 +237,15 @@ def clipping_params(ts, capacity=100, rate_limit=float('inf')):
     >>> t = ['2014-12-09T00:00', '2014-12-09T00:15', '2014-12-09T00:30', '2014-12-09T00:45', '2014-12-09T01:00', '2014-12-09T01:15', '2014-12-09T01:30', '2014-12-09T01:45']
     >>> import pandas as pd
     >>> ts = pd.Series([217, 234, 235, 231, 219, 219, 231, 232], index=pd.to_datetime(t))
-    >>> import numpy
     >>> (clipping_params(ts, capacity=60000) ==
-    ... 54555.882353782654,
-    ... 219))
+    ... (54555.882353782654, 219))
     True
     >>> (clipping_params(ts, capacity=30000) ==
-    ... (numpy.datetime64('2014-12-09T00:15:00.000000000+0000'),
-    ... numpy.datetime64('2014-12-09T00:30:00.000000000+0000'),
-    ... 562.5,
-    ... 234))
+    ... (562.5, 234))
     True
     """
-    #index_type = ts.index.dtype
-    #ts2 = ts.copy()
+    VALID_METHODS = ['L-BFGS-B', 'TNC', 'COBYLA', 'SLSQP']
+    print('in clipping params for ts.index={0} and method={1}'.format(ts.index[0], method))
     ts.index = ts.index.astype(np.int64)
     costs = []
 
@@ -258,11 +260,26 @@ def clipping_params(ts, capacity=100, rate_limit=float('inf')):
         return sum(terms)
 
     bounds = (ts.min(), ts.max())
-    thresh0 = 0.9*bounds[1] + 0.1*bounds[0]
-    optimum = minimize(fun=cost_fun, x0=[thresh0], bounds=[bounds], args=(ts, capacity, bounds))
+    done, attempts = 0, 0
+    thresh0 = bounds[0] + 0.5 * (bounds[1] - bounds[0])
+    if not method or not method in VALID_METHODS:
+        while attempts < max_attempts and not done:
+            for optimizer_method in itertools.cycle(VALID_METHODS):
+                optimum = minimize(fun=cost_fun, x0=[thresh0], bounds=[bounds], args=(ts, capacity, bounds), method=optimizer_method)
+                if optimum.success:
+                    done = True
+                    break
+            if done:
+                break
+            attempts += 1
+            thresh0 = bounds[0] + random.random() * (bounds[1] - bounds[0])
+    else:
+        optimum = minimize(fun=cost_fun, x0=[thresh0], bounds=[bounds], args=(ts, capacity, bounds), method=method)    
     thresh = optimum.x[0]
     integral = clipped_area(ts, thresh=thresh)
-    return {'costs': costs, 'optimize_result': optimum, 'threshold': thresh, 'integral': integral}
+    params = dict(optimum)
+    params.update({'costs': costs, 'optimize_result': optimum, 'threshold': thresh, 'initial_guess': thresh0, 'attempts': attempts, 'integral': integral, 'method': method})
+    return params
     # if integral - capacity > capacity:
     #     return {'t0': None, 't1': None, 'threshold': 0.96*thresh + 0.06*bounds[0][1], 'integral': integral}
 
