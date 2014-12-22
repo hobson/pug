@@ -7,4 +7,5 @@ gfortran
 libopenblas-base
 libatlas3gf-base
 libblas3gf
+python-scipy
 
