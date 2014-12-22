@@ -4,6 +4,7 @@ Django==1.7.1
 django-extensions
 
 # ipython notebook
+ipython
 # pyzmq
 # tornado
 
@@ -25,6 +26,9 @@ dj-database-url>=0.3.0
 # run_gunicorn locally needs dj_static.Cling (Heroku reocommends as well)
 static3==0.5.1
 dj-static==0.0.6
+
+# storages module for accessing AWS S3 storage:
+boto==2.34.0
 
 django-toolbelt>=0.0.1
 fuzzywuzzy==0.3.2
