@@ -1,4 +1,5 @@
-{% load staticfiles i18n %}
+{% load i18n %}
+{% load staticfiles %}
 {% load url from future %}
 <!DOCTYPE html>
 <!--[if lt IE 7]> <html class="no-js lt-ie9 lt-ie8 lt-ie7" lang="{{ LANGUAGE_CODE }}"> <![endif]-->
@@ -11,110 +12,55 @@
             <meta name="description" content="A webapp for revealing the information (and perhaps the beauty) in any database.">
             <meta name="author" content="Hobson Lane">
         {% endblock %}
+
         <title>{% block title_base %}{% if SITE_NAME %}{{ SITE_NAME }} | {% endif %}{% block title %}{% endblock %}{% endblock %}</title>
-        {% block style_base %}
-            {% bootstrap_stylesheet_tag %}
-            {% bootstrap_stylesheet_tag "responsive" %}
-            <style type="text/css">
-                body {
-                    padding-top: 60px;
-                }
-            </style>
-            <!-- <link rel="stylesheet" href="//raw.github.com/novus/nvd3/master/src/nv.d3.css" type="text/css"> -->
-            <!--[if lt IE 9]>
-            <script src="//html5shim.googlecode.com/svn/trunk/html5.js"></script>
-            <![endif]-->
-            {% block extra_style %}{% endblock %}
-        {% endblock %}
+
+        {% block style_base %}{% block extra_style %}{% endblock %}{% endblock %}
 
         {% block script_head %}
-            {# <script src="//raw.github.com/novus/nvd3/master/nv.d3.js"></script> #}
-
-            {# <script type="text/javascript" src="http://code.jquery.com/jquery-latest.min.js"></script> #}
-            <script type="text/javascript" src="//cdnjs.cloudflare.com/ajax/libs/jquery/1.11.1/jquery.min.js"></script>
-            <script type="text/javascript" src="//cdnjs.cloudflare.com/ajax/libs/d3/3.4.13/d3.min.js"></script>
-            <script type="text/javascript" src="//cdnjs.cloudflare.com/ajax/libs/json5/0.3.0/json5.min.js"></script>
-            {# <script src="//d3js.org/d3.v3.min.js"></script> #}
-            <script>
-            {# fall back to local versions of CDN files #}
-            window.jQuery || document.write('<script type="text/javascript" src="{% static "lib/jquery.js" %}">\x3C/script>')
-            window.d3 || document.write('<script type="text/javascript" src="{% static "miner/lib/d3.js" %}">\x3C/script>')
-            window.d3 || document.write('<script type="text/javascript" src="{% static "miner/lib/json5.js" %}">\x3C/script>')
-            </script>
-            {% bootstrap_javascript_tag %}
+            {# required first, because some libs, like nvd3, use the jquery on_page_load_finished callback #}
+            <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.0/jquery.min.js"></script>
+            <script src="//cdnjs.cloudflare.com/ajax/libs/json5/0.3.0/json5.js"></script>
         {% endblock %}
 
-        {% block viewport %}
-            <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        {% endblock %}
+        {% block viewport %}<meta name="viewport" content="width=device-width, initial-scale=1.0">{% endblock %}
         
-        {% block extra_head_base %}
-            {% block extra_head %}{% endblock %}
-        {% endblock %}
+        {% block extra_head_base %}{% block extra_head %}{% endblock %}{% endblock %}
     </head>
 
     <body class="{% block body_class %}{% endblock %}" id="{% block body_id %}{% endblock %}">
         <div class="{% block wrapper_class %}body-wrapper{% endblock %}">
-            {% block topbar_base %}
-                <div class="navbar navbar-default {% block navbar_class %}navbar-fixed-top{% endblock %}">
-                    {% block topbar %}
-                        {% include "crawlnmine/navbar.html" %}
-                    {% endblock %}
-                </div> <!-- navbar -->
-            {% endblock %}
+            {% block topbar %}{% endblock %}
 
             <div class="container">
                 <div class="messages">
-                    {% bootstrap_messages %}
+                    {# {% bootstrap_messages %} #}
                 </div>
-                <div class="content">
-                    {% block content %}TEMPLATE ERROR--This text should never be displayed.{% endblock %}
+
+                <div class="content">{% block content %}
+                    <div class="row-fluid">
+                        Nothing to see here (at templates/miner/base.html)... Keep moving right along.
+                    <div class="row">
+                        {% block plot %}
+                            Plot (Chart) Goes Here
+                        {% endblock plot %}
+                    </div>
+                    </div>{% endblock content %}
                 </div>
-                <div class="extra-content">
-                    {% block extra_content %}{% endblock %}
-                </div>
+
+                <div class="extra-content">{% block extra_content %}{% endblock %}</div>
+
                 <p><hr></p>
-                <div class="footer">
-                    {% block footer %}
-                        <footer class="row">
-                            <div class="span6" style="text-align:right">
-                                <a href='{% static "crawlnmine/LICENSE" %}'>Open Source!</a>
-                                </p>
-                            </div>
-                        </footer>
-                    {% endblock %}
-                </div> <!-- footer -->
+
+                <div class="footer"><footer class="row">{% block footer %}{% endblock %}</footer></div> 
+
                 {% block script_footer %}
-
-        {% comment %}  FIXME
-            {# <script type="text/javascript" src="http://code.jquery.com/jquery-latest.min.js"></script> #}
-            <script type="text/javascript" src="//cdnjs.cloudflare.com/ajax/libs/jquery/1.11.1/jquery.min.js"></script>
-            <script type="text/javascript" src="//cdnjs.cloudflare.com/ajax/libs/d3/3.4.13/d3.min.js"></script>
-            <script type="text/javascript" src="//cdnjs.cloudflare.com/ajax/libs/json5/0.3.0/json5.min.js"></script>
-            {# <script src="//d3js.org/d3.v3.min.js"></script> #}
-            <script>
-            {# fall back to local versions of CDN files #}
-            window.jQuery || document.write('<script type="text/javascript" src="{% static "lib/jquery.js" %}">\x3C/script>')
-            window.d3 || document.write('<script type="text/javascript" src="{% static "miner/lib/d3.js" %}">\x3C/script>')
-            window.d3 || document.write('<script type="text/javascript" src="{% static "miner/lib/json5.js" %}">\x3C/script>')
-            </script>
-
-                <link rel="stylesheet" href="{% static "bootstrap/dist/css/bootstrap.min.css" %}">
-                <link rel="stylesheet" href="{% static "bootstrap/dist/css/bootstrap-theme.min.css" %}">
-                <link rel="stylesheet" href="{% static "case/form.css" %}">
-                <link rel="stylesheet" href="{% static "call_center/bigdata.css" %}">
-
-                {# <link rel="stylesheet" href="{% static "bootstrap/dist/css/bootstrap-rtl.min.css" %}"> #}
-                <script src="//cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.1.1/js/bootstrap.min.js"></script>
-        {% endcomment %}
-                {% endblock script_footer%}
+                    <link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.1.1/css/bootstrap.min.css">
+                    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.0/jquery.min.js"></script>
+                    <script src="//cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.1.1/js/bootstrap.min.js"></script>
+                {% endblock %}
             </div> <!-- container -->
         </div> <!-- body-wrapper -->
 
     </body>
 </html>
-
-
-
-        
-

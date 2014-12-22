@@ -24,8 +24,8 @@ import logging
 
 logger = logging.getLogger('bigdata.info')
 
-from pug.nlp import util  # import transposed_lists, sod_transposed, listify, intify
-from pug.nlp import regex_patterns
+from nlp import util  # import transposed_lists, sod_transposed, listify, intify
+from nlp import regex_patterns
 
 # Don't be tempted to import django.db.models.base.ModelBase because it'll raise ImproperlyConfigured when run outside of django
 

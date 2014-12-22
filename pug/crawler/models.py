@@ -2,15 +2,13 @@ from __future__ import print_function
 from django.db import models
 #import json
 
-from pug.nlp import db, util, djdb
+from nlp import db, util, djdb
 
 
 def datetime_parser(s, default=None):
     if s:
         return util.clean_wiki_datetime(s)
     return default
-
-
 
 
 class WikiItem(models.Model):

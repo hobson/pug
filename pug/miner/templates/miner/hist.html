@@ -1,4 +1,4 @@
-{% extends 'miner/base.html' %}
+{% extends 'base.html' %}
 {% load i18n %}
 {% load staticfiles %}
 {% load static %}
@@ -6,7 +6,7 @@
 {% block extra_head %}
     <script src="{% static "d3/d3.min.js" %}"></script>
     {#  <script src="{% static "d3-tip/index.js" %}"></script> #}
-    <link rel="stylesheet" href="{% static "miner/css/line-plot.css" %}">
+    <link rel="stylesheet" href="{% static "css/line-plot.css" %}">
 {% endblock %}
 
 {% block content %}
@@ -19,8 +19,8 @@
 
     {% block plot %}
 
-        <script src="{% static "miner/js/plot-util.d3.js" %}"></script>
-        <script src="{% static "miner/js/line-plot.d3.js" %}"></script>
+        <script src="{% static "js/plot-util.d3.js" %}"></script>
+        <script src="{% static "js/line-plot.d3.js" %}"></script>
         <script> line_plot({{ data.d3data|safe }}, "{{ data.xlabel|escapejs }}", "{{ data.ylabel|escapejs }}"); </script>
 
     {% endblock plot %}

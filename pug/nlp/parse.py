@@ -1,7 +1,7 @@
 """Parse a URL that describes a graph (connection or network diagram)"""
 
 from collections import Mapping
-from pug.nlp.util import intify, listify
+from nlp.util import intify, listify
 
 
 def node_name(name, use_defaults=False):

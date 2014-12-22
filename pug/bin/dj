@@ -8,7 +8,7 @@ import optparse
 import sys
 
 import django
-import pug.nlp.db
+import nlp.db
 
 
 def get_commands():
@@ -33,12 +33,12 @@ def use(args, opts):
 def clean(args, opts):
     """clean - clean up the specified app's models.py file"""
     opts = opts or (lambda : 0)
-    app = pug.nlp.db.get_app(args[0] or getattr(opts, 'app', None) or nlp.db.get_app()[0])
+    app = nlp.db.get_app(args[0] or getattr(opts, 'app', None) or nlp.db.get_app()[0])
     model_names = args[1:] or getattr(opts, 'model_names', None) or django.db.models.get_models(app)
     for model_name in model_names:
         print(repr(model_name))
     
-    pug.nlp.db.get_models(app)
+    nlp.db.get_models(app)
 
 
 def help(args, opts):

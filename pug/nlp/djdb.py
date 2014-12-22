@@ -56,10 +56,10 @@ except RuntimeError:
     # print '         Django settings may have already been configured elsewhere.'
     # print '         Circular import perhaps?'
 
-from pug.nlp import util  # import listify, generate_slices, transposed_lists #, sod_transposed, dos_from_table
-from pug.nlp.words import synonyms
-from pug.nlp.db import sort_prefix, consolidated_counts, sorted_dict_of_lists, clean_utf8, replace_nonascii, lagged_seq, NULL_VALUES, NAN_VALUES, BLANK_VALUES
-from pug.miner.models import ChangeLog
+from nlp import util  # import listify, generate_slices, transposed_lists #, sod_transposed, dos_from_table
+from nlp.words import synonyms
+from nlp.db import sort_prefix, consolidated_counts, sorted_dict_of_lists, clean_utf8, replace_nonascii, lagged_seq, NULL_VALUES, NAN_VALUES, BLANK_VALUES
+from miner.models import ChangeLog
 
 
 class QueryTimer(object):

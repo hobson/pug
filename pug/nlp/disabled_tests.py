@@ -28,7 +28,7 @@ from django.test import TestCase
 #         self.assertEqual(lsa.S, )
 
 from doctest import testmod
-import nlp
+from pug import nlp
 
 
 # from collections import OrderedDict as OD

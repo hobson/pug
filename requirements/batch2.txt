@@ -1,0 +1,4 @@
+scipy==0.14.0
+pandas==0.15.2
+--editable=git://github.com/hobson/quandl#egg=Quandl-1.5.1
+--editable=git://github.com/hobson/Concurrent-Pandas#egg=Concurrent-Pandas-0.1.2

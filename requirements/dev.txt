@@ -1,0 +1,17 @@
+-r ./common.txt
+Jinja2==2.7.3
+MarkupSafe==0.23
+ipython==2.0.0
+matplotlib==1.4.2
+nltk==3.0.0
+progressbar-latest==2.4
+pyenchant==1.6.6
+python-slugify==0.0.9
+selenium==2.39.0
+statsmodels==0.6.0
+# needed for ipython notebook
+tornado
+pyzmq==14.4.1
+# scipy
+scipy==0.14.0
+scikit-learn==0.15.2

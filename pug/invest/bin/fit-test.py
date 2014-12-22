@@ -1,6 +1,6 @@
 from statsmodels.tsa import arima_model
 import numpy as np
-from pug.invest import util
+from invest import util
 
 y = util.simulate(poly=100, sinusoids=(10, 100, -20)).values
 
