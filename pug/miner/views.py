@@ -327,7 +327,7 @@ def d3_plot_context(context, table=((0, 0),), title='Line Chart', xlabel='Time',
       limit (int): Maximum number of points to include in context variable `data.d3data`
     """
     if isinstance(table, pd.Series):
-        table = pd.DataFrame(table, columns=header or [ylabel])
+        table = pd.DataFrame(table, columns=header or [ylabel]).sort_index()
     if isinstance(table, pd.DataFrame):
         df = table.sort_index()
         table = list(df.to_records())

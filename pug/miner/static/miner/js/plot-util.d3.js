@@ -40,9 +40,9 @@ function d3_parse_datetime(date_or_time) {
 
 function d3_parse_date(date) {
   // ISO8601-like:
-  dt = d3.time.format("%Y-%m-%d").parse(date);
-  if (dt !== null)
-    return dt;
+  return d3.time.format("%Y-%m-%d").parse(date);
+  // if (dt !== null)
+  //   return dt;
   // dt = d3.time.format("%y%m%d").parse(date);
   // if (dt !== null)
   //   return dt;
@@ -54,7 +54,7 @@ function d3_parse_date(date) {
   //   return dt;
   // dt = d3.time.format("%y-%m-%d").parse(date);
   // return dt;
-  return null;
+  // return null;
   }
 
 
@@ -66,27 +66,29 @@ function arrays_as_d3_series(d3data) {
     // console.log('line-plot.js:arrays_as_d3_series(): d3data before transpose');
     // console.log(d3data);
     var ans = {};
-    d3data = d3.transpose(d3data);
-    // console.log(d3data);
-    ans.data = [];
-    ans.header = d3data[0];
-    console.log("header in arrays_as_d3_series()");
+    var transposed_d3data = d3.transpose(d3data);
+    ans.header = transposed_d3data.shift();
+    var N = transposed_d3data.length;
+    var M = ans.header.length;
+    var data = new Array(N);
+    console.log("header in arrays_as_d3_series() of length " + N);
     console.log(ans.header);
-    for (var i=1; i < d3data.length; i++) {
-        var obj = {};
-        obj["x"] = d3data[i][0];
-        for (var k=1; k < ans.header.length; k++) {
-            obj[ans.header[k]] = d3data[i][k];
+    console.log(transposed_d3data);
+    for (var i=0; i<N; i++) {
+        data[i] = {};
+        data[i].x = transposed_d3data[i][0];
+        for (var k=1; k<M; k++) {
+            data[i][ans['header'][k]] = transposed_d3data[i][k];
             }
-        // console.log(i);
-        // console.log(obj);
-        ans.data.push(obj);
+        console.log(i + ': ' + data[i][ans['header'][0]]);
         }
-    // console.log(data);
+    ans.data = data;
+    // for some reason the order of elements here is shuffled
+    // the last element overwrites the second
+    console.log(ans['data']);
 
-    ans.xlabel = ans.header[0];
-    ans.header.shift();
-    ans.ylabels = ans.header;
+    ans.xlabel = ans['header'].shift();
+    ans.ylabels = ans['header'];
     return ans;
     }
 
