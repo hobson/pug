@@ -4,4 +4,7 @@ python-dev
 zlib1g-dev
 libatlas3-base-dev
 gfortran
+libopenblas-base
+libatlas3gf-base
+libblas3gf
 
