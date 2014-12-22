@@ -1,4 +1,7 @@
 libffi-dev
 libevent-dev
 python-dev
+zlib1g-dev
+libatlas3-base-dev
+gfortran
 
