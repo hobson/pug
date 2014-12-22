@@ -2,3 +2,4 @@ libffi-dev
 libevent-dev
 python-dev
 libblas3
+libblas3gf
