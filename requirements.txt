@@ -29,6 +29,7 @@ dj-static==0.0.6
 
 # storages module for accessing AWS S3 storage:
 boto==2.34.0
+django-storages==1.1.8
 
 django-toolbelt>=0.0.1
 fuzzywuzzy==0.3.2

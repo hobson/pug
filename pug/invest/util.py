@@ -9,7 +9,7 @@ from scipy import integrate
 from matplotlib import pyplot as plt
 from matplotlib import animation
 
-from pug.nlp.util import listify
+from nlp.util import listify
 
 def clean_dataframe(df):
     """Fill NaNs with the previous value, the next value or if all are NaN then 1.0"""
