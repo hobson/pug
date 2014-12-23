@@ -65,6 +65,31 @@ def make_symbols(symbols, *args):
         return list(set(ans))
 
 
+def make_time_series(x, t=pd.Timestamp(datetime.datetime(1970,1,1)), freq='15min'):
+    """Convert a 2-D array of time/value pairs (or pair of time/value vectors) into a pd.Series time-series
+
+    >>> make_time_series(range(3))  # doctest: +NORMALIZE_WHITESPACE
+    1970-01-01 00:00:00    0
+    1970-01-01 00:15:00    1
+    1970-01-01 00:30:00    2
+    dtype: int64
+    """
+    if not isinstance(x, pd.Series) and not t:
+        if len(x) == 2: 
+            t, x = listify(x[0]), listify(x[1])
+        elif len(x) >= 2:
+            try:
+                t, x = zip(*x)
+            except (ValueError, IndexError, TypeError):
+                pass
+    if isinstance(t, (datetime.date, datetime.datetime, pd.Timestamp, basestring, float, np.int64, int)):
+        t = pd.date_range(t, periods=len(x), freq=freq)
+    x = pd.Series(x, index=t)
+    if isinstance(x, pd.Series):
+        x.index = pd.DatetimeIndex(x.index.values)
+    return x
+
+
 def integrated_change(ts, integrator=integrate.trapz, clip_floor=None, clip_ceil=float('inf')):
     """Total value * time above the starting value within a TimeSeries"""
     integrator = get_integrator(integrator)
@@ -245,7 +270,7 @@ def clipping_params(ts, capacity=100, rate_limit=float('inf'), method=None, max_
     True
     """
     VALID_METHODS = ['L-BFGS-B', 'TNC', 'COBYLA', 'SLSQP']
-    print('in clipping params for ts.index={0} and method={1}'.format(ts.index[0], method))
+    # print('in clipping params for ts.index={0} and method={1}'.format(ts.index[0], method))
     ts.index = ts.index.astype(np.int64)
     costs = []
 
