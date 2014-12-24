@@ -11,10 +11,10 @@ import pandas as pd
 from scipy import integrate
 from matplotlib import pyplot as plt
 from matplotlib import animation
+from scipy.optimize import minimize
 
 from pug.nlp.util import listify
 
-from scipy.optimize import minimize
 
 
 def clean_dataframe(df):
@@ -74,7 +74,7 @@ def make_time_series(x, t=pd.Timestamp(datetime.datetime(1970,1,1)), freq='15min
     1970-01-01 00:30:00    2
     dtype: int64
     """
-    if not isinstance(x, pd.Series) and not t:
+    if not isinstance(x, pd.Series) and (not isinstance(t, (pd.Series, pd.Index, list, tuple)) or not len(t)):
         if len(x) == 2: 
             t, x = listify(x[0]), listify(x[1])
         elif len(x) >= 2:
@@ -269,7 +269,7 @@ def clipping_params(ts, capacity=100, rate_limit=float('inf'), method=None, max_
     ... (562.5, 234))
     True
     """
-    VALID_METHODS = ['L-BFGS-B', 'TNC', 'COBYLA', 'SLSQP']
+    VALID_METHODS = ['L-BFGS-B', 'TNC', 'SLSQP', 'COBYLA']
     # print('in clipping params for ts.index={0} and method={1}'.format(ts.index[0], method))
     ts.index = ts.index.astype(np.int64)
     costs = []
@@ -289,7 +289,7 @@ def clipping_params(ts, capacity=100, rate_limit=float('inf'), method=None, max_
     thresh0 = bounds[0] + 0.5 * (bounds[1] - bounds[0])
     if not method or not method in VALID_METHODS:
         while attempts < max_attempts and not done:
-            for optimizer_method in itertools.cycle(VALID_METHODS):
+            for optimizer_method in VALID_METHODS:
                 optimum = minimize(fun=cost_fun, x0=[thresh0], bounds=[bounds], args=(ts, capacity, bounds), method=optimizer_method)
                 if optimum.success:
                     done = True
@@ -303,7 +303,7 @@ def clipping_params(ts, capacity=100, rate_limit=float('inf'), method=None, max_
     thresh = optimum.x[0]
     integral = clipped_area(ts, thresh=thresh)
     params = dict(optimum)
-    params.update({'costs': costs, 'optimize_result': optimum, 'threshold': thresh, 'initial_guess': thresh0, 'attempts': attempts, 'integral': integral, 'method': method})
+    params.update({'costs': costs, 'threshold': thresh, 'initial_guess': thresh0, 'attempts': attempts, 'integral': integral, 'method': method})
     return params
     # if integral - capacity > capacity:
     #     return {'t0': None, 't1': None, 'threshold': 0.96*thresh + 0.06*bounds[0][1], 'integral': integral}
