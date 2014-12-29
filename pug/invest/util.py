@@ -3,8 +3,9 @@ from __future__ import print_function
 
 from collections import Mapping
 import datetime
-import itertools
+#import itertools
 import random
+import warnings
 
 import numpy as np
 import pandas as pd
@@ -20,8 +21,7 @@ from pug.nlp.util import listify
 def clean_dataframe(df):
     """Fill NaNs with the previous value, the next value or if all are NaN then 1.0"""
     df = df.fillna(method='ffill')
-    df = df.fillna(method='bfill')
-    df = df.fillna(1.0)
+    df = df.fillna(0.0)
     return df
 
 
@@ -65,7 +65,7 @@ def make_symbols(symbols, *args):
         return list(set(ans))
 
 
-def make_time_series(x, t=pd.Timestamp(datetime.datetime(1970,1,1)), freq='15min'):
+def make_time_series(x, t=pd.Timestamp(datetime.datetime(1970,1,1)), freq=None):
     """Convert a 2-D array of time/value pairs (or pair of time/value vectors) into a pd.Series time-series
 
     >>> make_time_series(range(3))  # doctest: +NORMALIZE_WHITESPACE
@@ -74,6 +74,9 @@ def make_time_series(x, t=pd.Timestamp(datetime.datetime(1970,1,1)), freq='15min
     1970-01-01 00:30:00    2
     dtype: int64
     """
+    if not freq:
+        warnings.warn('Time series freuqency assumed to be {0} though no freq argument was provided!', RuntimeWarning)
+        freq = '15min'
     if not isinstance(x, pd.Series) and (not isinstance(t, (pd.Series, pd.Index, list, tuple)) or not len(t)):
         if len(x) == 2: 
             t, x = listify(x[0]), listify(x[1])
