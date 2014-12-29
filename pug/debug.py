@@ -1,12 +1,21 @@
-"""Import this module to invoke the interractive python debugger, ipydb, on any exception
+"""Import this module to invoke the interractive python debugger, ipdb, on any exception
 
-  Resources:
-    Based on http://stackoverflow.com/a/242531/623735
+Resources:
+  Based on http://stackoverflow.com/a/242531/623735
 
-  Examples:
-    >>> import debug
-    >>> x=[]
-    >>> x[0]
+Example Usage:
+  $  python -c 'from pug import debug;x=[];x[0]'
+  Traceback (most recent call last):
+    File "<string>", line 1, in <module>
+  IndexError: list index out of range
+
+  > <string>(1)<module>()
+
+  ipdb> x
+  []
+  ipdb> locals()
+  {'__builtins__': <module '__builtin__' (built-in)>, '__package__': None, 'x': [], 'debug': <module 'pug.debug' from 'pug/debug.py'>, '__name__': '__main__', '__doc__': None}
+  ipdb> 
 """ 
 
 # # from http://stackoverflow.com/a/242514/623735
