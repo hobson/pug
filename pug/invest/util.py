@@ -75,8 +75,8 @@ def make_time_series(x, t=pd.Timestamp(datetime.datetime(1970,1,1)), freq=None):
     dtype: int64
     """
     if not freq:
-        warnings.warn('Time series freuqency assumed to be {0} though no freq argument was provided!', RuntimeWarning)
         freq = '15min'
+        warnings.warn('Assumed time series freq to be {0} though no freq argument was provided!'.format(freq), RuntimeWarning)
     if not isinstance(x, pd.Series) and (not isinstance(t, (pd.Series, pd.Index, list, tuple)) or not len(t)):
         if len(x) == 2: 
             t, x = listify(x[0]), listify(x[1])
