@@ -5,7 +5,8 @@
 
   Examples:
     >>> import debug
-    >>> x=[][0]
+    >>> x=[]
+    >>> x[0]
 """ 
 
 # # from http://stackoverflow.com/a/242514/623735
@@ -41,6 +42,20 @@ def bug_info(exc_type, exc_value, exc_trace):
     
     References:
       http://stackoverflow.com/a/242531/623735
+
+    Example Usage:
+      $  python -c 'from pug import debug;x=[];x[0]'
+      Traceback (most recent call last):
+        File "<string>", line 1, in <module>
+      IndexError: list index out of range
+
+      > <string>(1)<module>()
+
+      ipdb> x
+      []
+      ipdb> locals()
+      {'__builtins__': <module '__builtin__' (built-in)>, '__package__': None, 'x': [], 'debug': <module 'pug.debug' from 'pug/debug.py'>, '__name__': '__main__', '__doc__': None}
+      ipdb> 
     """
     if hasattr(sys, 'ps1') or not sys.stderr.isatty():
         # We are in interactive mode or don't have a tty-like device, so we call the default hook
