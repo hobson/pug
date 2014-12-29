@@ -8,7 +8,8 @@
     >>> x=[][0]
 """ 
 
-# from http://stackoverflow.com/a/242514/623735
+# # from http://stackoverflow.com/a/242514/623735
+# # Only works if you have a main function in your app
 # if __name__ == '__main__':
 #     try:
 #         main()
@@ -24,7 +25,11 @@
 import sys
 
 def bug_info(type, value, tb):
-    """Prints the traceback and invokes the ipython debugger on any exception"""
+    """Prints the traceback and invokes the ipython debugger on any exception
+    
+    References:
+      http://stackoverflow.com/a/242531/623735
+    """
     if hasattr(sys, 'ps1') or not sys.stderr.isatty():
         # We are in interactive mode or don't have a tty-like device, so we call the default hook
         sys.__excepthook__(type, value, tb)
@@ -38,5 +43,5 @@ def bug_info(type, value, tb):
         # `ipdb.pm()` is deprecated so use `ipdb.post_mortem()` instead
         ipdb.post_mortem(tb)
 
-# assign the bug_info function to the system exception hook/callback
+# assign the `bug_info` function to the system exception hook/callback so it's called when there's an exception
 sys.excepthook = bug_info
