@@ -18,20 +18,6 @@ Example Usage:
   ipdb> 
 """ 
 
-# # from http://stackoverflow.com/a/242514/623735
-# # Only works if you have a main function in your app
-# if __name__ == '__main__':
-#     try:
-#         main()
-#     except:
-#         type, value, tb = sys.exc_info()
-#         traceback.print_exc()
-#         last_frame = lambda tb=tb: last_frame(tb.tb_next) if tb.tb_next else tb
-#         frame = last_frame().tb_frame
-#         ns = dict(frame.f_globals)
-#         ns.update(frame.f_locals)
-#         code.interact(local=ns)
-
 import sys
 import traceback
 
@@ -77,8 +63,22 @@ def bug_info(exc_type, exc_value, exc_trace):
         traceback.print_exception(exc_type, exc_value, exc_trace)
         print
         # Start the debugger in post-mortem mode.
-        # `ipdb.pm()` is deprecated so use `ipdb.post_mortem()` instead
         ipdb.post_mortem(exc_trace)
 
 # assign the `bug_info` function to the system exception hook/callback so it's called when there's an exception
 sys.excepthook = bug_info
+
+
+# # from http://stackoverflow.com/a/242514/623735
+# # Only works if you have a main function in your app
+# if __name__ == '__main__':
+#     try:
+#         main()
+#     except:
+#         type, value, tb = sys.exc_info()
+#         traceback.print_exc()
+#         last_frame = lambda tb=tb: last_frame(tb.tb_next) if tb.tb_next else tb
+#         frame = last_frame().tb_frame
+#         ns = dict(frame.f_globals)
+#         ns.update(frame.f_locals)
+#         code.interact(local=ns)

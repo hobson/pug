@@ -1097,6 +1097,13 @@ make_name.DJANGO_FIELD = {'camel': False, 'lower': True, 'space': '_'}
 make_name.DJANGO_MODEL = {'camel': True, 'lower': False, 'space': '', 'remove_prefix': 'models'}
 
 
+def make_filename(s, space='-', language='ms', strict=True):
+    if strict:
+        return make_name(s, space=space)
+    else:
+        return re.sub(r'[ :\\/?*&"<>|~`!]{1}', space, s)
+
+
 def tryconvert(value, desired_types=SCALAR_TYPES, default=None, empty='', strip=True):
     """
     Convert value to one of the desired_types specified (in order of preference) without raising an exception.
