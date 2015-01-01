@@ -1,11 +1,12 @@
 # util.py
 from __future__ import print_function
 
-from collections import Mapping
+from collections import Mapping, OrderedDict
 import datetime
-#import itertools
+import itertools
 import random
 import warnings
+import os
 
 import numpy as np
 import pandas as pd
@@ -14,7 +15,7 @@ from matplotlib import pyplot as plt
 from matplotlib import animation
 from scipy.optimize import minimize
 
-from pug.nlp.util import listify
+from pug.nlp.util import listify, make_filename
 
 
 
@@ -91,6 +92,104 @@ def make_time_series(x, t=pd.Timestamp(datetime.datetime(1970,1,1)), freq=None):
     if isinstance(x, pd.Series):
         x.index = pd.DatetimeIndex(x.index.values)
     return x
+
+
+def pandas_mesh(df):
+    """Create numpy 2-D "meshgrid" from 3+ columns in a Pandas DataFrame
+
+    Arguments:
+      df (DataFrame): Must have 3 or 4 columns of numerical data
+
+    Returns:
+      OrderedDict: column labels from the data frame are the keys, values are 2-D matrices
+        All matrices have shape NxM, where N = len(set(df.iloc[:,0])) and M = len(set(df.iloc[:,1]))
+
+    >>> pandas_mesh(pd.DataFrame(np.arange(18).reshape(3,6), columns=list('ABCDEF'))).values()  # +doctest.NORMALIZE_WHITESPACE
+    [array([[ 0,  6, 12],
+            [ 0,  6, 12],
+            [ 0,  6, 12]]),
+     array([[ 1,  1,  1],
+            [ 7,  7,  7],
+            [13, 13, 13]]),
+     array([[  2.,  nan,  nan],
+            [ nan,   8.,  nan],
+            [ nan,  nan,  14.]]),
+     array([[  3.,  nan,  nan],
+            [ nan,   9.,  nan],
+            [ nan,  nan,  15.]]),
+     array([[  4.,  nan,  nan],
+            [ nan,  10.,  nan],
+            [ nan,  nan,  16.]]),
+     array([[  5.,  nan,  nan],
+            [ nan,  11.,  nan],
+            [ nan,  nan,  17.]])]
+    """
+    xyz = [df[c].values for c in df.columns]
+    index = pd.MultiIndex.from_tuples(zip(xyz[0], xyz[1]), names=['x', 'y'])
+    # print(index)
+    series = [pd.Series(values, index=index) for values in xyz[2:]]
+    # print(series)
+    X, Y = np.meshgrid(sorted(list(set(xyz[0]))), sorted(list(set(xyz[1]))))
+    N, M = X.shape
+    Zs = []
+    # print(Zs)
+    for k, s in enumerate(series):
+        Z = np.empty(X.shape)
+        Z[:] = np.nan
+        for i, j in itertools.product(range(N), range(M)):
+            Z[i, j] = s.get((X[i, j], Y[i, j]), np.NAN)
+        Zs += [Z]
+    return OrderedDict((df.columns[i], m) for i, m in enumerate([X, Y] + Zs))
+
+
+def pandas_surf(df, show=True, save=True, filename_space='_', *args, **kwargs):
+    """
+
+    Arguments:
+      save: if `bool(save)` then the 3D surface figure is saved to the indicated file as a PNG.
+        A default file name is constructued from the 3rd column heading/label in `df`.
+        If `save` is a `str` and a valid path to a directory, the default file name is appended.
+        Otherwise if `save` is a non-dir `str` then it is assumed to be a full path and file name.
+      filename_space: character to replace spaces in the file name with
+      args: passed along to `plot_surface`
+      kwargs: passed along to `plot_surface`
+    """
+    xyzs = pandas_mesh(df)
+    print(xyzs)
+    legends = xyzs.keys()[:3]
+    max_z = df[df.columns[2]].max()
+    peak_location = df[df[df.columns[2]] == max_z].values[0]
+    fig = plt.figure(figsize=(12,8.5))
+    ax = fig.add_subplot(111, projection='3d')
+    surf = ax.plot_surface(*(xyzs.values()[:3]), 
+        rstride=1, cstride=1, cmap=plt.cm.coolwarm,
+        linewidth=0, antialiased=False)
+    ax.set_zlim(0, 100)
+    plt.xlabel(legends[0])
+    plt.ylabel(legends[1])
+    title = legends[2]
+    title += ' Peak at ({0:.3g}, {1:.3g})'.format(*list(peak_location))
+    if len(peak_location) > 2:
+        lparen, rparen = ('(', ')') if len(peak_location) > 3 else ('', '')
+        title += ' = ' + lparen + (', '.join(('{0:.3g}'.format(pv) if isinstance(pv, float) else str(pv)) for pv in peak_location[2:])) + rparen
+    plt.title(title)
+    plt.grid('on')
+    ax.zaxis.set_major_formatter(plt.FormatStrFormatter('%g%%'))
+    fig.colorbar(surf, shrink=0.5, aspect=5)
+    if show:
+        plt.show(block=False)
+    if save:
+        path = make_filename(legends[2], strict=False, space=filename_space)
+        if isinstance(save, basestring):
+            # if save contains any string formatting braces, e.g. {0}, then substitude the max_z value 
+            save = save.format(max_z)
+            if os.path.isdir(save):
+                path = os.path.join(save, )
+            else:
+                path = save
+        plt.figure(fig.number)
+        plt.savefig(path)
+    return df
 
 
 def integrated_change(ts, integrator=integrate.trapz, clip_floor=None, clip_ceil=float('inf')):
