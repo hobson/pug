@@ -75,10 +75,9 @@ def make_time_series(x, t=pd.Timestamp(datetime.datetime(1970,1,1)), freq=None):
     1970-01-01 00:30:00    2
     dtype: int64
     """
-    if not freq:
-        freq = '15min'
-        warnings.warn('Assumed time series freq to be {0} though no freq argument was provided!'.format(freq), RuntimeWarning)
-    if not isinstance(x, pd.Series) and (not isinstance(t, (pd.Series, pd.Index, list, tuple)) or not len(t)):
+    if isinstance(x, pd.DataFrame):
+        x = x[x.columns[0]]
+    elif not isinstance(x, pd.Series) and (not isinstance(t, (pd.Series, pd.Index, list, tuple)) or not len(t)):
         if len(x) == 2: 
             t, x = listify(x[0]), listify(x[1])
         elif len(x) >= 2:
@@ -86,7 +85,14 @@ def make_time_series(x, t=pd.Timestamp(datetime.datetime(1970,1,1)), freq=None):
                 t, x = zip(*x)
             except (ValueError, IndexError, TypeError):
                 pass
-    if isinstance(t, (datetime.date, datetime.datetime, pd.Timestamp, basestring, float, np.int64, int)):
+        x = pd.Series(x)
+    # By this point x must be a Series, only question is whether its index needs to be converted to a DatetimeIndex
+    if x.index[0] != 0 and isinstance(x.index[0], (datetime.date, datetime.datetime, pd.Timestamp, basestring, float, np.int64, int)):
+        t = x.index
+    elif isinstance(t, (datetime.date, datetime.datetime, pd.Timestamp, basestring, float, np.int64, int)):
+        if not freq:
+            freq = '15min'
+            warnings.warn('Assumed time series freq to be {0} though no freq argument was provided!'.format(freq), RuntimeWarning)
         t = pd.date_range(t, periods=len(x), freq=freq)
     x = pd.Series(x, index=t)
     if isinstance(x, pd.Series):
