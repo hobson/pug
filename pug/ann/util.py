@@ -9,8 +9,6 @@ import os
 import pandas as pd
 from matplotlib import pyplot as plt
 
-from pybrain.supervised import trainers
-
 
 def plot_network(network, ds=None, mean=0, std=1, title='', show=True, save=True):
     """Identical to plot_trainer except `network` and `ds` must be provided separately"""
