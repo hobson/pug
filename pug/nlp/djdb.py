@@ -1785,7 +1785,6 @@ def flatten_csv(path='.', ext='csv', date_parser=parse_date, verbosity=0, output
       ext (str): file name extension (to filter files by)
       date_parser (function): if the MultiIndex can be interpretted as a datetime, this parser will be used
 
-
     Returns:
       dict of DataFrame: { file_path: flattened_data_frame }
     """

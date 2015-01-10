@@ -36,6 +36,7 @@ from decimal import Decimal
 import math
 import pandas as pd
 from dateutil.parser import parse as parse_date
+from itertools import islice
 
 
 from progressbar import ProgressBar
@@ -380,6 +381,31 @@ def generate_tuple_batches(qs, batch_len=1):
         yield tuple(batch)
 
 
+def sliding_window(seq, n=2):
+    """Generate overlapping sliding/rolling windows (of width n) over an iterable
+    
+    s -> (s0,s1,...s[n-1]), (s1,s2,...,sn), ...                   
+
+    References:
+      http://stackoverflow.com/a/6822773/623735
+
+    Examples:
+
+    >>> list(sliding_window(range(6), 3))  # doctest: +NORMALIZE_WHITESPACE
+    [(0, 1, 2),
+     (1, 2, 3),
+     (2, 3, 4),
+     (3, 4, 5)]
+    """
+    it = iter(seq)
+    result = tuple(islice(it, n))
+    if len(result) == n:
+        yield result    
+    for elem in it:
+        result = result[1:] + (elem,)
+        yield result
+
+
 def generate_slices(sliceable_set, batch_len=1, length=None, start_batch=0):
     """Iterate through a sequence (or generator) in batches of length `batch_len`
 
@@ -645,7 +671,7 @@ def dos_from_table(table, header=None):
 
 
 def transposed_lists(list_of_lists, default=None):
-    """Like numpy.transposed, but allows for uneven row lengths
+    """Like `numpy.transposed`, but allows uneven row lengths
 
     Uneven lengths will affect the order of the elements in the rows of the transposed lists
 
@@ -2492,10 +2518,10 @@ def slug_from_iter(it, max_len=128, delim='-'):
 
 
 def tfidf(corpus):
-    """Compute a TFIDF Matrix (Term Frequency and Inverse Document Freuqency)"""
-    pass
+    """Compute a TFIDF matrix (Term Frequency and Inverse Document Freuqency matrix)"""
+    raise NotImplementedError("Google TFIDF for canonical implementations")
 
 
 def shakeness(doc):
     """Determine how similar a document's vocabulary is to Shakespeare's"""
-    pass
+    raise NotImplementedError("Import a Shakespear corpus and compare the distribution of words there to the ones in the sample doc (vocabulary similarity)")

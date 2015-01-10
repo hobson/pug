@@ -72,7 +72,7 @@ w3lib==1.5
 zope.interface==4.0.5
 
 wsgiref==0.1.2
-scipy==0.14.0
+scipy==0.14.1
 matplotlib==1.4.2
 
 # # nltk==3.0.0
