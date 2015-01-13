@@ -7,8 +7,8 @@ import concurrentpandas as ccp
 from django.db import models
 from jsonfield import JSONField
 
-from pug.invest import util
-from pug import nlp
+import util
+import nlp
 
 import pandas as pd
 

@@ -1,26 +1,28 @@
 """
 Django settings for crawlnmine project.
+
+TODO:
+    https://docs.djangoproject.com/en/1.7/howto/deployment/checklist/
 """
 
 import os
 import sys
 import string
 import random
-# import pug.nlp.django_settings
 
 SHELL_PLUS_PRE_IMPORTS = (
     # ('module.submodule1', ('class1', 'function2')),
     # ('module.submodule2', 'function3'),
-    ('pug.invest.models', '*'),
+    ('invest.models', '*'),
     # 'module.submodule4'
 )
 
 
 def env(var_name, default=False):
-    """ Get the environment variable or assume a default, but let the user know about the error."""
+    """ Get the environment variable. If not found use a default or False, but print to stderr a warning about the missing env variable."""
     try:
         value = os.environ[var_name]
-        if str(value).strip().lower() in ['false', 'no', 'off' '0', 'none', 'null']:
+        if str(value).strip().lower() in ['false', 'f', 'no', 'off' '0', 'none', 'null', '', ]:
             return None
         return value
     except:
@@ -31,24 +33,31 @@ def env(var_name, default=False):
         return default
 
 
-# Build paths inside the project like this: os.path.join(BASE_DIR, ...)
-BASE_DIR = os.path.realpath(os.path.join(os.path.dirname(os.path.abspath(__file__)), '..'))
+# path to the folder containing this file (settings)
+PROJECT_SETTINGS_PATH = os.path.realpath(os.path.dirname(os.path.abspath(__file__)))
 
-# Quick-start development settings - unsuitable for production
-# See https://docs.djangoproject.com/en/1.7/howto/deployment/checklist/
+# path to the folder created with djangoadmin startproject (e.g. ~/src/pug/pug/crawlnmine)
+BASE_DIR = os.path.realpath(os.path.join(PROJECT_SETTINGS_PATH, '..', '..'))
 
-SECRET_KEY = env("DJANGO_SECRET_KEY", default=''.join(random.choice(string.printable) for _ in range(32)))  # os.urandom(32) isn't terminal printable
+# Find out what this Project is called (its containing folder name, e.g. 'crawlnmine' ) so these settings are reusable by just moving them to another folder
+PROJECT_NAME = os.path.basename(BASE_DIR)
+
+# the folder conataining the django project because "peer" projects may be django apps we want to install
+ROOT_PROJECT_PATH = os.path.realpath(os.path.join(BASE_DIR, '..'))
+
+# Because the django apps we want in INSTALLED_APPS are at the same level of ths project they are "external"
+# So, add their containing folder to the python path here
+if ROOT_PROJECT_PATH not in sys.path:
+    sys.path.insert(1, ROOT_PROJECT_PATH)
+
+
+# If there's an environment variable containing a secret key it'll be used, otherwise a random one will be generated
+NEW_SECRET_KEY = ''.join(random.choice(string.printable) for _ in range(32))
+SECRET_KEY = env("DJANGO_SECRET_KEY", default=NEW_SECRET_KEY)  # os.urandom(32) isn't terminal printable
 
 # Heroku: Honor the 'X-Forwarded-Proto' header for request.is_secure()
 SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
 
-PROJECT_SETTINGS_PATH = os.path.realpath(os.path.dirname(os.path.abspath(__file__)))
-
-# because the apps we want in INSTALLED are "external" to this project (two directories up) we have to add them to the python path manually
-ROOT_PROJECT_PATH = os.path.realpath(os.path.join(PROJECT_SETTINGS_PATH,'..','..','..'))
-
-if ROOT_PROJECT_PATH not in sys.path:
-    sys.path.insert(1, ROOT_PROJECT_PATH)
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = bool(env("DJANGO_DEBUG", default=False))
@@ -73,13 +82,13 @@ INSTALLED_APPS = (
     'django_extensions',
 
     'gunicorn',  # adds run_gunicorn command
-    #'django_nvd3',
-    # 'celery',
 
-    # 'pug.crawler',
-    'pug.miner',
-    'pug.invest',
-    # 'pug.agile',
+    PROJECT_NAME, # to provide access to crawlnmine/static and crawlnmine/templates
+    'invest',     # draws line plots of financial data and predicts futures finance statists
+
+    # 'crawler',  # crawls wikipedia using Scrapy
+    # 'miner',    # mines databases with NLP and draws line/bar plots
+    # 'agile',    # jira command-line tool to create tickets?
 )
 
 MIDDLEWARE_CLASSES = (
@@ -91,9 +100,9 @@ MIDDLEWARE_CLASSES = (
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 )
 
-ROOT_URLCONF = 'crawlnmine.urls'
+ROOT_URLCONF = PROJECT_NAME + '.urls'
 
-WSGI_APPLICATION = 'crawlnmine.wsgi.application'
+WSGI_APPLICATION = PROJECT_NAME + 'wsgi.application'
 
 
 # Database
@@ -108,6 +117,9 @@ DATABASES = {
     }
 }
 
+TEMPLATE_DIRS = (
+    BASE_DIR + '/templates/',
+    )
 
 if DEBUG or 'test' in sys.argv or 'test_coverage' in sys.argv: #Covers regular testing and django-coverage
     pass
@@ -134,8 +146,7 @@ USE_TZ = True
 
 
 # Static files (CSS, JavaScript, Images)
-# https://docs.djangoproject.com/en/1.6/howto/static-files/
-
+# https://docs.djangoproject.com/en/1.7/howto/static-files/
 STATIC_URL = '/static/'
 
 # Absolute path to the directory static files should be collected to.
@@ -143,6 +154,13 @@ STATIC_URL = '/static/'
 # in apps' "static/" subdirectories and in STATICFILES_DIRS.
 # Example: "/var/www/example.com/static/"
 STATIC_ROOT = os.path.join(ROOT_PROJECT_PATH, 'collected_static_files')
+
+
+STATICFILES_DIRS = (
+    os.path.join(BASE_DIR, "static"),
+    # '/var/www/static/',
+)
+
 
 # This is required for Heroku to prevent "ValueError: dictionary doesn't specify a version"
 # I guess heroku default logging settings aren't compatible with Django 1.5
@@ -186,7 +204,7 @@ LOGGING = {
         },
     }
 }
-# List of modules to import when celery starts.  But crawlnmine.crawlnmine.__init__ will do this
+# List of modules to import when celery starts.  But crawlnmine/crawlnmine/__init__ should do this already
 #CELERY_IMPORTS = ("testcele.tasks",)
 
 # CELERYBEAT_SCHEDULER = 'djcelery.schedulers.DatabaseScheduler'

@@ -26,17 +26,25 @@ static3==0.5.1
 dj-static==0.0.6
 
 django-toolbelt==0.0.1
+# Fabric deployment to AWS  
+boto==2.5.2
+pycrypto==2.6
+ssh==1.7.14
+Fabric==1.4.3
+
+# storages module for accessing AWS S3 storage:
+django-storages==1.1.8
+
 fuzzywuzzy==0.3.2
 gunicorn==19.1.1
 
-jsonfield==1.0.0
-# numpy==1.9.1 not available in Heroku python buildpack multipack
-numpy==1.9.0
-pandas==0.15.0
-ConcurrentPandas==0.1.1
-
 Scrapy==0.22.2
-# South==0.8.4
+jsonfield==1.0.0
+numpy==1.9.0
+# pandas 0.15.0 needs numpy>=1.9.1 which isn't in heroku buildpack
+# ConcurrentPandas needs pandas>=0.14.0, both 0.14.0 and 0.14.1 are in the heroku buildpack
+pandas==0.14.1  
+ConcurrentPandas==0.1.1
 
 xlrd==0.9.3
 xlwt==0.7.5
@@ -57,12 +65,13 @@ pyexif
 progressbar-latest==2.4
 psycopg2==2.5.4
 
-# ipython==2.0.0
 
 pyOpenSSL==0.14
 python-slugify==0.0.9
 pytz==2014.3
 python-dateutil==2.2
+# # queuelib==1.1.1
+
 selenium==2.39.0
 six==1.8.0
 

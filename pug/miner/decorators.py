@@ -1,8 +1,9 @@
-from pug.nlp.db import representation
 from inspect import getmodule
 import os
 import re
-from pug.nlp.util import make_name
+
+from nlp.db import representation
+from nlp.util import make_name
 
 
 class dbname(object):
