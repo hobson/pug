@@ -26,6 +26,28 @@ def clean_dataframe(df):
     return df
 
 
+def get_symbols_from_list(list_name):
+    """Retrieve a named (symbol list name) list of strings (symbols)
+
+    Example:
+      # If you've installed the QSTK Quantitative analysis toolkit 
+      # you'll get a list of the symbols that were members of the S&P 500 in 2012.
+      # Otherwise you'll get an empty list.
+      >>> len(get_symbols_from_list('sp5002012')) in (0, 501)
+      True
+    """
+    try:
+        # quant software toolkit has a method for retrieving lists of symbols like S&P500 for 2012 with 'sp5002012'
+        import QSTK.qstkutil.DataAccess as da
+        dataobj = da.DataAccess('Yahoo')
+    except:
+        return []
+    try:
+        return dataobj.get_symbols_from_list(list_name)
+    except:
+        raise
+
+
 def make_symbols(symbols, *args):
     """Return a list of uppercase strings like "GOOG", "$SPX, "XOM"...
 
