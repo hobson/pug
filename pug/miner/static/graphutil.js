@@ -1,30 +1,44 @@
+// requires:
+// <script type="text/javascript" src="//cdnjs.cloudflare.com/ajax/libs/d3/3.5.3/d3.min.js"></script>
+// <script type="text/javascript" src="cdnjs.cloudflare.com/ajax/libs/underscore.js/1.7.0/underscore-min.js"></script>
+
+
+function normalize_values(data) {
+    var i = 0;
+    if (!data[0].hasOwnProperty("value")) {
+        if (data[0].hasOwnProperty("weight")) {
+            for (i=0; i<data.length; ++i) {
+                data[i]["value"] = data[i]["weight"]; } }
+        else {
+            if (data[0].hasOwnProperty("length")) {
+                for (i=0; i<data.length; ++i) {
+                    data[i]["value"] = 1.0 / (Math.max(+data[i]["length"], 0.000001)); } } } }
+    return data;
+    }
+
 function autoscale(data) {
-    var N_edges = data.length;
     // TODO: use d3.extent() for better efficiency?
     var x_min = d3.min(data, function (d) { return +d.value; });
     var x_max = d3.max(data, function (d) { return +d.value; });
+    // FIXME: check for x_min == x_max and do something about it (perturb them all by some random scale factor close to 1 and bias close to zero)
     var x_mid = d3.median(data, function (d) { return +d.value; });
+    var x_ave = d3.mean(data, function (d) { return +d.value; });
     var exp = Math.LN2 / Math.log((x_max - x_min) / (x_mid - x_min));
-    console.log('min, mid, max: ' + [x_min, x_mid, x_max] + ' gives exponent: ' + exp);
-    return d3.scale.pow().exponent(exp).domain([x_min, x_max]).range([0.0, 1.0]);
+    // console.log('min, mid, max: ' + [x_min, x_mid, x_max] + ' gives exponent: ' + exp);
+    return {"pow_scale": d3.scale.pow().exponent(exp).domain([x_min, x_max]).range([0.0, Math.pow(1.0 - 0.15, 1 / 4.0)]),
+            "x_min": x_min, "x_mid": x_mid, "x_ave": x_ave, "x_max": x_max};
 }
 
 function autoscale_and_length(data, width, height) {
-    var N_edges = data.links.length;
-    var x_min = d3.min(data.links, function (d) { return +d.value; });
-    var x_max = d3.max(data.links, function (d) { return +d.value; });
-    var x_mid = d3.median(data.links, function (d) { return +d.value; });
-    var exp = Math.LN2 / Math.log((x_max - x_min) / (x_mid - x_min));
-    console.log('min, mid, max: ' + [x_min, x_mid, x_max] + ' gives exponent: ' + exp);
-    pow_scale = d3.scale.pow().exponent(exp).domain([x_min, x_max]).range([0.0, Math.pow(1.0-.15,1/4.)]);
+    var ans = autoscale(data.links);
 
-    var x_ave = d3.mean(data.links, function (d) { return +d.value; });
     var N_nodes = data.nodes.length;
-    length = 50 * (width + height) * Math.pow(pow_scale(x_ave) / pow_scale(x_mid), 2) / Math.pow(N_edges, .75) / Math.pow(N_nodes, .25);
+    var N_edges = data.links.length;
+    var scale_length = 50.0 * (width + height) * Math.pow(ans.pow_scale(ans.x_ave) / ans.pow_scale(ans.x_mid), 2.0) / Math.pow(N_edges, 0.75) / Math.pow(N_nodes, 0.25);
 
-    console.log('scaled min, mid, mean, max: ' + [pow_scale(x_min), pow_scale(x_mid), pow_scale(x_ave), pow_scale(x_max)]);
-    console.log("length: " + length + " for " + N_edges + ", " +  N_nodes + " edges and nodes");
-    return [pow_scale, length];
+    console.log('scaled min, mid, mean, max: ' + [ans.pow_scale(ans.x_min), ans.pow_scale(ans.x_mid), ans.pow_scale(ans.x_ave), ans.pow_scale(ans.x_max)]);
+    console.log("scale_length: " + scale_length + " for " + N_edges + ", " +  N_nodes + " edges and nodes");
+    return [ans.pow_scale, scale_length];
 }
 
 function draw_force_directed_graph(graph, width, height, tag, process_group, process_name, friction, stiffness, charge, radius, opacity) {
@@ -42,11 +56,14 @@ function draw_force_directed_graph(graph, width, height, tag, process_group, pro
 
     var stroke_width = radius / 4.0;
 
+    graph.links = normalize_values(graph.links);
+
     pow_scale_and_length = autoscale_and_length(graph, width, height);
-    var pow_scale = pow_scale_and_length[0], length = pow_scale_and_length[1] ;
+    var pow_scale = pow_scale_and_length[0];
+    var scale_length = pow_scale_and_length[1] ;
 
 
-    for(var indx in graph.nodes) { 
+    for(var indx in graph.nodes) {
         graph.nodes[indx].r = radius; }
 
     var color = d3.scale.ordinal().domain(d3.range(10)).range(['#17becf', '#8c564b', '#1f77b4', '#d62728', '#2ca02c', '#ff7f0e', '#9467bd',  '#e377c2', '#7f7f7f', '#bcbd22']);
@@ -54,8 +71,8 @@ function draw_force_directed_graph(graph, width, height, tag, process_group, pro
     var force = d3.layout.force()
         .friction(1.0 - friction)
         .charge(charge)
-        .linkDistance(length)
-        .linkStrength(function (d) { return stiffness * Math.pow(pow_scale(d.value), 3); } ) 
+        .linkDistance(scale_length)
+        .linkStrength(function (d) { return stiffness * Math.pow(pow_scale(d.value), 3); } )
         .size([width, height]);
 
     var svg = d3.select(tag).append("svg")
@@ -164,7 +181,8 @@ function draw_matrix_heat_map(graph, width, height, tag) { //, process_group, pr
 
 
     pow_scale_and_length = autoscale_and_length(graph, width, height);
-    var pow_scale = pow_scale_and_length[0], length = pow_scale_and_length[1] ;
+    var pow_scale = pow_scale_and_length[0];
+    var scale_length = pow_scale_and_length[1];
 
     var margin = {
         top: height / 10, bottom: height / 100,
