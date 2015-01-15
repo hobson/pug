@@ -1,13 +1,13 @@
-Django>=1.7.1
+future==0.14.3
+Django==1.7.2
 
 # shell_plus --notebook
-django-extensions
+django-extensions==1.4.9
 
 # ipython notebook
-pyzmq
-tornado
+pyzmq==14.4.1
 
-Unidecode>=0.04.16
+Unidecode==0.04.16
 # # heroku uses pip 1.3.1
 # # pip==1.3.1
 # # pip==1.5.6
@@ -20,43 +20,42 @@ chardet==2.3.0
 # # gitdb==0.5.4
 # # GitPython==0.3.2.RC1
 
-dj-database-url>=0.3.0
+dj-database-url==0.3.0
 
 # run_gunicorn locally needs dj_static.Cling (Heroku reocommends as well)
 static3==0.5.1
 dj-static==0.0.6
 
-django-toolbelt>=0.0.1
+django-toolbelt==0.0.1
+# Fabric deployment to AWS  
+boto==2.5.2
+pycrypto==2.6
+ssh==1.7.14
+Fabric==1.4.3
+
+# storages module for accessing AWS S3 storage:
+django-storages==1.1.8
+
 fuzzywuzzy==0.3.2
-gunicorn>=19.1.1
+gunicorn==19.1.1
 
-# python-nvd3==0.13.3
-# django-nvd3==0.7.6
+Scrapy==0.22.2
+jsonfield==1.0.0
+numpy==1.9.0
+# pandas 0.15.0 needs numpy>=1.9.1 which isn't in heroku buildpack
+# ConcurrentPandas needs pandas>=0.14.0, both 0.14.0 and 0.14.1 are in the heroku buildpack
+pandas==0.14.1  
+ConcurrentPandas==0.1.1
 
-jsonfield>=1.0.0
-numpy>=1.8.1
-pandas>=0.15.0
-ConcurrentPandas>=0.1.1
+xlrd==0.9.3
+xlwt==0.7.5
 
-Scrapy>=0.22.2
-South>=0.8.4
-
-xlrd>=0.9.3
-xlwt>=0.7.5
-
-# Twisted==14.0.0
-
-# cssselect==0.9.1
-# django-crispy-forms==1.4.0
-# django-hstore==1.3.5
-# lxml==3.3.5
-
-tornado
+tornado==4.0.2
 
 ##$ sudo yum install libjpeg-devel openjpeg-devel
 # pillow
 ##$ sudo yum install cmake make gcc gcc-c++
-# Cython>=0.21.1
+# Cython==0.21.1
 # exifyay
 pyexif
 
@@ -64,30 +63,26 @@ pyexif
 # # https://python-progressbar.googlecode.com/files/progressbar-2.3.tar.gz
 # https://python-progressbar.googlecode.com/files/progressbar-2.3-dev.tar.gz
 # # --editable=https://python-progressbar.googlecode.com/files/progressbar-2.3.tar.gz
-progressbar-latest>=2.4
-psycopg2>=2.5.4
+progressbar-latest==2.4
+psycopg2==2.5.4
 
-# ipython==2.0.0
 
-# # pycparser==2.10
 pyOpenSSL==0.14
-python-slugify>=0.0.9
-pytz>=2014.3
-python-dateutil>=2.2
+python-slugify==0.0.9
+pytz==2014.3
+python-dateutil==2.2
 # # queuelib==1.1.1
-selenium>=2.39.0
-six>=1.8.0
 
-sqlparse>=0.1.13
+selenium==2.39.0
+six==1.8.0
+
+sqlparse==0.1.13
 tabulate==0.7.1
 w3lib==1.5
 zope.interface==4.0.5
 
-# # django-widget-tweaks==1.3
-# # pyenchant==1.6.6
+wsgiref==0.1.2
+scipy==0.14.1
+matplotlib==1.4.2
 
-wsgiref>=0.1.2
-scipy>=0.14.0
 # # nltk==3.0.0
-# very likely to fail on heroku
-# QSTK>=0.2.8

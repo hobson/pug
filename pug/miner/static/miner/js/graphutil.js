@@ -46,7 +46,7 @@ function draw_force_directed_graph(graph, width, height, tag, process_group, pro
     var pow_scale = pow_scale_and_length[0], length = pow_scale_and_length[1] ;
 
 
-    for(var indx in graph.nodes) { 
+    for(var indx in graph.nodes) {
         graph.nodes[indx].r = radius; }
 
     var color = d3.scale.ordinal().domain(d3.range(10)).range(['#17becf', '#8c564b', '#1f77b4', '#d62728', '#2ca02c', '#ff7f0e', '#9467bd',  '#e377c2', '#7f7f7f', '#bcbd22']);
@@ -55,7 +55,7 @@ function draw_force_directed_graph(graph, width, height, tag, process_group, pro
         .friction(1.0 - friction)
         .charge(charge)
         .linkDistance(length)
-        .linkStrength(function (d) { return stiffness * Math.pow(pow_scale(d.value), 3); } ) 
+        .linkStrength(function (d) { return stiffness * Math.pow(pow_scale(d.value), 3); } )
         .size([width, height]);
 
     var svg = d3.select(tag).append("svg")
@@ -72,13 +72,13 @@ function draw_force_directed_graph(graph, width, height, tag, process_group, pro
         .enter().append("line")
             .attr("class", "link")
             .style("stroke", "#888")
-            .style("stroke-width", function(d) { return (stroke_width * Math.pow(pow_scale(d.value), 4.0) + .25); })
-            .style("opacity", function(d) { return (stroke_width * Math.pow(pow_scale(d.value), 4.0) + .15); }); 
+            .style("stroke-width", function(d) { return (stroke_width * Math.pow(pow_scale(d.value), 4.0) + 0.25); })
+            .style("opacity", function(d) { return (stroke_width * Math.pow(pow_scale(d.value), 4.0) + 0.15); });
     var node = svg.selectAll(".node")
         .data(graph.nodes)
         .enter().append("circle")
             .attr("class", "node")
-            .attr("r", function (d) { return d.r } )
+            .attr("r", function (d) { return d.r; } )
         .style("fill", function(d) { return color(d.group); })
         .style("opacity", opacity)
         .call(force.drag)
@@ -87,11 +87,11 @@ function draw_force_directed_graph(graph, width, height, tag, process_group, pro
 
 
     node.append("title")
-        .text(function(d) { 
-            var group_string = "" + process_group(d.group); 
-            if (group_string.length <= 0) { 
-                return "" + process_name(d.name); } 
-            else { 
+        .text(function(d) {
+            var group_string = "" + process_group(d.group);
+            if (group_string.length <= 0) {
+                return "" + process_name(d.name); }
+            else {
                 return process_name(d.name) + "\n" + group_string; }
             });
 
@@ -128,7 +128,7 @@ function graph_to_matrix(graph, directional, add_diagonal) {
         matrix[link.source][link.target].z += link.value;
         graph.nodes[link.target].value += link.value;
         if (add_diagonal) matrix[link.target][link.target].z += link.value;
-        if (directional != true) {
+        if (directional !== true) {
             matrix[link.target][link.source].z += link.value;
             graph.nodes[link.source].value += link.value;
             if (add_diagonal) matrix[link.source][link.source].z += link.value;
@@ -258,6 +258,7 @@ function draw_matrix_heat_map(graph, width, height, tag) { //, process_group, pr
           .attr("text-anchor", "start")
           .text(function(d, i) { return graph.nodes[i].name; });
 
+      // FIXME: change this to addrow() or something and TEST (row defined as an object above)
       function row(row) {
         var cell = d3.select(this).selectAll(".cell")
             .data(row.filter(function(d) { return d.z; }))

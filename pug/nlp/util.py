@@ -36,6 +36,7 @@ from decimal import Decimal
 import math
 import pandas as pd
 from dateutil.parser import parse as parse_date
+from itertools import islice
 
 
 from progressbar import ProgressBar
@@ -365,7 +366,7 @@ def generate_batches(sequence, batch_len=1, allow_partial=True, ignore_errors=Tr
 def generate_tuple_batches(qs, batch_len=1):
     """Iterate through a queryset in batches of length `batch_len`
 
-    >>> [batch for batch in generate_batches(range(7), 3)]
+    >>> [batch for batch in generate_tuple_batches(range(7), 3)]
     [(0, 1, 2), (3, 4, 5), (6,)]
     """
     num_items, batch = 0, []
@@ -378,6 +379,31 @@ def generate_tuple_batches(qs, batch_len=1):
         batch += [item]
     if num_items:
         yield tuple(batch)
+
+
+def sliding_window(seq, n=2):
+    """Generate overlapping sliding/rolling windows (of width n) over an iterable
+    
+    s -> (s0,s1,...s[n-1]), (s1,s2,...,sn), ...                   
+
+    References:
+      http://stackoverflow.com/a/6822773/623735
+
+    Examples:
+
+    >>> list(sliding_window(range(6), 3))  # doctest: +NORMALIZE_WHITESPACE
+    [(0, 1, 2),
+     (1, 2, 3),
+     (2, 3, 4),
+     (3, 4, 5)]
+    """
+    it = iter(seq)
+    result = tuple(islice(it, n))
+    if len(result) == n:
+        yield result    
+    for elem in it:
+        result = result[1:] + (elem,)
+        yield result
 
 
 def generate_slices(sliceable_set, batch_len=1, length=None, start_batch=0):
@@ -410,7 +436,8 @@ def generate_slices(sliceable_set, batch_len=1, length=None, start_batch=0):
             continue
         start = i * batch_len
         end = min((i + 1) * batch_len, length)
-        yield tuple(sliceable_set[start:end])
+        if start != end:
+            yield tuple(sliceable_set[start:end])
     raise StopIteration
 
 
@@ -645,7 +672,7 @@ def dos_from_table(table, header=None):
 
 
 def transposed_lists(list_of_lists, default=None):
-    """Like numpy.transposed, but allows for uneven row lengths
+    """Like `numpy.transposed`, but allows uneven row lengths
 
     Uneven lengths will affect the order of the elements in the rows of the transposed lists
 
@@ -799,19 +826,11 @@ def hist_from_values_list(values_list, fillers=(None,), normalize=False, cumulat
     `fillers`: list or tuple of values to ignore in computing the histogram
 
     >>> hist_from_values_list([1,1,2,1,1,1,2,3,2,4,4,5,7,7,9])  # doctest: +NORMALIZE_WHITESPACE
-    [(1, 5),
-     (2, 3),
-     (3, 1),
-     (4, 2),
-     (5, 1),
-     (6, 0),
-     (7, 2),
-     (8, 0),
-     (9, 1)]
+    [(1, 5), (2, 3), (3, 1), (4, 2), (5, 1), (6, 0), (7, 2), (8, 0), (9, 1)]
     >>> hist_from_values_list([(1,9),(1,8),(2,),(1,),(1,4),(2,5),(3,3),(5,0),(2,2)])  # doctest: +NORMALIZE_WHITESPACE
-    [(0, 0, 1), (1, 4, 0), (2, 3, 1), (3, 1, 1), (4, 0, 1), (5, 1, 1), (6, 0, 0), (7, 0, 0), (8, 0, 1), (9, 0, 1)]
+    [[(1, 4), (2, 3), (3, 1), (4, 0), (5, 1)], [(0, 1), (1, 0), (2, 1), (3, 1), (4, 1), (5, 1), (6, 0), (7, 0), (8, 1), (9, 1)]]
     >>> hist_from_values_list(transposed_matrix([(8,),(1,3,5),(2,),(3,4,5,8)]))  # doctest: +NORMALIZE_WHITESPACE
-    [(1, 0, 1, 0, 0), (2, 0, 0, 1, 0), (3, 0, 1, 0, 1), (4, 0, 0, 0, 1), (5, 0, 1, 0, 1), (6, 0, 0, 0, 0), (7, 0, 0, 0, 0), (8, 1, 0, 0, 1)]
+    [[(8, 1)], [(1, 1), (2, 0), (3, 1), (4, 0), (5, 1)], [(2, 1)], [(3, 1), (4, 1), (5, 1), (6, 0), (7, 0), (8, 1)]]
     """
     value_types = tuple([int, float] + [type(filler) for filler in fillers])
 
@@ -870,99 +889,6 @@ def hist_from_values_list(values_list, fillers=(None,), normalize=False, cumulat
     if to_str:
         # FIXME: add header row
         return str_from_table(aligned_histograms, sep=sep, max_rows=365*2+1)
-
-    return aligned_histograms
-
-
-def hist_from_float_values_list(values_list, fillers=(None,), normalize=False, cumulative=False, to_str=False, sep=',', min_bin=None, max_bin=None):
-    """FIXME: DOESNT WORK!!!: Compute an emprical histogram, PMF or CDF in a list of lists or a csv string
-
-    FIXME: make it work for both integer and float bin values (bin floats into ints).
-    `fillers`: list or tuple of values to ignore in computing the histogram
-
-    >>> hist_from_values_list([1,1,2,1,1,1,2,3,2,4,4,5,7,7,9])  # doctest: +NORMALIZE_WHITESPACE
-    [(1, 5),
-     (2, 3),
-     (3, 1),
-     (4, 2),
-     (5, 1),
-     (6, 0),
-     (7, 2),
-     (8, 0),
-     (9, 1)]
-    >>> hist_from_values_list([(1,9),(1,8),(2,),(1,),(1,4),(2,5),(3,3),(5,0),(2,2)])  # doctest: +NORMALIZE_WHITESPACE
-    [(0, 0, 1), (1, 4, 0), (2, 3, 1), (3, 1, 1), (4, 0, 1), (5, 1, 1), (6, 0, 0), (7, 0, 0), (8, 0, 1), (9, 0, 1)]
-    >>> hist_from_values_list(transposed_matrix([(8,),(1,3,5),(2,),(3,4,5,8)]))  # doctest: +NORMALIZE_WHITESPACE
-    [(1, 0, 1, 0, 0), (2, 0, 0, 1, 0), (3, 0, 1, 0, 1), (4, 0, 0, 0, 1), (5, 0, 1, 0, 1), (6, 0, 0, 0, 0), (7, 0, 0, 0, 0), (8, 1, 0, 0, 1)]
-    """
-    value_types = tuple([int, float, datetime.timedelta] + [type(filler) for filler in fillers])
-    if all(isinstance(value, value_types) for value in values_list):
-        counters = [collections.Counter(values_list)]
-    elif all(len(row)==1 for row in values_list) and all(isinstance(row[0], value_types) for row in values_list):
-        counters = [collections.Counter(values[0] for values in values_list)]
-    else:
-        values_list_t = transposed_matrix(values_list)
-        counters = [collections.Counter(col) for col in values_list_t]
-
-    #print counters
-
-    if fillers:
-        fillers = listify(fillers)
-        for counts in counters:
-            for ig in fillers:
-                if ig in counts:
-                    del counts[ig]
-
-    # bin keys using int()
-    intkeys_list = [OrderedDict((int(k or 0), k) for k in counts if isinstance(k, value_types)) for counts in counters]
-    #print intkeys_list
-    try:
-        min_bin = int(min_bin)
-    except:
-        min_bin = min(min(intkeys) for intkeys in intkeys_list)
-    try:
-        max_bin = int(max_bin)
-    except:
-        max_bin = max(max(intkeys) for intkeys in intkeys_list)
-
-    #print min_bin, max_bin
-
-    min_bin = max(min_bin, min((min(intkeys) if intkeys else 0) for intkeys in intkeys_list))  # TODO: reuse min(intkeys)
-    max_bin = min(max_bin, max((max(intkeys) if intkeys else 0) for intkeys in intkeys_list))  # TODO: reuse max(intkeys)
-
-    #print min_bin, max_bin
-
-    histograms = []
-    for intkeys, counts in zip(intkeys_list, counters):
-        histograms += [OrderedDict()]
-        if not intkeys:
-            continue
-        if normalize:
-            N = sum(counts[intkeys[c]] for c in intkeys)
-            for c in intkeys:
-                counts[c] = float(counts[intkeys[c]]) / N
-        if cumulative:
-            for i in xrange(min_bin, max_bin + 1):
-                histograms[-1][i] = counts.get(intkeys[i], 0) + histograms[-1].get(intkeys[i-1], 0)
-        else:
-            for i in xrange(min_bin, max_bin + 1):
-                histograms[-1][i] = counts.get(intkeys[i], 0)
-    if not histograms:
-        histograms = [OrderedDict()]
-
-    #print histograms
-
-    # fill in the zero counts between the integer bins of the histogram
-    aligned_histograms = []
-
-    for i in range(min_bin, max_bin + 1):
-        aligned_histograms += [tuple([i] + [hist.get(i, 0) for hist in histograms])]
-
-    if to_str:
-        # FIXME: add header row
-        return str_from_table(aligned_histograms, sep=sep, max_rows=365*2+1)
-
-    #print aligned_histograms
 
     return aligned_histograms
 
@@ -1048,9 +974,9 @@ def make_name(s, camel=None, lower=None, space='_', remove_prefix=None, language
       
       Generate Django field names out of CSV header strings
       >>> make_name('ID Number (9-digits)')
-      'id_number_9_digits'
+      u'id_number_9_digits_'
       >>> make_name("PD / SZ")
-      'pd_sz'
+      u'pd_sz'
 
       Generate Javscript object attribute names from CSV header strings
       >>> make_name(u'pi (\u03C0)', space = '', language='javascript')
@@ -1073,6 +999,8 @@ def make_name(s, camel=None, lower=None, space='_', remove_prefix=None, language
     if remove_prefix and s.startswith(remove_prefix):
         s = s[len(remove_prefix):]
     if camel:
+        if space and space == '_':
+            space = ''
         if any(c in ' \t\n\r' + string.punctuation for c in s) or s.lower() == s:
             if lower:
                 s = s.lower()
@@ -1095,6 +1023,54 @@ def make_name(s, camel=None, lower=None, space='_', remove_prefix=None, language
     return s
 make_name.DJANGO_FIELD = {'camel': False, 'lower': True, 'space': '_'}
 make_name.DJANGO_MODEL = {'camel': True, 'lower': False, 'space': '', 'remove_prefix': 'models'}
+
+
+def make_filename(s, space=None, language='msdos', strict=False, max_len=None, repeats=1024):
+    r"""Process string to remove any characters not allowed by the language specified (default: MSDOS)
+
+    In addition, optionally replace spaces with the indicated "space" character
+    (to make the path useful in a copy-paste without quoting).
+
+    Uses the following regular expression to substitute spaces for invalid characters:
+
+        re.sub(r'[ :\\/?*&"<>|~`!]{1}', space, s)
+
+    >>> make_filename(r'Whatever crazy &s $h!7 n*m3 ~\/ou/ can come up. with.`txt`!', strict=False)
+    'Whatever-crazy-s-$h-7-n-m3-ou-can-come-up.-with.-txt-'
+    >>> make_filename(r'Whatever crazy &s $h!7 n*m3 ~\/ou/ can come up. with.`txt`!', strict=False, repeats=1)
+    'Whatever-crazy--s-$h-7-n-m3----ou--can-come-up.-with.-txt--'
+    >>> make_filename(r'Whatever crazy &s $h!7 n*m3 ~\/ou/ can come up. with.`txt`!', repeats=1)
+    'Whatever-crazy--s-$h-7-n-m3----ou--can-come-up.-with.-txt--'
+    >>> make_filename(r'Whatever crazy &s $h!7 n*m3 ~\/ou/ can come up. with.`txt`!')
+    'Whatever-crazy-s-$h-7-n-m3-ou-can-come-up.-with.-txt-'
+    >>> make_filename(r'Whatever crazy &s $h!7 n*m3 ~\/ou/ can come up. with.`txt`!', strict=True, repeats=1)
+    u'Whatever_crazy_s_h_7_n_m3_ou_can_come_up_with_txt_'
+    >>> make_filename(r'Whatever crazy &s $h!7 n*m3 ~\/ou/ can come up. with.`txt`!', strict=True, repeats=1, max_len=14)
+    u'Whatever_crazy'
+    >>> make_filename(r'Whatever crazy &s $h!7 n*m3 ~\/ou/ can come up. with.`txt`!', max_len=14)
+    'Whatever-crazy'
+    """
+    filename = None
+    if strict or language.lower().strip() in ('strict', 'variable', 'expression', 'python'):
+        if space == None:
+            space = '_'
+        elif not space:
+            space = ''
+        filename = make_name(s, space=space, lower=False)
+    else:
+        if space == None:
+            space = '-'
+        elif not space:
+            space = ''
+    if not filename:
+        if language.lower().strip() in ('posix', 'unix', 'linux', 'centos', 'ubuntu', 'fedora', 'redhat', 'rhel', 'debian', 'deb'):
+            filename = re.sub(r'[^0-9A-Za-z._-]' + '\{1,{0}\}'.format(repeats), space, s)
+        else:
+            filename = re.sub(r'[ :\\/?*&"<>|~`!]{' + ('1,{0}'.format(repeats)) + r'}', space, s)
+    if max_len and int(max_len) > 0 and filename:
+        return filename[:int(max_len)]
+    else:
+        return filename
 
 
 def tryconvert(value, desired_types=SCALAR_TYPES, default=None, empty='', strip=True):
@@ -1759,8 +1735,8 @@ def imported_modules():
 def make_tz_aware(dt, tz='UTC', is_dst=None):
     """Add timezone information to a datetime object, only if it is naive.
 
-    >>> make_tz_aware(datetime.datetime(2001,9,1,1))
-    datetime.datetime(2001, 9, 1, 1, tzinfo=<UTC>)
+    >>> make_tz_aware(datetime.datetime(2001, 9, 8, 7, 6))
+    datetime.datetime(2001, 9, 8, 7, 6, tzinfo=<UTC>)
     """
     tz = dt.tzinfo or tz
     try:
@@ -1791,27 +1767,6 @@ def normalize_date(d):
     if isinstance(d, basestring):
         return normalize_date(parse_date(d))
     return normalize_date(datetime.datetime(*[int(i) for i in d]))
-
-
-def get_symbols_from_list(list_name):
-    """Retrieve a named (symbol list name) list of strings (symbols)
-
-    Example:
-      # If you installed the QSTK Quantitative analysis toolkit 
-      # you'd get a list of the symbols that were members of the S&P 500 in 2012.
-      >>> get_symbols_from_list('sp5002012')
-      []
-    """
-    try:
-        # quant software toolkit has a method for retrieving lists of symbols like S&P500 for 2012 with 'sp5002012'
-        import QSTK.qstkutil.DataAccess as da
-        dataobj = da.DataAccess('Yahoo')
-    except:
-        return []
-    try:
-        return dataobj.get_symbols_from_list(list_name)
-    except:
-        raise
 
 
 def normalize_symbols(symbols, *args, **kwargs):
@@ -2052,7 +2007,7 @@ def tabulate(lol, headers, eol='\n'):
 
 
 def intify(obj, str_fun=str, use_ord=True, use_hash=True, use_len=True):
-    """FIXME: this is nonpythonic and does things you don't expect!
+    """FIXME: this is unpythonic and does things you don't expect!
 
     FIXME: rename to "integer_from_category"
 
@@ -2062,19 +2017,28 @@ def intify(obj, str_fun=str, use_ord=True, use_hash=True, use_len=True):
     12345000000
     >>> intify([12]), intify('[99]'), intify('(12,)')
     (91, 91, 40)
-    >>> intify('A'), intify('B'), intify('b')
-    (97, 98, 98)
+    >>> intify('A'), intify('a'), intify('AAA'), intify('B'), intify('BB')
+    (97, 97, 97, 98, 98)
     >>> intify(272)
     272
-    >>> intify(float('nan'), ord_first_char=False)
-    >>> intify(float('nan'))
-    110
-    >>> intify(None, ord_first_char=False)
-    >>> intify(None)
-    110
+    >>> intify(float('nan'), use_ord=False, use_hash=False, str_fun=None)
+    >>> intify(float('nan'), use_ord=False, use_hash=False, use_len=False)
+    >>> intify(float('nan')), intify('n'), intify(None)
+    (110, 110, 110)
+    >>> intify(None, use_ord=False, use_hash=False, use_len=False)
+    >>> intify(None, use_ord=False, use_hash=False, str_fun=False)
+    >>> intify(None, use_hash=False, str_fun=False) 
     """
     try:
-        return int(float(obj))
+        return int(obj)
+    except:
+        pass
+    try:
+        float_obj = float(obj)
+        if float('-inf') < float_obj < float('inf'):
+            # WARN: This will increment sys.maxint by +1 and decrement sys.maxint by -1!!!!
+            #       But hopefully these cases will be dealt with as expected, above
+            return int(float_obj)
     except:
         pass
     if not str_fun:
@@ -2093,8 +2057,12 @@ def intify(obj, str_fun=str, use_ord=True, use_hash=True, use_len=True):
         try:
             return len(obj)
         except:
+            pass
+        try:
             return len(str_fun(obj))
-    return obj
+        except:
+            pass
+    return None
 
 
 
@@ -2321,7 +2289,7 @@ def generate_kmers(seq, k=4):
 
 
 def kmer_tuple(seq, k=4):
-    """Return a generator of all the unique substrings (k-mer or q-gram strings) within a sequence/string
+    """Return a tuple all the unique substrings (k-mer or q-gram strings) within a sequence/string
 
     Not effiicent for large k and long strings.
     Doesn't form substrings that are shorter than k, only exactly k-mers
@@ -2336,20 +2304,15 @@ def kmer_tuple(seq, k=4):
 
     Default k = 4 because that's the length of a gene base-pair?
 
-    >>> ' '.join(kmer_tuple('AGATAGATAGACACAGAAATGGGACCACAC'))
-    'AGAT GATA ATAG TAGA AGAT GATA ATAG TAGA AGAC GACA ACAC CACA ACAG CAGA AGAA GAAA AAAT AATG ATGG TGGG GGGA GGAC GACC ACCA CCAC CACA ACAC'
-    >>> kmer_tuple(['AGATAGATAG', 'ACACAGAAAT', 'GGGACCACAC'], k=4)
-    (('AGAT', 'GATA', 'ATAG', 'TAGA', 'AGAT', 'GATA', 'ATAG'),
-     ('ACAC', 'CACA', 'ACAG', 'CAGA', 'AGAA', 'GAAA', 'AAAT'),
-     ('GGGA', 'GGAC', 'GACC', 'ACCA', 'CCAC', 'CACA', 'ACAC'))
+    Examples:
+        # >>> kmer_tuple(['AGATAGATAG', 'ACACAGAAAT', 'GGGACCACAC'], k=4)
+        # (('AGAT', 'GATA', 'ATAG', 'TAGA', 'AGAT', 'GATA', 'ATAG'),
+        #  ('ACAC', 'CACA', 'ACAG', 'CAGA', 'AGAA', 'GAAA', 'AAAT'),
+        #  ('GGGA', 'GGAC', 'GACC', 'ACCA', 'CCAC', 'CACA', 'ACAC'))
+        >>> ' '.join(kmer_tuple('AGATAGATAGACACAGAAATGGGACCACAC'))
+        'AAAT AATG ACAC ACAC ACAG ACCA AGAA AGAC AGAT AGAT ATAG ATAG ATGG CACA CACA CAGA CCAC GAAA GACA GACC GATA GATA GGAC GGGA TAGA TAGA TGGG'
     """
-    raise NotImplementedError("Untested")
-    # FIXME: this seems overly-complicated/recursive and is untested
-    if isinstance(seq, basestring):
-        return seq
-    elif isinstance(seq, types.GeneratorType):
-        return tuple(seq)
-    return tuple(s for s in generate_kmers(seq, k))
+    return tuple(sorted(generate_kmers(seq, k=k)))
 
 
 def kmer_counter(seq, k=4):
@@ -2379,62 +2342,65 @@ def kmer_set(seq, k=4):
     C_k(s) = C(s) ∩ Σ^k 
     from http://biorxiv.org/content/early/2014/08/01/007583
 
-    >>> kmer_set('AGATAGATAGACACAGAAATGGGACCACAC')
-    {'AAAT', 'AATG', 'ACAC', 'ACAG', 'ACCA', 'AGAA', 'AGAC', 'AGAT', 'ATAG', 'ATGG', 'CACA', 'CAGA', 'CCAC', 'GAAA', 'GACA', 'GACC', 'GATA', 'GGAC', 'GGGA', 'TAGA', 'TGGG'}
+    >>> sorted(kmer_set('AGATAGATAGACACAGAAATGGGACCACAC'))
+    ['AAAT', 'AATG', 'ACAC', 'ACAG', 'ACCA', 'AGAA', 'AGAC', 'AGAT', 'ATAG', 'ATGG', 'CACA', 'CAGA', 'CCAC', 'GAAA', 'GACA', 'GACC', 'GATA', 'GGAC', 'GGGA', 'TAGA', 'TGGG']
     """
     if isinstance(seq, basestring):
         return set(generate_kmers(seq, k))
 
 
-def kmer_frequency(seq_of_seq, km=None):
-    """Count the number of sequences in seq_of_seq that contain a given kmer `km`
+# def kmer_frequency(seq_of_seq, km=None):
+#     """Count the number of sequences in seq_of_seq that contain a given kmer `km`
 
-    From http://biorxiv.org/content/early/2014/08/01/007583, implements the formula:
-    f(t, S) = |{s | t ∈ C^k(s) ∧ s ∈ S}|
-    where:
-    t = km
-    S = seq_of_seq
-    >>> kmer_frequency(['AGATAGATAG', 'ACACAGAAAT', 'GGGACCACAC'], km=4)
+#     From http://biorxiv.org/content/early/2014/08/01/007583, implements the formula:
+#     f(t, S) = |{s | t ∈ C^k(s) ∧ s ∈ S}|
+#     where:
+#     t = km
+#     S = seq_of_seq
+#     >>> kmer_frequency(['AGATAGATAG', 'ACACAGAAAT', 'GGGACCACAC'], km=4)
     
-    """
-    if km and isinstance(km, basestring):
-        return sum(km in counter for counter in kmer_counter(seq_of_seq, len(km)))
-    km = int(km)
-    counter = collections.Counter()
-    counter += collections.Counter(set(kmer_counter(seq, km)) for seq in seq_of_seq)
-    return counter
+#     """
+#     if km and isinstance(km, basestring):
+#         return sum(km in counter for counter in kmer_counter(seq_of_seq, len(km)))
+#     km = int(km)
+#     counter = collections.Counter()
+#     counter += collections.Counter(tuple(sorted(set(kmer_counter(seq, km)))) for seq in seq_of_seq)
+#     return counter
 
 
-def uniq_tag(seq, k=4, other_strings=None):
-    """Hash that is the same for similar strings and can server as an abbreviation for a string
+# def uniq_tag(seq, k=4, other_strings=None):
+#     """Hash that is the same for similar strings and can serve as an abbreviation for a string
 
-    Based on UniqTag:
-    http://biorxiv.org/content/early/2014/08/01/007583
-    Which was inspired by MinHasH:
-    http://en.wikipedia.org/wiki/MinHash
+#     Based on UniqTag:
+#     http://biorxiv.org/content/early/2014/08/01/007583
+#     Which was inspired by MinHasH:
+#     http://en.wikipedia.org/wiki/MinHash
 
-    t_u = min arg min t ∈ C k(s) f(t, S)
-    uk(s, S) = min (arg_min((t ∈ C^k(s)), f(t, S))
+#     t_u = min arg min t ∈ C k(s) f(t, S)
+#     uk(s, S) = min (arg_min((t ∈ C^k(s)), f(t, S))
 
-    uk(s, S) = "the UniqTag, the lexicographically minimal k-mer of those k-mers of s that are least frequent in S."
+#     uk(s, S) = "the UniqTag, the lexicographically minimal k-mer of those k-mers of s that are least frequent in S."
 
-    the "k-mers of s" can be found with kmer_set()
-    the frequencies of those k-mers in other_stirngs, S, should be provided by kmer_frequency(other_strings, km) for km in kmer_set(s)
-    """
-    # FIXME: UNTESTED!
-    if not other_strings:
-        if isinstance(seq, basestring):
-            other_strings = (seq,)
-        else:
-            other_strings = tuple(seq)
-        return uniq_tag(other_strings[0], other_strings)
-    other_strings = set(other_strings)
-    if isinstance(seq, basestring):
-        kms = kmer_set(seq)
-        km_frequencies = ((sum(km in kmer_set(s, k), s) for s in other_strings) for km in kms)
-        print min(km_frequencies)
-        return min(km_frequencies)[1]
-    return tuple(uniq_tag(s, other_strings) for s in seq)
+#     the "k-mers of s" can be found with kmer_set()
+#     the frequencies of those k-mers in other_stirngs, S, should be provided by kmer_frequency(other_strings, km) for km in kmer_set(s)
+
+#     >>> uniq_tag('Hello World')
+
+#     """
+#     # FIXME: UNTESTED!
+#     if not other_strings:
+#         if isinstance(seq, basestring):
+#             other_strings = (seq,)
+#         else:
+#             other_strings = tuple(seq)
+#         return uniq_tag(other_strings[0], other_strings)
+#     other_strings = set(other_strings)
+#     if isinstance(seq, basestring):
+#         kms = kmer_set(seq)
+#         km_frequencies = ((sum(km in kmer_set(s, k), s) for s in other_strings) for km in kms)
+#         print min(km_frequencies)
+#         return min(km_frequencies)[1]
+#     return tuple(uniq_tag(s, other_strings) for s in seq)
 
 
 def count_duplicates(items):
@@ -2485,10 +2451,10 @@ def slug_from_iter(it, max_len=128, delim='-'):
 
 
 def tfidf(corpus):
-    """Compute a TFIDF Matrix (Term Frequency and Inverse Document Freuqency)"""
-    pass
+    """Compute a TFIDF matrix (Term Frequency and Inverse Document Freuqency matrix)"""
+    raise NotImplementedError("Google TFIDF for canonical implementations")
 
 
 def shakeness(doc):
     """Determine how similar a document's vocabulary is to Shakespeare's"""
-    pass
+    raise NotImplementedError("Import a Shakespear corpus and compare the distribution of words there to the ones in the sample doc (vocabulary similarity)")

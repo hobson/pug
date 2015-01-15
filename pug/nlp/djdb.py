@@ -1721,9 +1721,10 @@ def walk_level(path, level=1):
             yield root, dirs, files
             if root.count(os.path.sep) >= root_level + level:
                 del dirs[:]
-    else:
-        assert os.path.isfile(path)
+    elif os.path.isfile(path):
         yield os.path.dirname(path), [], [os.path.basename(path)]
+    else:
+        raise RuntimeError("Can't find a valid folder or file for path {0}".format(repr(path)))
 
 
 def find_files(path, ext='', level=None, verbosity=0):
@@ -1783,7 +1784,6 @@ def flatten_csv(path='.', ext='csv', date_parser=parse_date, verbosity=0, output
       path (str): file or folder to retrieve CSV files and `pandas.DataFrame`s from
       ext (str): file name extension (to filter files by)
       date_parser (function): if the MultiIndex can be interpretted as a datetime, this parser will be used
-
 
     Returns:
       dict of DataFrame: { file_path: flattened_data_frame }
