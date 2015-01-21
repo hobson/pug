@@ -1,6 +1,5 @@
 future==0.14.3
-# Django==1.8a1
-Django==1.7
+Django==1.8a1
 
 # shell_plus --notebook
 django-extensions==1.4.9
