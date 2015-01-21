@@ -96,9 +96,11 @@ def make_time_series(x, t=pd.Timestamp(datetime.datetime(1970,1,1)), freq=None):
     1970-01-01 00:30:00    2
     dtype: int64
     """
+    print(type(x))
     if isinstance(x, pd.DataFrame):
-        x = x[x.columns[0]]
+        x = pd.Series(x[x.columns[0]])
     elif not isinstance(x, pd.Series) and (not isinstance(t, (pd.Series, pd.Index, list, tuple)) or not len(t)):
+        print("Coercing a non-Series")
         if len(x) == 2: 
             t, x = listify(x[0]), listify(x[1])
         elif len(x) >= 2:
@@ -107,6 +109,10 @@ def make_time_series(x, t=pd.Timestamp(datetime.datetime(1970,1,1)), freq=None):
             except (ValueError, IndexError, TypeError):
                 pass
         x = pd.Series(x)
+    else:
+        x = pd.Series(listify(x), index=listify(t))
+    if not isinstance(x, pd.Series):
+        raise TypeError("`make_time_series` expects x to be a type that can be coerced to a Series object, but it's type is: {0}".format(type(x)))
     # By this point x must be a Series, only question is whether its index needs to be converted to a DatetimeIndex
     if x.index[0] != 0 and isinstance(x.index[0], (datetime.date, datetime.datetime, pd.Timestamp, basestring, float, np.int64, int)):
         t = x.index
