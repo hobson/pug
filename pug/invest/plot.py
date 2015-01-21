@@ -1,3 +1,6 @@
+from __future__ import print_function, division
+import six
+
 import numpy as np
 import pandas as pd
 
@@ -5,6 +8,7 @@ from nlp.util import listify
 
 from matplotlib import pyplot as plt
 from matplotlib import animation
+
 
 def period_boxplot(df, period='year', column='Adj Close'):
     # df['period'] = df.groupby(lambda t: getattr(t, period)).aggregate(np.mean)
@@ -14,7 +18,7 @@ def period_boxplot(df, period='year', column='Adj Close'):
     plt.show()
 
 
-def animate_panel(panel, keys=None, columns=None, interval=1000, titles='', path='animate_panel', xlabel='Time', ylabel='Value', **kwargs):
+def animate_panel(panel, keys=None, columns=None, interval=1000, titles='', path='animate_panel', xlabel='Time', ylabel='Value', ext='mp4', **kwargs):
     """Animate a pandas.Panel by flipping through plots of the data in each dataframe
 
     Arguments:
@@ -28,12 +32,14 @@ def animate_panel(panel, keys=None, columns=None, interval=1000, titles='', path
       kwargs (dict): pass-through kwargs for `animation.FuncAnimation(...).save(path, **kwargs)`
         (Not used if `not path`)
 
-    TODO: Work with other 3-D data formats:
-      - dict (sorted by key) or OrderedDict
-      - list of 2-D arrays/lists
-      - 3-D arrays/lists
-      - generators of 2-D arrays/lists
-      - generators of generators of lists/arrays?
+    TODO: 
+      - Work with other 3-D data formats:
+          - dict (sorted by key) or OrderedDict
+          - list of 2-D arrays/lists
+          - 3-D arrays/lists
+          - generators of 2-D arrays/lists
+          - generators of generators of lists/arrays?
+      - Write json and html5 files for d3 SVG line plots with transitions!
 
     >>> x = np.arange(0, 2*np.pi, 0.05)
     >>> panel = pd.Panel(dict((i, pd.DataFrame({
@@ -45,6 +51,13 @@ def animate_panel(panel, keys=None, columns=None, interval=1000, titles='', path
     >>> ani = animate_panel(panel, interval=200, path='animate_panel_test')  # doctest: +ELLIPSIS
     <matplotlib.animation.FuncAnimation at ...>
     """
+    ext_kwargs = {
+        'mp4': {'writer': 'ffmpeg', 'codec': 'mpeg4', 'dpi': 100, 'bitrate': 2000},
+        'gif': {'writer': 'imagemagick'},
+        'imagemagic.gif': {'writer': 'imagemagick_gif'},
+        }
+    ext = str(ext).lower().strip() or 'gif'
+    default_kwargs = ext_kwargs.get(ext, {})
 
     keys = keys or list(panel.keys())
     if titles:
@@ -79,7 +92,8 @@ def animate_panel(panel, keys=None, columns=None, interval=1000, titles='', path
             lines[i].set_ydata(y[i])  # update the data, don't replot a new line
         return lines
 
-    # Init masks out pixels to be redrawn/cleared which speeds redrawing of plot
+    # FIXME: doesn't work with ext=mp4
+    # init_func to mask out pixels to be redrawn/cleared which speeds redrawing of plot
     def mask_lines():
         print('init')
         df = panel[0]
@@ -93,11 +107,11 @@ def animate_panel(panel, keys=None, columns=None, interval=1000, titles='', path
 
     ani = animation.FuncAnimation(fig, animate, keys, interval=interval, blit=False) #, init_func=mask_lines, blit=True)
 
-    for k, v in {'writer': 'ffmpeg', 'codec': 'mpeg4', 'dpi': 100, 'bitrate': 2000}.iteritems():
+    for k, v in six.iteritems(default_kwargs):
         kwargs[k]=kwargs.get(k, v)
     kwargs['bitrate'] = min(kwargs['bitrate'], int(5e5 / interval))  # low information rate (long interval) might make it impossible to achieve a higher bitrate ight not
     if path and isinstance(path, basestring):
-        path += + '.mp4'
+        path += '.{0}'.format(format)
         print('Saving video to {0}...'.format(path))
         ani.save(path, **kwargs)
     return ani
