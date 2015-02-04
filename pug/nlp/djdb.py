@@ -19,7 +19,12 @@ from types import NoneType
 import importlib
 
 from django.core import serializers
-from django.db.models import related
+try:
+    # django<=1.7
+    from django.db.models import related
+except ImportError:
+    # django>=1.8a1
+    from django.db.models.fields import related
 from django.db import connection
 from django.db import models as djmodels
 
@@ -1628,6 +1633,41 @@ def path_size(path, total=False, ext='', level=None, verbosity=0):
     if total:
         return reduce(lambda tot, size: tot + size, dict_of_path_sizes.values(), 0)
     return dict_of_path_sizes
+
+
+def write_queryset_to_csv(qs, filename):
+    """Write a QuerySet or ValuesListQuerySet to a CSV file
+
+    based on djangosnippets by zbyte64 and http://palewi.re
+
+    Arguments:
+        qs (QuerySet or ValuesListQuerySet): The records your want to write to a text file (UTF-8)
+        filename (str): full path and file name to write to
+    """
+    model = qs.model
+    with open(filename, 'w') as fp:
+        writer = csv.writer(fp)
+        try:
+            headers = list(qs._fields)
+        except:
+            headers = [field.name for field in model._meta.fields]
+        writer.writerow(headers)
+
+        for obj in qs:
+            row = []
+            for colnum, field in enumerate(headers):
+                try:
+                    value = getattr(obj, field, obj[colnum])
+                except:
+                    value = ''
+                if callable(value):
+                    value = value()
+                if isinstance(value, basestring):
+                    value = value.encode("utf-8")
+                else:
+                    value = str(value).encode("utf-8")
+                row += [value]
+            writer.writerow(row)
 
 
 def load_all_csvs_to_model(path, model, field_names=None, delimiter=None, batch_len=10000,

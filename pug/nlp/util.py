@@ -505,10 +505,12 @@ def list_set(seq):
 
 
 def fuzzy_get(dict_obj, approximate_key, default=None, similarity=0.6, tuple_joiner='|', key_and_value=False, dict_keys=None, ):
-    r"""Find the closest matching key and/or value in a dictionary (must have all string keys!)
+    r"""Find the closest matching key in a dictionary and optionally retrieve the associated value
 
-    Note:
-      Key order is opposite order to `fuzzywuzzy.process.extractOne()` but in the same order as get(self, key) method on dicts
+    Notes:
+      `dict_obj` must have all string keys!
+      Argument order is in reverse order relative to `fuzzywuzzy.process.extractOne()` 
+        but in the same order as get(self, key) method on dicts
 
     Arguments:
       dict_obj (dict): object to run the get method on using the key that is most similar to one within the dict
@@ -520,6 +522,9 @@ def fuzzy_get(dict_obj, approximate_key, default=None, similarity=0.6, tuple_joi
       key_and_value (bool): Whether to return both the key and its value (True) or just the value (False). 
         Default is the same behavior as dict.get (i.e. key_and_value=False)
       dict_keys (list of str): if you already have a set of keys to search, this will save this funciton a little time and RAM
+
+    See Also:
+      get_similar: Allows nonstring keys and searches object attributes in addition to keys
 
     Examples:
       >>> fuzzy_get({'seller': 2.7, 'sailor': set('e')}, 'sail')
@@ -568,9 +573,6 @@ def fuzzy_get(dict_obj, approximate_key, default=None, similarity=0.6, tuple_joi
                         # print fuzzy_score_keys
                         fuzzy_score, fuzzy_key = sorted(fuzzy_score_keys)[-1]
                         value = dict_obj[fuzzy_key]
-    # print 'key and value'
-    # print key_and_value
-    # print fuzzy_key, value
     if key_and_value:
         return fuzzy_key, value
     else:
@@ -891,6 +893,36 @@ def hist_from_values_list(values_list, fillers=(None,), normalize=False, cumulat
         return str_from_table(aligned_histograms, sep=sep, max_rows=365*2+1)
 
     return aligned_histograms
+
+
+def get_similar(obj, labels, default=None, min_similarity=0.5):
+    """Similar to fuzzy_get, but allows non-string keys and a list of possible keys
+
+    Searches attributes in addition to keys and indexes.
+
+    See Also:
+        `fuzzy_get`
+    """
+    raise NotImplementedError("Unfinished implementation, needs to be incorporated into fuzzy_get where a list of scores and keywords is sorted.")
+    labels = listify(labels)
+    not_found = lambda: 0
+    min_score = int(min_similarity * 100)
+    for similarity_score in [100, 95, 90, 80, 70, 50, 30, 10, 5, 0]:
+        if similarity_score <= min_score:
+            similarity_score = min_score
+        for label in labels:
+            try:
+                result = obj.get(label, not_found)
+            except AttributeError:
+                try:
+                    result = obj.__getitem__(label)
+                except (IndexError, TypeError):
+                    result = not_found
+            if not result is not_found:
+                return result
+        if similarity_score == min_score:
+            if not result is not_found:
+                return result
 
 
 def update_dict(d, u, depth=-1, take_new=True, default_mapping_type=dict, prefer_update_type=False, copy=False):
@@ -2203,6 +2235,7 @@ def get_table_from_csv(filename='ssg_report_aarons_returns.csv', delimiter=',', 
     return dos_from_table(table)
 
 
+
 def save_sheet(table, filename, ext='tsv', verbosity=0):
     if ext.lower() == 'tsv':
         sep = '\t'
@@ -2286,6 +2319,11 @@ def generate_kmers(seq, k=4):
     else:
         for s in seq:
             yield generate_kmers(s, k)
+
+
+def datetime_histogram(seq):
+    """Plot a histogram of datetimes from a sequence (list, tuple, iterator) of date or datetimes"""
+    raise NotImplementedError()
 
 
 def kmer_tuple(seq, k=4):

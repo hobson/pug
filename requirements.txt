@@ -62,10 +62,10 @@ Pillow==2.7.0
 # exifyay
 pyexif==0.2.1
 
-# # --editable=https://python-progressbar.googlecode.com/files/progressbar-2.3.tar.gz
+# # --editable=https://python-progressbar.googlecode.com/files/progressbar-2.3.tar.gz --exists-action=i
 # # https://python-progressbar.googlecode.com/files/progressbar-2.3.tar.gz
 # https://python-progressbar.googlecode.com/files/progressbar-2.3-dev.tar.gz
-# # --editable=https://python-progressbar.googlecode.com/files/progressbar-2.3.tar.gz
+# # --editable=https://python-progressbar.googlecode.com/files/progressbar-2.3.tar.gz --exists-action=w
 progressbar-latest==2.4
 psycopg2==2.5.4
 
@@ -86,10 +86,10 @@ zope.interface==4.1.2
 
 wsgiref==0.1.2
 # matplotlib==1.4.2
---editable=git://github.com/matplotlib/matplotlib#egg=matplotlib --exists-action=w
+--editable=git://github.com/matplotlib/matplotlib#egg=matplotlib --exists-action=i
 # --editable=git://github.com/scipy#scipy=scipy --exists-action=w
 scipy==0.15.1
 # matplotlib==1.4.2
---editable=git://github.com/matplotlib/matplotlib#egg=matplotlib --exists-action=w
+--editable=git://github.com/matplotlib/matplotlib#egg=matplotlib --exists-action=i
 
 # # nltk==3.0.1

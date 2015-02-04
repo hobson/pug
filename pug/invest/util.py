@@ -14,6 +14,7 @@ from scipy import integrate
 
 from matplotlib import pyplot as plt
 from scipy.optimize import minimize
+from mpl_toolkits.mplot3d import Axes3D
 
 from pug.nlp.util import listify, make_filename
 
@@ -96,7 +97,6 @@ def make_time_series(x, t=pd.Timestamp(datetime.datetime(1970,1,1)), freq=None):
     1970-01-01 00:30:00    2
     dtype: int64
     """
-    print(type(x))
     if isinstance(x, pd.DataFrame):
         x = pd.Series(x[x.columns[0]])
     elif not isinstance(x, pd.Series) and (not isinstance(t, (pd.Series, pd.Index, list, tuple)) or not len(t)):
@@ -188,12 +188,12 @@ def pandas_surf(df, show=True, save=True, filename_space='_', *args, **kwargs):
       kwargs: passed along to `plot_surface`
     """
     xyzs = pandas_mesh(df)
-    print(xyzs)
+    #print(xyzs)
     legends = xyzs.keys()[:3]
     max_z = df[df.columns[2]].max()
     peak_location = df[df[df.columns[2]] == max_z].values[0]
     fig = plt.figure(figsize=(12,8.5))
-    ax = fig.add_subplot(111, projection='3d')
+    ax = Axes3D(fig)  # only works if Axes3D has been imported even if unused: fig.add_subplot(111, projection='3d')
     surf = ax.plot_surface(*(xyzs.values()[:3]), 
         rstride=1, cstride=1, cmap=plt.cm.coolwarm,
         linewidth=0, antialiased=False)
