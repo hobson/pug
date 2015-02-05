@@ -27,7 +27,7 @@ import itertools
 import os
 import json
 import copy
-from collections import Mapping
+# from collections import Mapping
 
 import numpy as np
 import matplotlib.pyplot as plt
@@ -39,8 +39,9 @@ import QSTK.qstkutil.DataAccess as da
 import QSTK.qstkutil.qsdateutil as du
 import QSTK.qstkstudy.EventProfiler as ep
 
-from pug import debug
+# from pug import debug
 from pug.nlp import util
+from pug.invest.util import normalize_symbols
 # from pug.decorators import memoize
 
 

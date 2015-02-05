@@ -9,7 +9,7 @@ from traceback import print_exc
 import numpy as np
 import pandas as pd
 
-from pug.nlp.util import listify
+from pug.nlp.util import listify, make_datetime, ordinal_float, quantize_datetime
 
 from matplotlib import pyplot as plt
 from matplotlib import animation
@@ -173,10 +173,27 @@ def animate_panel(panel, keys=None, columns=None, interval=1000, blit=False, tit
     return df
 
 
+def percent_formatter(y_value, y_position):
+    s = ('{0:.' + str(int(percent_formatter.precision)) + 'g}').format(percent_formatter.scale_factor * y_value)
+    # escape the percent symbol if TeX string preprocessing is being used
+    s += r'$\%$' if plt.rcParams.get('text.usetex', False) == True else '%'
+    return s
+percent_formatter.scale_factor = 100
+percent_formatter.precision = 0
+
+
 DATETIME_KWARGS = OrderedDict([('year', 1970), ('month', 1), ('day', 1), ('hour', 0), ('minute', 0), ('second', 0), ('microsecond', 0)])
 
-def plot_histogram(df, column=0, width=0.9, resolution=2, bins=None, str_timetags=True, xlabel=None, 
-                   labels=None, color=None, alpha=None, normalize=True, percent=False, padding=0.03):
+
+
+
+def plot_histogram(df, column=0, width=0.9, resolution=2, str_timetags=True, 
+                   xlabel=None, date_sep='-', bins=None, 
+                   labels=None, color=None, alpha=None, normalize=True, percent=False, padding=0.03,
+                   formatter=None, ylabel_precision=2,
+                   figsize=None, line_color='#C0C0C0', bg_color='white', bg_alpha=1, tight_layout=True,
+                   ylabel=None, grid='on', rotation=-60, ha='left',
+                   save_path='plot_histogram', dpi=200):
     """Bin a DataFrame of floats or datetime strings and plot the histogram
 
     Arguments:
@@ -186,11 +203,23 @@ def plot_histogram(df, column=0, width=0.9, resolution=2, bins=None, str_timetag
       resolution (int): 0 < resolution < 7, 
         for a number of timetuple fields to truncate to for binning 
     TODO:
-      - allow more than one column
+      - allow more than one column/field/series
+      - add of cumulative histogram line overlay
 
     FIXME:
       - fail for `label_len=7`
     """
+    fig = plt.gcf()
+    if figsize and len(figsize)==2:
+        fig.set_size_inches(figsize[0], figsize[1], forward=True)
+    if bg_color or bg_alpha:
+        fig.set_facecolor(bg_color)
+        fig.set_alpha(bg_alpha)
+    if not fig.axes:
+        ax = fig.add_subplot(111)
+    else:
+        ax = fig.gca()
+
     color = color or 'b'
     alpha = alpha or .8
     if isinstance(df, basestring) and os.path.isfile(df):
@@ -198,18 +227,33 @@ def plot_histogram(df, column=0, width=0.9, resolution=2, bins=None, str_timetag
     if isinstance(column, int):
         column = df.columns[column]
     xlabel = xlabel or column or ''
+    his0, his1 = [], []
+    if str_timetags and any(isinstance(val, basestring) for val in df[column].values):
+        timetag = [datetime.datetime.strptime(val, '%m/%d/%Y') if isinstance(val, basestring) else make_datetime(val) for val in df[column]]
+        # r['Returned Ordinal'] = [datetime.datetime.strptime(s, '%m/%d/%Y').date().toordinal() for s in r['Returned']]
+        quantized_date = [quantize_datetime(dt, resolution) for dt in timetag]
+        quantized_ordinal = ordinal_float(quantized_date)
+        if not bins:
+            his0, his1 = zip(*sorted(Counter(quantized_ordinal).items()))
+            bins = his0
+        else:
+            his1, his0 = pd.np.histogram(ordinal_float(df[column].dropna()), bins=bins)
+        resolution = int(resolution or 7)
+        labels = [date_sep.join(str(val) for val in datetime.datetime.fromordinal(ordinal).timetuple()[:resolution]) for ordinal in his0]
     bins = bins or resolution * 10
     try:
         if len(bins) == 2:
+            bins = list(bins)
             values = df[column].dropna()
+
             binwidth = ((bins[1]-bins[0]) or 1)
+            if not bins[0] and (values.max() - values.min()) > 10 * binwidth:
+                bins[0] = values.min()
             xscale = (values.max() - bins[0])
             numbins = int(xscale / float(binwidth)) + 2
             bins = list(pd.np.arange(numbins) * binwidth + bins[0])
     except:
         print_exc()
-        pass
-    print(bins)
     if isinstance(df[column].values[0], (float, int)):
         his1, his0 = pd.np.histogram(df[column].dropna(), bins=bins)
         labels = ['{:.3g}'.format(val) for val in his0[:-1]]
@@ -217,29 +261,69 @@ def plot_histogram(df, column=0, width=0.9, resolution=2, bins=None, str_timetag
         width = max(width, 0.95)
         padding = 0
         his0 = his0[:-1]
-    elif str_timetags and isinstance(df[column].values[0], basestring):
-        timetag = [datetime.datetime.strptime(s, '%m/%d/%Y') for s in df[column]]
-        # r['Returned Ordinal'] = [datetime.datetime.strptime(s, '%m/%d/%Y').date().toordinal() for s in r['Returned']]
-        quantized_date = [datetime.datetime(*([int(val) for val in dt.date().timetuple()[:resolution]] + list(DATETIME_KWARGS.values()[resolution:]))) for dt in timetag]
-        quantized_ordinal = [dt.toordinal() for dt in quantized_date]
-        his0, his1 = zip(*sorted(Counter(quantized_ordinal).items()))
-        labels = ['.'.join(str(val) for val in datetime.datetime.fromordinal(ordinal).timetuple()[:resolution]) for ordinal in his0]
 
     his0 = pd.np.array(his0)
     his1 = pd.np.array(his1)
     if normalize:
+        normalize = float(normalize)
         total = float(pd.np.sum(his1))
-        his1 = float(normalize) * his1 * 1.0 / total
-        print(his1)
+        his1 = normalize * his1 * 1.0 / total
+        if not isinstance(ylabel, basestring):
+            if normalize in (1., 100.):
+                ylabel = 'Frequency (Probability or Count/Total)'
+                if not (formatter and callable(formatter)):
+                    formatter = percent_formatter
+                    if normalize != 1.:
+                        percent_formatter.scale_factor = 1.
+                        percent_formatter.precision = ylabel_precision
+                        normalize = 1.
+            else:
+                ylabel = 'Scaled Frequency ({0:.6g}*Count/Total)'.format(normalize)
+
     xwidth = (width or 0.9) * pd.np.diff(his0).min()
 
+    if not isinstance(ylabel, basestring):
+        ylabel = 'Count (Number of Occurrences)'
+    ax.bar(his0, his1, width=xwidth, color=color, alpha=alpha)
+
+    plt.xticks([dy + padding*xwidth for dy in his0], labels, rotation=rotation, ha=ha)
+    plt.xlabel(column)
+    plt.ylabel(ylabel)
+    if formatter and callable(formatter):
+        ax.yaxis.set_major_formatter(plt.matplotlib.ticker.FuncFormatter(formatter))
+    ax.grid(grid, color=(line_color or 'gray'))
+
+    # set all the colors and transparency values 
+    fig.patch.set_facecolor(bg_color)
+    fig.patch.set_alpha(bg_alpha)
+    ax.patch.set_alpha(bg_alpha)
+    ax.patch.set_facecolor(bg_color)
+
+    if line_color:
+        for spine in ax.spines.values():
+            spine.set_color(line_color)
+        ax.tick_params(axis='x', colors=line_color)
+        ax.tick_params(axis='y', colors=line_color)
+        ax.xaxis.label.set_color(line_color)
+        ax.yaxis.label.set_color(line_color)
+        ax.title.set_color(line_color)
+
+    if tight_layout:
+        plt.tight_layout()
+
     try:
-        plt.bar(his0, his1, width=xwidth, color=color, alpha=alpha)
-        plt.xticks([dy + padding*xwidth for dy in his0], labels, rotation=-30, ha='left')
-        plt.xlabel(column)
-        plt.ylabel('Count')
-        plt.grid('on')
         plt.show(block=False)
     except:
         print_exc()
+
+    if save_path:
+        if os.path.isfile(save_path + '.png'):
+            i = 2
+            save_path2 = save_path + '--{0}'.format(i)
+            while os.path.isfile(save_path2 + '.png'):
+                i += 1
+                save_path2 = save_path + '--{0}'.format(i)
+            save_path = save_path2
+        plt.savefig(save_path, facecolor=fig.get_facecolor(), edgecolor='none', dpi=dpi)
+    his0 = pd.np.array(his0)
     return (his0, his1), labels

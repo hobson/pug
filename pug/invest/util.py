@@ -670,3 +670,49 @@ def simulate(t=1000, poly=(0.,), sinusoids=None, sigma=0, rw=0, irw=0, rrw=0):
     return pd.Series(y, index=t)
 
 
+def normalize_symbols(symbols, *args, **kwargs):
+    """Coerce into a list of uppercase strings like "GOOG", "$SPX, "XOM"
+
+    Flattens nested lists in `symbols` and converts all list elements to strings
+
+    Arguments:
+      symbols (str or list of str): list of market ticker symbols to normalize
+        If `symbols` is a str a get_symbols_from_list() call is used to retrieve the list of symbols
+      postrprocess (func): function to apply to strings after they've been stripped
+        default = str.upper
+
+    FIXME:
+      - list(set(list(symbols))) and `args` separately so symbols may be duplicated in symbols and args
+      - `postprocess` should be a method to facilitate monkey-patching
+
+    Returns:
+      list of str: list of cananical ticker symbol strings (typically after .upper().strip())
+
+    Examples:
+      >>> normalize_symbols("Goog")
+      ["GOOG"]
+      >>> normalize_symbols("  $SPX   ", " aaPL ")
+      ["$SPX", "AAPL"]
+      >>> normalize_symbols("  $SPX   ", " aaPL ", postprocess=str)
+      ["$SPX", "aaPL"]
+      >>> normalize_symbols(["$SPX", ["GOOG", "AAPL"]])
+      ["$SPX", "GOOG", "AAPL"]
+      >>> normalize_symbols("$spy", ["GOOGL", "Apple"], postprocess=str)
+      ['$spy', 'GOOGL', 'Apple']
+    """
+    postprocess = kwargs.get('postprocess', None) or str.upper
+    if (      (hasattr(symbols, '__iter__') and not any(symbols))
+        or (isinstance(symbols, (list, tuple, Mapping)) and not symbols)):
+        return []
+    args = normalize_symbols(args, postprocess=postprocess)
+    if isinstance(symbols, basestring):
+        # get_symbols_from_list seems robust to string normalizaiton like .upper()
+        try:
+            return list(set(get_symbols_from_list(symbols))) + args
+        except:
+            return [postprocess(s.strip()) for s in symbols.split(',')] + args
+    else:
+        ans = []
+        for sym in list(symbols):
+            ans += normalize_symbols(sym, postprocess=postprocess)
+        return list(set(ans))

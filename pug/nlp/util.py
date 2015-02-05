@@ -17,16 +17,18 @@
 
 '''
 
+import os
+import collections
+from itertools import islice
+import datetime
+import time
+import pytz
+import dateutil
 import types
 import re
 import string
-import os
 import csv
-import datetime
-import dateutil
-import pytz
 import warnings
-import collections
 from collections import OrderedDict
 from traceback import print_exc
 import ascii
@@ -36,8 +38,6 @@ from decimal import Decimal
 import math
 import pandas as pd
 from dateutil.parser import parse as parse_date
-from itertools import islice
-
 
 from progressbar import ProgressBar
 from pytz import timezone
@@ -1801,54 +1801,6 @@ def normalize_date(d):
     return normalize_date(datetime.datetime(*[int(i) for i in d]))
 
 
-def normalize_symbols(symbols, *args, **kwargs):
-    """Coerce into a list of uppercase strings like "GOOG", "$SPX, "XOM"
-
-    Flattens nested lists in `symbols` and converts all list elements to strings
-
-    Arguments:
-      symbols (str or list of str): list of market ticker symbols to normalize
-        If `symbols` is a str a get_symbols_from_list() call is used to retrieve the list of symbols
-      postrprocess (func): function to apply to strings after they've been stripped
-        default = str.upper
-
-    FIXME:
-      - list(set(list(symbols))) and `args` separately so symbols may be duplicated in symbols and args
-      - `postprocess` should be a method to facilitate monkey-patching
-
-    Returns:
-      list of str: list of cananical ticker symbol strings (typically after .upper().strip())
-
-    Examples:
-      >>> normalize_symbols("Goog")
-      ["GOOG"]
-      >>> normalize_symbols("  $SPX   ", " aaPL ")
-      ["$SPX", "AAPL"]
-      >>> normalize_symbols("  $SPX   ", " aaPL ", postprocess=str)
-      ["$SPX", "aaPL"]
-      >>> normalize_symbols(["$SPX", ["GOOG", "AAPL"]])
-      ["$SPX", "GOOG", "AAPL"]
-      >>> normalize_symbols("$spy", ["GOOGL", "Apple"], postprocess=str)
-      ['$spy', 'GOOGL', 'Apple']
-    """
-    postprocess = kwargs.get('postprocess', None) or str.upper
-    if (      (hasattr(symbols, '__iter__') and not any(symbols))
-        or (isinstance(symbols, (list, tuple, collections.Mapping)) and not symbols)):
-        return []
-    args = normalize_symbols(args, postprocess=postprocess)
-    if isinstance(symbols, basestring):
-        # get_symbols_from_list seems robust to string normalizaiton like .upper()
-        try:
-            return list(set(get_symbols_from_list(symbols))) + args
-        except:
-            return [postprocess(s.strip()) for s in symbols.split(',')] + args
-    else:
-        ans = []
-        for sym in list(symbols):
-            ans += normalize_symbols(sym, postprocess=postprocess)
-        return list(set(ans))
-
-
 def clean_wiki_datetime(dt, squelch=True):
     if isinstance(dt, datetime.datetime):
         return dt
@@ -2496,3 +2448,206 @@ def tfidf(corpus):
 def shakeness(doc):
     """Determine how similar a document's vocabulary is to Shakespeare's"""
     raise NotImplementedError("Import a Shakespear corpus and compare the distribution of words there to the ones in the sample doc (vocabulary similarity)")
+
+
+def slash_product(string_or_seq, slash='/', space=' '):
+    """Return a list of all possible meanings of a phrase containing slashes
+
+    TODO:
+        - Code is not in standard Sedgewick recursion form
+        - Simplify by removing one of the recursive calls?
+        - Simplify by using a list comprehension?
+
+    >>> slash_product("The challenging/confusing interview didn't end with success/offer")  # doctest: +NORMALIZE_WHITESPACE
+    ['The challenging interview didn't end with success',
+     'The challenging interview didn't end with offer',
+     'The confusing interview didn't end with success',
+     'The confusing interview didn't end with offer']
+    >>> slash_product('I say goodbye/hello cruel/fun world.')  # doctest: +NORMALIZE_WHITESPACE
+    ['I say goodbye cruel world.',
+     'I say goodbye fun world.',
+     'I say hello cruel world.',
+     'I say hello fun world.']
+    >>> slash_product('I say goodbye/hello/bonjour cruelness/fun/world')  # doctest: +NORMALIZE_WHITESPACE
+    ['I say goodbye cruelness',
+     'I say goodbye fun',
+     'I say goodbye world',
+     'I say hello cruelness',
+     'I say hello fun',
+     'I say hello world',
+     'I say bonjour cruelness',
+     'I say bonjour fun',
+     'I say bonjour world']
+    """
+    # Terminating case is a sequence of strings without any slashes
+    if not isinstance(string_or_seq, basestring):
+        # If it's not a string and has no slashes, we're done
+        if not any(slash in s for s in string_or_seq):
+            return list(string_or_seq)
+        ans = []
+        for s in string_or_seq:
+            # slash_product of a string will always return a flat list
+            ans += slash_product(s)
+        return slash_product(ans)
+    # Another terminating case is a single string without any slashes
+    if not slash in string_or_seq:
+        return [string_or_seq]
+    # The third case is a string with some slashes in it
+    i = string_or_seq.index(slash)
+    head, tail = string_or_seq[:i].split(space), string_or_seq[i+1:].split(space)
+    alternatives = head[-1], tail[0]
+    head, tail = space.join(head[:-1]), space.join(tail[1:])
+    return slash_product([space.join([head, word, tail]).strip() for word in alternatives])
+
+
+def make_date(dt, date_parser=parse_date):
+    """Coerce a datetime or string into datetime.date object
+
+    Arguments:
+      dt (str or datetime.datetime or atetime.time or numpy.Timestamp): time or date 
+        to be coerced into a `datetime.date` object
+
+    Returns:
+      datetime.time: Time of day portion of a `datetime` string or object
+
+    >>> make_date('')
+    datetime.date(1970, 1, 1)
+    >>> make_date(None)
+    datetime.date(1970, 1, 1)
+    >>> make_date("11:59 PM") == datetime.date.today()
+    True
+    >>> make_date(datetime.datetime(1999, 12, 31, 23, 59, 59))
+    datetime.date(1999, 12, 31)
+    """
+    if not dt:
+        return datetime.date(1970, 1, 1)
+    if isinstance(dt, basestring):
+        dt = date_parser(dt)
+    try:
+        dt = dt.timetuple()[:3]
+    except:
+        dt = tuple(dt)[:3]
+    return datetime.date(*dt)
+
+
+def make_datetime(dt, date_parser=parse_date):
+    """Coerce a datetime or string into datetime.datetime object
+
+    Arguments:
+      dt (str or datetime.datetime or atetime.time or numpy.Timestamp): time or date 
+        to be coerced into a `datetime.date` object
+
+    Returns:
+      datetime.time: Time of day portion of a `datetime` string or object
+
+    >>> make_date('')
+    datetime.date(1970, 1, 1)
+    >>> make_date(None)
+    datetime.date(1970, 1, 1)
+    >>> make_date("11:59 PM") == datetime.date.today()
+    True
+    >>> make_date(datetime.datetime(1999, 12, 31, 23, 59, 59))
+    datetime.date(1999, 12, 31)
+    """
+    if isinstance(dt, datetime.datetime):
+        return dt
+    if not dt:
+        return datetime.datetime(1970, 1, 1)
+    if isinstance(dt, basestring):
+        return date_parser(dt)
+    try:
+        dt = dt.timetuple()[:7]
+    except:
+        dt = tuple(dt)[:7]
+    return datetime.datetime(*dt)
+
+
+def make_time(dt, date_parser=parse_date):
+    """Ignore date information in a datetime string or object
+
+    Arguments:
+      dt (str or datetime.datetime or atetime.time or numpy.Timestamp): time or date 
+        to be coerced into a `datetime.time` object
+
+    Returns:
+      datetime.time: Time of day portion of a `datetime` string or object
+
+    >>> make_time(None)
+    datetime.time(0, 0)
+    >>> make_time("")
+    datetime.time(0, 0)
+    >>> make_time("11:59 PM")
+    datetime.time(23, 59)
+    >>> make_time(datetime.datetime(1999, 12, 31, 23, 59, 59))
+    datetime.time(23, 59, 59)
+    """
+    if not dt:
+        return datetime.time(0, 0)
+    if isinstance(dt, basestring):
+        try:
+            dt = date_parser(dt)
+        except:
+            print_exc()
+            print 'Unable to parse datetime string: {0}'.format(dt)
+    try:
+        dt = dt.timetuple()[3:6]
+    except:
+        dt = tuple(dt)[3:6]
+    return datetime.time(*dt)
+
+
+def quantize_datetime(dt, resolution=None):
+    """Quantize a datetime to integer years, months, days, hours, minutes, seconds or microseconds
+    
+    Also works with a `datetime.timetuple` or `time.struct_time` or a 1to9-tuple of ints or floats.
+    Also works with a sequenece of struct_times, tuples, or datetimes
+
+    >>> quantize_datetime(datetime.datetime(1970,1,2,3,4,5,6), resolution=3)
+    datetime.datetime(1970, 1, 2, 0, 0)
+    >>> quantize_datetime(datetime.datetime(1970,1,2,3,4,5,6))
+    datetime.datetime(1970, 1, 2, 3, 4, 5, 6)
+    >>> quantize_datetime(datetime.datetime(1971,2,3,4,5,6,7), 1)
+    datetime.datetime(1971, 1, 1, 0, 0)
+    """
+    resolution = int(resolution or 7)
+    if hasattr(dt, 'timetuple'):
+        dt = dt.timetuple()  # strips timezone info
+
+    if isinstance(dt, time.struct_time):
+        # strip last 3 fields (tm_wday, tm_yday, tm_isdst)
+        dt = list(dt)[:6]
+        # struct_time has no microsecond, but accepts float seconds
+        dt += [int((dt[5] - int(dt[5])) * 1000000)]
+        dt[5] = int(dt[5])
+        return datetime.datetime(*(dt[:resolution] + [1] * max(3 - resolution , 0)))
+
+    if isinstance(dt, tuple) and len(dt) <= 9 and all(isinstance(val, (float, int)) for val in dt):
+        dt = list(dt) + [0] * (max(6 - len(dt), 0))
+        # if the 6th element of the tuple looks like a float set of seconds need to add microseconds
+        if len(dt) == 6 and isinstance(dt[5], float):
+                dt = list(dt) + [1000000 * (dt[5] - int(dt[5]))]
+                dt[5] = int(dt[5])
+        dt = tuple(int(val) for val in dt)
+        return datetime.datetime(*(dt[:resolution] + [1] * max(resolution - 3, 0)))
+
+    return [quantize_datetime(value) for value in dt]
+
+
+def ordinal_float(dt):
+    """Like datetime.ordinal, but rather than integer allows fractional days (so float not ordinal at all)"""
+    if hasattr(dt, 'toordinal'): 
+        dt.toordinal() + ((((dt.microsecond / 1000000.) + dt.second) / 60. + dt.minute) / 60 + dt.hour) / 24.
+    return [ordinal_float(val) for val in dt]
+
+def datetime_from_ordinal_float(days):
+    """Inverse of `ordinal_float()`, converts a float number of days back to a `datetime` object"""
+    if isinstance(days, (float, int)):
+        dt = datetime.datetime.fromordinal(int(days))
+        seconds = (days - int(days)) * 3600 * 24
+        microseconds = (seconds - int(seconds)) * 1000000
+        return dt + datetime.timedelta(days=0, seconds=int(seconds), microseconds=int(microseconds))
+    return [datetime_from_ordinal_float(d) for d in days]
+
+
+def days_since(dt, dt0=datetime.datetime(1970, 1, 1, 0, 0, 0)):
+    return ordinal_float(dt) - ordinal_float(dt0)
