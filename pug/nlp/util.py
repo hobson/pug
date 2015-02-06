@@ -2497,7 +2497,7 @@ def slash_product(string_or_seq, slash='/', space=' '):
     head, tail = string_or_seq[:i].split(space), string_or_seq[i+1:].split(space)
     alternatives = head[-1], tail[0]
     head, tail = space.join(head[:-1]), space.join(tail[1:])
-    return slash_product([space.join([head, word, tail]).strip() for word in alternatives])
+    return slash_product([space.join([head, word, tail]).strip(space) for word in alternatives])
 
 
 def make_date(dt, date_parser=parse_date):
