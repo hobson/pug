@@ -14,6 +14,7 @@ from scipy import integrate
 
 from matplotlib import pyplot as plt
 from scipy.optimize import minimize
+from mpl_toolkits.mplot3d import Axes3D
 
 from pug.nlp.util import listify, make_filename
 
@@ -97,8 +98,9 @@ def make_time_series(x, t=pd.Timestamp(datetime.datetime(1970,1,1)), freq=None):
     dtype: int64
     """
     if isinstance(x, pd.DataFrame):
-        x = x[x.columns[0]]
+        x = pd.Series(x[x.columns[0]])
     elif not isinstance(x, pd.Series) and (not isinstance(t, (pd.Series, pd.Index, list, tuple)) or not len(t)):
+        print("Coercing a non-Series")
         if len(x) == 2: 
             t, x = listify(x[0]), listify(x[1])
         elif len(x) >= 2:
@@ -107,6 +109,10 @@ def make_time_series(x, t=pd.Timestamp(datetime.datetime(1970,1,1)), freq=None):
             except (ValueError, IndexError, TypeError):
                 pass
         x = pd.Series(x)
+    else:
+        x = pd.Series(listify(x), index=listify(t))
+    if not isinstance(x, pd.Series):
+        raise TypeError("`make_time_series` expects x to be a type that can be coerced to a Series object, but it's type is: {0}".format(type(x)))
     # By this point x must be a Series, only question is whether its index needs to be converted to a DatetimeIndex
     if x.index[0] != 0 and isinstance(x.index[0], (datetime.date, datetime.datetime, pd.Timestamp, basestring, float, np.int64, int)):
         t = x.index
@@ -182,12 +188,12 @@ def pandas_surf(df, show=True, save=True, filename_space='_', *args, **kwargs):
       kwargs: passed along to `plot_surface`
     """
     xyzs = pandas_mesh(df)
-    print(xyzs)
+    #print(xyzs)
     legends = xyzs.keys()[:3]
     max_z = df[df.columns[2]].max()
     peak_location = df[df[df.columns[2]] == max_z].values[0]
     fig = plt.figure(figsize=(12,8.5))
-    ax = fig.add_subplot(111, projection='3d')
+    ax = Axes3D(fig)  # only works if Axes3D has been imported even if unused: fig.add_subplot(111, projection='3d')
     surf = ax.plot_surface(*(xyzs.values()[:3]), 
         rstride=1, cstride=1, cmap=plt.cm.coolwarm,
         linewidth=0, antialiased=False)
@@ -664,3 +670,49 @@ def simulate(t=1000, poly=(0.,), sinusoids=None, sigma=0, rw=0, irw=0, rrw=0):
     return pd.Series(y, index=t)
 
 
+def normalize_symbols(symbols, *args, **kwargs):
+    """Coerce into a list of uppercase strings like "GOOG", "$SPX, "XOM"
+
+    Flattens nested lists in `symbols` and converts all list elements to strings
+
+    Arguments:
+      symbols (str or list of str): list of market ticker symbols to normalize
+        If `symbols` is a str a get_symbols_from_list() call is used to retrieve the list of symbols
+      postrprocess (func): function to apply to strings after they've been stripped
+        default = str.upper
+
+    FIXME:
+      - list(set(list(symbols))) and `args` separately so symbols may be duplicated in symbols and args
+      - `postprocess` should be a method to facilitate monkey-patching
+
+    Returns:
+      list of str: list of cananical ticker symbol strings (typically after .upper().strip())
+
+    Examples:
+      >>> normalize_symbols("Goog")
+      ["GOOG"]
+      >>> normalize_symbols("  $SPX   ", " aaPL ")
+      ["$SPX", "AAPL"]
+      >>> normalize_symbols("  $SPX   ", " aaPL ", postprocess=str)
+      ["$SPX", "aaPL"]
+      >>> normalize_symbols(["$SPX", ["GOOG", "AAPL"]])
+      ["$SPX", "GOOG", "AAPL"]
+      >>> normalize_symbols("$spy", ["GOOGL", "Apple"], postprocess=str)
+      ['$spy', 'GOOGL', 'Apple']
+    """
+    postprocess = kwargs.get('postprocess', None) or str.upper
+    if (      (hasattr(symbols, '__iter__') and not any(symbols))
+        or (isinstance(symbols, (list, tuple, Mapping)) and not symbols)):
+        return []
+    args = normalize_symbols(args, postprocess=postprocess)
+    if isinstance(symbols, basestring):
+        # get_symbols_from_list seems robust to string normalizaiton like .upper()
+        try:
+            return list(set(get_symbols_from_list(symbols))) + args
+        except:
+            return [postprocess(s.strip()) for s in symbols.split(',')] + args
+    else:
+        ans = []
+        for sym in list(symbols):
+            ans += normalize_symbols(sym, postprocess=postprocess)
+        return list(set(ans))
