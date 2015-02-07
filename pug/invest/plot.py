@@ -5,11 +5,12 @@ import datetime
 import os
 from collections import Counter, OrderedDict
 from traceback import print_exc
+import warnings
 
 import numpy as np
 import pandas as pd
 
-from pug.nlp.util import listify, make_datetime, ordinal_float, quantize_datetime
+from pug.nlp.util import listify, make_datetime, ordinal_float, quantize_datetime, datetime_from_ordinal_float, is_valid_american_date_string
 
 from matplotlib import pyplot as plt
 from matplotlib import animation
@@ -144,7 +145,7 @@ def animate_panel(panel, keys=None, columns=None, interval=1000, blit=False, tit
     # FIXME: doesn't work with ext=mp4
     # init_func to mask out pixels to be redrawn/cleared which speeds redrawing of plot
     def mask_lines():
-        print('init')
+        print('initialing mask_lines')
         df = panel[0]
         x = df.index.values
         y = df[columns].values.T
@@ -185,30 +186,68 @@ percent_formatter.precision = 0
 DATETIME_KWARGS = OrderedDict([('year', 1970), ('month', 1), ('day', 1), ('hour', 0), ('minute', 0), ('second', 0), ('microsecond', 0)])
 
 
+def generate_bins(bins, values=None):
+    """Compute bin edges for numpy.histogram based on values and a requested bin parameters
+
+    Arguments:
+        bins (int or 2-tuple of floats or sequence of floats) s or the first bin edges
+
+    >>> generate_bins(0, [])
+    0
+    >>> generate_bins(10, range(21))
+    [0, 2, 4, 6, 8, 10, 12, 14, 16, 18, 20]
+    >>> generate_bins((0, 3), range(21))
+    [0, 3, 6, 9, 12, 15, 18, 21]
+    """
+    if isinstance(bins, int):
+        bins = (bins,)
+    if isinstance(bins, float):
+        bins = (0, bins)
+
+    if not len(bins) in (1, 2):
+        return bins
+
+    if values is None:
+        values = [0]
+
+    value_min, value_max = pd.np.min(values), pd.np.max(values)
+    value_range = value_max - value_min
+
+    if len(bins) == 1:
+        if not value_range:
+            return range(int(bins[0]) + 1)
+        bins = (0, value_range / bins[0])
+    if len(bins) == 2:
+        if not value_range:
+            return bins
+        binwidth = ((bins[1] - bins[0]) or 1)
+        bin0 = bins[0] or pd.np.min(values)
+        if (bin0 / value_range) <= .3:
+            bin0 = 0
+        numbins = int(value_range / float(binwidth))
+        bins = list(pd.np.arange(numbins + 1) * binwidth + bin0)
+    else:
+        binwidth = pd.np.min(pd.np.diff(bins)) or pd.np.mean(pd.np.diff(bins)) or 1.
+    bins = list(bins)
+    while bins[-1] < value_max:
+        bins.append(bins[-1] + binwidth)
+    return bins
 
 
-def plot_histogram(df, column=0, width=0.9, resolution=2, str_timetags=True, 
-                   xlabel=None, date_sep='-', bins=None, 
+def plot_histogram(hist, width=0.9,
+                   title='', xlabel=None, date_sep='-', 
                    labels=None, color=None, alpha=None, normalize=True, percent=False, padding=0.03,
                    formatter=None, ylabel_precision=2,
                    figsize=None, line_color='#C0C0C0', bg_color='white', bg_alpha=1, tight_layout=True,
                    ylabel=None, grid='on', rotation=-60, ha='left',
                    save_path='plot_histogram', dpi=200):
-    """Bin a DataFrame of floats or datetime strings and plot the histogram
+    """Plot a bar chart from np.histogram data"""
+    his0, his1 = hist[0], hist[1]
+    if len(his1) == len(his0) + 1:
+        his0, his1 = his1[:-1], his0
+    elif len(his0) == len(his1) + 1:
+        his0 = his0[:-1]
 
-    Arguments:
-      df (DataFrame of str or float): table of data containing data to be counted and binned
-      column (str): label of the DataFrame column containing data to be counted and binned
-      width (float): 0 < width <= 1, the graphical width of the bars as a fraction of the bin width
-      resolution (int): 0 < resolution < 7, 
-        for a number of timetuple fields to truncate to for binning 
-    TODO:
-      - allow more than one column/field/series
-      - add of cumulative histogram line overlay
-
-    FIXME:
-      - fail for `label_len=7`
-    """
     fig = plt.gcf()
     if figsize and len(figsize)==2:
         fig.set_size_inches(figsize[0], figsize[1], forward=True)
@@ -222,73 +261,25 @@ def plot_histogram(df, column=0, width=0.9, resolution=2, str_timetags=True,
 
     color = color or 'b'
     alpha = alpha or .8
-    if isinstance(df, basestring) and os.path.isfile(df):
-        df = pd.DataFrame.from_csv(df)
-    if isinstance(column, int):
-        column = df.columns[column]
-    xlabel = xlabel or column or ''
-    his0, his1 = [], []
-    if str_timetags and any(isinstance(val, basestring) for val in df[column].values):
-        timetag = [datetime.datetime.strptime(val, '%m/%d/%Y') if isinstance(val, basestring) else make_datetime(val) for val in df[column]]
-        # r['Returned Ordinal'] = [datetime.datetime.strptime(s, '%m/%d/%Y').date().toordinal() for s in r['Returned']]
-        quantized_date = [quantize_datetime(dt, resolution) for dt in timetag]
-        quantized_ordinal = ordinal_float(quantized_date)
-        if not bins:
-            his0, his1 = zip(*sorted(Counter(quantized_ordinal).items()))
-            bins = his0
-        else:
-            his1, his0 = pd.np.histogram(ordinal_float(df[column].dropna()), bins=bins)
-        resolution = int(resolution or 7)
-        labels = [date_sep.join(str(val) for val in datetime.datetime.fromordinal(ordinal).timetuple()[:resolution]) for ordinal in his0]
-    bins = bins or resolution * 10
-    try:
-        if len(bins) == 2:
-            bins = list(bins)
-            values = df[column].dropna()
+    xlabel = xlabel or ''
 
-            binwidth = ((bins[1]-bins[0]) or 1)
-            if not bins[0] and (values.max() - values.min()) > 10 * binwidth:
-                bins[0] = values.min()
-            xscale = (values.max() - bins[0])
-            numbins = int(xscale / float(binwidth)) + 2
-            bins = list(pd.np.arange(numbins) * binwidth + bins[0])
-    except:
-        print_exc()
-    if isinstance(df[column].values[0], (float, int)):
-        his1, his0 = pd.np.histogram(df[column].dropna(), bins=bins)
-        labels = ['{:.3g}'.format(val) for val in his0[:-1]]
-        # labels = ['{:.3g}-{.3g}'.format(left, right) for left, right in zip(his[0][:-1], his[0][1:])]
-        width = max(width, 0.95)
-        padding = 0
-        his0 = his0[:-1]
-
-    his0 = pd.np.array(his0)
-    his1 = pd.np.array(his1)
-    if normalize:
-        normalize = float(normalize)
-        total = float(pd.np.sum(his1))
-        his1 = normalize * his1 * 1.0 / total
-        if not isinstance(ylabel, basestring):
-            if normalize in (1., 100.):
-                ylabel = 'Frequency (Probability or Count/Total)'
-                if not (formatter and callable(formatter)):
-                    formatter = percent_formatter
-                    if normalize != 1.:
-                        percent_formatter.scale_factor = 1.
-                        percent_formatter.precision = ylabel_precision
-                        normalize = 1.
-            else:
-                ylabel = 'Scaled Frequency ({0:.6g}*Count/Total)'.format(normalize)
-
-    xwidth = (width or 0.9) * pd.np.diff(his0).min()
+    xwidth = (width or 0.9) * pd.np.min(pd.np.diff(his0))
 
     if not isinstance(ylabel, basestring):
         ylabel = 'Count (Number of Occurrences)'
+
+
+    xwidth = (width or 0.9) * pd.np.min(pd.np.diff(his0))
+
     ax.bar(his0, his1, width=xwidth, color=color, alpha=alpha)
 
     plt.xticks([dy + padding*xwidth for dy in his0], labels, rotation=rotation, ha=ha)
-    plt.xlabel(column)
-    plt.ylabel(ylabel)
+    if xlabel:
+        plt.xlabel(xlabel)
+    if ylabel:
+        plt.ylabel(ylabel)
+    if title:
+        plt.title()
     if formatter and callable(formatter):
         ax.yaxis.set_major_formatter(plt.matplotlib.ticker.FuncFormatter(formatter))
     ax.grid(grid, color=(line_color or 'gray'))
@@ -325,5 +316,114 @@ def plot_histogram(df, column=0, width=0.9, resolution=2, str_timetags=True,
                 save_path2 = save_path + '--{0}'.format(i)
             save_path = save_path2
         plt.savefig(save_path, facecolor=fig.get_facecolor(), edgecolor='none', dpi=dpi)
+
     his0 = pd.np.array(his0)
-    return (his0, his1), labels
+    # return in standard numpy histogram format, values before bins and bins include all fence posts (edges)
+    return (his1, his0.append(2 * his0[-1] - his0[-2])), fig
+
+
+def histogram_and_plot(df, column=0, width=0.9, resolution=2, str_timetags=True, counted=False,
+                   title='', xlabel=None, date_sep='-', bins=None, 
+                   labels=None, color=None, alpha=None, normalize=True, percent=False, padding=0.03,
+                   formatter=None, ylabel_precision=2,
+                   figsize=None, line_color='#C0C0C0', bg_color='white', bg_alpha=1, tight_layout=True,
+                   ylabel=None, grid='on', rotation=-60, ha='left',
+                   save_path='plot_histogram', dpi=200):
+    """Bin a DataFrame of floats or datetime strings and plot the histogram
+
+    Arguments:
+      df (DataFrame of str or float): table of data containing data to be counted and binned
+      column (str): label of the DataFrame column containing data to be counted and binned
+      width (float): 0 < width <= 1, the graphical width of the bars as a fraction of the bin width
+      resolution (int): 0 < resolution < 7, 
+        for a number of timetuple fields to truncate to for binning 
+    TODO:
+      - allow more than one column/field/series
+      - add of cumulative histogram line overlay
+      - separate out plotting from counting and datetime conversion
+
+    FIXME:
+      - fail for `label_len=7`
+    """
+
+    try:
+        assert(len(bins) == len(counted) + 1)
+        his0, his1 = bins, counted
+    except:
+        his0, his1 = [], []
+
+        if isinstance(df, basestring) and os.path.isfile(df):
+            df = pd.DataFrame.from_csv(df)
+        if not isinstance(df, pd.DataFrame):
+            df = pd.DataFrame(df)
+        if isinstance(column, int):
+            column = df.columns[column]
+        if not column in df.columns:
+            if not column == 'index':
+                warnings.warn('Unable to find a column named {0}, so using the index named "{1}" instead. The available columns are:\n{2}'.format(
+                    column, df.index.name, df.columns))
+            column = df.index.name
+        if column == df.index.name:
+            df[column] = df.index.values
+
+    if not len(his0) and not len(his1) and not isinstance(df[column].dropna().values[0], (float, int)):
+        if all(isinstance(val, (datetime.datetime, datetime.date, datetime.time, pd.Timestamp, pd.np.datetime64)) for val in df[column].dropna().values):
+            timetag = df[column].values
+        elif str_timetags and all(is_valid_american_date_string(val) for val in df[column].dropna().values):
+            timetag = [datetime.datetime.strptime(val, '%m/%d/%Y') if isinstance(val, basestring) else make_datetime(val) for val in df[column]]
+        else:
+            timetag = [make_datetime(val) for val in df[column].values]
+
+        # r['Returned Ordinal'] = [datetime.datetime.strptime(s, '%m/%d/%Y').date().toordinal() for s in r['Returned']]
+        if resolution and bins in (None, 0):
+            quantized_date = [quantize_datetime(dt, resolution) for dt in timetag]
+            quantized_ordinal = ordinal_float(quantized_date)
+            his0, his1 = zip(*sorted(Counter(quantized_ordinal).items()))
+            bins = his0
+        else:
+            days = ordinal_float(df[column].dropna())
+            bins = generate_bins(bins, days)
+            his1, his0 = pd.np.histogram(days, bins=bins)
+            
+        resolution = int(resolution or 7)
+
+    if counted in (None, 0, False, []):
+        if any(his0) and any(his1):
+            labels = [date_sep.join(str(val) for val in datetime_from_ordinal_float(ordinal).timetuple()[:resolution]) for ordinal in his0]
+        elif isinstance(df[column].values[0], (float, int)):
+            if not any(bins):
+                bins = resolution * 10
+            bins = generate_bins(bins, df[column].dropna())
+            his1, his0 = pd.np.histogram(df[column].dropna(), bins=bins)
+            labels = ['{:.3g}'.format(val) for val in his0[:-1]]
+            # labels = ['{:.3g}-{.3g}'.format(left, right) for left, right in zip(his[0][:-1], his[0][1:])]
+            width = max(width, 0.95)
+            padding = 0
+
+    if len(his0) > len(his1):
+        his0 = his0[:-1]
+    his0 = pd.np.array(his0)
+    his1 = pd.np.array(his1)
+    if normalize:
+        normalize = float(normalize)
+        total = float(pd.np.sum(his1))
+        his1 = normalize * his1 * 1.0 / total
+        if not isinstance(ylabel, basestring):
+            if normalize in (1., 100.):
+                ylabel = 'Frequency (Probability or Count/Total)'
+                if not (formatter and callable(formatter)):
+                    formatter = percent_formatter
+                    if normalize != 1.:
+                        percent_formatter.scale_factor = 1.
+                        percent_formatter.precision = ylabel_precision
+                        normalize = 1.
+            else:
+                ylabel = 'Scaled Frequency ({0:.6g}*Count/Total)'.format(normalize)
+
+    return plot_histogram( hist=(his0, his1), width=width,
+                           title=title, xlabel=xlabel, date_sep=date_sep, 
+                           labels=labels, color=color, alpha=alpha, normalize=normalize, percent=percent, padding=padding,
+                           formatter=formatter, ylabel_precision=ylabel_precision,
+                           figsize=figsize, line_color=line_color, bg_color=bg_color, bg_alpha=bg_alpha, tight_layout=tight_layout,
+                           ylabel=ylabel, grid=grid, rotation=rotation, ha=ha,
+                           save_path=save_path, dpi=dpi)

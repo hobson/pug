@@ -2500,6 +2500,14 @@ def slash_product(string_or_seq, slash='/', space=' '):
     return slash_product([space.join([head, word, tail]).strip() for word in alternatives])
 
 
+def is_valid_american_date_string(s, require_year=True):
+    if not isinstance(s, basestring):
+        return False
+    if require_year and len(s.split('/')) != 3:
+        return False
+    return bool(1 <= int(s.split('/')[0]) <= 12 and 1 <= int(s.split('/')[1]) <= 31)
+
+
 def make_date(dt, date_parser=parse_date):
     """Coerce a datetime or string into datetime.date object
 
@@ -2549,8 +2557,12 @@ def make_datetime(dt, date_parser=parse_date):
     >>> make_date(datetime.datetime(1999, 12, 31, 23, 59, 59))
     datetime.date(1999, 12, 31)
     """
-    if isinstance(dt, datetime.datetime):
+    if isinstance(dt, (datetime.datetime, pd.Timestamp, pd.np.datetime64)):
         return dt
+    if isinstance(dt, datetime.date):
+        return datetime.datetime(dt.year, dt.month, dt.day)
+    if isinstance(dt, datetime.time):
+        return datetime.datetime(1, 1, 1, dt.hour, dt.minute, dt.second, dt.microsecond)
     if not dt:
         return datetime.datetime(1970, 1, 1)
     if isinstance(dt, basestring):
@@ -2634,18 +2646,42 @@ def quantize_datetime(dt, resolution=None):
 
 
 def ordinal_float(dt):
-    """Like datetime.ordinal, but rather than integer allows fractional days (so float not ordinal at all)"""
-    if hasattr(dt, 'toordinal'): 
-        dt.toordinal() + ((((dt.microsecond / 1000000.) + dt.second) / 60. + dt.minute) / 60 + dt.hour) / 24.
+    """Like datetime.ordinal, but rather than integer allows fractional days (so float not ordinal at all)
+
+    Similar to the Microsoft Excel numerical representation of a datetime object
+
+    >>> ordinal_float(datetime.datetime(1970, 1, 1))
+    719163.0
+    >>> ordinal_float(datetime.datetime(1, 2, 3, 4, 5, 6, 7))
+    34.17020833341435185
+    """
+    try:
+        return dt.toordinal() + ((((dt.microsecond / 1000000.) + dt.second) / 60. + dt.minute) / 60 + dt.hour) / 24.
+    except:
+        try:
+            return ordinal_float(make_datetime(dt))
+        except:
+            pass
+    dt = list(make_datetime(val) for val in dt)
+    assert(all(isinstance(val, datetime.datetime) for val in dt))
     return [ordinal_float(val) for val in dt]
 
+
 def datetime_from_ordinal_float(days):
-    """Inverse of `ordinal_float()`, converts a float number of days back to a `datetime` object"""
+    """Inverse of `ordinal_float()`, converts a float number of days back to a `datetime` object
+
+    >>> dt = datetime.datetime(1970, 1, 1) 
+    >>> datetime_from_ordinal_float(ordinal_float(dt)) == dt
+    True
+    >>> dt = datetime.datetime(1, 2, 3, 4, 5, 6, 7) 
+    >>> datetime_from_ordinal_float(ordinal_float(dt)) == dt
+    True
+    """
     if isinstance(days, (float, int)):
         dt = datetime.datetime.fromordinal(int(days))
-        seconds = (days - int(days)) * 3600 * 24
+        seconds = (days - int(days)) * 3600. * 24.
         microseconds = (seconds - int(seconds)) * 1000000
-        return dt + datetime.timedelta(days=0, seconds=int(seconds), microseconds=int(microseconds))
+        return dt + datetime.timedelta(days=0, seconds=int(seconds), microseconds=int(round(microseconds)))
     return [datetime_from_ordinal_float(d) for d in days]
 
 
