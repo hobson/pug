@@ -25,7 +25,8 @@ def period_boxplot(df, period='year', column='Adj Close'):
 
 
 def animate_panel(panel, keys=None, columns=None, interval=1000, blit=False, titles='', path='animate_panel', xlabel='Time', ylabel='Value', ext='gif', 
-                  replot=False, linewidth=3, close=False, fontsize=24, background_color='white', alpha=1, figsize=(12,8), xlabel_rotation=-25, plot_kwargs=(('rotation', 30),), **video_kwargs):
+                  replot=False, linewidth=3, close=False, fontsize=24, background_color='white', alpha=1, figsize=(12,8), xlabel_rotation=-25, plot_kwargs=(('rotation', 30),), 
+                  verbosity=1, **video_kwargs):
     """Animate a pandas.Panel by flipping through plots of the data in each dataframe
 
     Arguments:
@@ -55,8 +56,15 @@ def animate_panel(panel, keys=None, columns=None, interval=1000, blit=False, tit
     ...        'beat': np.sin(x + i/10.) + np.sin(x + i/7.),
     ...        }, index=x)
     ...    ) for i in range(50)))
-    >>> ani = animate_panel(panel, interval=200, path='animate_panel_test')  # doctest: +ELLIPSIS
-    <matplotlib.animation.FuncAnimation at ...>
+    >>> animate_panel(panel, interval=200, path='animate_panel_test')  # doctest: +ELLIPSIS, +NORMALIZE_WHITESPACE
+    Drawing frames for a ".gif" animation...
+    Saving video to animate_panel_test.gif...
+              T=10       T=7      beat
+    0.00  0.000000  0.000000  0.000000
+    0.05  0.049979  0.049979  0.099958
+    ...
+
+    [126 rows x 3 columns]
     """
     plot_kwargs = plot_kwargs or {}
     plot_kwargs = dict(plot_kwargs)
@@ -145,7 +153,8 @@ def animate_panel(panel, keys=None, columns=None, interval=1000, blit=False, tit
     # FIXME: doesn't work with ext=mp4
     # init_func to mask out pixels to be redrawn/cleared which speeds redrawing of plot
     def mask_lines():
-        print('initialing mask_lines')
+        if verbosity:
+            print('Initialing mask_lines. . .')
         df = panel[0]
         x = df.index.values
         y = df[columns].values.T
@@ -155,7 +164,8 @@ def animate_panel(panel, keys=None, columns=None, interval=1000, blit=False, tit
             lines[i].set_ydata(np.ma.array(y[i], mask=True))
         return lines
 
-    print('Drawing frames for a ".{0}" animation{1}...'.format(ext, ' with blitting' if blit else ''))
+    if verbosity:
+        print('Drawing frames for a ".{0}" animation{1}. . .'.format(ext, ' with blitting' if blit else ''))
     animate(keys[0])
     ani = animation.FuncAnimation(fig, animate, keys, interval=interval, blit=blit) #, init_func=mask_lines, blit=True)
 
@@ -166,7 +176,8 @@ def animate_panel(panel, keys=None, columns=None, interval=1000, blit=False, tit
     #     kwargs['bitrate'] = min(kwargs['bitrate'], int(8e5 / interval))  # low information rate (long interval) might make it impossible to achieve a higher bitrate ight not
     if path and isinstance(path, basestring):
         path += '.{0}'.format(ext)
-        print('Saving video to {0}...'.format(path))
+        if verbosity:
+            print('Saving video to {0}. . .'.format(path))
         ani.save(path, **kwargs)
 
     if close:
@@ -189,13 +200,22 @@ DATETIME_KWARGS = OrderedDict([('year', 1970), ('month', 1), ('day', 1), ('hour'
 def generate_bins(bins, values=None):
     """Compute bin edges for numpy.histogram based on values and a requested bin parameters
 
+    Unlike `range`, the largest value is included within the range of the last, largest value,
+    so generate_bins(N) with produce a sequence with length N+1
+
     Arguments:
-        bins (int or 2-tuple of floats or sequence of floats) s or the first bin edges
+        bins (int or 2-tuple of floats or sequence of floats) s or the first pair of bin edges
 
     >>> generate_bins(0, [])
-    0
+    [0]
+    >>> generate_bins(3, [])
+    [0, 1, 2, 3]
+    >>> generate_bins(0)
+    [0]
+    >>> generate_bins(10)
+    [0, 1, 2, 3, 4, 5, 6, 7, 8, 9 10]
     >>> generate_bins(10, range(21))
-    [0, 2, 4, 6, 8, 10, 12, 14, 16, 18, 20]
+    [0.0, 2.0, 4.0, 6.0, 8.0, 10.0, 12.0, 14.0, 16.0, 18.0, 20.0]
     >>> generate_bins((0, 3), range(21))
     [0, 3, 6, 9, 12, 15, 18, 21]
     """
@@ -207,16 +227,15 @@ def generate_bins(bins, values=None):
     if not len(bins) in (1, 2):
         return bins
 
-    if values is None:
+    if values in (None, [], ()) or not hasattr(values, '__iter__') or not any(values):
         values = [0]
-
     value_min, value_max = pd.np.min(values), pd.np.max(values)
     value_range = value_max - value_min
 
     if len(bins) == 1:
         if not value_range:
             return range(int(bins[0]) + 1)
-        bins = (0, value_range / bins[0])
+        bins = (0, value_range / float(bins[0]))
     if len(bins) == 2:
         if not value_range:
             return bins
@@ -234,12 +253,20 @@ def generate_bins(bins, values=None):
     return bins
 
 
-def thin_string_list(list_of_strings, max_nonempty_strings=50):
+def thin_string_list(list_of_strings, max_nonempty_strings=50, blank=''):
+    """Designed for composing lists of strings suitable for pyplot axis labels
+
+    Often the xtick spacing doesn't allow room for 100's of text labels, so this
+    eliminates every other one, then every other one of those, until they fit.
+
+    >>> thin_string_list(['x']*20, 5)  # doctring: +NORMALIZE_WHITESPACE
+    ['x', '', '', '', 'x', '', '', '', 'x', '', '', '', 'x', '', '', '', 'x', '', '', '']
+    """
         # blank some labels to make sure they don't overlap
     list_of_strings = list(list_of_strings)
     istep = 2
-    while sum(bool(s) for s in list_of_strings) > 12*4:
-        list_of_strings = ['' if i % istep else s for i, s in enumerate(list_of_strings)]
+    while sum(bool(s) for s in list_of_strings) > max_nonempty_strings:
+        list_of_strings = [blank if i % istep else s for i, s in enumerate(list_of_strings)]
         istep += 2
     return list_of_strings
 
