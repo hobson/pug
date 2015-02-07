@@ -7,8 +7,8 @@ from collections import Counter, OrderedDict
 from traceback import print_exc
 import warnings
 
-import numpy as np
 import pandas as pd
+np = pd.np
 
 from pug.nlp.util import listify, make_datetime, ordinal_float, quantize_datetime, datetime_from_ordinal_float, is_valid_american_date_string
 
@@ -227,7 +227,7 @@ def generate_bins(bins, values=None):
     if not len(bins) in (1, 2):
         return bins
 
-    if values in (None, [], ()) or not hasattr(values, '__iter__') or not any(values):
+    if values is None or not hasattr(values, '__iter__') or not any(values) or not hasattr(values, '__len__') or len(values) < 1:
         values = [0]
     value_min, value_max = pd.np.min(values), pd.np.max(values)
     value_range = value_max - value_min
