@@ -234,10 +234,20 @@ def generate_bins(bins, values=None):
     return bins
 
 
+def thin_string_list(list_of_strings, max_nonempty_strings=50):
+        # blank some labels to make sure they don't overlap
+    list_of_strings = list(list_of_strings)
+    istep = 2
+    while sum(bool(s) for s in list_of_strings) > 12*4:
+        list_of_strings = ['' if i % istep else s for i, s in enumerate(list_of_strings)]
+        istep += 2
+    return list_of_strings
+
+
 def plot_histogram(hist, width=0.9,
-                   title='', xlabel=None, date_sep='-', 
+                   title='', xlabel=None, date_sep='-',
                    labels=None, color=None, alpha=None, normalize=True, percent=False, padding=0.03,
-                   formatter=None, ylabel_precision=2,
+                   formatter=None, ylabel_precision=2, resolution=3,
                    figsize=None, line_color='#C0C0C0', bg_color='white', bg_alpha=1, tight_layout=True,
                    ylabel=None, grid='on', rotation=-60, ha='left',
                    save_path='plot_histogram', dpi=200):
@@ -247,6 +257,20 @@ def plot_histogram(hist, width=0.9,
         his0, his1 = his1[:-1], his0
     elif len(his0) == len(his1) + 1:
         his0 = his0[:-1]
+
+    resolution = resolution or 3
+    if labels in (None, 0, 'date', 'datetime'):
+        try:
+            labels = [date_sep.join(str(val) for val in datetime_from_ordinal_float(val).timetuple()[:resolution]) for val in his0]
+        except:
+            labels = [('{0:.' + str(resolution) + 'g}').format(val) for val in his0]
+    elif labels == False:
+        labels = [''] * len(his0)
+    if len(labels) != len(his0) or not all(isinstance(val, basestring) for val in labels):
+        labels = list(str(s) for s in labels)
+        labels += [''] * (len(his0) - len(labels))
+    
+    labels = thin_string_list(labels, 50)
 
     fig = plt.gcf()
     if figsize and len(figsize)==2:
@@ -273,13 +297,14 @@ def plot_histogram(hist, width=0.9,
 
     ax.bar(his0, his1, width=xwidth, color=color, alpha=alpha)
 
+    print(his0)
     plt.xticks([dy + padding*xwidth for dy in his0], labels, rotation=rotation, ha=ha)
     if xlabel:
         plt.xlabel(xlabel)
     if ylabel:
         plt.ylabel(ylabel)
     if title:
-        plt.title()
+        plt.title(title)
     if formatter and callable(formatter):
         ax.yaxis.set_major_formatter(plt.matplotlib.ticker.FuncFormatter(formatter))
     ax.grid(grid, color=(line_color or 'gray'))
@@ -317,9 +342,10 @@ def plot_histogram(hist, width=0.9,
             save_path = save_path2
         plt.savefig(save_path, facecolor=fig.get_facecolor(), edgecolor='none', dpi=dpi)
 
-    his0 = pd.np.array(his0)
-    # return in standard numpy histogram format, values before bins and bins include all fence posts (edges)
-    return (his1, his0.append(2 * his0[-1] - his0[-2])), fig
+    # return in standard numpy histogram format, values before bins, and bins include all fenceposts (edges)
+    his0, his1 = pd.np.array(his0), pd.np.array(his1)
+    his0 = np.append(his0, 2 * his0[-1] - his0[-2])
+    return (his1, his0), fig
 
 
 def histogram_and_plot(df, column=0, width=0.9, resolution=2, str_timetags=True, counted=False,

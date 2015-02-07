@@ -2559,6 +2559,8 @@ def make_datetime(dt, date_parser=parse_date):
     """
     if isinstance(dt, (datetime.datetime, pd.Timestamp, pd.np.datetime64)):
         return dt
+    if isinstance(dt, float):
+        return datetime_from_ordinal_float(dt)
     if isinstance(dt, datetime.date):
         return datetime.datetime(dt.year, dt.month, dt.day)
     if isinstance(dt, datetime.time):
@@ -2568,10 +2570,15 @@ def make_datetime(dt, date_parser=parse_date):
     if isinstance(dt, basestring):
         return date_parser(dt)
     try:
-        dt = dt.timetuple()[:7]
+        return datetime.datetime(*dt.timetuple()[:7])
     except:
-        dt = tuple(dt)[:7]
-    return datetime.datetime(*dt)
+        dt = list(dt)
+        if 1 <= len(dt) <= 9:
+            try:
+                return datetime.datetime(*dt[:7])
+            except:
+                pass
+    return [make_datetime(val) for val in dt]
 
 
 def make_time(dt, date_parser=parse_date):
