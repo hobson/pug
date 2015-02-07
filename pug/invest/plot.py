@@ -213,7 +213,7 @@ def generate_bins(bins, values=None):
     >>> generate_bins(0)
     [0]
     >>> generate_bins(10)
-    [0, 1, 2, 3, 4, 5, 6, 7, 8, 9 10]
+    [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
     >>> generate_bins(10, range(21))
     [0.0, 2.0, 4.0, 6.0, 8.0, 10.0, 12.0, 14.0, 16.0, 18.0, 20.0]
     >>> generate_bins((0, 3), range(21))
@@ -278,7 +278,14 @@ def plot_histogram(hist, width=0.9,
                    figsize=None, line_color='#C0C0C0', bg_color='white', bg_alpha=1, tight_layout=True,
                    ylabel=None, grid='on', rotation=-60, ha='left',
                    save_path='plot_histogram', dpi=200):
-    """Plot a bar chart from np.histogram data"""
+    """Plot a bar chart from np.histogram data
+
+    >>> plot_histogram(np.histogram([1]*5+[3]*2+list(range(20))+[19.1]), alpha=1)  # doctest: +NORMALIZE_WHITESPACE, +ELLIPSIS
+    ((array([7, 4, 2, 2, 2, 2, 2, 2, 2, 3]),
+    array([  0.  ,   1.91,   3.82,   5.73,   7.64,   9.55,  11.46,  13.37,
+        15.28,  17.19,  19.1 ])),
+    <matplotlib.figure.Figure at ...)
+    """
     his0, his1 = hist[0], hist[1]
     if len(his1) == len(his0) + 1:
         his0, his1 = his1[:-1], his0
