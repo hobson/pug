@@ -271,9 +271,26 @@ def thin_string_list(list_of_strings, max_nonempty_strings=50, blank=''):
     return list_of_strings
 
 
+def prettify_datetimes(datetimes, format="%b %Y", max_nonempty_strings=None, blank=''):
+    """Designed for composing lists of strings suitable for pyplot axis labels
+
+    Often the xtick spacing doesn't allow room for 100's of text labels, so this
+    eliminates every other one, then every other one of those, until they fit.
+
+    >>> thin_string_list(['x']*20, 5)  # doctring: +NORMALIZE_WHITESPACE
+    ['x', '', '', '', 'x', '', '', '', 'x', '', '', '', 'x', '', '', '', 'x', '', '', '']
+    """
+        # blank some labels to make sure they don't overlap
+    datetimes = [make_datetime(d) for d in datetimes]
+    datestrs = [d.strftime("%b %Y") for d in datetimes]
+    if max_nonempty_strings:
+        return thin_string_list(datestrs, max_nonempty_strings=max_nonempty_strings, blank=blank)
+    return datestrs
+
+
 def plot_histogram(hist, width=0.9,
-                   title='', xlabel=None, date_sep='-',
-                   labels=None, color=None, alpha=None, normalize=True, percent=False, padding=0.03,
+                   title='', xlabel=None, datetime_format="%b %Y",
+                   labels=None, color=None, alpha=None, normalize=True, percent=False, padding=0.03, num_labels=24,
                    formatter=None, ylabel_precision=2, resolution=3,
                    figsize=None, line_color='#C0C0C0', bg_color='white', bg_alpha=1, tight_layout=True,
                    ylabel=None, grid='on', rotation=-60, ha='left',
@@ -295,8 +312,9 @@ def plot_histogram(hist, width=0.9,
     resolution = resolution or 3
     if labels in (None, 0, 'date', 'datetime'):
         try:
-            labels = [date_sep.join(str(val) for val in datetime_from_ordinal_float(val).timetuple()[:resolution]) for val in his0]
-        except:
+            labels = prettify_datetimes(['-'.join(str(val) for val in datetime_from_ordinal_float(val).timetuple()[:resolution]) for val in his0],
+                format=datetime_format, max_nonempty_strings=num_labels)
+        except ValueError:
             labels = [('{0:.' + str(resolution) + 'g}').format(val) for val in his0]
     elif labels == False:
         labels = [''] * len(his0)
@@ -383,7 +401,7 @@ def plot_histogram(hist, width=0.9,
 
 
 def histogram_and_plot(df, column=0, width=0.9, resolution=2, str_timetags=True, counted=False,
-                   title='', xlabel=None, date_sep='-', bins=None, 
+                   title='', xlabel=None, datetime_format='%b %d, %Y', num_labels=24, bins=None, 
                    labels=None, color=None, alpha=None, normalize=True, percent=False, padding=0.03,
                    formatter=None, ylabel_precision=2,
                    figsize=None, line_color='#C0C0C0', bg_color='white', bg_alpha=1, tight_layout=True,
@@ -449,7 +467,7 @@ def histogram_and_plot(df, column=0, width=0.9, resolution=2, str_timetags=True,
 
     if counted in (None, 0, False, []):
         if any(his0) and any(his1):
-            labels = [date_sep.join(str(val) for val in datetime_from_ordinal_float(ordinal).timetuple()[:resolution]) for ordinal in his0]
+            labels = prettify_datetimes(['-'.join(str(val) for val in datetime_from_ordinal_float(ordinal).timetuple()[:resolution]) for ordinal in his0], format=datetime_format)
         elif isinstance(df[column].values[0], (float, int)):
             if not any(bins):
                 bins = resolution * 10
@@ -481,7 +499,7 @@ def histogram_and_plot(df, column=0, width=0.9, resolution=2, str_timetags=True,
                 ylabel = 'Scaled Frequency ({0:.6g}*Count/Total)'.format(normalize)
 
     return plot_histogram( hist=(his0, his1), width=width,
-                           title=title, xlabel=xlabel, date_sep=date_sep, 
+                           title=title, xlabel=xlabel, datetime_format=datetime_format, num_labels=num_labels,
                            labels=labels, color=color, alpha=alpha, normalize=normalize, percent=percent, padding=padding,
                            formatter=formatter, ylabel_precision=ylabel_precision,
                            figsize=figsize, line_color=line_color, bg_color=bg_color, bg_alpha=bg_alpha, tight_layout=tight_layout,
