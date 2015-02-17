@@ -110,7 +110,8 @@ def make_time_series(x, t=pd.Timestamp(datetime.datetime(1970,1,1)), freq=None):
                 pass
         x = pd.Series(x)
     else:
-        x = pd.Series(listify(x), index=listify(t))
+        if not isinstance(t, pd.Timestamp):
+            x = pd.Series(listify(x), index=listify(t))
     if not isinstance(x, pd.Series):
         raise TypeError("`make_time_series` expects x to be a type that can be coerced to a Series object, but it's type is: {0}".format(type(x)))
     # By this point x must be a Series, only question is whether its index needs to be converted to a DatetimeIndex
