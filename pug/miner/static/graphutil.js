@@ -302,7 +302,7 @@ function draw_matrix_heat_map(graph, width, height, tag) { //, process_group, pr
         d3.selectAll("text").classed("active", false);
       }
 
-      d3.select("#order").on("change", function() {
+      d3.select("#matrixsortorder").on("change", function() {
         clearTimeout(timeout);
         order(this.value);
       });
