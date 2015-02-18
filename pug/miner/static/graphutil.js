@@ -309,6 +309,6 @@ function draw_matrix_heat_map(graph, width, height, tag) { //, process_group, pr
 
       var timeout = setTimeout(function() {
         order("lex");
-        d3.select("#order").property("selectedIndex", 0).node().focus();
+        d3.select("#matrixsortorder").property("selectedIndex", 0).node().focus();
       }, 2000);
 }

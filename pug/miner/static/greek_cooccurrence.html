@@ -8,7 +8,7 @@
 
 <h1>Word Co-occurrence Matrix</h1>
 <aside style="margin-top:80px;">
-<p>Sort by: <select id="order">
+<p>Sort by: <select id="matrixsortorder">
   <option value="name">Lexographic</option>
   <option value="count">Frequency</option>
   <option value="group">Cluster</option>
@@ -134,7 +134,7 @@ d3.json("greek_cooccurrence.json", function(cooccurrence) {
     d3.selectAll("text").classed("active", false);
   }
 
-  d3.select("#order").on("change", function() {
+  d3.select("#matrixsortorder").on("change", function() {
     clearTimeout(timeout);
     order(this.value);
   });
@@ -158,7 +158,7 @@ d3.json("greek_cooccurrence.json", function(cooccurrence) {
 
   var timeout = setTimeout(function() {
     order("name");
-    d3.select("#order").property("selectedIndex", 0).node().focus();
+    d3.select("#matrixsortorder").property("selectedIndex", 0).node().focus();
   }, 2000);
 });
 
