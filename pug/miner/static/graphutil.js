@@ -213,13 +213,13 @@ function draw_matrix_heat_map(graph, width, height, tag) { //, process_group, pr
 
     // Presort the column, row orderings.
     var sort_choices = {
-        lex: d3.range(matrix.N).sort(function(a, b) { return d3.ascending(graph.nodes[a].name, graph.nodes[b].name); }),
-        value: d3.range(matrix.N).sort(function(a, b) { return graph.nodes[b].value - graph.nodes[a].value; }),
-        group: d3.range(matrix.N).sort(function(a, b) { return graph.nodes[b].group - graph.nodes[a].group; })
+        alphabetic: d3.range(matrix.N).sort(function(a, b) { return d3.ascending(graph.nodes[a].name, graph.nodes[b].name); }),
+        frequency: d3.range(matrix.N).sort(function(a, b) { return graph.nodes[b].value - graph.nodes[a].value; }),
+        cluster: d3.range(matrix.N).sort(function(a, b) { return graph.nodes[b].group - graph.nodes[a].group; })
     };
 
     // Default column & row sort order is alphabetical (actually lexographical).
-    x.domain(sort_choices.lex);
+    x.domain(sort_choices.alphabetic);
 
     svg.append("rect")
         .attr("class", "background")
@@ -304,12 +304,12 @@ function draw_matrix_heat_map(graph, width, height, tag) { //, process_group, pr
       }
 
       d3.select("#matrixsortorder").on("change", function() {
-        clearTimeout(timeout);
+        // clearTimeout(automate_widget_timeout);
         matrix_sort_order(this.value);
       });
 
-      var timeout = setTimeout(function() {
-        matrix_sort_order("lex");
-        d3.select("#matrixsortorder").property("selectedIndex", 0).node().focus();
-      }, 2000);
+      // var automate_widget_timeout = setTimeout(function() {
+      //   matrix_sort_order("alphabetic");
+      //   d3.select("#matrixsortorder").property("selectedIndex", 0).node().focus();
+      // }, 2000);
 }

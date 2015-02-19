@@ -8,9 +8,9 @@
 <h1>Word Co-occurrence Matrix</h1>
 <aside style="margin-top:80px;">
 <p>Sort by: <select id="matrixsortorder">
-  <option value="name">Lexographic</option>
-  <option value="count">Frequency</option>
-  <option value="group">Cluster</option>
+  <option value="alphabetic">Alphabetic</option>
+  <option value="frequency">Frequency</option>
+  <option value="cluster">Cluster</option>
 </select>
 
 <p>This matrix shows word co-occurrences in the mined text documents.</a></i>.
@@ -62,13 +62,13 @@ d3.json("cooccurrence.json", function(cooccurrence) {
 
   // Presort the column, row orderings.
   var matrixsortorders = {
-    name: d3.range(n).sort(function(a, b) { return d3.ascending(nodes[a].name, nodes[b].name); }),
-    count: d3.range(n).sort(function(a, b) { return nodes[b].count - nodes[a].count; }),
-    group: d3.range(n).sort(function(a, b) { return nodes[b].group - nodes[a].group; })
+    alphabetic: d3.range(n).sort(function(a, b) { return d3.ascending(nodes[a].name, nodes[b].name); }),
+    frequency: d3.range(n).sort(function(a, b) { return nodes[b].count - nodes[a].count; }),
+    cluster: d3.range(n).sort(function(a, b) { return nodes[b].group - nodes[a].group; })
   };
 
   // Default sort order.
-  x.domain(matrixsortorders.name);
+  x.domain(matrixsortorders.alphabetic);
 
   svg.append("rect")
       .attr("class", "background")
@@ -121,7 +121,7 @@ d3.json("cooccurrence.json", function(cooccurrence) {
         .on("mouseover", mouseover)
         .on("mouseout", mouseout);
   }
-
+m
   function mouseover(p) {
     d3.selectAll(".row text").classed("active", function(d, i) { return i == p.y; });
     d3.selectAll(".column text").classed("active", function(d, i) { return i == p.x; });
@@ -149,16 +149,14 @@ d3.json("cooccurrence.json", function(cooccurrence) {
   }
 
   d3.select("#matrixsortorder").on("change", function() {
-    clearTimeout(timeout);
+    // clearTimeout(timeout);
     matrix_sort_order(this.value);
   });
 
-
-
-  var timeout = setTimeout(function() {
-    matrix_sort_order("frequency");
-    d3.select("#matrixsortorder").property("selectedIndex", 0).node().focus();
-  }, 2000);
+  // var automate_widge_timeout = setTimeout(function() {
+  //   matrix_sort_order("frequency");
+  //   d3.select("#matrixsortorder").property("selectedIndex", 0).node().focus();
+  // }, 2000);
 });
 
 </script>

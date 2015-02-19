@@ -62,13 +62,13 @@ d3.json("occurrence.json", function(cooccurrence) {
 
   // Presort the column, row orderings.
   var matrixsortorders = {
-    name: d3.range(n).sort(function(a, b) { return d3.ascending(nodes[a].name, nodes[b].name); }),
-    count: d3.range(n).sort(function(a, b) { return nodes[b].count - nodes[a].count; }),
-    group: d3.range(n).sort(function(a, b) { return nodes[b].group - nodes[a].group; })
+    alphabetic: d3.range(n).sort(function(a, b) { return d3.ascending(nodes[a].name, nodes[b].name); }),
+    frequency: d3.range(n).sort(function(a, b) { return nodes[b].count - nodes[a].count; }),
+    cluster: d3.range(n).sort(function(a, b) { return nodes[b].group - nodes[a].group; })
   };
 
   // Default sort order.
-  x.domain(matrixsortorders.name);
+  x.domain(matrixsortorders.alphabetic);
 
   svg.append("rect")
       .attr("class", "background")
@@ -132,7 +132,7 @@ d3.json("occurrence.json", function(cooccurrence) {
   }
 
   d3.select("#matrixsortorder").on("change", function() {
-    clearTimeout(timeout);
+    //clearTimeout(automate_widget_timeout);
     matrix_sort_order(this.value);
   });
 
@@ -153,10 +153,10 @@ d3.json("occurrence.json", function(cooccurrence) {
         .attr("transform", function(d, i) { return "translate(" + x(i) + ")rotate(-90)"; });
   }
 
-  var timeout = setTimeout(function() {
-    matrix_sort_order("name");
-    d3.select("#matrixsortorder").property("selectedIndex", 0).node().focus();
-  }, 2000);
+  // var automate_widget_timeout = setTimeout(function() {
+  //   matrix_sort_order("frequency");
+  //   d3.select("#matrixsortorder").property("selectedIndex", 0).node().focus();
+  // }, 2000);
 });
 
 </script>
