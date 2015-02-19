@@ -1,5 +1,6 @@
 // requires:
 // <script type="text/javascript" src="//cdnjs.cloudflare.com/ajax/libs/d3/3.5.3/d3.min.js"></script>
+// may require:
 // <script type="text/javascript" src="cdnjs.cloudflare.com/ajax/libs/underscore.js/1.7.0/underscore-min.js"></script>
 
 
@@ -104,11 +105,11 @@ function draw_force_directed_graph(graph, width, height, tag, process_group, pro
 
 
     node.append("title")
-        .text(function(d) { 
-            var group_string = "" + process_group(d.group); 
+        .text(function(d) {
+            var group_string = "" + process_group(d.group);
             if (group_string.length <= 0) { 
-                return "" + process_name(d.name); } 
-            else { 
+                return "" + process_name(d.name); }
+            else {
                 return process_name(d.name) + "\n" + group_string; }
             });
 
@@ -235,7 +236,7 @@ function draw_matrix_heat_map(graph, width, height, tag) { //, process_group, pr
     // horizontal line for the "x-axis"
     row.append("line").attr("x2", width);
 
-    function order(value) {
+    function matrix_sort_order(value) {
         x.domain(sort_choices[value]);
 
         var t = svg.transition().duration(5000);
@@ -304,11 +305,11 @@ function draw_matrix_heat_map(graph, width, height, tag) { //, process_group, pr
 
       d3.select("#matrixsortorder").on("change", function() {
         clearTimeout(timeout);
-        order(this.value);
+        matrix_sort_order(this.value);
       });
 
       var timeout = setTimeout(function() {
-        order("lex");
+        matrix_sort_order("lex");
         d3.select("#matrixsortorder").property("selectedIndex", 0).node().focus();
       }, 2000);
 }

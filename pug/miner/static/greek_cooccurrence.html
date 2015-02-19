@@ -64,14 +64,14 @@ d3.json("greek_cooccurrence.json", function(cooccurrence) {
   });
 
   // Presort the column, row orderings.
-  var orders = {
+  var matrixsortorders = {
     name: d3.range(n).sort(function(a, b) { return d3.ascending(nodes[a].name, nodes[b].name); }),
     count: d3.range(n).sort(function(a, b) { return nodes[b].count - nodes[a].count; }),
     group: d3.range(n).sort(function(a, b) { return nodes[b].group - nodes[a].group; })
   };
 
   // Default sort order.
-  x.domain(orders.name);
+  x.domain(matrixsortorders.name);
 
   svg.append("rect")
       .attr("class", "background")
@@ -136,11 +136,11 @@ d3.json("greek_cooccurrence.json", function(cooccurrence) {
 
   d3.select("#matrixsortorder").on("change", function() {
     clearTimeout(timeout);
-    order(this.value);
+    matrix_sort_order(this.value);
   });
 
-  function order(value) {
-    x.domain(orders[value]);
+  function matrix_sort_order(value) {
+    x.domain(matrixsortorders[value]);
 
     var t = svg.transition().duration(5000);
 
@@ -157,7 +157,7 @@ d3.json("greek_cooccurrence.json", function(cooccurrence) {
   }
 
   var timeout = setTimeout(function() {
-    order("name");
+    matrix_sort_order("freq");
     d3.select("#matrixsortorder").property("selectedIndex", 0).node().focus();
   }, 2000);
 });
