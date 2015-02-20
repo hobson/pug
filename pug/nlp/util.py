@@ -248,13 +248,15 @@ def reduce_vocab(tokens, similarity=.85, limit=20, sort_order=-1):
     else:
         tokens_sorted = list(tokens)
         tokens = set(tokens)
+    # print(tokens)
     thesaurus = {}
     for tok in tokens_sorted:
         try:
             tokens.remove(tok)
         except (KeyError, ValueError):
             continue
-        matches = fuzzy.extractBests(tok, tokens, score_cutoff=int(similarity), limit=limit)
+        # FIXME: this is slow because the tokens list must be regenerated and reinstantiated with each iteration
+        matches = fuzzy.extractBests(tok, list(tokens), score_cutoff=int(similarity), limit=limit)
         if matches:
             thesaurus[tok] = zip(*matches)[0]
         else:
@@ -278,16 +280,9 @@ def reduce_vocab_by_len(tokens, similarity=.87, limit=20, reverse=True):
 
     Examples:
       >>> tokens = ('on', 'hon', 'honey', 'ones', 'one', 'two', 'three')
-      >>> answer = {'honey': ('on', 'hon', 'one'),
-      ...           'ones': ('ones',),
-      ...           'three': ('three',),
-      ...           'two': ('two',)}
-      >>> reduce_vocab_by_len(tokens) == {'on': ('on',), 'hon': ('hon',), 'three': ('three',), 'one': ('one',), 'honey': ('honey',), 'ones': ('ones',), 'two': ('two',)}
+      >>> reduce_vocab_by_len(tokens) ==  {'honey': ('on', 'hon', 'one'), 'ones': (), 'three': (), 'two': ()}
       True
-
     """
-    if 0 <= similarity <= 1:
-        similarity *= 100
     tokens = set(tokens)
     tokens_sorted = zip(*sorted([(len(tok), tok) for tok in tokens], reverse=reverse))[1]
     return reduce_vocab(tokens=tokens_sorted, similarity=similarity, limit=limit, sort_order=0)
@@ -1002,7 +997,7 @@ def make_name(s, camel=None, lower=None, space='_', remove_prefix=None, language
     Examples:
       Generate Django model names out of file names
       >>> make_name('women in IT.csv', camel=True)
-      'WomenInItCsv'
+      u'WomenInItCsv'
       
       Generate Django field names out of CSV header strings
       >>> make_name('ID Number (9-digits)')
@@ -1103,6 +1098,27 @@ def make_filename(s, space=None, language='msdos', strict=False, max_len=None, r
         return filename[:int(max_len)]
     else:
         return filename
+
+
+def update_file_ext(filename, ext='txt', sep='.'):
+    """Force the file or path str to end with the indicated extension
+
+    Note: a dot (".") is assumed to delimit the extension
+
+    >>> update_file_ext('/home/hobs/extremofile', 'bac')
+    '/home/hobs/extremofile.bac'
+    >>> update_file_ext('/home/hobs/piano.file/', 'music')
+    '/home/hobs/piano.file/.music'
+    >>> update_file_ext('/home/ninja.hobs/Anglofile', '.uk')
+    '/home/ninja.hobs/Anglofile.uk'
+    >>> update_file_ext('/home/ninja-corsi/audio', 'file', sep='-')
+    '/home/ninja-corsi/audio-file'
+    """ 
+    path, filename = os.path.split(filename)
+
+    if ext and ext[0] == sep:
+        ext = ext[1:]
+    return os.path.join(path, sep.join(filename.split(sep)[:-1 if filename.count(sep) > 1 else 1] + [ext]))
 
 
 def tryconvert(value, desired_types=SCALAR_TYPES, default=None, empty='', strip=True):
@@ -1595,23 +1611,41 @@ def normalize_serial_number(sn,
 
     # Default configuration strips internal and external whitespaces and retains only the last 10 characters
 
-    >>> normalize_serial_number('1C 234567890             ', valid_chars='0123456789')
-    '0234567890'
     >>> normalize_serial_number('1C 234567890             ')
     '0234567890'
+
     >>> normalize_serial_number('1C 234567890             ', max_length=20)
     '000000001C 234567890'
+    >>> normalize_serial_number('Unknown', blank=None, left_fill='')
+    ''
+    >>> normalize_serial_number('N/A', blank='', left_fill='')
+    'A'
+    
     >>> normalize_serial_number('1C 234567890             ', max_length=20, left_fill='')
     '1C 234567890'
+
+    Notice how the max_length setting (20) carries over from the previous test!
+    >>> len(normalize_serial_number('Unknown', blank=False))
+    20
+    >>> normalize_serial_number('Unknown', blank=False)
+    '00000000000000000000'
     >>> normalize_serial_number(' \t1C\t-\t234567890 \x00\x7f', max_length=14, left_fill='0', valid_chars='0123456789ABC', invalid_chars=None, join=True)
     '0001C234567890'
-    >>> normalize_serial_number('Unknown', blank=False)
-    '0000000000'
-    >>> normalize_serial_number('Unknown', blank=None, left_fill='')
-    >>> normalize_serial_number('N/A', blank='', left_fill=None)
-    'NA'
-    >>> normalize_serial_number('NO SERIAL', blank='----------')  # doctest: +NORMALIZE_WHITESPACE
-    '----------'
+
+    Notice how the max_length setting carries over from the previous test!
+    >>> len(normalize_serial_number('Unknown', blank=False))
+    14
+
+    Restore the default max_length setting
+    >>> len(normalize_serial_number('Unknown', blank=False, max_length=10))
+    10
+    >>> normalize_serial_number('NO SERIAL', blank='--=--', left_fill='')  # doctest: +NORMALIZE_WHITESPACE
+    'NO SERIAL'
+    >>> normalize_serial_number('NO SERIAL', blank='', left_fill='')  # doctest: +NORMALIZE_WHITESPACE
+    'NO SERIAL'
+
+    >>> normalize_serial_number('1C 234567890             ', valid_chars='0123456789')
+    '0234567890'
     """
     # All 9 kwargs have persistent default values stored as attributes of the funcion instance
     if max_length is None:
@@ -2187,7 +2221,6 @@ def get_table_from_csv(filename='ssg_report_aarons_returns.csv', delimiter=',', 
     return dos_from_table(table)
 
 
-
 def save_sheet(table, filename, ext='tsv', verbosity=0):
     if ext.lower() == 'tsv':
         sep = '\t'
@@ -2205,7 +2238,6 @@ def save_sheet(table, filename, ext='tsv', verbosity=0):
 def save_sheets(tables, filename, ext='.tsv', verbosity=0):
     for i, table in enumerate(tables):
         save_sheet(table, filename + '_Sheet%d' % i, ext=ext, verbosity=verbosity)
-
 
 
 def shorten(s, max_len=16):
@@ -2459,10 +2491,10 @@ def slash_product(string_or_seq, slash='/', space=' '):
         - Simplify by using a list comprehension?
 
     >>> slash_product("The challenging/confusing interview didn't end with success/offer")  # doctest: +NORMALIZE_WHITESPACE
-    ['The challenging interview didn't end with success',
-     'The challenging interview didn't end with offer',
-     'The confusing interview didn't end with success',
-     'The confusing interview didn't end with offer']
+    ["The challenging interview didn't end with success",
+     "The challenging interview didn't end with offer",
+     "The confusing interview didn't end with success",
+     "The confusing interview didn't end with offer"]
     >>> slash_product('I say goodbye/hello cruel/fun world.')  # doctest: +NORMALIZE_WHITESPACE
     ['I say goodbye cruel world.',
      'I say goodbye fun world.',
@@ -2623,12 +2655,15 @@ def quantize_datetime(dt, resolution=None):
 
     >>> quantize_datetime(datetime.datetime(1970,1,2,3,4,5,6), resolution=3)
     datetime.datetime(1970, 1, 2, 0, 0)
-    >>> quantize_datetime(datetime.datetime(1970,1,2,3,4,5,6))
-    datetime.datetime(1970, 1, 2, 3, 4, 5, 6)
+
+    Notice that 6 is the highest resolution value with any utility
+    >>> quantize_datetime(datetime.datetime(1970,1,2,3,4,5,6), resolution=7)
+    datetime.datetime(1970, 1, 2, 3, 4, 5)
     >>> quantize_datetime(datetime.datetime(1971,2,3,4,5,6,7), 1)
     datetime.datetime(1971, 1, 1, 0, 0)
     """
-    resolution = int(resolution or 7)
+    # FIXME: this automatically truncates off microseconds just because timtuple() only goes out to sec
+    resolution = int(resolution or 6)
     if hasattr(dt, 'timetuple'):
         dt = dt.timetuple()  # strips timezone info
 
@@ -2659,8 +2694,8 @@ def ordinal_float(dt):
 
     >>> ordinal_float(datetime.datetime(1970, 1, 1))
     719163.0
-    >>> ordinal_float(datetime.datetime(1, 2, 3, 4, 5, 6, 7))
-    34.17020833341435185
+    >>> ordinal_float(datetime.datetime(1, 2, 3, 4, 5, 6, 7))  # doctest: +ELLIPSIS
+    34.1702083334143...
     """
     try:
         return dt.toordinal() + ((((dt.microsecond / 1000000.) + dt.second) / 60. + dt.minute) / 60 + dt.hour) / 24.
@@ -2690,6 +2725,27 @@ def datetime_from_ordinal_float(days):
         microseconds = (seconds - int(seconds)) * 1000000
         return dt + datetime.timedelta(days=0, seconds=int(seconds), microseconds=int(round(microseconds)))
     return [datetime_from_ordinal_float(d) for d in days]
+
+
+def timetag_str(dt=None, sep='-', filler='0', resolution=6):
+    """Generate a date-time tag suitable for appending to a file name.
+
+    >>> timetag_str(resolution=3) == '-'.join('{0:02d}'.format(i) for i in tuple(datetime.datetime.now().timetuple()[:3]))
+    True
+    >>> timetag_str(datetime.datetime(2004,12,8,1,2,3,400000))
+    '2004-12-08-01-02-03'
+    >>> timetag_str(datetime.datetime(2004,12,8))
+    '2004-12-08-00-00-00'
+    >>> timetag_str(datetime.datetime(2003,6,19), filler='')
+    '2003-6-19-0-0-0'
+    """
+    resolution = int(resolution or 6)
+    if sep in (None, False):
+        sep = ''
+    sep = str(sep)
+    dt = datetime.datetime.now() if dt is None else dt
+    # FIXME: don't use timetuple which truncates microseconds
+    return sep.join(('{0:' + filler + ('2' if filler else '') + 'd}').format(i) for i in tuple(dt.timetuple()[:resolution]))
 
 
 def days_since(dt, dt0=datetime.datetime(1970, 1, 1, 0, 0, 0)):
