@@ -6,7 +6,6 @@ import datetime
 import itertools
 import random
 import warnings
-import os
 
 import numpy as np
 import pandas as pd
@@ -14,9 +13,20 @@ from scipy import integrate
 
 from matplotlib import pyplot as plt
 from scipy.optimize import minimize
-from mpl_toolkits.mplot3d import Axes3D
 
-from pug.nlp.util import listify, make_filename
+from pug.nlp.util import listify
+
+
+
+
+def blended_rolling_apply(series, window=2, fun=pd.np.mean):
+    return pd.Series(np.fromiter((fun(series[:i+1]) for i in range(window - 1)), type(series.values[0])), index=series.index[:window - 1]).append(
+        pd.rolling_apply(series, window, fun)[window - 1:])
+
+
+def rolling_latch(series, billing_period=31, latch_decay=1.0):
+    # FIXME: implement recursive exponential decay filter rather than the nonrecursive, deratring done here
+    return pd.blended_rolling_apply(series, billing_period, lambda val: latch_decay * pd.np.max(val))
 
 
 def clean_dataframe(df):
@@ -25,6 +35,25 @@ def clean_dataframe(df):
     df = df.fillna(0.0)
     return df
 
+
+def clean_dataframes(dfs):
+    """Fill NaNs with the previous value, the next value or if all are NaN then 1.0
+
+    TODO: 
+      Linear interpolation and extrapolation
+
+    Arguments:
+      dfs (list of dataframes): list of dataframes that contain NaNs to be removed
+
+    Returns:
+      list of dataframes: list of dataframes with NaNs replaced by interpolated values
+    """
+    if isinstance(dfs, (list)):
+        for df in dfs:
+            df = clean_dataframe(df)
+        return dfs
+    else:
+        return [clean_dataframe(dfs)]
 
 def get_symbols_from_list(list_name):
     """Retrieve a named (symbol list name) list of strings (symbols)
@@ -175,55 +204,6 @@ def pandas_mesh(df):
         Zs += [Z]
     return OrderedDict((df.columns[i], m) for i, m in enumerate([X, Y] + Zs))
 
-
-def pandas_surf(df, show=True, save=True, filename_space='_', *args, **kwargs):
-    """
-
-    Arguments:
-      save: if `bool(save)` then the 3D surface figure is saved to the indicated file as a PNG.
-        A default file name is constructued from the 3rd column heading/label in `df`.
-        If `save` is a `str` and a valid path to a directory, the default file name is appended.
-        Otherwise if `save` is a non-dir `str` then it is assumed to be a full path and file name.
-      filename_space: character to replace spaces in the file name with
-      args: passed along to `plot_surface`
-      kwargs: passed along to `plot_surface`
-    """
-    xyzs = pandas_mesh(df)
-    #print(xyzs)
-    legends = xyzs.keys()[:3]
-    max_z = df[df.columns[2]].max()
-    peak_location = df[df[df.columns[2]] == max_z].values[0]
-    fig = plt.figure(figsize=(12,8.5))
-    ax = Axes3D(fig)  # only works if Axes3D has been imported even if unused: fig.add_subplot(111, projection='3d')
-    surf = ax.plot_surface(*(xyzs.values()[:3]), 
-        rstride=1, cstride=1, cmap=plt.cm.coolwarm,
-        linewidth=0, antialiased=False)
-    ax.set_zlim(0, 100)
-    plt.xlabel(legends[0])
-    plt.ylabel(legends[1])
-    title = legends[2]
-    title += ' Peak at ({0:.3g}, {1:.3g})'.format(*list(peak_location))
-    if len(peak_location) > 2:
-        lparen, rparen = ('(', ')') if len(peak_location) > 3 else ('', '')
-        title += ' = ' + lparen + (', '.join(('{0:.3g}'.format(pv) if isinstance(pv, float) else str(pv)) for pv in peak_location[2:])) + rparen
-    plt.title(title)
-    plt.grid('on')
-    ax.zaxis.set_major_formatter(plt.FormatStrFormatter('%g%%'))
-    fig.colorbar(surf, shrink=0.5, aspect=5)
-    if show:
-        plt.show(block=False)
-    if save:
-        path = make_filename(legends[2], strict=False, space=filename_space)
-        if isinstance(save, basestring):
-            # if save contains any string formatting braces, e.g. {0}, then substitude the max_z value 
-            save = save.format(max_z)
-            if os.path.isdir(save):
-                path = os.path.join(save, )
-            else:
-                path = save
-        plt.figure(fig.number)
-        plt.savefig(path)
-    return df
 
 
 def integrated_change(ts, integrator=integrate.trapz, clip_floor=None, clip_ceil=float('inf')):
@@ -717,3 +697,22 @@ def normalize_symbols(symbols, *args, **kwargs):
         for sym in list(symbols):
             ans += normalize_symbols(sym, postprocess=postprocess)
         return list(set(ans))
+
+
+def series_bollinger(series, window=20, sigma=1., plot=False):
+    mean = pd.rolling_mean(series, window=window)
+    std = pd.rolling_std(series, window=window)
+    df = pd.DataFrame({'value': series, 'mean': mean, 'upper': mean + sigma * std, 'lower': mean - sigma * std})
+    bollinger_values = (series - pd.rolling_mean(series, window=window)) / (pd.rolling_std(series, window=window))
+    if plot:
+        df.plot()
+        pd.DataFrame({'bollinger': bollinger_values}).plot()
+        plt.show()
+    return bollinger_values
+
+
+def frame_bollinger(df, window=20, sigma=1., plot=False):
+    bol = pd.DataFrame()
+    for col in df.columns:
+        bol[col] = series_bollinger(df[col], plot=False)
+    return bol

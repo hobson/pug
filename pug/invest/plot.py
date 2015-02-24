@@ -10,10 +10,15 @@ import warnings
 import pandas as pd
 np = pd.np
 
-from pug.nlp.util import listify, make_datetime, ordinal_float, quantize_datetime, datetime_from_ordinal_float, is_valid_american_date_string
+from pug.nlp.util import listify, make_datetime, ordinal_float, make_filename
+from pug.nlp.util import quantize_datetime, datetime_from_ordinal_float, is_valid_american_date_string
 
 from matplotlib import pyplot as plt
 from matplotlib import animation
+from mpl_toolkits.mplot3d import Axes3D
+
+import util
+
 
 
 def period_boxplot(df, period='year', column='Adj Close'):
@@ -505,3 +510,53 @@ def histogram_and_plot(df, column=0, width=0.9, resolution=2, str_timetags=True,
                            figsize=figsize, line_color=line_color, bg_color=bg_color, bg_alpha=bg_alpha, tight_layout=tight_layout,
                            ylabel=ylabel, grid=grid, rotation=rotation, ha=ha,
                            save_path=save_path, dpi=dpi)
+
+
+def pandas_surf(df, show=True, save=True, filename_space='_', *args, **kwargs):
+    """
+
+    Arguments:
+      save: if `bool(save)` then the 3D surface figure is saved to the indicated file as a PNG.
+        A default file name is constructued from the 3rd column heading/label in `df`.
+        If `save` is a `str` and a valid path to a directory, the default file name is appended.
+        Otherwise if `save` is a non-dir `str` then it is assumed to be a full path and file name.
+      filename_space: character to replace spaces in the file name with
+      args: passed along to `plot_surface`
+      kwargs: passed along to `plot_surface`
+    """
+    xyzs = util.pandas_mesh(df)
+    #print(xyzs)
+    legends = xyzs.keys()[:3]
+    max_z = df[df.columns[2]].max()
+    peak_location = df[df[df.columns[2]] == max_z].values[0]
+    fig = plt.figure(figsize=(12,8.5))
+    ax = Axes3D(fig)  # only works if Axes3D has been imported even if unused: fig.add_subplot(111, projection='3d')
+    surf = ax.plot_surface(*(xyzs.values()[:3]), 
+        rstride=1, cstride=1, cmap=plt.cm.coolwarm,
+        linewidth=0, antialiased=False)
+    ax.set_zlim(0, 100)
+    plt.xlabel(legends[0])
+    plt.ylabel(legends[1])
+    title = legends[2]
+    title += ' Peak at ({0:.3g}, {1:.3g})'.format(*list(peak_location))
+    if len(peak_location) > 2:
+        lparen, rparen = ('(', ')') if len(peak_location) > 3 else ('', '')
+        title += ' = ' + lparen + (', '.join(('{0:.3g}'.format(pv) if isinstance(pv, float) else str(pv)) for pv in peak_location[2:])) + rparen
+    plt.title(title)
+    plt.grid('on')
+    ax.zaxis.set_major_formatter(plt.FormatStrFormatter('%g%%'))
+    fig.colorbar(surf, shrink=0.5, aspect=5)
+    if show:
+        plt.show(block=False)
+    if save:
+        path = make_filename(legends[2], strict=False, space=filename_space)
+        if isinstance(save, basestring):
+            # if save contains any string formatting braces, e.g. {0}, then substitude the max_z value 
+            save = save.format(max_z)
+            if os.path.isdir(save):
+                path = os.path.join(save, )
+            else:
+                path = save
+        plt.figure(fig.number)
+        plt.savefig(path)
+    return df

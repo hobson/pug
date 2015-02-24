@@ -2257,9 +2257,26 @@ def shorten(s, max_len=16):
     return short[:max_len]
 
 
-def abbreviate(word):
-    return abbreviate.words.get(word, word)
-abbreviate.words = {'account': 'acct', 'number': 'num', 'customer': 'cust', 'member': 'membr' }
+def abbreviate(s):
+    """Some basic abbreviations
+
+    TODO: load a large dictionary of abbreviations from NLTK, etc
+    """
+    return abbreviate.words.get(s, s)
+abbreviate.words = {'account': 'acct', 'number': 'num', 'customer': 'cust', 'member': 'membr', 'building': 'bldg', 'serial number': 'SN', 'social security number': 'SSN'}
+
+
+def remove_internal_vowels(s, space=''):
+    # because this pattern overlaps for vowels separated by a single or no consonant, it must be run several times
+    internal_vowel = re.compile(r'([A-Za-z])[aeiou]([A-Za-z])')
+    strlen = len(s)
+    while True:
+        s = internal_vowel.sub(r'\1\2', s)
+        if len(s) < strlen:
+            strlen = len(s)
+        else:
+            break
+    return re.sub(r'\s', space, s)
 
 
 def normalize_year(y):
