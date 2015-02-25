@@ -146,16 +146,102 @@ def qs_to_table(qs, excluded_fields=['id']):
     return rows
 
 
-def reverse_dict(d):
-    return dict((v, k) for (k, v) in dict(d).iteritems())
+def force_hashable(obj, recursive=True):
+    """Force frozenset() command to freeze the order and contents of multables and iterables like lists, dicts, generators
+
+    Useful for memoization and constructing dicts or hashtables where keys must be immutable.
+
+    >>> force_hashable([1,2.,['3']])
+    (1, 2.0, ('3',))    
+    >>> force_hashable(i for i in range(3))
+    (1, 2, 3)
+    >>> from collections import Counter
+    >>> force_hashable(Counter('abbccc')) ==  (('a', 1), ('c', 3), ('b', 2))
+    True
+    """
+    try:
+        hash(obj)
+        return obj
+    except:
+        if hasattr(obj, '__iter__'):
+            # looks like a Mapping if it has .get() and .items(), so should treat it like one
+            if hasattr(obj, 'get') and hasattr(obj, 'items'):
+                # FIXME: prevent infinite recursion:
+                #        tuples don't have 'items' method so this will recurse forever if elements within new tuple aren't hashable and recurse has not been set!
+                return force_hashable(tuple(obj.items()))
+            if recursive:
+                return tuple(force_hashable(item) for item in obj)
+            return tuple(obj)
+    # strings are hashable so this ends the recursion for any object without an __iter__ method (strings do not)
+    return unicode(obj)
 
 
-def reverse_dict_of_lists(d):
-    ans = {}
-    for (k, v) in dict(d).iteritems():
-        for new_k in list(v):
-            ans[new_k] = k
-    return ans
+def inverted_dict(d):
+    """Return a dict with swapped keys and values
+
+    >>> inverted_dict({0: ('a', 'b'), 1: 'cd'}) == {'a': 0, 'b': 0, 'cd': 1}
+    """
+    return dict((force_hashable(v), k) for (k, v) in dict(d).iteritems())
+
+
+def inverted_dict_of_lists(d):
+    """Return a dict where the keys are all the values listed in the values of the original dict
+
+    >>> inverted_dict_of_lists({0: ['a', 'b'], 1: 'cd'}) == {'a': 0, 'b': 0, 'cd': 1}
+    True
+    """
+    new_dict = {}
+    for (old_key, old_value_list) in dict(d).iteritems():
+        for new_key in listify(old_value_list):
+            new_dict[new_key] = old_key
+    return new_dict
+
+
+def sort_strings(strings, sort_order=None, reverse=False, case_sensitive=False, sort_order_first=True):
+    """Sort a list of strings according to the provided sorted list of string prefixes
+
+    TODO:
+        - Provide an option to use `.startswith()` rather than a fixes prefix length (will be much slower)
+
+    Arguments:
+        sort_order_first (bool): Whether strings in sort_order should always preceed "unknown" strings
+        sort_order (sequence of str): Desired ordering as a list of prefixes to the strings
+            If sort_order strings have varying length, the max length will determine the prefix length compared
+        reverse (bool): whether to reverse the sort orded. Passed through to `sorted(strings, reverse=reverse)`
+        case_senstive (bool): Whether to sort in lexographic rather than alphabetic order
+         and whether the prefixes  in sort_order are checked in a case-sensitive way 
+
+    Examples:
+        >>> sort_strings(['morn32', 'morning', 'unknown', 'less unknown', 'lucy', 'date', 'dow', 'doy', 'moy'], ('dat', 'dow', 'moy', 'dom', 'moy', 'mor'), reverse=True)
+        ['unknown', 'morning', 'morn32', 'moy', 'lucy', 'less unkown', 'doy', 'dow', 'date']
+        >>> sort_strings(['morn32', 'morning', 'unknown', 'date', 'dow', 'doy', 'moy'], ('dat', 'dow', 'moy', 'dom', 'moy', 'mor'))
+        ['date', 'dow', 'doy', 'moy', 'morn32', 'morning', 'unknown']
+
+        By default, strings whose prefixes don't exist in sort_order are interleaved into the sorted list in alphabetic order
+        >>> sort_strings(['morn32', 'morning', 'unknown', 'lucy', 'less unknown', 'date', 'dow', 'doy', 'moy'], ('dat', 'dow', 'moy', 'dom', 'moy', 'mor'))
+        ['date', 'dow', 'doy', 'less unknown', 'moy', 'morn32', 'morning', 'unknown']
+    """
+    if not case_sensitive:
+        sort_order = tuple(s.lower() for s in sort_order)
+        strings = tuple(s.lower() for s in strings)
+    prefix_len = max(len(s) for s in sort_order)
+
+    def compare(a, b, prefix_len=prefix_len):
+        if prefix_len:
+            if a[:prefix_len] in sort_order:
+                if b[:prefix_len] in sort_order:
+                    comparison = sort_order.index(a[:prefix_len]) - sort_order.index(b[:prefix_len])
+                    comparison /= abs(comparison or 1)
+                    if comparison:
+                        return comparison * (-2 * reverse + 1)
+                elif sort_order_first:
+                    return -1
+            # b may be in sort_order list, so reverse the order and find out
+            elif sort_order_first:
+                return - compare(b, a, prefix_len)
+        return (-1 * (a < b) + 1 * (a > b)) * (-2 * reverse + 1)
+
+    return sorted(strings, cmp=compare)
 
 
 def clean_field_dict(field_dict, cleaner=unicode.strip, time_zone=None):

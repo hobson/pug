@@ -10,6 +10,41 @@ import pandas as pd
 from matplotlib import pyplot as plt
 
 
+def dataset_nan_locs(ds):
+    """
+    from http://stackoverflow.com/a/14033137/623735
+    # gets the indices of the rows with nan values in a dataframe
+    pd.isnull(df).any(1).nonzero()[0]
+    """
+    ans = []
+    for sampnum, sample in enumerate(ds):
+        if pd.isnull(sample).any():
+            ans += [{
+                'sample': sampnum,
+                'input':  pd.isnull(sample[0]).nonzero()[0],
+                'output': pd.isnull(sample[1]).nonzero()[0],
+                }]
+    return ans
+
+
+def table_nan_locs(table):
+    """
+    from http://stackoverflow.com/a/14033137/623735
+    # gets the indices of the rows with nan values in a dataframe
+    pd.isnull(df).any(1).nonzero()[0]
+    """
+    ans = []
+    for rownum, row in enumerate(table):
+        try:
+            if pd.isnull(row).any():
+                colnums = pd.isnull(row).nonzero()[0]
+                ans += [(rownum, colnum) for colnum in colnums]
+        except AttributeError:  # table is really just a sequence of scalars
+            if pd.isnull(row):
+                ans += [(rownum, 0)]
+    return ans
+
+
 def plot_network_results(network, ds=None, mean=0, std=1, title='', show=True, save=True):
     """Identical to plot_trainer except `network` and `ds` must be provided separately"""
     df = sim_network(network=network, ds=ds, mean=mean, std=std)

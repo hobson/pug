@@ -17,16 +17,18 @@ from scipy.optimize import minimize
 from pug.nlp.util import listify
 
 
-
-
 def blended_rolling_apply(series, window=2, fun=pd.np.mean):
-    return pd.Series(np.fromiter((fun(series[:i+1]) for i in range(window - 1)), type(series.values[0])), index=series.index[:window - 1]).append(
-        pd.rolling_apply(series, window, fun)[window - 1:])
-
+    new_series = pd.Series(np.fromiter((fun(series[:i+1]) for i in range(window - 1)), type(series.values[0])), index=series.index[:window - 1]).append(
+        pd.rolling_apply(series.copy(), window, fun)[window - 1:])
+    assert(len(series) == len(new_series), 
+            "blended_rolling_apply should alwas return a series of the same length! len(series) = {0} != {1} = len(new_series".format(
+                len(series), len(new_series)))
+    assert(not any(np.isnan(val) or val is None for val in new_series))
+    return new_series
 
 def rolling_latch(series, billing_period=31, latch_decay=1.0):
     # FIXME: implement recursive exponential decay filter rather than the nonrecursive, deratring done here
-    return pd.blended_rolling_apply(series, billing_period, lambda val: latch_decay * pd.np.max(val))
+    return blended_rolling_apply(series, billing_period, lambda val: latch_decay * pd.np.max(val))
 
 
 def clean_dataframe(df):
