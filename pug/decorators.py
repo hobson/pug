@@ -29,39 +29,12 @@ except RuntimeError:
     print '         Django settings may have already been configured elsewhere'
 
 from nlp.db import representation
+from nlp.util import force_hashable
 from inspect import getmodule
 from nlp.util import make_name
 from django.db.models.fields.related import RelatedField
 
 #from exceptions import TypeError
-
-def force_hashable(obj, recursive=True):
-    """Force frozenset() command to freeze the order and contents of multables and iterables like lists, dicts, generators
-
-    Useful for memoization and constructing dicts or hashtables where keys must be immutable.
-
-    >>> force_hashable([1,2.,['3']])
-    (1, 2.0, ('3',))    
-    >>> force_hashable(i for i in range(3))
-    (1, 2, 3)
-    >>> from collections import Counter
-    >>> force_hashable(Counter('abbccc')) ==  (('a', 1), ('c', 3), ('b', 2))
-    True
-    """
-    try:
-        hash(obj)
-        return obj
-    except:
-        if hasattr(obj, '__iter__'):
-            # looks like a Mapping if it has .get() and .items(), so should treat it like one
-            if hasattr(obj, 'get') and hasattr(obj, 'items'):
-                # tuples don't have an 'items' method so this should recurse forever
-                return force_hashable(tuple(obj.items()))
-            if recursive:
-                return tuple(force_hashable(item) for item in obj)
-            return tuple(obj)
-    # strings are hashable so this ends the recursion
-    return unicode(obj)
 
 
 def force_frozenset(obj):

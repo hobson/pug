@@ -1,20 +1,82 @@
 # util.py
 from __future__ import print_function
 
-from collections import Mapping
+from collections import Mapping, OrderedDict
+import datetime
+import itertools
+import random
+import warnings
 
 import numpy as np
 import pandas as pd
 from scipy import integrate
 
-from nlp.util import listify
+from matplotlib import pyplot as plt
+from scipy.optimize import minimize
+
+from pug.nlp.util import listify
+
+
+def blended_rolling_apply(series, window=2, fun=pd.np.mean):
+    new_series = pd.Series(np.fromiter((fun(series[:i+1]) for i in range(window - 1)), type(series.values[0])), index=series.index[:window - 1]).append(
+        pd.rolling_apply(series.copy(), window, fun)[window - 1:])
+    assert(len(series) == len(new_series), 
+            "blended_rolling_apply should alwas return a series of the same length! len(series) = {0} != {1} = len(new_series".format(
+                len(series), len(new_series)))
+    assert(not any(np.isnan(val) or val is None for val in new_series))
+    return new_series
+
+def rolling_latch(series, billing_period=31, latch_decay=1.0):
+    # FIXME: implement recursive exponential decay filter rather than the nonrecursive, deratring done here
+    return blended_rolling_apply(series, billing_period, lambda val: latch_decay * pd.np.max(val))
+
 
 def clean_dataframe(df):
     """Fill NaNs with the previous value, the next value or if all are NaN then 1.0"""
     df = df.fillna(method='ffill')
-    df = df.fillna(method='bfill')
-    df = df.fillna(1.0)
+    df = df.fillna(0.0)
     return df
+
+
+def clean_dataframes(dfs):
+    """Fill NaNs with the previous value, the next value or if all are NaN then 1.0
+
+    TODO: 
+      Linear interpolation and extrapolation
+
+    Arguments:
+      dfs (list of dataframes): list of dataframes that contain NaNs to be removed
+
+    Returns:
+      list of dataframes: list of dataframes with NaNs replaced by interpolated values
+    """
+    if isinstance(dfs, (list)):
+        for df in dfs:
+            df = clean_dataframe(df)
+        return dfs
+    else:
+        return [clean_dataframe(dfs)]
+
+def get_symbols_from_list(list_name):
+    """Retrieve a named (symbol list name) list of strings (symbols)
+
+    Example:
+      # If you've installed the QSTK Quantitative analysis toolkit 
+      # you'll get a list of the symbols that were members of the S&P 500 in 2012.
+      # Otherwise you'll get an empty list.
+      >>> len(get_symbols_from_list('sp5002012')) in (0, 501)
+      True
+    """
+    try:
+        # quant software toolkit has a method for retrieving lists of symbols like S&P500 for 2012 with 'sp5002012'
+        import QSTK.qstkutil.DataAccess as da
+        dataobj = da.DataAccess('Yahoo')
+    except:
+        return []
+    try:
+        return dataobj.get_symbols_from_list(list_name)
+    except:
+        raise
 
 
 def make_symbols(symbols, *args):
@@ -57,6 +119,95 @@ def make_symbols(symbols, *args):
         return list(set(ans))
 
 
+def make_time_series(x, t=pd.Timestamp(datetime.datetime(1970,1,1)), freq=None):
+    """Convert a 2-D array of time/value pairs (or pair of time/value vectors) into a pd.Series time-series
+
+    >>> make_time_series(range(3))  # doctest: +NORMALIZE_WHITESPACE
+    1970-01-01 00:00:00    0
+    1970-01-01 00:15:00    1
+    1970-01-01 00:30:00    2
+    dtype: int64
+    """
+    if isinstance(x, pd.DataFrame):
+        x = pd.Series(x[x.columns[0]])
+    elif not isinstance(x, pd.Series) and (not isinstance(t, (pd.Series, pd.Index, list, tuple)) or not len(t)):
+        print("Coercing a non-Series")
+        if len(x) == 2: 
+            t, x = listify(x[0]), listify(x[1])
+        elif len(x) >= 2:
+            try:
+                t, x = zip(*x)
+            except (ValueError, IndexError, TypeError):
+                pass
+        x = pd.Series(x)
+    else:
+        if not isinstance(t, pd.Timestamp):
+            x = pd.Series(listify(x), index=listify(t))
+    if not isinstance(x, pd.Series):
+        raise TypeError("`make_time_series` expects x to be a type that can be coerced to a Series object, but it's type is: {0}".format(type(x)))
+    # By this point x must be a Series, only question is whether its index needs to be converted to a DatetimeIndex
+    if x.index[0] != 0 and isinstance(x.index[0], (datetime.date, datetime.datetime, pd.Timestamp, basestring, float, np.int64, int)):
+        t = x.index
+    elif isinstance(t, (datetime.date, datetime.datetime, pd.Timestamp, basestring, float, np.int64, int)):
+        if not freq:
+            freq = '15min'
+            warnings.warn('Assumed time series freq to be {0} though no freq argument was provided!'.format(freq), RuntimeWarning)
+        t = pd.date_range(t, periods=len(x), freq=freq)
+    x = pd.Series(x, index=t)
+    if isinstance(x, pd.Series):
+        x.index = pd.DatetimeIndex(x.index.values)
+    return x
+
+
+def pandas_mesh(df):
+    """Create numpy 2-D "meshgrid" from 3+ columns in a Pandas DataFrame
+
+    Arguments:
+      df (DataFrame): Must have 3 or 4 columns of numerical data
+
+    Returns:
+      OrderedDict: column labels from the data frame are the keys, values are 2-D matrices
+        All matrices have shape NxM, where N = len(set(df.iloc[:,0])) and M = len(set(df.iloc[:,1]))
+
+    >>> pandas_mesh(pd.DataFrame(np.arange(18).reshape(3,6), columns=list('ABCDEF'))).values()  # +doctest.NORMALIZE_WHITESPACE
+    [array([[ 0,  6, 12],
+            [ 0,  6, 12],
+            [ 0,  6, 12]]),
+     array([[ 1,  1,  1],
+            [ 7,  7,  7],
+            [13, 13, 13]]),
+     array([[  2.,  nan,  nan],
+            [ nan,   8.,  nan],
+            [ nan,  nan,  14.]]),
+     array([[  3.,  nan,  nan],
+            [ nan,   9.,  nan],
+            [ nan,  nan,  15.]]),
+     array([[  4.,  nan,  nan],
+            [ nan,  10.,  nan],
+            [ nan,  nan,  16.]]),
+     array([[  5.,  nan,  nan],
+            [ nan,  11.,  nan],
+            [ nan,  nan,  17.]])]
+    """
+    xyz = [df[c].values for c in df.columns]
+    index = pd.MultiIndex.from_tuples(zip(xyz[0], xyz[1]), names=['x', 'y'])
+    # print(index)
+    series = [pd.Series(values, index=index) for values in xyz[2:]]
+    # print(series)
+    X, Y = np.meshgrid(sorted(list(set(xyz[0]))), sorted(list(set(xyz[1]))))
+    N, M = X.shape
+    Zs = []
+    # print(Zs)
+    for k, s in enumerate(series):
+        Z = np.empty(X.shape)
+        Z[:] = np.nan
+        for i, j in itertools.product(range(N), range(M)):
+            Z[i, j] = s.get((X[i, j], Y[i, j]), np.NAN)
+        Zs += [Z]
+    return OrderedDict((df.columns[i], m) for i, m in enumerate([X, Y] + Zs))
+
+
+
 def integrated_change(ts, integrator=integrate.trapz, clip_floor=None, clip_ceil=float('inf')):
     """Total value * time above the starting value within a TimeSeries"""
     integrator = get_integrator(integrator)
@@ -79,30 +230,84 @@ def integrated_change(ts, integrator=integrate.trapz, clip_floor=None, clip_ceil
 
 
 def insert_crossings(ts, thresh):
-    """Insert/append threshold crossing points (time and value) into a timeseries (pd.Series)"""
-    # value immediately before an upward thresh crossing
-    preup = ts[(ts < thresh) & (ts.shift(-1) > thresh)]
-    # values immediately after an upward thresh crossing
-    postup = ts[(ts.shift(1) < thresh) & (ts > thresh)]
-    # value immediately after a downward thresh crossing
-    postdown = ts[(ts < thresh) & (ts.shift(1) > thresh)]
-    # value immediately before an upward thresh crossing
-    predown = ts[(ts.shift(-1) < thresh) & (ts > thresh)]
-    # upward slope (always positive) between preup and postup in units of "value" per nanosecond (timestamps convert to floats as nanoseconds)
-    slopeup = (postup.values - preup.values) / (postup.index.values - preup.index.values).astype(np.float64)
-    # upward crossing point index/time
-    tup = preup.index.values +  ((thresh - preup.values) / slopeup).astype(np.timedelta64)
-    # downward slope (always negative) between predown and postdown in units of "value" per nanosecond (timestamps convert to floats as nanoseconds)
-    slopedown = (postdown.values - predown.values) / (postdown.index.values - predown.index.values).astype(np.float64)
-    # upward crossing point index/time
-    tdown = predown.index.values + ((thresh - predown.values) / slopedown).astype(np.timedelta64)
-    # insert crossing points into time-series (if it had a regular sample period before, it won't now!)
-    ts = ts.append(pd.Series(thresh*np.ones(len(tup)), index=tup))
-    # insert crossing points into time-series (if it had a regular sample period before, it won't now!)
-    ts = ts.append(pd.Series(thresh*np.ones(len(tdown)), index=tdown))
-    # if you don't `sort_index()`, numerical integrators in `scipy.integrate` will give the wrong answer
-    return ts.sort_index()
+    """Insert/append threshold crossing points (time and value) into a timeseries (pd.Series)
 
+    Arguments:
+      ts (pandas.Series): Time series of values to be interpolated at `thresh` crossings
+      thresh (float or np.float64):
+    """
+    # import time
+    # tic0 = time.clock(); tic = tic0
+
+    # int64 for fast processing, pandas.DatetimeIndex is 5-10x slower, 0.3 ms
+    index = ts.index
+    index_type = type(index)
+    ts.index = ts.index.astype(np.int64)
+    # toc = time.clock();
+    # print((toc-tic)*1000); tic = time.clock()
+    
+    # value immediately before an upward thresh crossing, 6 ms
+    preup = ts[(ts < thresh) & (ts.shift(-1) > thresh)]
+    # toc = time.clock();
+    # print((toc-tic)*1000); tic = time.clock()
+
+    # values immediately after an upward thresh crossing, 4 ms\
+    postup = ts[(ts.shift(1) < thresh) & (ts > thresh)]
+    # toc = time.clock();
+    # print((toc-tic)*1000); tic = time.clock()
+
+    # value immediately after a downward thresh crossing, 1.8 ms
+    postdown = ts[(ts < thresh) & (ts.shift(1) > thresh)]
+    # toc = time.clock();
+    # print((toc-tic)*1000); tic = time.clock()
+
+    # value immediately before an upward thresh crossing, 1.9 ms
+    predown = ts[(ts.shift(-1) < thresh) & (ts > thresh)]
+    # toc = time.clock();
+    # print((toc-tic)*1000); tic = time.clock()
+
+    # upward slope (always positive) between preup and postup in units of "value" per nanosecond (timestamps convert to floats as nanoseconds), 0.04 ms
+    slopeup = (postup.values - preup.values) / (postup.index.values - preup.index.values).astype(np.float64)
+    # toc = time.clock();
+    # print((toc-tic)*1000); tic = time.clock()
+
+    # upward crossing point index/time, 0.04 ms
+    tup = preup.index.values +  ((thresh - preup.values) / slopeup).astype(np.int64)
+    # toc = time.clock();
+    # print((toc-tic)*1000); tic = time.clock()
+
+    # downward slope (always negative) between predown and postdown in units of "value" per nanosecond (timestamps convert to floats as nanoseconds), 0.03 ms
+    slopedown = (postdown.values - predown.values) / (postdown.index.values - predown.index.values).astype(np.float64)
+    # toc = time.clock();
+    # print((toc-tic)*1000); tic = time.clock()
+
+    # upward crossing point index/time, 0.02 ms
+    tdown = predown.index.values + ((thresh - predown.values) / slopedown).astype(np.int64)
+    # toc = time.clock();
+    # print((toc-tic)*1000); tic = time.clock()
+
+    # insert crossing points into time-series (if it had a regular sample period before, it won't now!), 2.0 ms
+    ts.index = index  # pd.DatetimeIndex(ts.index)
+    # toc = time.clock();
+    # print((toc-tic)*1000); tic = time.clock()
+
+    # insert crossing points into time-series (if it had a regular sample period before, it won't now!), 2.0 ms
+    ts = ts.append(pd.Series(thresh*np.ones(len(tup)), index=index_type(tup.astype(np.int64))))
+    # toc = time.clock();
+    # print((toc-tic)*1000); tic = time.clock()
+
+    # insert crossing points into time-series (if it had a regular sample period before, it won't now!), 1.9 ms
+    ts = ts.append(pd.Series(thresh*np.ones(len(tdown)), index=index_type(tdown.astype(np.int64))))
+    # toc = time.clock();
+    # print((toc-tic)*1000); tic = time.clock()
+
+    # if you don't `sort_index()`, numerical integrators in `scipy.integrate` will give the wrong answer, 0.1 ms
+    ts = ts.sort_index()
+    # toc = time.clock();
+    # print((toc-tic)*1000); tic = time.clock()    # if you don't `sort_index()`, numerical integrators in `scipy.integrate` will give the wrong answer
+
+    # print((toc-tic0)*1000); 
+    return ts
 
 def get_integrator(integrator):
     """Return the scipy.integrator indicated by an index, name, or integrator_function
@@ -140,25 +345,100 @@ def clipped_area(ts, thresh=0, integrator=integrate.trapz):
     >>> ts = pd.Series([217, 234, 235, 231, 219, 219, 231, 232], index=pd.to_datetime(t))
     >>> clipped_area(ts, thresh=230)  # doctest: +ELLIPSIS
     8598.52941...
+    >>> clipped_area(ts, thresh=234)  # doctest: +ELLIPSIS
+    562.5
+    >>> clipped_area(pd.Series(ts.values, index=ts.index.values.astype(pd.np.int64)), thresh=234)  # doctest: +ELLIPSIS
+    562.5    
     """
     integrator = get_integrator(integrator or 0)
     ts = insert_crossings(ts, thresh) - thresh
     ts = ts[ts >= 0]
     # timestamp is in nanoseconds (since 1/1/1970) but this converts it to seconds (SI units)
-    return integrator(ts, ts.index.astype(np.int64) / 1e9)
+    return integrator(ts, ts.index.astype(np.int64))  / 1.0e9
 
 
-def clipping_params(ts, capacity=100):
-    """Start and end index (datetime) that clips the price/value of a time series the most
+def clipping_params(ts, capacity=100, rate_limit=float('inf'), method=None, max_attempts=100):
+    """Start, end, and threshold that clips the value of a time series the most, given a limitted "capacity" and "rate"
+
+    Assumes that signal can be linearly interpolated between points (trapezoidal integration)
+
+    Arguments:
+      ts (TimeSeries): Time series to attempt to clip to as low a max value as possible
+      capacity (float): Total "funds" or "energy" available for clipping (integrated area under time series)
+      method (str): scipy optimization algorithm name, one of:
+        'L-BFGS-B': Byrd, 1995, "A Limited Memory Algorithm for Bound Constrained Optimization"
+        'TNC':      Truncated Newton in C, or Newton Conjugate-Gradient, each variable may be constrained with upper and lower bounds
+        'COBYLA':   Constrained Optimization by Linear Approximation. Fortran implementation.
+        'SLSQP':    Kraft, 1988, Sequential Least Squares Programming or Quadratic Programming, infinite bounds converted to large floats
+
+    TODO:
+      Bisection search for the optimal threshold.
+
+    Returns:
+      2-tuple: Timestamp of the start and end of the period of the maximum clipped integrated increase
+
+    >>> t = ['2014-12-09T00:00', '2014-12-09T00:15', '2014-12-09T00:30', '2014-12-09T00:45', '2014-12-09T01:00', '2014-12-09T01:15', '2014-12-09T01:30', '2014-12-09T01:45']
+    >>> import pandas as pd
+    >>> ts = pd.Series([217, 234, 235, 231, 219, 219, 231, 232], index=pd.to_datetime(t))
+    >>> (clipping_params(ts, capacity=60000) ==
+    ... (54555.882353782654, 219))
+    True
+    >>> (clipping_params(ts, capacity=30000) ==
+    ... (562.5, 234))
+    True
+    """
+    VALID_METHODS = ['L-BFGS-B', 'TNC', 'SLSQP', 'COBYLA']
+    # print('in clipping params for ts.index={0} and method={1}'.format(ts.index[0], method))
+    ts.index = ts.index.astype(np.int64)
+    costs = []
+
+    def cost_fun(x, *args):
+        thresh = x[0]
+        ts, capacity, bounds = args
+        integral = clipped_area(ts, thresh=thresh)
+        terms = np.array([(10. * (integral - capacity) / capacity) ** 2,
+                        2. / 0.1**((bounds[0] - thresh) * capacity / bounds[0]),
+                        2. / 0.1**((thresh - bounds[1]) * capacity / bounds[1]),
+                        1.2 ** (integral / capacity)])
+        return sum(terms)
+
+    bounds = (ts.min(), ts.max())
+    done, attempts = 0, 0
+    thresh0 = bounds[0] + 0.5 * (bounds[1] - bounds[0])
+    if not method or not method in VALID_METHODS:
+        while attempts < max_attempts and not done:
+            for optimizer_method in VALID_METHODS:
+                optimum = minimize(fun=cost_fun, x0=[thresh0], bounds=[bounds], args=(ts, capacity, bounds), method=optimizer_method)
+                if optimum.success:
+                    done = True
+                    break
+            if done:
+                break
+            attempts += 1
+            thresh0 = bounds[0] + random.random() * (bounds[1] - bounds[0])
+    else:
+        optimum = minimize(fun=cost_fun, x0=[thresh0], bounds=[bounds], args=(ts, capacity, bounds), method=method)    
+    thresh = optimum.x[0]
+    integral = clipped_area(ts, thresh=thresh)
+    params = dict(optimum)
+    params.update({'costs': costs, 'threshold': thresh, 'initial_guess': thresh0, 'attempts': attempts, 'integral': integral, 'method': method})
+    return params
+    # if integral - capacity > capacity:
+    #     return {'t0': None, 't1': None, 'threshold': 0.96*thresh + 0.06*bounds[0][1], 'integral': integral}
+
+
+def discrete_clipping_params(ts, capacity=100, rate_limit=float('inf')):
+    """Start, end, and threshold that clips the value of a time series the most, given a limitted "capacity" and "rate"
 
     Assumes that the integrated maximum includes the peak (instantaneous maximum).
+    Assumes that the threshold can only set to one of the values of the Series.
 
     Arguments:
       ts (TimeSeries): Time series to attempt to clip to as low a max value as possible
       capacity (float): Total "funds" or "energy" available for clipping (integrated area under time series)
 
     TODO:
-      Return answer as a dict
+      Bisection search for the optimal threshold.
 
     Returns:
       2-tuple: Timestamp of the start and end of the period of the maximum clipped integrated increase
@@ -167,45 +447,85 @@ def clipping_params(ts, capacity=100):
     >>> import pandas as pd
     >>> ts = pd.Series([217, 234, 235, 231, 219, 219, 231, 232], index=pd.to_datetime(t))
     >>> import numpy
-    >>> (clipping_params(ts, capacity=60000) ==
+    >>> (discrete_clipping_params(ts, capacity=60000) ==
     ... (numpy.datetime64('2014-12-09T00:15:00.000000000+0000'),
     ... numpy.datetime64('2014-12-09T01:45:00.000000000+0000'),
     ... 54555.882353782654,
     ... 219))
     True
-    >>> (clipping_params(ts, capacity=30000) ==
+    >>> (discrete_clipping_params(ts, capacity=30000) ==
     ... (numpy.datetime64('2014-12-09T00:15:00.000000000+0000'),
     ... numpy.datetime64('2014-12-09T00:30:00.000000000+0000'),
     ... 562.5,
     ... 234))
     True
     """
+    #index_type = ts.index.dtype
+    #ts2 = ts.copy()
+    ts.index = ts.index.astype(np.int64)
     ts_sorted = ts.order(ascending=False)
     # default is to clip right at the peak (no clipping at all)
-    i, t0, t1, integral, thresh = 1, ts_sorted.index[0], ts_sorted.index[0], 0, ts_sorted[0]
+    i, t0, t1, integral, thresh = 1, ts_sorted.index[0], ts_sorted.index[0], 0, ts_sorted.iloc[0]
     params = {'t0': t0, 't1': t1, 'integral': 0, 'threshold': thresh}
-    while integral <= capacity and i < len(ts):
+    while i < len(ts_sorted) and integral <= capacity and (ts_sorted.iloc[0] - ts_sorted.iloc[i]) < rate_limit:
         params = {'t0': pd.Timestamp(t0), 't1': pd.Timestamp(t1), 'threshold': thresh, 'integral': integral}
         i += 1
-        times = ts_sorted.index[:i].values
+        times = ts_sorted.index[:i]
         # print(times)
         t0 = times.min()
         t1 = times.max()
-        thresh = min(ts[t0:t1])
+        # print(ts_sorted.index[:3])
+        thresh = min(ts_sorted.iloc[:i])
         integral = clipped_area(ts, thresh=thresh)
     if integral <= capacity:
         return {'t0': pd.Timestamp(t0), 't1': pd.Timestamp(t1), 'threshold': thresh, 'integral': integral}
     return params
 
 
-def clipping_threshold(ts, capacity=100):
+def square_off(series, time_delta=None, transition_seconds=1):
+    """Insert samples in regularly sampled data to produce stairsteps from ramps when plotted.
+
+    New samples are 1 second (1e9 ns) before each existing samples, to facilitate plotting and sorting
+
+    >>> square_off(pd.Series(range(3), index=pd.date_range('2014-01-01', periods=3, freq='15m')), time_delta=5.5)  # doctest: +NORMALIZE_WHITESPACE
+    2014-01-31 00:00:00           0
+    2014-01-31 00:00:05.500000    0
+    2015-04-30 00:00:00           1
+    2015-04-30 00:00:05.500000    1
+    2016-07-31 00:00:00           2
+    2016-07-31 00:00:05.500000    2
+    dtype: int64
+    >>> square_off(pd.Series(range(2), index=pd.date_range('2014-01-01', periods=2, freq='15min')), transition_seconds=2.5)  # doctest: +NORMALIZE_WHITESPACE
+    2012-01-01 00:00:00           0
+    2012-01-01 00:14:57.500000    0
+    2012-01-01 00:15:00           1
+    2012-01-01 00:29:57.500000    1
+    dtype: int64
+    """
+    if time_delta:
+        # int, float means delta is in seconds (not years!)
+        if isinstance(time_delta, (int, float)):
+            time_delta = datetime.timedelta(0, time_delta)
+        new_times = series.index + time_delta
+    else:
+        diff = np.diff(series.index)
+        time_delta = np.append(diff, [diff[-1]])
+        new_times = series.index + time_delta
+        new_times = pd.DatetimeIndex(new_times) - datetime.timedelta(0, transition_seconds)
+    return pd.concat([series, pd.Series(series.values, index=new_times)]).sort_index()
+
+
+def clipping_threshold(ts, capacity=100, rate_limit=10):
     """Start and end index (datetime) that clips the price/value of a time series the most
 
     Assumes that the integrated maximum includes the peak (instantaneous maximum).
 
     Arguments:
-      ts (TimeSeries): Time series to attempt to clip to as low a max value as possible
-      capacity (float): Total "funds" or "energy" available for clipping (integrated area under time series)
+      ts (TimeSeries): Time series of prices or power readings to be "clipped" as much as possible.
+      capacity (float): Total "funds" or "energy" available for clipping (in $ or Joules)
+        The maximum allowed integrated area under time series and above the clipping threshold.
+      rate_limit: Maximum rate at which funds or energy can be expended (in $/s or Watts)
+        The clipping threshold is limitted to no less than the peak power (price rate) minus this rate_limit
 
     TODO:
       Return answer as a dict
@@ -221,7 +541,7 @@ def clipping_threshold(ts, capacity=100):
     >>> clipping_threshold(ts, capacity=30000)
     234
     """
-    params = clipping_params(ts, capacity=capacity)
+    params = discrete_clipping_params(ts, capacity=capacity, rate_limit=rate_limit)
     if params:
         return params['threshold']
     return None
@@ -333,3 +653,68 @@ def simulate(t=1000, poly=(0.,), sinusoids=None, sigma=0, rw=0, irw=0, rrw=0):
     return pd.Series(y, index=t)
 
 
+def normalize_symbols(symbols, *args, **kwargs):
+    """Coerce into a list of uppercase strings like "GOOG", "$SPX, "XOM"
+
+    Flattens nested lists in `symbols` and converts all list elements to strings
+
+    Arguments:
+      symbols (str or list of str): list of market ticker symbols to normalize
+        If `symbols` is a str a get_symbols_from_list() call is used to retrieve the list of symbols
+      postrprocess (func): function to apply to strings after they've been stripped
+        default = str.upper
+
+    FIXME:
+      - list(set(list(symbols))) and `args` separately so symbols may be duplicated in symbols and args
+      - `postprocess` should be a method to facilitate monkey-patching
+
+    Returns:
+      list of str: list of cananical ticker symbol strings (typically after .upper().strip())
+
+    Examples:
+      >>> normalize_symbols("Goog")
+      ["GOOG"]
+      >>> normalize_symbols("  $SPX   ", " aaPL ")
+      ["$SPX", "AAPL"]
+      >>> normalize_symbols("  $SPX   ", " aaPL ", postprocess=str)
+      ["$SPX", "aaPL"]
+      >>> normalize_symbols(["$SPX", ["GOOG", "AAPL"]])
+      ["$SPX", "GOOG", "AAPL"]
+      >>> normalize_symbols("$spy", ["GOOGL", "Apple"], postprocess=str)
+      ['$spy', 'GOOGL', 'Apple']
+    """
+    postprocess = kwargs.get('postprocess', None) or str.upper
+    if (      (hasattr(symbols, '__iter__') and not any(symbols))
+        or (isinstance(symbols, (list, tuple, Mapping)) and not symbols)):
+        return []
+    args = normalize_symbols(args, postprocess=postprocess)
+    if isinstance(symbols, basestring):
+        # get_symbols_from_list seems robust to string normalizaiton like .upper()
+        try:
+            return list(set(get_symbols_from_list(symbols))) + args
+        except:
+            return [postprocess(s.strip()) for s in symbols.split(',')] + args
+    else:
+        ans = []
+        for sym in list(symbols):
+            ans += normalize_symbols(sym, postprocess=postprocess)
+        return list(set(ans))
+
+
+def series_bollinger(series, window=20, sigma=1., plot=False):
+    mean = pd.rolling_mean(series, window=window)
+    std = pd.rolling_std(series, window=window)
+    df = pd.DataFrame({'value': series, 'mean': mean, 'upper': mean + sigma * std, 'lower': mean - sigma * std})
+    bollinger_values = (series - pd.rolling_mean(series, window=window)) / (pd.rolling_std(series, window=window))
+    if plot:
+        df.plot()
+        pd.DataFrame({'bollinger': bollinger_values}).plot()
+        plt.show()
+    return bollinger_values
+
+
+def frame_bollinger(df, window=20, sigma=1., plot=False):
+    bol = pd.DataFrame()
+    for col in df.columns:
+        bol[col] = series_bollinger(df[col], plot=False)
+    return bol

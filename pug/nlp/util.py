@@ -17,16 +17,18 @@
 
 '''
 
+import os
+import collections
+from itertools import islice
+import datetime
+import time
+import pytz
+import dateutil
 import types
 import re
 import string
-import os
 import csv
-import datetime
-import dateutil
-import pytz
 import warnings
-import collections
 from collections import OrderedDict
 from traceback import print_exc
 import ascii
@@ -36,7 +38,6 @@ from decimal import Decimal
 import math
 import pandas as pd
 from dateutil.parser import parse as parse_date
-
 
 from progressbar import ProgressBar
 from pytz import timezone
@@ -145,16 +146,102 @@ def qs_to_table(qs, excluded_fields=['id']):
     return rows
 
 
-def reverse_dict(d):
-    return dict((v, k) for (k, v) in dict(d).iteritems())
+def force_hashable(obj, recursive=True):
+    """Force frozenset() command to freeze the order and contents of multables and iterables like lists, dicts, generators
+
+    Useful for memoization and constructing dicts or hashtables where keys must be immutable.
+
+    >>> force_hashable([1,2.,['3']])
+    (1, 2.0, ('3',))    
+    >>> force_hashable(i for i in range(3))
+    (1, 2, 3)
+    >>> from collections import Counter
+    >>> force_hashable(Counter('abbccc')) ==  (('a', 1), ('c', 3), ('b', 2))
+    True
+    """
+    try:
+        hash(obj)
+        return obj
+    except:
+        if hasattr(obj, '__iter__'):
+            # looks like a Mapping if it has .get() and .items(), so should treat it like one
+            if hasattr(obj, 'get') and hasattr(obj, 'items'):
+                # FIXME: prevent infinite recursion:
+                #        tuples don't have 'items' method so this will recurse forever if elements within new tuple aren't hashable and recurse has not been set!
+                return force_hashable(tuple(obj.items()))
+            if recursive:
+                return tuple(force_hashable(item) for item in obj)
+            return tuple(obj)
+    # strings are hashable so this ends the recursion for any object without an __iter__ method (strings do not)
+    return unicode(obj)
 
 
-def reverse_dict_of_lists(d):
-    ans = {}
-    for (k, v) in dict(d).iteritems():
-        for new_k in list(v):
-            ans[new_k] = k
-    return ans
+def inverted_dict(d):
+    """Return a dict with swapped keys and values
+
+    >>> inverted_dict({0: ('a', 'b'), 1: 'cd'}) == {'a': 0, 'b': 0, 'cd': 1}
+    """
+    return dict((force_hashable(v), k) for (k, v) in dict(d).iteritems())
+
+
+def inverted_dict_of_lists(d):
+    """Return a dict where the keys are all the values listed in the values of the original dict
+
+    >>> inverted_dict_of_lists({0: ['a', 'b'], 1: 'cd'}) == {'a': 0, 'b': 0, 'cd': 1}
+    True
+    """
+    new_dict = {}
+    for (old_key, old_value_list) in dict(d).iteritems():
+        for new_key in listify(old_value_list):
+            new_dict[new_key] = old_key
+    return new_dict
+
+
+def sort_strings(strings, sort_order=None, reverse=False, case_sensitive=False, sort_order_first=True):
+    """Sort a list of strings according to the provided sorted list of string prefixes
+
+    TODO:
+        - Provide an option to use `.startswith()` rather than a fixes prefix length (will be much slower)
+
+    Arguments:
+        sort_order_first (bool): Whether strings in sort_order should always preceed "unknown" strings
+        sort_order (sequence of str): Desired ordering as a list of prefixes to the strings
+            If sort_order strings have varying length, the max length will determine the prefix length compared
+        reverse (bool): whether to reverse the sort orded. Passed through to `sorted(strings, reverse=reverse)`
+        case_senstive (bool): Whether to sort in lexographic rather than alphabetic order
+         and whether the prefixes  in sort_order are checked in a case-sensitive way 
+
+    Examples:
+        >>> sort_strings(['morn32', 'morning', 'unknown', 'less unknown', 'lucy', 'date', 'dow', 'doy', 'moy'], ('dat', 'dow', 'moy', 'dom', 'moy', 'mor'), reverse=True)
+        ['unknown', 'morning', 'morn32', 'moy', 'lucy', 'less unkown', 'doy', 'dow', 'date']
+        >>> sort_strings(['morn32', 'morning', 'unknown', 'date', 'dow', 'doy', 'moy'], ('dat', 'dow', 'moy', 'dom', 'moy', 'mor'))
+        ['date', 'dow', 'doy', 'moy', 'morn32', 'morning', 'unknown']
+
+        By default, strings whose prefixes don't exist in sort_order are interleaved into the sorted list in alphabetic order
+        >>> sort_strings(['morn32', 'morning', 'unknown', 'lucy', 'less unknown', 'date', 'dow', 'doy', 'moy'], ('dat', 'dow', 'moy', 'dom', 'moy', 'mor'))
+        ['date', 'dow', 'doy', 'less unknown', 'moy', 'morn32', 'morning', 'unknown']
+    """
+    if not case_sensitive:
+        sort_order = tuple(s.lower() for s in sort_order)
+        strings = tuple(s.lower() for s in strings)
+    prefix_len = max(len(s) for s in sort_order)
+
+    def compare(a, b, prefix_len=prefix_len):
+        if prefix_len:
+            if a[:prefix_len] in sort_order:
+                if b[:prefix_len] in sort_order:
+                    comparison = sort_order.index(a[:prefix_len]) - sort_order.index(b[:prefix_len])
+                    comparison /= abs(comparison or 1)
+                    if comparison:
+                        return comparison * (-2 * reverse + 1)
+                elif sort_order_first:
+                    return -1
+            # b may be in sort_order list, so reverse the order and find out
+            elif sort_order_first:
+                return - compare(b, a, prefix_len)
+        return (-1 * (a < b) + 1 * (a > b)) * (-2 * reverse + 1)
+
+    return sorted(strings, cmp=compare)
 
 
 def clean_field_dict(field_dict, cleaner=unicode.strip, time_zone=None):
@@ -247,13 +334,15 @@ def reduce_vocab(tokens, similarity=.85, limit=20, sort_order=-1):
     else:
         tokens_sorted = list(tokens)
         tokens = set(tokens)
+    # print(tokens)
     thesaurus = {}
     for tok in tokens_sorted:
         try:
             tokens.remove(tok)
         except (KeyError, ValueError):
             continue
-        matches = fuzzy.extractBests(tok, tokens, score_cutoff=int(similarity), limit=limit)
+        # FIXME: this is slow because the tokens list must be regenerated and reinstantiated with each iteration
+        matches = fuzzy.extractBests(tok, list(tokens), score_cutoff=int(similarity), limit=limit)
         if matches:
             thesaurus[tok] = zip(*matches)[0]
         else:
@@ -277,16 +366,9 @@ def reduce_vocab_by_len(tokens, similarity=.87, limit=20, reverse=True):
 
     Examples:
       >>> tokens = ('on', 'hon', 'honey', 'ones', 'one', 'two', 'three')
-      >>> answer = {'honey': ('on', 'hon', 'one'),
-      ...           'ones': ('ones',),
-      ...           'three': ('three',),
-      ...           'two': ('two',)}
-      >>> reduce_vocab_by_len(tokens) == {'on': ('on',), 'hon': ('hon',), 'three': ('three',), 'one': ('one',), 'honey': ('honey',), 'ones': ('ones',), 'two': ('two',)}
+      >>> reduce_vocab_by_len(tokens) ==  {'honey': ('on', 'hon', 'one'), 'ones': (), 'three': (), 'two': ()}
       True
-
     """
-    if 0 <= similarity <= 1:
-        similarity *= 100
     tokens = set(tokens)
     tokens_sorted = zip(*sorted([(len(tok), tok) for tok in tokens], reverse=reverse))[1]
     return reduce_vocab(tokens=tokens_sorted, similarity=similarity, limit=limit, sort_order=0)
@@ -365,7 +447,7 @@ def generate_batches(sequence, batch_len=1, allow_partial=True, ignore_errors=Tr
 def generate_tuple_batches(qs, batch_len=1):
     """Iterate through a queryset in batches of length `batch_len`
 
-    >>> [batch for batch in generate_batches(range(7), 3)]
+    >>> [batch for batch in generate_tuple_batches(range(7), 3)]
     [(0, 1, 2), (3, 4, 5), (6,)]
     """
     num_items, batch = 0, []
@@ -378,6 +460,31 @@ def generate_tuple_batches(qs, batch_len=1):
         batch += [item]
     if num_items:
         yield tuple(batch)
+
+
+def sliding_window(seq, n=2):
+    """Generate overlapping sliding/rolling windows (of width n) over an iterable
+    
+    s -> (s0,s1,...s[n-1]), (s1,s2,...,sn), ...                   
+
+    References:
+      http://stackoverflow.com/a/6822773/623735
+
+    Examples:
+
+    >>> list(sliding_window(range(6), 3))  # doctest: +NORMALIZE_WHITESPACE
+    [(0, 1, 2),
+     (1, 2, 3),
+     (2, 3, 4),
+     (3, 4, 5)]
+    """
+    it = iter(seq)
+    result = tuple(islice(it, n))
+    if len(result) == n:
+        yield result    
+    for elem in it:
+        result = result[1:] + (elem,)
+        yield result
 
 
 def generate_slices(sliceable_set, batch_len=1, length=None, start_batch=0):
@@ -410,7 +517,8 @@ def generate_slices(sliceable_set, batch_len=1, length=None, start_batch=0):
             continue
         start = i * batch_len
         end = min((i + 1) * batch_len, length)
-        yield tuple(sliceable_set[start:end])
+        if start != end:
+            yield tuple(sliceable_set[start:end])
     raise StopIteration
 
 
@@ -478,10 +586,12 @@ def list_set(seq):
 
 
 def fuzzy_get(dict_obj, approximate_key, default=None, similarity=0.6, tuple_joiner='|', key_and_value=False, dict_keys=None, ):
-    r"""Find the closest matching key and/or value in a dictionary (must have all string keys!)
+    r"""Find the closest matching key in a dictionary and optionally retrieve the associated value
 
-    Note:
-      Key order is opposite order to `fuzzywuzzy.process.extractOne()` but in the same order as get(self, key) method on dicts
+    Notes:
+      `dict_obj` must have all string keys!
+      Argument order is in reverse order relative to `fuzzywuzzy.process.extractOne()` 
+        but in the same order as get(self, key) method on dicts
 
     Arguments:
       dict_obj (dict): object to run the get method on using the key that is most similar to one within the dict
@@ -493,6 +603,9 @@ def fuzzy_get(dict_obj, approximate_key, default=None, similarity=0.6, tuple_joi
       key_and_value (bool): Whether to return both the key and its value (True) or just the value (False). 
         Default is the same behavior as dict.get (i.e. key_and_value=False)
       dict_keys (list of str): if you already have a set of keys to search, this will save this funciton a little time and RAM
+
+    See Also:
+      get_similar: Allows nonstring keys and searches object attributes in addition to keys
 
     Examples:
       >>> fuzzy_get({'seller': 2.7, 'sailor': set('e')}, 'sail')
@@ -541,9 +654,6 @@ def fuzzy_get(dict_obj, approximate_key, default=None, similarity=0.6, tuple_joi
                         # print fuzzy_score_keys
                         fuzzy_score, fuzzy_key = sorted(fuzzy_score_keys)[-1]
                         value = dict_obj[fuzzy_key]
-    # print 'key and value'
-    # print key_and_value
-    # print fuzzy_key, value
     if key_and_value:
         return fuzzy_key, value
     else:
@@ -645,7 +755,7 @@ def dos_from_table(table, header=None):
 
 
 def transposed_lists(list_of_lists, default=None):
-    """Like numpy.transposed, but allows for uneven row lengths
+    """Like `numpy.transposed`, but allows uneven row lengths
 
     Uneven lengths will affect the order of the elements in the rows of the transposed lists
 
@@ -799,19 +909,11 @@ def hist_from_values_list(values_list, fillers=(None,), normalize=False, cumulat
     `fillers`: list or tuple of values to ignore in computing the histogram
 
     >>> hist_from_values_list([1,1,2,1,1,1,2,3,2,4,4,5,7,7,9])  # doctest: +NORMALIZE_WHITESPACE
-    [(1, 5),
-     (2, 3),
-     (3, 1),
-     (4, 2),
-     (5, 1),
-     (6, 0),
-     (7, 2),
-     (8, 0),
-     (9, 1)]
+    [(1, 5), (2, 3), (3, 1), (4, 2), (5, 1), (6, 0), (7, 2), (8, 0), (9, 1)]
     >>> hist_from_values_list([(1,9),(1,8),(2,),(1,),(1,4),(2,5),(3,3),(5,0),(2,2)])  # doctest: +NORMALIZE_WHITESPACE
-    [(0, 0, 1), (1, 4, 0), (2, 3, 1), (3, 1, 1), (4, 0, 1), (5, 1, 1), (6, 0, 0), (7, 0, 0), (8, 0, 1), (9, 0, 1)]
+    [[(1, 4), (2, 3), (3, 1), (4, 0), (5, 1)], [(0, 1), (1, 0), (2, 1), (3, 1), (4, 1), (5, 1), (6, 0), (7, 0), (8, 1), (9, 1)]]
     >>> hist_from_values_list(transposed_matrix([(8,),(1,3,5),(2,),(3,4,5,8)]))  # doctest: +NORMALIZE_WHITESPACE
-    [(1, 0, 1, 0, 0), (2, 0, 0, 1, 0), (3, 0, 1, 0, 1), (4, 0, 0, 0, 1), (5, 0, 1, 0, 1), (6, 0, 0, 0, 0), (7, 0, 0, 0, 0), (8, 1, 0, 0, 1)]
+    [[(8, 1)], [(1, 1), (2, 0), (3, 1), (4, 0), (5, 1)], [(2, 1)], [(3, 1), (4, 1), (5, 1), (6, 0), (7, 0), (8, 1)]]
     """
     value_types = tuple([int, float] + [type(filler) for filler in fillers])
 
@@ -874,97 +976,34 @@ def hist_from_values_list(values_list, fillers=(None,), normalize=False, cumulat
     return aligned_histograms
 
 
-def hist_from_float_values_list(values_list, fillers=(None,), normalize=False, cumulative=False, to_str=False, sep=',', min_bin=None, max_bin=None):
-    """FIXME: DOESNT WORK!!!: Compute an emprical histogram, PMF or CDF in a list of lists or a csv string
+def get_similar(obj, labels, default=None, min_similarity=0.5):
+    """Similar to fuzzy_get, but allows non-string keys and a list of possible keys
 
-    FIXME: make it work for both integer and float bin values (bin floats into ints).
-    `fillers`: list or tuple of values to ignore in computing the histogram
+    Searches attributes in addition to keys and indexes.
 
-    >>> hist_from_values_list([1,1,2,1,1,1,2,3,2,4,4,5,7,7,9])  # doctest: +NORMALIZE_WHITESPACE
-    [(1, 5),
-     (2, 3),
-     (3, 1),
-     (4, 2),
-     (5, 1),
-     (6, 0),
-     (7, 2),
-     (8, 0),
-     (9, 1)]
-    >>> hist_from_values_list([(1,9),(1,8),(2,),(1,),(1,4),(2,5),(3,3),(5,0),(2,2)])  # doctest: +NORMALIZE_WHITESPACE
-    [(0, 0, 1), (1, 4, 0), (2, 3, 1), (3, 1, 1), (4, 0, 1), (5, 1, 1), (6, 0, 0), (7, 0, 0), (8, 0, 1), (9, 0, 1)]
-    >>> hist_from_values_list(transposed_matrix([(8,),(1,3,5),(2,),(3,4,5,8)]))  # doctest: +NORMALIZE_WHITESPACE
-    [(1, 0, 1, 0, 0), (2, 0, 0, 1, 0), (3, 0, 1, 0, 1), (4, 0, 0, 0, 1), (5, 0, 1, 0, 1), (6, 0, 0, 0, 0), (7, 0, 0, 0, 0), (8, 1, 0, 0, 1)]
+    See Also:
+        `fuzzy_get`
     """
-    value_types = tuple([int, float, datetime.timedelta] + [type(filler) for filler in fillers])
-    if all(isinstance(value, value_types) for value in values_list):
-        counters = [collections.Counter(values_list)]
-    elif all(len(row)==1 for row in values_list) and all(isinstance(row[0], value_types) for row in values_list):
-        counters = [collections.Counter(values[0] for values in values_list)]
-    else:
-        values_list_t = transposed_matrix(values_list)
-        counters = [collections.Counter(col) for col in values_list_t]
-
-    #print counters
-
-    if fillers:
-        fillers = listify(fillers)
-        for counts in counters:
-            for ig in fillers:
-                if ig in counts:
-                    del counts[ig]
-
-    # bin keys using int()
-    intkeys_list = [OrderedDict((int(k or 0), k) for k in counts if isinstance(k, value_types)) for counts in counters]
-    #print intkeys_list
-    try:
-        min_bin = int(min_bin)
-    except:
-        min_bin = min(min(intkeys) for intkeys in intkeys_list)
-    try:
-        max_bin = int(max_bin)
-    except:
-        max_bin = max(max(intkeys) for intkeys in intkeys_list)
-
-    #print min_bin, max_bin
-
-    min_bin = max(min_bin, min((min(intkeys) if intkeys else 0) for intkeys in intkeys_list))  # TODO: reuse min(intkeys)
-    max_bin = min(max_bin, max((max(intkeys) if intkeys else 0) for intkeys in intkeys_list))  # TODO: reuse max(intkeys)
-
-    #print min_bin, max_bin
-
-    histograms = []
-    for intkeys, counts in zip(intkeys_list, counters):
-        histograms += [OrderedDict()]
-        if not intkeys:
-            continue
-        if normalize:
-            N = sum(counts[intkeys[c]] for c in intkeys)
-            for c in intkeys:
-                counts[c] = float(counts[intkeys[c]]) / N
-        if cumulative:
-            for i in xrange(min_bin, max_bin + 1):
-                histograms[-1][i] = counts.get(intkeys[i], 0) + histograms[-1].get(intkeys[i-1], 0)
-        else:
-            for i in xrange(min_bin, max_bin + 1):
-                histograms[-1][i] = counts.get(intkeys[i], 0)
-    if not histograms:
-        histograms = [OrderedDict()]
-
-    #print histograms
-
-    # fill in the zero counts between the integer bins of the histogram
-    aligned_histograms = []
-
-    for i in range(min_bin, max_bin + 1):
-        aligned_histograms += [tuple([i] + [hist.get(i, 0) for hist in histograms])]
-
-    if to_str:
-        # FIXME: add header row
-        return str_from_table(aligned_histograms, sep=sep, max_rows=365*2+1)
-
-    #print aligned_histograms
-
-    return aligned_histograms
+    raise NotImplementedError("Unfinished implementation, needs to be incorporated into fuzzy_get where a list of scores and keywords is sorted.")
+    labels = listify(labels)
+    not_found = lambda: 0
+    min_score = int(min_similarity * 100)
+    for similarity_score in [100, 95, 90, 80, 70, 50, 30, 10, 5, 0]:
+        if similarity_score <= min_score:
+            similarity_score = min_score
+        for label in labels:
+            try:
+                result = obj.get(label, not_found)
+            except AttributeError:
+                try:
+                    result = obj.__getitem__(label)
+                except (IndexError, TypeError):
+                    result = not_found
+            if not result is not_found:
+                return result
+        if similarity_score == min_score:
+            if not result is not_found:
+                return result
 
 
 def update_dict(d, u, depth=-1, take_new=True, default_mapping_type=dict, prefer_update_type=False, copy=False):
@@ -1044,13 +1083,13 @@ def make_name(s, camel=None, lower=None, space='_', remove_prefix=None, language
     Examples:
       Generate Django model names out of file names
       >>> make_name('women in IT.csv', camel=True)
-      'WomenInItCsv'
+      u'WomenInItCsv'
       
       Generate Django field names out of CSV header strings
       >>> make_name('ID Number (9-digits)')
-      'id_number_9_digits'
+      u'id_number_9_digits_'
       >>> make_name("PD / SZ")
-      'pd_sz'
+      u'pd_sz'
 
       Generate Javscript object attribute names from CSV header strings
       >>> make_name(u'pi (\u03C0)', space = '', language='javascript')
@@ -1073,6 +1112,8 @@ def make_name(s, camel=None, lower=None, space='_', remove_prefix=None, language
     if remove_prefix and s.startswith(remove_prefix):
         s = s[len(remove_prefix):]
     if camel:
+        if space and space == '_':
+            space = ''
         if any(c in ' \t\n\r' + string.punctuation for c in s) or s.lower() == s:
             if lower:
                 s = s.lower()
@@ -1095,6 +1136,75 @@ def make_name(s, camel=None, lower=None, space='_', remove_prefix=None, language
     return s
 make_name.DJANGO_FIELD = {'camel': False, 'lower': True, 'space': '_'}
 make_name.DJANGO_MODEL = {'camel': True, 'lower': False, 'space': '', 'remove_prefix': 'models'}
+
+
+def make_filename(s, space=None, language='msdos', strict=False, max_len=None, repeats=1024):
+    r"""Process string to remove any characters not allowed by the language specified (default: MSDOS)
+
+    In addition, optionally replace spaces with the indicated "space" character
+    (to make the path useful in a copy-paste without quoting).
+
+    Uses the following regular expression to substitute spaces for invalid characters:
+
+        re.sub(r'[ :\\/?*&"<>|~`!]{1}', space, s)
+
+    >>> make_filename(r'Whatever crazy &s $h!7 n*m3 ~\/ou/ can come up. with.`txt`!', strict=False)
+    'Whatever-crazy-s-$h-7-n-m3-ou-can-come-up.-with.-txt-'
+    >>> make_filename(r'Whatever crazy &s $h!7 n*m3 ~\/ou/ can come up. with.`txt`!', strict=False, repeats=1)
+    'Whatever-crazy--s-$h-7-n-m3----ou--can-come-up.-with.-txt--'
+    >>> make_filename(r'Whatever crazy &s $h!7 n*m3 ~\/ou/ can come up. with.`txt`!', repeats=1)
+    'Whatever-crazy--s-$h-7-n-m3----ou--can-come-up.-with.-txt--'
+    >>> make_filename(r'Whatever crazy &s $h!7 n*m3 ~\/ou/ can come up. with.`txt`!')
+    'Whatever-crazy-s-$h-7-n-m3-ou-can-come-up.-with.-txt-'
+    >>> make_filename(r'Whatever crazy &s $h!7 n*m3 ~\/ou/ can come up. with.`txt`!', strict=True, repeats=1)
+    u'Whatever_crazy_s_h_7_n_m3_ou_can_come_up_with_txt_'
+    >>> make_filename(r'Whatever crazy &s $h!7 n*m3 ~\/ou/ can come up. with.`txt`!', strict=True, repeats=1, max_len=14)
+    u'Whatever_crazy'
+    >>> make_filename(r'Whatever crazy &s $h!7 n*m3 ~\/ou/ can come up. with.`txt`!', max_len=14)
+    'Whatever-crazy'
+    """
+    filename = None
+    if strict or language.lower().strip() in ('strict', 'variable', 'expression', 'python'):
+        if space == None:
+            space = '_'
+        elif not space:
+            space = ''
+        filename = make_name(s, space=space, lower=False)
+    else:
+        if space == None:
+            space = '-'
+        elif not space:
+            space = ''
+    if not filename:
+        if language.lower().strip() in ('posix', 'unix', 'linux', 'centos', 'ubuntu', 'fedora', 'redhat', 'rhel', 'debian', 'deb'):
+            filename = re.sub(r'[^0-9A-Za-z._-]' + '\{1,{0}\}'.format(repeats), space, s)
+        else:
+            filename = re.sub(r'[ :\\/?*&"<>|~`!]{' + ('1,{0}'.format(repeats)) + r'}', space, s)
+    if max_len and int(max_len) > 0 and filename:
+        return filename[:int(max_len)]
+    else:
+        return filename
+
+
+def update_file_ext(filename, ext='txt', sep='.'):
+    """Force the file or path str to end with the indicated extension
+
+    Note: a dot (".") is assumed to delimit the extension
+
+    >>> update_file_ext('/home/hobs/extremofile', 'bac')
+    '/home/hobs/extremofile.bac'
+    >>> update_file_ext('/home/hobs/piano.file/', 'music')
+    '/home/hobs/piano.file/.music'
+    >>> update_file_ext('/home/ninja.hobs/Anglofile', '.uk')
+    '/home/ninja.hobs/Anglofile.uk'
+    >>> update_file_ext('/home/ninja-corsi/audio', 'file', sep='-')
+    '/home/ninja-corsi/audio-file'
+    """ 
+    path, filename = os.path.split(filename)
+
+    if ext and ext[0] == sep:
+        ext = ext[1:]
+    return os.path.join(path, sep.join(filename.split(sep)[:-1 if filename.count(sep) > 1 else 1] + [ext]))
 
 
 def tryconvert(value, desired_types=SCALAR_TYPES, default=None, empty='', strip=True):
@@ -1587,23 +1697,41 @@ def normalize_serial_number(sn,
 
     # Default configuration strips internal and external whitespaces and retains only the last 10 characters
 
-    >>> normalize_serial_number('1C 234567890             ', valid_chars='0123456789')
-    '0234567890'
     >>> normalize_serial_number('1C 234567890             ')
     '0234567890'
+
     >>> normalize_serial_number('1C 234567890             ', max_length=20)
     '000000001C 234567890'
+    >>> normalize_serial_number('Unknown', blank=None, left_fill='')
+    ''
+    >>> normalize_serial_number('N/A', blank='', left_fill='')
+    'A'
+    
     >>> normalize_serial_number('1C 234567890             ', max_length=20, left_fill='')
     '1C 234567890'
+
+    Notice how the max_length setting (20) carries over from the previous test!
+    >>> len(normalize_serial_number('Unknown', blank=False))
+    20
+    >>> normalize_serial_number('Unknown', blank=False)
+    '00000000000000000000'
     >>> normalize_serial_number(' \t1C\t-\t234567890 \x00\x7f', max_length=14, left_fill='0', valid_chars='0123456789ABC', invalid_chars=None, join=True)
     '0001C234567890'
-    >>> normalize_serial_number('Unknown', blank=False)
-    '0000000000'
-    >>> normalize_serial_number('Unknown', blank=None, left_fill='')
-    >>> normalize_serial_number('N/A', blank='', left_fill=None)
-    'NA'
-    >>> normalize_serial_number('NO SERIAL', blank='----------')  # doctest: +NORMALIZE_WHITESPACE
-    '----------'
+
+    Notice how the max_length setting carries over from the previous test!
+    >>> len(normalize_serial_number('Unknown', blank=False))
+    14
+
+    Restore the default max_length setting
+    >>> len(normalize_serial_number('Unknown', blank=False, max_length=10))
+    10
+    >>> normalize_serial_number('NO SERIAL', blank='--=--', left_fill='')  # doctest: +NORMALIZE_WHITESPACE
+    'NO SERIAL'
+    >>> normalize_serial_number('NO SERIAL', blank='', left_fill='')  # doctest: +NORMALIZE_WHITESPACE
+    'NO SERIAL'
+
+    >>> normalize_serial_number('1C 234567890             ', valid_chars='0123456789')
+    '0234567890'
     """
     # All 9 kwargs have persistent default values stored as attributes of the funcion instance
     if max_length is None:
@@ -1759,8 +1887,8 @@ def imported_modules():
 def make_tz_aware(dt, tz='UTC', is_dst=None):
     """Add timezone information to a datetime object, only if it is naive.
 
-    >>> make_tz_aware(datetime.datetime(2001,9,1,1))
-    datetime.datetime(2001, 9, 1, 1, tzinfo=<UTC>)
+    >>> make_tz_aware(datetime.datetime(2001, 9, 8, 7, 6))
+    datetime.datetime(2001, 9, 8, 7, 6, tzinfo=<UTC>)
     """
     tz = dt.tzinfo or tz
     try:
@@ -1791,75 +1919,6 @@ def normalize_date(d):
     if isinstance(d, basestring):
         return normalize_date(parse_date(d))
     return normalize_date(datetime.datetime(*[int(i) for i in d]))
-
-
-def get_symbols_from_list(list_name):
-    """Retrieve a named (symbol list name) list of strings (symbols)
-
-    Example:
-      # If you installed the QSTK Quantitative analysis toolkit 
-      # you'd get a list of the symbols that were members of the S&P 500 in 2012.
-      >>> get_symbols_from_list('sp5002012')
-      []
-    """
-    try:
-        # quant software toolkit has a method for retrieving lists of symbols like S&P500 for 2012 with 'sp5002012'
-        import QSTK.qstkutil.DataAccess as da
-        dataobj = da.DataAccess('Yahoo')
-    except:
-        return []
-    try:
-        return dataobj.get_symbols_from_list(list_name)
-    except:
-        raise
-
-
-def normalize_symbols(symbols, *args, **kwargs):
-    """Coerce into a list of uppercase strings like "GOOG", "$SPX, "XOM"
-
-    Flattens nested lists in `symbols` and converts all list elements to strings
-
-    Arguments:
-      symbols (str or list of str): list of market ticker symbols to normalize
-        If `symbols` is a str a get_symbols_from_list() call is used to retrieve the list of symbols
-      postrprocess (func): function to apply to strings after they've been stripped
-        default = str.upper
-
-    FIXME:
-      - list(set(list(symbols))) and `args` separately so symbols may be duplicated in symbols and args
-      - `postprocess` should be a method to facilitate monkey-patching
-
-    Returns:
-      list of str: list of cananical ticker symbol strings (typically after .upper().strip())
-
-    Examples:
-      >>> normalize_symbols("Goog")
-      ["GOOG"]
-      >>> normalize_symbols("  $SPX   ", " aaPL ")
-      ["$SPX", "AAPL"]
-      >>> normalize_symbols("  $SPX   ", " aaPL ", postprocess=str)
-      ["$SPX", "aaPL"]
-      >>> normalize_symbols(["$SPX", ["GOOG", "AAPL"]])
-      ["$SPX", "GOOG", "AAPL"]
-      >>> normalize_symbols("$spy", ["GOOGL", "Apple"], postprocess=str)
-      ['$spy', 'GOOGL', 'Apple']
-    """
-    postprocess = kwargs.get('postprocess', None) or str.upper
-    if (      (hasattr(symbols, '__iter__') and not any(symbols))
-        or (isinstance(symbols, (list, tuple, collections.Mapping)) and not symbols)):
-        return []
-    args = normalize_symbols(args, postprocess=postprocess)
-    if isinstance(symbols, basestring):
-        # get_symbols_from_list seems robust to string normalizaiton like .upper()
-        try:
-            return list(set(get_symbols_from_list(symbols))) + args
-        except:
-            return [postprocess(s.strip()) for s in symbols.split(',')] + args
-    else:
-        ans = []
-        for sym in list(symbols):
-            ans += normalize_symbols(sym, postprocess=postprocess)
-        return list(set(ans))
 
 
 def clean_wiki_datetime(dt, squelch=True):
@@ -2052,7 +2111,7 @@ def tabulate(lol, headers, eol='\n'):
 
 
 def intify(obj, str_fun=str, use_ord=True, use_hash=True, use_len=True):
-    """FIXME: this is nonpythonic and does things you don't expect!
+    """FIXME: this is unpythonic and does things you don't expect!
 
     FIXME: rename to "integer_from_category"
 
@@ -2062,19 +2121,28 @@ def intify(obj, str_fun=str, use_ord=True, use_hash=True, use_len=True):
     12345000000
     >>> intify([12]), intify('[99]'), intify('(12,)')
     (91, 91, 40)
-    >>> intify('A'), intify('B'), intify('b')
-    (97, 98, 98)
+    >>> intify('A'), intify('a'), intify('AAA'), intify('B'), intify('BB')
+    (97, 97, 97, 98, 98)
     >>> intify(272)
     272
-    >>> intify(float('nan'), ord_first_char=False)
-    >>> intify(float('nan'))
-    110
-    >>> intify(None, ord_first_char=False)
-    >>> intify(None)
-    110
+    >>> intify(float('nan'), use_ord=False, use_hash=False, str_fun=None)
+    >>> intify(float('nan'), use_ord=False, use_hash=False, use_len=False)
+    >>> intify(float('nan')), intify('n'), intify(None)
+    (110, 110, 110)
+    >>> intify(None, use_ord=False, use_hash=False, use_len=False)
+    >>> intify(None, use_ord=False, use_hash=False, str_fun=False)
+    >>> intify(None, use_hash=False, str_fun=False) 
     """
     try:
-        return int(float(obj))
+        return int(obj)
+    except:
+        pass
+    try:
+        float_obj = float(obj)
+        if float('-inf') < float_obj < float('inf'):
+            # WARN: This will increment sys.maxint by +1 and decrement sys.maxint by -1!!!!
+            #       But hopefully these cases will be dealt with as expected, above
+            return int(float_obj)
     except:
         pass
     if not str_fun:
@@ -2093,8 +2161,12 @@ def intify(obj, str_fun=str, use_ord=True, use_hash=True, use_len=True):
         try:
             return len(obj)
         except:
+            pass
+        try:
             return len(str_fun(obj))
-    return obj
+        except:
+            pass
+    return None
 
 
 
@@ -2254,7 +2326,6 @@ def save_sheets(tables, filename, ext='.tsv', verbosity=0):
         save_sheet(table, filename + '_Sheet%d' % i, ext=ext, verbosity=verbosity)
 
 
-
 def shorten(s, max_len=16):
     """Attempt to shorten a phrase by deleting words at the end of the phrase
 
@@ -2272,9 +2343,26 @@ def shorten(s, max_len=16):
     return short[:max_len]
 
 
-def abbreviate(word):
-    return abbreviate.words.get(word, word)
-abbreviate.words = {'account': 'acct', 'number': 'num', 'customer': 'cust', 'member': 'membr' }
+def abbreviate(s):
+    """Some basic abbreviations
+
+    TODO: load a large dictionary of abbreviations from NLTK, etc
+    """
+    return abbreviate.words.get(s, s)
+abbreviate.words = {'account': 'acct', 'number': 'num', 'customer': 'cust', 'member': 'membr', 'building': 'bldg', 'serial number': 'SN', 'social security number': 'SSN'}
+
+
+def remove_internal_vowels(s, space=''):
+    # because this pattern overlaps for vowels separated by a single or no consonant, it must be run several times
+    internal_vowel = re.compile(r'([A-Za-z])[aeiou]([A-Za-z])')
+    strlen = len(s)
+    while True:
+        s = internal_vowel.sub(r'\1\2', s)
+        if len(s) < strlen:
+            strlen = len(s)
+        else:
+            break
+    return re.sub(r'\s', space, s)
 
 
 def normalize_year(y):
@@ -2320,8 +2408,13 @@ def generate_kmers(seq, k=4):
             yield generate_kmers(s, k)
 
 
+def datetime_histogram(seq):
+    """Plot a histogram of datetimes from a sequence (list, tuple, iterator) of date or datetimes"""
+    raise NotImplementedError()
+
+
 def kmer_tuple(seq, k=4):
-    """Return a generator of all the unique substrings (k-mer or q-gram strings) within a sequence/string
+    """Return a tuple all the unique substrings (k-mer or q-gram strings) within a sequence/string
 
     Not effiicent for large k and long strings.
     Doesn't form substrings that are shorter than k, only exactly k-mers
@@ -2336,20 +2429,15 @@ def kmer_tuple(seq, k=4):
 
     Default k = 4 because that's the length of a gene base-pair?
 
-    >>> ' '.join(kmer_tuple('AGATAGATAGACACAGAAATGGGACCACAC'))
-    'AGAT GATA ATAG TAGA AGAT GATA ATAG TAGA AGAC GACA ACAC CACA ACAG CAGA AGAA GAAA AAAT AATG ATGG TGGG GGGA GGAC GACC ACCA CCAC CACA ACAC'
-    >>> kmer_tuple(['AGATAGATAG', 'ACACAGAAAT', 'GGGACCACAC'], k=4)
-    (('AGAT', 'GATA', 'ATAG', 'TAGA', 'AGAT', 'GATA', 'ATAG'),
-     ('ACAC', 'CACA', 'ACAG', 'CAGA', 'AGAA', 'GAAA', 'AAAT'),
-     ('GGGA', 'GGAC', 'GACC', 'ACCA', 'CCAC', 'CACA', 'ACAC'))
+    Examples:
+        # >>> kmer_tuple(['AGATAGATAG', 'ACACAGAAAT', 'GGGACCACAC'], k=4)
+        # (('AGAT', 'GATA', 'ATAG', 'TAGA', 'AGAT', 'GATA', 'ATAG'),
+        #  ('ACAC', 'CACA', 'ACAG', 'CAGA', 'AGAA', 'GAAA', 'AAAT'),
+        #  ('GGGA', 'GGAC', 'GACC', 'ACCA', 'CCAC', 'CACA', 'ACAC'))
+        >>> ' '.join(kmer_tuple('AGATAGATAGACACAGAAATGGGACCACAC'))
+        'AAAT AATG ACAC ACAC ACAG ACCA AGAA AGAC AGAT AGAT ATAG ATAG ATGG CACA CACA CAGA CCAC GAAA GACA GACC GATA GATA GGAC GGGA TAGA TAGA TGGG'
     """
-    raise NotImplementedError("Untested")
-    # FIXME: this seems overly-complicated/recursive and is untested
-    if isinstance(seq, basestring):
-        return seq
-    elif isinstance(seq, types.GeneratorType):
-        return tuple(seq)
-    return tuple(s for s in generate_kmers(seq, k))
+    return tuple(sorted(generate_kmers(seq, k=k)))
 
 
 def kmer_counter(seq, k=4):
@@ -2379,62 +2467,65 @@ def kmer_set(seq, k=4):
     C_k(s) = C(s) ∩ Σ^k 
     from http://biorxiv.org/content/early/2014/08/01/007583
 
-    >>> kmer_set('AGATAGATAGACACAGAAATGGGACCACAC')
-    {'AAAT', 'AATG', 'ACAC', 'ACAG', 'ACCA', 'AGAA', 'AGAC', 'AGAT', 'ATAG', 'ATGG', 'CACA', 'CAGA', 'CCAC', 'GAAA', 'GACA', 'GACC', 'GATA', 'GGAC', 'GGGA', 'TAGA', 'TGGG'}
+    >>> sorted(kmer_set('AGATAGATAGACACAGAAATGGGACCACAC'))
+    ['AAAT', 'AATG', 'ACAC', 'ACAG', 'ACCA', 'AGAA', 'AGAC', 'AGAT', 'ATAG', 'ATGG', 'CACA', 'CAGA', 'CCAC', 'GAAA', 'GACA', 'GACC', 'GATA', 'GGAC', 'GGGA', 'TAGA', 'TGGG']
     """
     if isinstance(seq, basestring):
         return set(generate_kmers(seq, k))
 
 
-def kmer_frequency(seq_of_seq, km=None):
-    """Count the number of sequences in seq_of_seq that contain a given kmer `km`
+# def kmer_frequency(seq_of_seq, km=None):
+#     """Count the number of sequences in seq_of_seq that contain a given kmer `km`
 
-    From http://biorxiv.org/content/early/2014/08/01/007583, implements the formula:
-    f(t, S) = |{s | t ∈ C^k(s) ∧ s ∈ S}|
-    where:
-    t = km
-    S = seq_of_seq
-    >>> kmer_frequency(['AGATAGATAG', 'ACACAGAAAT', 'GGGACCACAC'], km=4)
+#     From http://biorxiv.org/content/early/2014/08/01/007583, implements the formula:
+#     f(t, S) = |{s | t ∈ C^k(s) ∧ s ∈ S}|
+#     where:
+#     t = km
+#     S = seq_of_seq
+#     >>> kmer_frequency(['AGATAGATAG', 'ACACAGAAAT', 'GGGACCACAC'], km=4)
     
-    """
-    if km and isinstance(km, basestring):
-        return sum(km in counter for counter in kmer_counter(seq_of_seq, len(km)))
-    km = int(km)
-    counter = collections.Counter()
-    counter += collections.Counter(set(kmer_counter(seq, km)) for seq in seq_of_seq)
-    return counter
+#     """
+#     if km and isinstance(km, basestring):
+#         return sum(km in counter for counter in kmer_counter(seq_of_seq, len(km)))
+#     km = int(km)
+#     counter = collections.Counter()
+#     counter += collections.Counter(tuple(sorted(set(kmer_counter(seq, km)))) for seq in seq_of_seq)
+#     return counter
 
 
-def uniq_tag(seq, k=4, other_strings=None):
-    """Hash that is the same for similar strings and can server as an abbreviation for a string
+# def uniq_tag(seq, k=4, other_strings=None):
+#     """Hash that is the same for similar strings and can serve as an abbreviation for a string
 
-    Based on UniqTag:
-    http://biorxiv.org/content/early/2014/08/01/007583
-    Which was inspired by MinHasH:
-    http://en.wikipedia.org/wiki/MinHash
+#     Based on UniqTag:
+#     http://biorxiv.org/content/early/2014/08/01/007583
+#     Which was inspired by MinHasH:
+#     http://en.wikipedia.org/wiki/MinHash
 
-    t_u = min arg min t ∈ C k(s) f(t, S)
-    uk(s, S) = min (arg_min((t ∈ C^k(s)), f(t, S))
+#     t_u = min arg min t ∈ C k(s) f(t, S)
+#     uk(s, S) = min (arg_min((t ∈ C^k(s)), f(t, S))
 
-    uk(s, S) = "the UniqTag, the lexicographically minimal k-mer of those k-mers of s that are least frequent in S."
+#     uk(s, S) = "the UniqTag, the lexicographically minimal k-mer of those k-mers of s that are least frequent in S."
 
-    the "k-mers of s" can be found with kmer_set()
-    the frequencies of those k-mers in other_stirngs, S, should be provided by kmer_frequency(other_strings, km) for km in kmer_set(s)
-    """
-    # FIXME: UNTESTED!
-    if not other_strings:
-        if isinstance(seq, basestring):
-            other_strings = (seq,)
-        else:
-            other_strings = tuple(seq)
-        return uniq_tag(other_strings[0], other_strings)
-    other_strings = set(other_strings)
-    if isinstance(seq, basestring):
-        kms = kmer_set(seq)
-        km_frequencies = ((sum(km in kmer_set(s, k), s) for s in other_strings) for km in kms)
-        print min(km_frequencies)
-        return min(km_frequencies)[1]
-    return tuple(uniq_tag(s, other_strings) for s in seq)
+#     the "k-mers of s" can be found with kmer_set()
+#     the frequencies of those k-mers in other_stirngs, S, should be provided by kmer_frequency(other_strings, km) for km in kmer_set(s)
+
+#     >>> uniq_tag('Hello World')
+
+#     """
+#     # FIXME: UNTESTED!
+#     if not other_strings:
+#         if isinstance(seq, basestring):
+#             other_strings = (seq,)
+#         else:
+#             other_strings = tuple(seq)
+#         return uniq_tag(other_strings[0], other_strings)
+#     other_strings = set(other_strings)
+#     if isinstance(seq, basestring):
+#         kms = kmer_set(seq)
+#         km_frequencies = ((sum(km in kmer_set(s, k), s) for s in other_strings) for km in kms)
+#         print min(km_frequencies)
+#         return min(km_frequencies)[1]
+#     return tuple(uniq_tag(s, other_strings) for s in seq)
 
 
 def count_duplicates(items):
@@ -2485,10 +2576,280 @@ def slug_from_iter(it, max_len=128, delim='-'):
 
 
 def tfidf(corpus):
-    """Compute a TFIDF Matrix (Term Frequency and Inverse Document Freuqency)"""
-    pass
+    """Compute a TFIDF matrix (Term Frequency and Inverse Document Freuqency matrix)"""
+    raise NotImplementedError("Google TFIDF for canonical implementations")
 
 
 def shakeness(doc):
     """Determine how similar a document's vocabulary is to Shakespeare's"""
-    pass
+    raise NotImplementedError("Import a Shakespear corpus and compare the distribution of words there to the ones in the sample doc (vocabulary similarity)")
+
+
+def slash_product(string_or_seq, slash='/', space=' '):
+    """Return a list of all possible meanings of a phrase containing slashes
+
+    TODO:
+        - Code is not in standard Sedgewick recursion form
+        - Simplify by removing one of the recursive calls?
+        - Simplify by using a list comprehension?
+
+    >>> slash_product("The challenging/confusing interview didn't end with success/offer")  # doctest: +NORMALIZE_WHITESPACE
+    ["The challenging interview didn't end with success",
+     "The challenging interview didn't end with offer",
+     "The confusing interview didn't end with success",
+     "The confusing interview didn't end with offer"]
+    >>> slash_product('I say goodbye/hello cruel/fun world.')  # doctest: +NORMALIZE_WHITESPACE
+    ['I say goodbye cruel world.',
+     'I say goodbye fun world.',
+     'I say hello cruel world.',
+     'I say hello fun world.']
+    >>> slash_product('I say goodbye/hello/bonjour cruelness/fun/world')  # doctest: +NORMALIZE_WHITESPACE
+    ['I say goodbye cruelness',
+     'I say goodbye fun',
+     'I say goodbye world',
+     'I say hello cruelness',
+     'I say hello fun',
+     'I say hello world',
+     'I say bonjour cruelness',
+     'I say bonjour fun',
+     'I say bonjour world']
+    """
+    # Terminating case is a sequence of strings without any slashes
+    if not isinstance(string_or_seq, basestring):
+        # If it's not a string and has no slashes, we're done
+        if not any(slash in s for s in string_or_seq):
+            return list(string_or_seq)
+        ans = []
+        for s in string_or_seq:
+            # slash_product of a string will always return a flat list
+            ans += slash_product(s)
+        return slash_product(ans)
+    # Another terminating case is a single string without any slashes
+    if not slash in string_or_seq:
+        return [string_or_seq]
+    # The third case is a string with some slashes in it
+    i = string_or_seq.index(slash)
+    head, tail = string_or_seq[:i].split(space), string_or_seq[i+1:].split(space)
+    alternatives = head[-1], tail[0]
+    head, tail = space.join(head[:-1]), space.join(tail[1:])
+    return slash_product([space.join([head, word, tail]).strip(space) for word in alternatives])
+
+
+def is_valid_american_date_string(s, require_year=True):
+    if not isinstance(s, basestring):
+        return False
+    if require_year and len(s.split('/')) != 3:
+        return False
+    return bool(1 <= int(s.split('/')[0]) <= 12 and 1 <= int(s.split('/')[1]) <= 31)
+
+
+def make_date(dt, date_parser=parse_date):
+    """Coerce a datetime or string into datetime.date object
+
+    Arguments:
+      dt (str or datetime.datetime or atetime.time or numpy.Timestamp): time or date 
+        to be coerced into a `datetime.date` object
+
+    Returns:
+      datetime.time: Time of day portion of a `datetime` string or object
+
+    >>> make_date('')
+    datetime.date(1970, 1, 1)
+    >>> make_date(None)
+    datetime.date(1970, 1, 1)
+    >>> make_date("11:59 PM") == datetime.date.today()
+    True
+    >>> make_date(datetime.datetime(1999, 12, 31, 23, 59, 59))
+    datetime.date(1999, 12, 31)
+    """
+    if not dt:
+        return datetime.date(1970, 1, 1)
+    if isinstance(dt, basestring):
+        dt = date_parser(dt)
+    try:
+        dt = dt.timetuple()[:3]
+    except:
+        dt = tuple(dt)[:3]
+    return datetime.date(*dt)
+
+
+def make_datetime(dt, date_parser=parse_date):
+    """Coerce a datetime or string into datetime.datetime object
+
+    Arguments:
+      dt (str or datetime.datetime or atetime.time or numpy.Timestamp): time or date 
+        to be coerced into a `datetime.date` object
+
+    Returns:
+      datetime.time: Time of day portion of a `datetime` string or object
+
+    >>> make_date('')
+    datetime.date(1970, 1, 1)
+    >>> make_date(None)
+    datetime.date(1970, 1, 1)
+    >>> make_date("11:59 PM") == datetime.date.today()
+    True
+    >>> make_date(datetime.datetime(1999, 12, 31, 23, 59, 59))
+    datetime.date(1999, 12, 31)
+    """
+    if isinstance(dt, (datetime.datetime, pd.Timestamp, pd.np.datetime64)):
+        return dt
+    if isinstance(dt, float):
+        return datetime_from_ordinal_float(dt)
+    if isinstance(dt, datetime.date):
+        return datetime.datetime(dt.year, dt.month, dt.day)
+    if isinstance(dt, datetime.time):
+        return datetime.datetime(1, 1, 1, dt.hour, dt.minute, dt.second, dt.microsecond)
+    if not dt:
+        return datetime.datetime(1970, 1, 1)
+    if isinstance(dt, basestring):
+        return date_parser(dt)
+    try:
+        return datetime.datetime(*dt.timetuple()[:7])
+    except:
+        dt = list(dt)
+        if 1 <= len(dt) <= 9:
+            try:
+                return datetime.datetime(*dt[:7])
+            except:
+                pass
+    return [make_datetime(val) for val in dt]
+
+
+def make_time(dt, date_parser=parse_date):
+    """Ignore date information in a datetime string or object
+
+    Arguments:
+      dt (str or datetime.datetime or atetime.time or numpy.Timestamp): time or date 
+        to be coerced into a `datetime.time` object
+
+    Returns:
+      datetime.time: Time of day portion of a `datetime` string or object
+
+    >>> make_time(None)
+    datetime.time(0, 0)
+    >>> make_time("")
+    datetime.time(0, 0)
+    >>> make_time("11:59 PM")
+    datetime.time(23, 59)
+    >>> make_time(datetime.datetime(1999, 12, 31, 23, 59, 59))
+    datetime.time(23, 59, 59)
+    """
+    if not dt:
+        return datetime.time(0, 0)
+    if isinstance(dt, basestring):
+        try:
+            dt = date_parser(dt)
+        except:
+            print_exc()
+            print 'Unable to parse datetime string: {0}'.format(dt)
+    try:
+        dt = dt.timetuple()[3:6]
+    except:
+        dt = tuple(dt)[3:6]
+    return datetime.time(*dt)
+
+
+def quantize_datetime(dt, resolution=None):
+    """Quantize a datetime to integer years, months, days, hours, minutes, seconds or microseconds
+    
+    Also works with a `datetime.timetuple` or `time.struct_time` or a 1to9-tuple of ints or floats.
+    Also works with a sequenece of struct_times, tuples, or datetimes
+
+    >>> quantize_datetime(datetime.datetime(1970,1,2,3,4,5,6), resolution=3)
+    datetime.datetime(1970, 1, 2, 0, 0)
+
+    Notice that 6 is the highest resolution value with any utility
+    >>> quantize_datetime(datetime.datetime(1970,1,2,3,4,5,6), resolution=7)
+    datetime.datetime(1970, 1, 2, 3, 4, 5)
+    >>> quantize_datetime(datetime.datetime(1971,2,3,4,5,6,7), 1)
+    datetime.datetime(1971, 1, 1, 0, 0)
+    """
+    # FIXME: this automatically truncates off microseconds just because timtuple() only goes out to sec
+    resolution = int(resolution or 6)
+    if hasattr(dt, 'timetuple'):
+        dt = dt.timetuple()  # strips timezone info
+
+    if isinstance(dt, time.struct_time):
+        # strip last 3 fields (tm_wday, tm_yday, tm_isdst)
+        dt = list(dt)[:6]
+        # struct_time has no microsecond, but accepts float seconds
+        dt += [int((dt[5] - int(dt[5])) * 1000000)]
+        dt[5] = int(dt[5])
+        return datetime.datetime(*(dt[:resolution] + [1] * max(3 - resolution , 0)))
+
+    if isinstance(dt, tuple) and len(dt) <= 9 and all(isinstance(val, (float, int)) for val in dt):
+        dt = list(dt) + [0] * (max(6 - len(dt), 0))
+        # if the 6th element of the tuple looks like a float set of seconds need to add microseconds
+        if len(dt) == 6 and isinstance(dt[5], float):
+                dt = list(dt) + [1000000 * (dt[5] - int(dt[5]))]
+                dt[5] = int(dt[5])
+        dt = tuple(int(val) for val in dt)
+        return datetime.datetime(*(dt[:resolution] + [1] * max(resolution - 3, 0)))
+
+    return [quantize_datetime(value) for value in dt]
+
+
+def ordinal_float(dt):
+    """Like datetime.ordinal, but rather than integer allows fractional days (so float not ordinal at all)
+
+    Similar to the Microsoft Excel numerical representation of a datetime object
+
+    >>> ordinal_float(datetime.datetime(1970, 1, 1))
+    719163.0
+    >>> ordinal_float(datetime.datetime(1, 2, 3, 4, 5, 6, 7))  # doctest: +ELLIPSIS
+    34.1702083334143...
+    """
+    try:
+        return dt.toordinal() + ((((dt.microsecond / 1000000.) + dt.second) / 60. + dt.minute) / 60 + dt.hour) / 24.
+    except:
+        try:
+            return ordinal_float(make_datetime(dt))
+        except:
+            pass
+    dt = list(make_datetime(val) for val in dt)
+    assert(all(isinstance(val, datetime.datetime) for val in dt))
+    return [ordinal_float(val) for val in dt]
+
+
+def datetime_from_ordinal_float(days):
+    """Inverse of `ordinal_float()`, converts a float number of days back to a `datetime` object
+
+    >>> dt = datetime.datetime(1970, 1, 1) 
+    >>> datetime_from_ordinal_float(ordinal_float(dt)) == dt
+    True
+    >>> dt = datetime.datetime(1, 2, 3, 4, 5, 6, 7) 
+    >>> datetime_from_ordinal_float(ordinal_float(dt)) == dt
+    True
+    """
+    if isinstance(days, (float, int)):
+        dt = datetime.datetime.fromordinal(int(days))
+        seconds = (days - int(days)) * 3600. * 24.
+        microseconds = (seconds - int(seconds)) * 1000000
+        return dt + datetime.timedelta(days=0, seconds=int(seconds), microseconds=int(round(microseconds)))
+    return [datetime_from_ordinal_float(d) for d in days]
+
+
+def timetag_str(dt=None, sep='-', filler='0', resolution=6):
+    """Generate a date-time tag suitable for appending to a file name.
+
+    >>> timetag_str(resolution=3) == '-'.join('{0:02d}'.format(i) for i in tuple(datetime.datetime.now().timetuple()[:3]))
+    True
+    >>> timetag_str(datetime.datetime(2004,12,8,1,2,3,400000))
+    '2004-12-08-01-02-03'
+    >>> timetag_str(datetime.datetime(2004,12,8))
+    '2004-12-08-00-00-00'
+    >>> timetag_str(datetime.datetime(2003,6,19), filler='')
+    '2003-6-19-0-0-0'
+    """
+    resolution = int(resolution or 6)
+    if sep in (None, False):
+        sep = ''
+    sep = str(sep)
+    dt = datetime.datetime.now() if dt is None else dt
+    # FIXME: don't use timetuple which truncates microseconds
+    return sep.join(('{0:' + filler + ('2' if filler else '') + 'd}').format(i) for i in tuple(dt.timetuple()[:resolution]))
+
+
+def days_since(dt, dt0=datetime.datetime(1970, 1, 1, 0, 0, 0)):
+    return ordinal_float(dt) - ordinal_float(dt0)

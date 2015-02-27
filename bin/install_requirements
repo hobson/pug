@@ -4,24 +4,41 @@
 
 REQFILE="$1"
 if [ -z "$1" ]; then
-    REQFILE="bigdata/requirements.txt"
+    REQFILE="requirements.txt"
+    if [ ! -f "$REQFILE" ]; then
+      REQFILE="../requirements.txt"
+      if [ ! -f "$REQFILE" ]; then
+        REQFILE="../../requirements.txt"
+      fi
+    fi
 fi
+
+echo "Reading pip install requirements and shell commands from '${REQFILE} ...'"
+echo " "
+
+REGEX_NONEMPTY='^\s*[^[:space:]].*$'
+REGEX_COMMENT='^\s*#.*$'
+REGEX_SHELLCMD='^\s*#\s*[$].*$'
 
 while read LINE; do
   echo
-  if [[ "${LINE}" =~ ^\s*#\s*'$'.*$ ]]; then
+  if [[ "${LINE}" =~ $REGEX_SHELLCMD ]]; then
       SHELLCMD=`echo "${LINE}" | sed 's/^\s*#\s*$\s*\(.*\)/\1/'`
       echo "================================="
       echo "SHELL: ${SHELLCMD}"
       echo "================================="
       echo "${SHELLCMD}" | bash
-  elif [[ "${LINE}" =~ ^\s*#.*$ ]]; then
+  elif [[ "${LINE}" =~ $REGEX_COMMENT ]]; then
       echo "COMMENT: ${LINE}"
+  elif [[ "${LINE}" =~ $REGEX_NONEMPTY ]]; then
+      echo "---------------------------------"
+      echo "EXECUTING: pip install --upgrade $LINE"
+      echo "---------------------------------"
+      pip install --upgrade $LINE
   else
-      echo "---------------------------------"
-      echo "EXECUTING: pip install $LINE"
-      echo "---------------------------------"
-      pip install $LINE
+      echo '........'
+      echo "ignoring: $LINE"
+      echo '........'
   fi
 done <"${REQFILE}"
 

@@ -64,9 +64,6 @@ function line_plot(d3data, conf) {
         d3data = arrays_as_d3_series(d3data).data;
         console.log("line plot d3data after conversion to d3_series ...");
         console.log(d3data);
-        d3data.sort(function(a, b) { return a.x - b.x; });
-        console.log("after sorting...");
-        console.log(d3data);
 
         if (conf.x_is_date) {
           // FIXME: Check that ALL the elements of the array are valid datetimes before replacing the data
@@ -93,6 +90,12 @@ function line_plot(d3data, conf) {
             .domain(d3data.map(function(d) { return d.x; }))
             .rangePoints([0, conf.width]);
         } // if conf.x_is_date
+        
+        // don't sort until after date-time strings have been parsed
+        d3data.sort(function(a, b) { return a.x - b.x; });
+        console.log("after sorting...");
+        console.log(d3data);
+
 
         conf.d3data = d3data;
         // console.log('line plot all_series');
