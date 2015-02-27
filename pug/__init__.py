@@ -26,3 +26,11 @@ __authors__ = [
     'John   <kowalskj@sharplabs.com>'
     ]
 __github_url__ = "https://github.com/hobson/%s" % (__name__)
+
+# FIXME: this isn't working
+import ann
+import data
+import nlp
+import invest
+import db
+__all__ = ['ann', 'data', 'nlp', 'invest', 'db']

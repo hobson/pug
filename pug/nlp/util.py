@@ -146,16 +146,102 @@ def qs_to_table(qs, excluded_fields=['id']):
     return rows
 
 
-def reverse_dict(d):
-    return dict((v, k) for (k, v) in dict(d).iteritems())
+def force_hashable(obj, recursive=True):
+    """Force frozenset() command to freeze the order and contents of multables and iterables like lists, dicts, generators
+
+    Useful for memoization and constructing dicts or hashtables where keys must be immutable.
+
+    >>> force_hashable([1,2.,['3']])
+    (1, 2.0, ('3',))    
+    >>> force_hashable(i for i in range(3))
+    (1, 2, 3)
+    >>> from collections import Counter
+    >>> force_hashable(Counter('abbccc')) ==  (('a', 1), ('c', 3), ('b', 2))
+    True
+    """
+    try:
+        hash(obj)
+        return obj
+    except:
+        if hasattr(obj, '__iter__'):
+            # looks like a Mapping if it has .get() and .items(), so should treat it like one
+            if hasattr(obj, 'get') and hasattr(obj, 'items'):
+                # FIXME: prevent infinite recursion:
+                #        tuples don't have 'items' method so this will recurse forever if elements within new tuple aren't hashable and recurse has not been set!
+                return force_hashable(tuple(obj.items()))
+            if recursive:
+                return tuple(force_hashable(item) for item in obj)
+            return tuple(obj)
+    # strings are hashable so this ends the recursion for any object without an __iter__ method (strings do not)
+    return unicode(obj)
 
 
-def reverse_dict_of_lists(d):
-    ans = {}
-    for (k, v) in dict(d).iteritems():
-        for new_k in list(v):
-            ans[new_k] = k
-    return ans
+def inverted_dict(d):
+    """Return a dict with swapped keys and values
+
+    >>> inverted_dict({0: ('a', 'b'), 1: 'cd'}) == {'a': 0, 'b': 0, 'cd': 1}
+    """
+    return dict((force_hashable(v), k) for (k, v) in dict(d).iteritems())
+
+
+def inverted_dict_of_lists(d):
+    """Return a dict where the keys are all the values listed in the values of the original dict
+
+    >>> inverted_dict_of_lists({0: ['a', 'b'], 1: 'cd'}) == {'a': 0, 'b': 0, 'cd': 1}
+    True
+    """
+    new_dict = {}
+    for (old_key, old_value_list) in dict(d).iteritems():
+        for new_key in listify(old_value_list):
+            new_dict[new_key] = old_key
+    return new_dict
+
+
+def sort_strings(strings, sort_order=None, reverse=False, case_sensitive=False, sort_order_first=True):
+    """Sort a list of strings according to the provided sorted list of string prefixes
+
+    TODO:
+        - Provide an option to use `.startswith()` rather than a fixes prefix length (will be much slower)
+
+    Arguments:
+        sort_order_first (bool): Whether strings in sort_order should always preceed "unknown" strings
+        sort_order (sequence of str): Desired ordering as a list of prefixes to the strings
+            If sort_order strings have varying length, the max length will determine the prefix length compared
+        reverse (bool): whether to reverse the sort orded. Passed through to `sorted(strings, reverse=reverse)`
+        case_senstive (bool): Whether to sort in lexographic rather than alphabetic order
+         and whether the prefixes  in sort_order are checked in a case-sensitive way 
+
+    Examples:
+        >>> sort_strings(['morn32', 'morning', 'unknown', 'less unknown', 'lucy', 'date', 'dow', 'doy', 'moy'], ('dat', 'dow', 'moy', 'dom', 'moy', 'mor'), reverse=True)
+        ['unknown', 'morning', 'morn32', 'moy', 'lucy', 'less unkown', 'doy', 'dow', 'date']
+        >>> sort_strings(['morn32', 'morning', 'unknown', 'date', 'dow', 'doy', 'moy'], ('dat', 'dow', 'moy', 'dom', 'moy', 'mor'))
+        ['date', 'dow', 'doy', 'moy', 'morn32', 'morning', 'unknown']
+
+        By default, strings whose prefixes don't exist in sort_order are interleaved into the sorted list in alphabetic order
+        >>> sort_strings(['morn32', 'morning', 'unknown', 'lucy', 'less unknown', 'date', 'dow', 'doy', 'moy'], ('dat', 'dow', 'moy', 'dom', 'moy', 'mor'))
+        ['date', 'dow', 'doy', 'less unknown', 'moy', 'morn32', 'morning', 'unknown']
+    """
+    if not case_sensitive:
+        sort_order = tuple(s.lower() for s in sort_order)
+        strings = tuple(s.lower() for s in strings)
+    prefix_len = max(len(s) for s in sort_order)
+
+    def compare(a, b, prefix_len=prefix_len):
+        if prefix_len:
+            if a[:prefix_len] in sort_order:
+                if b[:prefix_len] in sort_order:
+                    comparison = sort_order.index(a[:prefix_len]) - sort_order.index(b[:prefix_len])
+                    comparison /= abs(comparison or 1)
+                    if comparison:
+                        return comparison * (-2 * reverse + 1)
+                elif sort_order_first:
+                    return -1
+            # b may be in sort_order list, so reverse the order and find out
+            elif sort_order_first:
+                return - compare(b, a, prefix_len)
+        return (-1 * (a < b) + 1 * (a > b)) * (-2 * reverse + 1)
+
+    return sorted(strings, cmp=compare)
 
 
 def clean_field_dict(field_dict, cleaner=unicode.strip, time_zone=None):
@@ -248,13 +334,15 @@ def reduce_vocab(tokens, similarity=.85, limit=20, sort_order=-1):
     else:
         tokens_sorted = list(tokens)
         tokens = set(tokens)
+    # print(tokens)
     thesaurus = {}
     for tok in tokens_sorted:
         try:
             tokens.remove(tok)
         except (KeyError, ValueError):
             continue
-        matches = fuzzy.extractBests(tok, tokens, score_cutoff=int(similarity), limit=limit)
+        # FIXME: this is slow because the tokens list must be regenerated and reinstantiated with each iteration
+        matches = fuzzy.extractBests(tok, list(tokens), score_cutoff=int(similarity), limit=limit)
         if matches:
             thesaurus[tok] = zip(*matches)[0]
         else:
@@ -278,16 +366,9 @@ def reduce_vocab_by_len(tokens, similarity=.87, limit=20, reverse=True):
 
     Examples:
       >>> tokens = ('on', 'hon', 'honey', 'ones', 'one', 'two', 'three')
-      >>> answer = {'honey': ('on', 'hon', 'one'),
-      ...           'ones': ('ones',),
-      ...           'three': ('three',),
-      ...           'two': ('two',)}
-      >>> reduce_vocab_by_len(tokens) == {'on': ('on',), 'hon': ('hon',), 'three': ('three',), 'one': ('one',), 'honey': ('honey',), 'ones': ('ones',), 'two': ('two',)}
+      >>> reduce_vocab_by_len(tokens) ==  {'honey': ('on', 'hon', 'one'), 'ones': (), 'three': (), 'two': ()}
       True
-
     """
-    if 0 <= similarity <= 1:
-        similarity *= 100
     tokens = set(tokens)
     tokens_sorted = zip(*sorted([(len(tok), tok) for tok in tokens], reverse=reverse))[1]
     return reduce_vocab(tokens=tokens_sorted, similarity=similarity, limit=limit, sort_order=0)
@@ -1002,7 +1083,7 @@ def make_name(s, camel=None, lower=None, space='_', remove_prefix=None, language
     Examples:
       Generate Django model names out of file names
       >>> make_name('women in IT.csv', camel=True)
-      'WomenInItCsv'
+      u'WomenInItCsv'
       
       Generate Django field names out of CSV header strings
       >>> make_name('ID Number (9-digits)')
@@ -1103,6 +1184,27 @@ def make_filename(s, space=None, language='msdos', strict=False, max_len=None, r
         return filename[:int(max_len)]
     else:
         return filename
+
+
+def update_file_ext(filename, ext='txt', sep='.'):
+    """Force the file or path str to end with the indicated extension
+
+    Note: a dot (".") is assumed to delimit the extension
+
+    >>> update_file_ext('/home/hobs/extremofile', 'bac')
+    '/home/hobs/extremofile.bac'
+    >>> update_file_ext('/home/hobs/piano.file/', 'music')
+    '/home/hobs/piano.file/.music'
+    >>> update_file_ext('/home/ninja.hobs/Anglofile', '.uk')
+    '/home/ninja.hobs/Anglofile.uk'
+    >>> update_file_ext('/home/ninja-corsi/audio', 'file', sep='-')
+    '/home/ninja-corsi/audio-file'
+    """ 
+    path, filename = os.path.split(filename)
+
+    if ext and ext[0] == sep:
+        ext = ext[1:]
+    return os.path.join(path, sep.join(filename.split(sep)[:-1 if filename.count(sep) > 1 else 1] + [ext]))
 
 
 def tryconvert(value, desired_types=SCALAR_TYPES, default=None, empty='', strip=True):
@@ -1595,23 +1697,41 @@ def normalize_serial_number(sn,
 
     # Default configuration strips internal and external whitespaces and retains only the last 10 characters
 
-    >>> normalize_serial_number('1C 234567890             ', valid_chars='0123456789')
-    '0234567890'
     >>> normalize_serial_number('1C 234567890             ')
     '0234567890'
+
     >>> normalize_serial_number('1C 234567890             ', max_length=20)
     '000000001C 234567890'
+    >>> normalize_serial_number('Unknown', blank=None, left_fill='')
+    ''
+    >>> normalize_serial_number('N/A', blank='', left_fill='')
+    'A'
+    
     >>> normalize_serial_number('1C 234567890             ', max_length=20, left_fill='')
     '1C 234567890'
+
+    Notice how the max_length setting (20) carries over from the previous test!
+    >>> len(normalize_serial_number('Unknown', blank=False))
+    20
+    >>> normalize_serial_number('Unknown', blank=False)
+    '00000000000000000000'
     >>> normalize_serial_number(' \t1C\t-\t234567890 \x00\x7f', max_length=14, left_fill='0', valid_chars='0123456789ABC', invalid_chars=None, join=True)
     '0001C234567890'
-    >>> normalize_serial_number('Unknown', blank=False)
-    '0000000000'
-    >>> normalize_serial_number('Unknown', blank=None, left_fill='')
-    >>> normalize_serial_number('N/A', blank='', left_fill=None)
-    'NA'
-    >>> normalize_serial_number('NO SERIAL', blank='----------')  # doctest: +NORMALIZE_WHITESPACE
-    '----------'
+
+    Notice how the max_length setting carries over from the previous test!
+    >>> len(normalize_serial_number('Unknown', blank=False))
+    14
+
+    Restore the default max_length setting
+    >>> len(normalize_serial_number('Unknown', blank=False, max_length=10))
+    10
+    >>> normalize_serial_number('NO SERIAL', blank='--=--', left_fill='')  # doctest: +NORMALIZE_WHITESPACE
+    'NO SERIAL'
+    >>> normalize_serial_number('NO SERIAL', blank='', left_fill='')  # doctest: +NORMALIZE_WHITESPACE
+    'NO SERIAL'
+
+    >>> normalize_serial_number('1C 234567890             ', valid_chars='0123456789')
+    '0234567890'
     """
     # All 9 kwargs have persistent default values stored as attributes of the funcion instance
     if max_length is None:
@@ -2187,7 +2307,6 @@ def get_table_from_csv(filename='ssg_report_aarons_returns.csv', delimiter=',', 
     return dos_from_table(table)
 
 
-
 def save_sheet(table, filename, ext='tsv', verbosity=0):
     if ext.lower() == 'tsv':
         sep = '\t'
@@ -2207,7 +2326,6 @@ def save_sheets(tables, filename, ext='.tsv', verbosity=0):
         save_sheet(table, filename + '_Sheet%d' % i, ext=ext, verbosity=verbosity)
 
 
-
 def shorten(s, max_len=16):
     """Attempt to shorten a phrase by deleting words at the end of the phrase
 
@@ -2225,9 +2343,26 @@ def shorten(s, max_len=16):
     return short[:max_len]
 
 
-def abbreviate(word):
-    return abbreviate.words.get(word, word)
-abbreviate.words = {'account': 'acct', 'number': 'num', 'customer': 'cust', 'member': 'membr' }
+def abbreviate(s):
+    """Some basic abbreviations
+
+    TODO: load a large dictionary of abbreviations from NLTK, etc
+    """
+    return abbreviate.words.get(s, s)
+abbreviate.words = {'account': 'acct', 'number': 'num', 'customer': 'cust', 'member': 'membr', 'building': 'bldg', 'serial number': 'SN', 'social security number': 'SSN'}
+
+
+def remove_internal_vowels(s, space=''):
+    # because this pattern overlaps for vowels separated by a single or no consonant, it must be run several times
+    internal_vowel = re.compile(r'([A-Za-z])[aeiou]([A-Za-z])')
+    strlen = len(s)
+    while True:
+        s = internal_vowel.sub(r'\1\2', s)
+        if len(s) < strlen:
+            strlen = len(s)
+        else:
+            break
+    return re.sub(r'\s', space, s)
 
 
 def normalize_year(y):
@@ -2459,10 +2594,10 @@ def slash_product(string_or_seq, slash='/', space=' '):
         - Simplify by using a list comprehension?
 
     >>> slash_product("The challenging/confusing interview didn't end with success/offer")  # doctest: +NORMALIZE_WHITESPACE
-    ['The challenging interview didn't end with success',
-     'The challenging interview didn't end with offer',
-     'The confusing interview didn't end with success',
-     'The confusing interview didn't end with offer']
+    ["The challenging interview didn't end with success",
+     "The challenging interview didn't end with offer",
+     "The confusing interview didn't end with success",
+     "The confusing interview didn't end with offer"]
     >>> slash_product('I say goodbye/hello cruel/fun world.')  # doctest: +NORMALIZE_WHITESPACE
     ['I say goodbye cruel world.',
      'I say goodbye fun world.',
@@ -2498,6 +2633,14 @@ def slash_product(string_or_seq, slash='/', space=' '):
     alternatives = head[-1], tail[0]
     head, tail = space.join(head[:-1]), space.join(tail[1:])
     return slash_product([space.join([head, word, tail]).strip(space) for word in alternatives])
+
+
+def is_valid_american_date_string(s, require_year=True):
+    if not isinstance(s, basestring):
+        return False
+    if require_year and len(s.split('/')) != 3:
+        return False
+    return bool(1 <= int(s.split('/')[0]) <= 12 and 1 <= int(s.split('/')[1]) <= 31)
 
 
 def make_date(dt, date_parser=parse_date):
@@ -2549,17 +2692,28 @@ def make_datetime(dt, date_parser=parse_date):
     >>> make_date(datetime.datetime(1999, 12, 31, 23, 59, 59))
     datetime.date(1999, 12, 31)
     """
-    if isinstance(dt, datetime.datetime):
+    if isinstance(dt, (datetime.datetime, pd.Timestamp, pd.np.datetime64)):
         return dt
+    if isinstance(dt, float):
+        return datetime_from_ordinal_float(dt)
+    if isinstance(dt, datetime.date):
+        return datetime.datetime(dt.year, dt.month, dt.day)
+    if isinstance(dt, datetime.time):
+        return datetime.datetime(1, 1, 1, dt.hour, dt.minute, dt.second, dt.microsecond)
     if not dt:
         return datetime.datetime(1970, 1, 1)
     if isinstance(dt, basestring):
         return date_parser(dt)
     try:
-        dt = dt.timetuple()[:7]
+        return datetime.datetime(*dt.timetuple()[:7])
     except:
-        dt = tuple(dt)[:7]
-    return datetime.datetime(*dt)
+        dt = list(dt)
+        if 1 <= len(dt) <= 9:
+            try:
+                return datetime.datetime(*dt[:7])
+            except:
+                pass
+    return [make_datetime(val) for val in dt]
 
 
 def make_time(dt, date_parser=parse_date):
@@ -2604,12 +2758,15 @@ def quantize_datetime(dt, resolution=None):
 
     >>> quantize_datetime(datetime.datetime(1970,1,2,3,4,5,6), resolution=3)
     datetime.datetime(1970, 1, 2, 0, 0)
-    >>> quantize_datetime(datetime.datetime(1970,1,2,3,4,5,6))
-    datetime.datetime(1970, 1, 2, 3, 4, 5, 6)
+
+    Notice that 6 is the highest resolution value with any utility
+    >>> quantize_datetime(datetime.datetime(1970,1,2,3,4,5,6), resolution=7)
+    datetime.datetime(1970, 1, 2, 3, 4, 5)
     >>> quantize_datetime(datetime.datetime(1971,2,3,4,5,6,7), 1)
     datetime.datetime(1971, 1, 1, 0, 0)
     """
-    resolution = int(resolution or 7)
+    # FIXME: this automatically truncates off microseconds just because timtuple() only goes out to sec
+    resolution = int(resolution or 6)
     if hasattr(dt, 'timetuple'):
         dt = dt.timetuple()  # strips timezone info
 
@@ -2634,19 +2791,64 @@ def quantize_datetime(dt, resolution=None):
 
 
 def ordinal_float(dt):
-    """Like datetime.ordinal, but rather than integer allows fractional days (so float not ordinal at all)"""
-    if hasattr(dt, 'toordinal'): 
-        dt.toordinal() + ((((dt.microsecond / 1000000.) + dt.second) / 60. + dt.minute) / 60 + dt.hour) / 24.
+    """Like datetime.ordinal, but rather than integer allows fractional days (so float not ordinal at all)
+
+    Similar to the Microsoft Excel numerical representation of a datetime object
+
+    >>> ordinal_float(datetime.datetime(1970, 1, 1))
+    719163.0
+    >>> ordinal_float(datetime.datetime(1, 2, 3, 4, 5, 6, 7))  # doctest: +ELLIPSIS
+    34.1702083334143...
+    """
+    try:
+        return dt.toordinal() + ((((dt.microsecond / 1000000.) + dt.second) / 60. + dt.minute) / 60 + dt.hour) / 24.
+    except:
+        try:
+            return ordinal_float(make_datetime(dt))
+        except:
+            pass
+    dt = list(make_datetime(val) for val in dt)
+    assert(all(isinstance(val, datetime.datetime) for val in dt))
     return [ordinal_float(val) for val in dt]
 
+
 def datetime_from_ordinal_float(days):
-    """Inverse of `ordinal_float()`, converts a float number of days back to a `datetime` object"""
+    """Inverse of `ordinal_float()`, converts a float number of days back to a `datetime` object
+
+    >>> dt = datetime.datetime(1970, 1, 1) 
+    >>> datetime_from_ordinal_float(ordinal_float(dt)) == dt
+    True
+    >>> dt = datetime.datetime(1, 2, 3, 4, 5, 6, 7) 
+    >>> datetime_from_ordinal_float(ordinal_float(dt)) == dt
+    True
+    """
     if isinstance(days, (float, int)):
         dt = datetime.datetime.fromordinal(int(days))
-        seconds = (days - int(days)) * 3600 * 24
+        seconds = (days - int(days)) * 3600. * 24.
         microseconds = (seconds - int(seconds)) * 1000000
-        return dt + datetime.timedelta(days=0, seconds=int(seconds), microseconds=int(microseconds))
+        return dt + datetime.timedelta(days=0, seconds=int(seconds), microseconds=int(round(microseconds)))
     return [datetime_from_ordinal_float(d) for d in days]
+
+
+def timetag_str(dt=None, sep='-', filler='0', resolution=6):
+    """Generate a date-time tag suitable for appending to a file name.
+
+    >>> timetag_str(resolution=3) == '-'.join('{0:02d}'.format(i) for i in tuple(datetime.datetime.now().timetuple()[:3]))
+    True
+    >>> timetag_str(datetime.datetime(2004,12,8,1,2,3,400000))
+    '2004-12-08-01-02-03'
+    >>> timetag_str(datetime.datetime(2004,12,8))
+    '2004-12-08-00-00-00'
+    >>> timetag_str(datetime.datetime(2003,6,19), filler='')
+    '2003-6-19-0-0-0'
+    """
+    resolution = int(resolution or 6)
+    if sep in (None, False):
+        sep = ''
+    sep = str(sep)
+    dt = datetime.datetime.now() if dt is None else dt
+    # FIXME: don't use timetuple which truncates microseconds
+    return sep.join(('{0:' + filler + ('2' if filler else '') + 'd}').format(i) for i in tuple(dt.timetuple()[:resolution]))
 
 
 def days_since(dt, dt0=datetime.datetime(1970, 1, 1, 0, 0, 0)):
