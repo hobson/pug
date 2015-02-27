@@ -60,14 +60,23 @@ def build_neural_net(N_inp=7, N_hid=0):
     return nn
 
 
-def pybrain_dataset_from_dataframe(df, inputs=['Max Humidity', ' Mean Humidity', ' Min Humidity'], outputs=['Max TemperatureF']):
+
+def pybrain_dataset_from_dataframe(df, inputs=['Max Humidity', ' Mean Humidity', ' Min Humidity'], outputs=['Max TemperatureF'], normalize=True):
     N_inp = len(inputs)
     N_out = len(outputs)
 
+    mean, std = 0, 1
+    if normalize:
+        mean, std = df[inputs[0]].mean(), df[inputs[0]].std()
+
     ds = pb.datasets.SupervisedDataSet(N_inp, N_out)
     for sample in df[inputs + outputs].values:
-        ds.addSample(sample[:N_inp], sample[N_inp:])
+        ds.addSample((sample[:N_inp] - mean) / std, sample[N_inp:])
     return ds
+
+
+def build_trainer(nn, ds, verbosity=1):
+    return pb.supervised.trainers.rprop.RPropMinusTrainer(nn, dataset=ds, batchlearning=True, verbose=bool(verbosity > 1))
 
 
 # def pybrain_dataset_from_time_series(df, N_inp=None, features=('moy',), verbosity=1):
