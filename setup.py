@@ -35,7 +35,6 @@ setup(
     long_description = open(os.path.join(os.path.dirname(__file__), 'README.md')).read(),
     author = ', '.join(__authors__),
     author_email = "pugauthors@totalgood.com",
-
     #tests_require = ['django-setuptest', 'south'],
     #test_suite = 'setuptest.setuptest.SetupTestSuite',
     #cmdclass = {'test': test},
