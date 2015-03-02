@@ -7,8 +7,9 @@ import itertools
 import random
 import warnings
 
-import numpy as np
 import pandas as pd
+np = pd.np
+
 from scipy import integrate
 
 from matplotlib import pyplot as plt
@@ -17,14 +18,45 @@ from scipy.optimize import minimize
 from pug.nlp.util import listify
 
 
+def rms(err):
+    """"Root Mean Square"
+
+    >>> rms([0, 2, 4, 4])
+    3.0
+    """
+    return (pd.array(err) ** 2).mean() ** 0.5
+
+def rmse(target, prediction, relative=False, percent=False):
+    """ "Root Mean Square Error" 
+
+    This seems like a simple formula that you'd never need to implementa function for.
+    But my mistakes on coding challenges have convinced me that I do need it.
+
+    >>> rmse([0, 1, 2], [2, 1, 0])
+
+    """
+    relative = relative or percent
+    prediction = pd.np.array(prediction)
+    target = pd.np.array(target)
+    err = prediction - target
+    if relative:
+        denom = target
+        denom[denom==0] = prediction[denom==0]
+        if percent:
+            denom = 0.01 * denom
+        err = (err / denom).dropna()
+    return rms(err)
+
+
 def blended_rolling_apply(series, window=2, fun=pd.np.mean):
     new_series = pd.Series(np.fromiter((fun(series[:i+1]) for i in range(window - 1)), type(series.values[0])), index=series.index[:window - 1]).append(
         pd.rolling_apply(series.copy(), window, fun)[window - 1:])
-    assert(len(series) == len(new_series), 
-            "blended_rolling_apply should alwas return a series of the same length! len(series) = {0} != {1} = len(new_series".format(
+    assert len(series) == len(new_series), ( 
+            "blended_rolling_apply should always return a series of the same length! len(series) = {0} != {1} = len(new_series".format(
                 len(series), len(new_series)))
-    assert(not any(np.isnan(val) or val is None for val in new_series))
+    assert not any(np.isnan(val) or val is None for val in new_series)
     return new_series
+
 
 def rolling_latch(series, billing_period=31, latch_decay=1.0):
     # FIXME: implement recursive exponential decay filter rather than the nonrecursive, deratring done here

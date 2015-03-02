@@ -60,7 +60,6 @@ def build_neural_net(N_inp=7, N_hid=0):
     return nn
 
 
-
 def pybrain_dataset_from_dataframe(df, inputs=['Max Humidity', ' Mean Humidity', ' Min Humidity'], outputs=['Max TemperatureF'], normalize=True):
     N_inp = len(inputs)
     N_out = len(outputs)

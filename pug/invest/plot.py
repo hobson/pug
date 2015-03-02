@@ -430,7 +430,7 @@ def histogram_and_plot(df, column=0, width=0.9, resolution=2, str_timetags=True,
     """
 
     try:
-        assert(len(bins) == len(counted) + 1)
+        assert len(bins) == len(counted) + 1
         his0, his1 = bins, counted
     except:
         his0, his1 = [], []
