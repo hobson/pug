@@ -7,3 +7,4 @@ pug/nlp/pca.pickled
 nohup.out
 pug/crawlnmine/djangodb
 pug/crawlnmine/fabfile/project_conf.py
+.ipynb_checkpoints/
