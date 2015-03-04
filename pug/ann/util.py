@@ -10,7 +10,11 @@ from StringIO import StringIO
 
 import pandas as pd
 from matplotlib import pyplot as plt
-import pybrain as pb
+import pybrain.datasets
+import pybrain.structure
+import pybrain.supervised
+pb = pybrain
+
 
 #import pug.nlp.util as nlp
 
@@ -35,13 +39,17 @@ def weather(location='Fresno, CA', date='2012/1/1', verbosity=1):
 weather.locations = dict([(str(city) + ', ' + str(region)[-2:], str(ident)) for city, region, ident in pd.DataFrame.from_csv(os.path.join(DATA_PATH, 'airports.csv')).sort(ascending=False)[['municipality', 'iso_region', 'ident']].values])
 
 
-def build_neural_net(N_inp=7, N_hid=0):
+def build_neural_net(ds=None, N_hid=0, N_inp=3, N_out=1):
+    N_inp = getattr(ds, 'indim', N_inp)
+    N_out = getattr(ds, 'outdim', N_out)
+    N_hid = getattr(ds, 'paramdim', N_hid + N_inp + N_out) - N_hid - N_out
+
     nn = pb.structure.FeedForwardNetwork()
 
     # layers
     inlay = pb.structure.LinearLayer(N_inp, name='input')
     nn.addInputModule(inlay)
-    outlay = pb.structure.LinearLayer(1, name='output')
+    outlay = pb.structure.LinearLayer(N_out, name='output')
     nn.addOutputModule(outlay)
 
     # connections

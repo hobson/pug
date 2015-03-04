@@ -2224,6 +2224,10 @@ def listify(values, N=1, delim=None):
     return ans
 
 
+def tuplify(values, N=1, delim=None):
+    return tuple(listify(values, N=N, delim=delim))
+
+
 def unlistify(l, depth=1, typ=list, get=None):
     """Return the desired element in a list ignoring the rest.
 
@@ -2849,6 +2853,7 @@ def timetag_str(dt=None, sep='-', filler='0', resolution=6):
     dt = datetime.datetime.now() if dt is None else dt
     # FIXME: don't use timetuple which truncates microseconds
     return sep.join(('{0:' + filler + ('2' if filler else '') + 'd}').format(i) for i in tuple(dt.timetuple()[:resolution]))
+timestamp_str = make_timestamp = make_timetag = timetag_str
 
 
 def days_since(dt, dt0=datetime.datetime(1970, 1, 1, 0, 0, 0)):
