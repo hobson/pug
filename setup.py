@@ -1,13 +1,17 @@
-# setup.py for PUG
-from distutils.core import setup
+# setup.py for PUG (PDX Python User Group) package
+from setuptools import find_packages, setup
+
+#from distutils.core import setup
 #from setuptest import test
 
-from pug import __version__, __authors__, __github_url__
+from pug import __version__ as version
+from pug import __authors__, __github_url__
+from pug import __doc__ as description
 from pug import __name__ as package_name
-import os
-# import sys
 
-# sys.path.insert(0, os.path.join(os.getcwd()))
+print('Installing package named {0}. . .'.format(package_name))
+
+import os
 
 try:
     from pip.req import parse_requirements
@@ -15,32 +19,40 @@ try:
 except:
     requirements = []
 install_requires=[str(req).split(' ')[0].strip() for req in requirements if req.req and not req.url]
-print 'requires: %r' % install_requires
+print('requires: %r' % install_requires)
 dependency_links=[req.url for req in requirements if req.url]
-print 'dependcies: %r' % dependency_links
+print('dependcies: %r' % dependency_links)
 
+try:
+    import pypandoc
+    long_description = pypandoc.convert('README.md', 'rst')
+except (IOError, ImportError, OSError):
+    long_description = "Python packages implementing various natural language processing, web scraping, and predictive analytics tools developed by and for the PDX Python User Group."
+
+EXCLUDE_FROM_PACKAGES = []
 
 setup(
     name = package_name,
-    packages = ["pug"],  # without this: Downloading/unpacking pug ... ImportError: No module named pug ... from pug import __version__, __name__, __doc__, _github_url_
+#    packages = ["pug"],  # without this: Downloading/unpacking pug ... ImportError: No module named pug ... from pug import __version__, __name__, __doc__, _github_url_
+    packages=find_packages(exclude=EXCLUDE_FROM_PACKAGES),   #[package_name],  
     include_package_data = True,  # install non-.py files listed in MANIFEST.in (.js, .html, .txt, .md, etc)
+    install_requires = install_requires,
+    dependency_links = dependency_links,
     scripts=['pug/bin/jira.py'],
     entry_points={'console_scripts': [
         'jira = pug.crawlnmine.management:execute_from_command_line',
     ]},
-    install_requires = install_requires,
-    dependency_links = dependency_links,
-    version = __version__,
-    description = __doc__,
-    long_description = open(os.path.join(os.path.dirname(__file__), 'README.md')).read(),
+    version = version,
+    description = description,
+    long_description = long_description or open(os.path.join(os.path.dirname(__file__), 'README.md')).read(),
     author = ', '.join(__authors__),
-    author_email = "pugauthors@totalgood.com",
+    author_email = "admin@totalgood.com",
 
     #tests_require = ['django-setuptest', 'south'],
     #test_suite = 'setuptest.setuptest.SetupTestSuite',
     #cmdclass = {'test': test},
     url = __github_url__,
-    download_url = "%s/archive/v%s.tar.gz" % (__github_url__, __version__),
+    download_url = "%s/archive/v%s.tar.gz" % (__github_url__, version),
     keywords = ["agent", "bot", "ai", "crawl", "data", "science", "data science", "math", "machine-learning", "statistics", "database"],
     classifiers = [
         "Programming Language :: Python",

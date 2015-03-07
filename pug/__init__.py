@@ -19,7 +19,7 @@
 # THE SOFTWARE.
 """pug -- Package of Utilities written by and for the PDX Python User's Group"""
 
-__version__ = '0.0.8'
+__version__ = '0.1'
 __authors__ = [
     'Hobson <hobson@totalgood.com>'
     'Steve  <walkers@sharplabs.com>'
@@ -27,10 +27,12 @@ __authors__ = [
     ]
 __github_url__ = "https://github.com/hobson/%s" % (__name__)
 
-# FIXME: this isn't working
-import ann
-import data
-import nlp
-import invest
-import db
+# # FIXME: This doesn't work:
+# #        >>> import pug
+# #        >>> pug.nlp.util.reduce_vocab(('on', 'hon', 'honey')) 
+# import ann
+# import data
+# import nlp
+# import invest
+# import db
 __all__ = ['ann', 'data', 'nlp', 'invest', 'db']
