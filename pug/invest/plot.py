@@ -196,7 +196,7 @@ def percent_formatter(y_value, y_position):
     s += r'$\%$' if plt.rcParams.get('text.usetex', False) == True else '%'
     return s
 percent_formatter.scale_factor = 100
-percent_formatter.precision = 0
+percent_formatter.precision = 3
 
 
 DATETIME_KWARGS = OrderedDict([('year', 1970), ('month', 1), ('day', 1), ('hour', 0), ('minute', 0), ('second', 0), ('microsecond', 0)])

@@ -96,9 +96,9 @@ def blended_rolling_apply(series, window=2, fun=pd.np.mean):
     return new_series
 
 
-def rolling_latch(series, billing_period=31, latch_decay=1.0):
+def rolling_latch(series, period=31, decay=1.0):
     # FIXME: implement recursive exponential decay filter rather than the nonrecursive, deratring done here
-    return blended_rolling_apply(series, billing_period, lambda val: latch_decay * pd.np.max(val))
+    return blended_rolling_apply(series, period, lambda val: decay * pd.np.max(val))
 
 
 def clean_dataframe(df):
