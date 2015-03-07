@@ -25,7 +25,7 @@ __authors__ = [
     'Steve  <walkers@sharplabs.com>'
     'John   <kowalskj@sharplabs.com>'
     ]
-__github_url__ = "https://github.com/hobson/%s" % (__name__)
+__github_url__ = "https://github.com/hobson/{0}".format(__name__)
 
 # # FIXME: This doesn't work:
 # #        >>> import pug
