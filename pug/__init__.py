@@ -30,9 +30,11 @@ __github_url__ = "https://github.com/hobson/%s" % (__name__)
 # # FIXME: This doesn't work:
 # #        >>> import pug
 # #        >>> pug.nlp.util.reduce_vocab(('on', 'hon', 'honey')) 
-# import ann
-# import data
-# import nlp
-# import invest
-# import db
-__all__ = ['ann', 'data', 'nlp', 'invest', 'db']
+import ann
+import data
+import nlp
+import nlp.util
+import invest
+import invest.util
+import db
+__all__ = ['ann', 'data', 'data.weather', 'nlp', 'nlp.util', 'invest', 'invest.util', 'db']
