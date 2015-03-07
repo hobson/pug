@@ -19,7 +19,7 @@
 # THE SOFTWARE.
 """pug -- Package of Utilities written by and for the PDX Python User's Group"""
 
-__version__ = '0.1.0'
+__version__ = '0.1.1'
 __authors__ = [
     'Hobson <hobson@totalgood.com>'
     'Steve  <walkers@sharplabs.com>'
