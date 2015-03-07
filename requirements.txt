@@ -32,3 +32,20 @@ gunicorn==19.1.1
 
 Scrapy==0.22.2
 jsonfield==1.0.0
+
+progressbar-latest==2.4
+# psycopg2==2.5.4
+
+pyOpenSSL==0.14
+python-slugify==0.0.9
+pytz==2014.10
+python-dateutil==2.4.0
+
+PyBrain==0.3
+
+six==1.9.0
+
+sqlparse==0.1.14
+tabulate==0.7.1
+w3lib==1.11.0
+zope.interface==4.1.2

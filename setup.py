@@ -1,13 +1,37 @@
 # setup.py for PUG (PDX Python User Group) package
 from setuptools import find_packages, setup
+import io
+from os.path import dirname, join
 
 #from distutils.core import setup
 #from setuptest import test
 
-from pug import __version__ as version
-from pug import __authors__, __github_url__
-from pug import __doc__ as description
-from pug import __name__ as package_name
+
+def get_version(relpath, keyword='__version__'):
+    """Read __version__ or other properties from a python file without importing it 
+    
+    from gist.github.com/technonik/406623 but with added keyward kwarg """
+    for line in io.open(join(dirname(__file__), relpath), encoding='cp437'):
+        if keyword in line:
+            if '"' in line:
+                return line.split('"')[1]
+            elif "'" in line:
+                return line.split("'")[1]
+
+
+package_name = 'pug'
+init_path = join(package_name, '__init__.py')
+version = get_version(init_path)
+description = get_version(init_path, '__doc__')
+__github_url__  = get_version(init_path, '__github_url__ ')
+
+# get_version won't parse this:
+# DRY this up between here and __init__.py
+__authors__ = [
+    'Hobson <hobson@totalgood.com>'
+    'Steve  <walkers@sharplabs.com>'
+    'John   <kowalskj@sharplabs.com>'
+    ]
 
 print('Installing package named {0}. . .'.format(package_name))
 
@@ -28,6 +52,11 @@ try:
     long_description = pypandoc.convert('README.md', 'rst')
 except (IOError, ImportError, OSError):
     long_description = "Python packages implementing various natural language processing, web scraping, and predictive analytics tools developed by and for the PDX Python User Group."
+
+
+
+
+
 
 EXCLUDE_FROM_PACKAGES = []
 
