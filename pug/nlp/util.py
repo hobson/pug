@@ -78,7 +78,7 @@ PUNC = unicode(string.punctuation)
 
 
 def fedora_password_salt(length=8, alphabet=string.letters + string.digits + './'):
-    """Generate a random salt for use in `crypt.crypt(password, salt)`"""
+    """Generate a random salt string for use in `crypt.crypt(password, salt)`"""
     return ''.join(random.choice(alphabet) for position in range(length))
 
 
@@ -98,7 +98,11 @@ HIST_CONFIG = {
         'ylabel': 'Count',
         },
     'pmf': {
-        'name': 'Probability Mass Function',   # probability distribution [function]
+        # PMFs have discrete, exact values as bins rather than ranges (finite bin widths)
+        #   but this histogram configuration doesn't distinguish between PMFs and PDFs, 
+        #   since mathematically they have all the same properties. 
+        #    PDFs just have a range associated with each discrete value (which should be when integrating a PDF but not when summing a PMF where the "width" is uniformly 1)
+        'name': 'Probability Mass Function',   # probability density function, probability distribution [function]
         'kwargs': { 'normalize': True, 'cumulative': False, },
         'index': 1,
         'xlabel': 'Bin',
@@ -2224,6 +2228,10 @@ def listify(values, N=1, delim=None):
     return ans
 
 
+def tuplify(values, N=1, delim=None):
+    return tuple(listify(values, N=N, delim=delim))
+
+
 def unlistify(l, depth=1, typ=list, get=None):
     """Return the desired element in a list ignoring the rest.
 
@@ -2849,6 +2857,7 @@ def timetag_str(dt=None, sep='-', filler='0', resolution=6):
     dt = datetime.datetime.now() if dt is None else dt
     # FIXME: don't use timetuple which truncates microseconds
     return sep.join(('{0:' + filler + ('2' if filler else '') + 'd}').format(i) for i in tuple(dt.timetuple()[:resolution]))
+timestamp_str = make_timestamp = make_timetag = timetag_str
 
 
 def days_since(dt, dt0=datetime.datetime(1970, 1, 1, 0, 0, 0)):

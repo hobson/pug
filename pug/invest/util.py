@@ -7,8 +7,9 @@ import itertools
 import random
 import warnings
 
-import numpy as np
 import pandas as pd
+np = pd.np
+
 from scipy import integrate
 
 from matplotlib import pyplot as plt
@@ -17,18 +18,87 @@ from scipy.optimize import minimize
 from pug.nlp.util import listify
 
 
+def dropna(x):
+    """Delete all NaNs and and infinities in a sequence of real values
+
+    Returns:
+        list: Array of all values in x that are between -inf and +inf, exclusive
+    """
+    return [x_i for x_i in listify(x) if float('-inf') < x_i < float('inf')]
+
+
+def rms(x):
+    """"Root Mean Square"
+
+    Arguments:
+        x (seq of float): A sequence of numerical values
+
+    Returns:
+        The square root of the average of the squares of the values 
+
+        math.sqrt(sum(x_i**2 for x_i in x) / len(x))
+
+        or
+        
+        return (np.array(x) ** 2).mean() ** 0.5
+
+    >>> rms([0, 2, 4, 4])
+    3.0
+    """
+    try:
+        return (np.array(x) ** 2).mean() ** 0.5
+    except:
+        x = np.array(dropna(x))
+        invN = 1.0 / len(x)
+        return (sum(invN * (x_i**2) for x_i in x))**.5
+
+
+def rmse(target, prediction, relative=False, percent=False):
+    """ "Root Mean Square Error" 
+
+    This seems like a simple formula that you'd never need to create a function for.
+    But my mistakes on coding challenges have convinced me that I do need it,
+    as a reminder of important tweaks, if nothing else.
+
+    >>> rmse([0, 1, 4, 3], [2, 1, 0, -1])
+    3.0
+    >>> rmse([0, 1, 4, 3], [2, 1, 0, -1], relative=True)  # doctest: +ELLIPSIS
+    1.2247...
+    >>> rmse([0, 1, 4, 3], [2, 1, 0, -1], percent=True)  # doctest: +ELLIPSIS
+    122.47...
+    """
+    relative = relative or percent
+    prediction = pd.np.array(prediction)
+    target = np.array(target)
+    err = prediction - target
+    if relative:
+        denom = target
+        # Avoid ZeroDivisionError: divide by prediction rather than target where target==0
+        denom[denom==0] = prediction[denom==0]
+        # If the prediciton and target are both 0, then the error is 0 and should be included in the RMSE
+        # Otherwise, the np.isinf() below would remove all these zero-error predictions from the array.
+        denom[(denom==0) & (target==0)] = 1
+        print(denom)
+        err = (err / denom)
+        print(err)
+        err = err[(~ np.isnan(err)) & (~ np.isinf(err))]
+        print(err)
+    return 100*rms(err) if percent else rms(err)
+
+
 def blended_rolling_apply(series, window=2, fun=pd.np.mean):
     new_series = pd.Series(np.fromiter((fun(series[:i+1]) for i in range(window - 1)), type(series.values[0])), index=series.index[:window - 1]).append(
         pd.rolling_apply(series.copy(), window, fun)[window - 1:])
-    assert(len(series) == len(new_series), 
-            "blended_rolling_apply should alwas return a series of the same length! len(series) = {0} != {1} = len(new_series".format(
+    assert len(series) == len(new_series), ( 
+            "blended_rolling_apply should always return a series of the same length! len(series) = {0} != {1} = len(new_series".format(
                 len(series), len(new_series)))
-    assert(not any(np.isnan(val) or val is None for val in new_series))
+    assert not any(np.isnan(val) or val is None for val in new_series)
     return new_series
 
-def rolling_latch(series, billing_period=31, latch_decay=1.0):
+
+def rolling_latch(series, period=31, decay=1.0):
     # FIXME: implement recursive exponential decay filter rather than the nonrecursive, deratring done here
-    return blended_rolling_apply(series, billing_period, lambda val: latch_decay * pd.np.max(val))
+    return blended_rolling_apply(series, period, lambda val: decay * pd.np.max(val))
 
 
 def clean_dataframe(df):

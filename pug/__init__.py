@@ -19,7 +19,7 @@
 # THE SOFTWARE.
 """pug -- Package of Utilities written by and for the PDX Python User's Group"""
 
-__version__ = '0.1'
+__version__ = '0.1.0'
 __authors__ = [
     'Hobson <hobson@totalgood.com>'
     'Steve  <walkers@sharplabs.com>'
@@ -27,10 +27,17 @@ __authors__ = [
     ]
 __github_url__ = "https://github.com/hobson/%s" % (__name__)
 
-# FIXME: this isn't working
+# # FIXME: This doesn't work:
+# #        >>> import pug
+# #        >>> pug.nlp.util.reduce_vocab(('on', 'hon', 'honey')) 
+# # FIXME: But setup will fail if you import submodules here (no dependencies installed before checking __version__)!
 import ann
+# import ann.util
 import data
+import data.weather
 import nlp
+import nlp.util
 import invest
+import invest.util
 import db
-__all__ = ['ann', 'data', 'nlp', 'invest', 'db']
+__all__ = ['ann', 'data', 'data.weather', 'nlp', 'nlp.util', 'invest', 'invest.util', 'db']
