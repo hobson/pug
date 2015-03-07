@@ -69,7 +69,7 @@ def load_tests(loader, tests, ignore):
     return tests
 
 
-# # This was clunky...
+# # This was clunky but it allows you to load test fixtures...
 
 # class DocTest(TestCase):
 

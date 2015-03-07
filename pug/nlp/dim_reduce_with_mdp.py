@@ -39,10 +39,10 @@ pca.var_abs
 pca.var_part
 pca.var_rel
 pca.tlen
-pca.svg??
+# pca.svg??
 pca.svg
 pca.svd
-pca.svd??
+# pca.svd??
 len(pca.v)
 len(words_
 )

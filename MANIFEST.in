@@ -15,3 +15,4 @@ recursive-include pug/crawler/templates *
 recursive-include pug/crawlnmine/static *
 recursive-include pug/crawlnmine/templates *
 # recursive-include pug/crawlnmine/tests *
+recursive-include pug/data *
