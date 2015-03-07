@@ -5,8 +5,7 @@ TODO:
 
 """
 import os
-import urllib
-from StringIO import StringIO
+
 
 import pandas as pd
 from matplotlib import pyplot as plt
@@ -14,28 +13,9 @@ import pybrain as pb
 
 #import pug.nlp.util as nlp
 
-print(os.path.realpath(__file__))
-DATA_PATH = os.path.join(os.path.dirname(os.path.realpath(__file__)), '..', 'data')
-
-def weather(location='Fresno, CA', date='2012/1/1', verbosity=1):
-    suffix = '/CustomHistory.html?dayend=1&monthend=1&yearend=2015&req_city=&req_state=&req_statename=&reqdb.zip=&reqdb.magic=&reqdb.wmo=&MR=1&format=1'
-    prefix = 'http://www.wunderground.com/history/'
-    url = prefix + 'airport/' + weather.locations.get(location, location) + '/' + date + suffix
-    if verbosity:
-        print('GETing csv from "{0}"'.format(url))
-    s = urllib.urlopen(url).read()
-    if verbosity:
-        N = s.count('\n')
-        M = (s.count(',') + N) / float(N)
-        print('Retrieved CSV with appox. {0} lines, {2} columns, or {1} cells.'.format(N, int(M * N), M))
-    df = pd.DataFrame.from_csv(StringIO(s))
-    if verbosity > 1:
-        print(df)
-    return df
-weather.locations = dict([(str(city) + ', ' + str(region)[-2:], str(ident)) for city, region, ident in pd.DataFrame.from_csv(os.path.join(DATA_PATH, 'airports.csv')).sort(ascending=False)[['municipality', 'iso_region', 'ident']].values])
 
 
-def build_neural_net(N_inp=7, N_hid=0):
+def build_neural_net(N_inp=3, N_hid=0):
     nn = pb.structure.FeedForwardNetwork()
 
     # layers
