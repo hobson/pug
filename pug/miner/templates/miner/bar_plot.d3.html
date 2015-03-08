@@ -27,9 +27,7 @@
         <script>
             bar_plot({{ data.d3data|safe }}, 
                 {
-                 "plot_container_id": "plot_container", 
-//                 "xlabel": "{{ data.xlabel|escapejs }}", 
-//                 "ylabel": "{{ data.ylabel|default_if_none:"[]"|escapejs }}", 
+                 "plot_container_id": "plot_container",
                  "header": {{ data.header|default:"[]"|default_if_none:"[]"|safe }}
                 });
         </script>

@@ -34,6 +34,9 @@ import decimal
 import random
 from decimal import Decimal
 import math
+import pandas as pd
+from dateutil.parser import parse as parse_date
+
 
 from progressbar import ProgressBar
 from pytz import timezone
@@ -493,11 +496,11 @@ def fuzzy_get(dict_obj, approximate_key, default=None, similarity=0.6, tuple_joi
 
     Examples:
       >>> fuzzy_get({'seller': 2.7, 'sailor': set('e')}, 'sail')
-      {'e'}
+      set(['e'])
       >>> fuzzy_get({'seller': 2.7, 'sailor': set('e'), 'camera': object()}, 'SLR')
-      {'e'}
+      2.7
       >>> fuzzy_get({'seller': 2.7, 'sailor': set('e'), 'camera': object()}, 'I')
-      None
+      set(['e'])
       >>> fuzzy_get({'word': tuple('word'), 'noun': tuple('noun')}, 'woh!', similarity=.3, key_and_value=True)
       ('word', ('w', 'o', 'r', 'd'))
       >>> fuzzy_get({'word': tuple('word'), 'noun': tuple('noun')}, 'woh!', similarity=.9, key_and_value=True)
@@ -515,8 +518,9 @@ def fuzzy_get(dict_obj, approximate_key, default=None, similarity=0.6, tuple_joi
             if any(isinstance(k, (tuple, list)) for k in dict_obj):
                 dict_obj = dict((tuple_joiner.join(str(k2) for k2 in k), v) for (k, v) in dict_obj.iteritems())
                 if isinstance(approximate_key, (tuple, list)):
-                    approximate_key = tuple_joiner.join(approximate_key)
-            dict_keys = set(dict_keys if dict_keys else dict_obj)
+                    strkey = tuple_joiner.join(approximate_key)
+            # WARN: fuzzywuzzy requires that the second argument be a list (sets and tuples fail!)
+            dict_keys = list(set(dict_keys if dict_keys else dict_obj))
             if strkey in dict_keys:
                 fuzzy_key, value = strkey, dict_obj[strkey]
             else:
@@ -524,8 +528,10 @@ def fuzzy_get(dict_obj, approximate_key, default=None, similarity=0.6, tuple_joi
                 if strkey in dict_keys:
                     fuzzy_key, value = strkey, dict_obj[strkey]
                 else:
-                    # print 'no exact match was found for {0} in {1} so checking with fuzzy'.format(strkey, dict_keys) 
-                    fuzzy_key_scores = fuzzy.extractBests(strkey, dict_keys, score_cutoff=max(min(similarity*100, 100), 0), limit=6)
+                    #print 'no exact match was found for {0} in {1} so checking with similarity cutoff of {2}'.format(strkey, dict_keys, similarity) 
+                    # WARN: extractBests will return [] if dict_keys is anything other than a list (even sets and tuples fail!)
+                    fuzzy_key_scores = fuzzy.extractBests(strkey, dict_keys, score_cutoff=min(max(similarity*100.0 - 1, 0), 100), limit=6)
+                    #print strkey, fuzzy_key_scores
                     if fuzzy_key_scores:
                         # print fuzzy_key_scores
                         fuzzy_score_keys = []
@@ -1025,19 +1031,45 @@ def mapped_transposed_lists(lists, default=None):
     return map(lambda *row: [el if isinstance(el, (float, int)) else default for el in row], *lists)
 
 
-def make_name(s, camel=None, lower=None, space='_', remove_prefix=None):
+def make_name(s, camel=None, lower=None, space='_', remove_prefix=None, language='python', string_type=unicode):
     """Process a string to produce a valid python variable/class/type name
 
-    Useful for producing Django model names out of file names, or Django field names out of a csv file headers
+    Arguments:
+      space (str): string to substitute for spaces ('' to delete all whitespace)
+      camel (bool): whether to camel-case names, Django Model Name style (first letter capitalized)
+      lower (bool): whether to lowercase all strings 
+      language (str): case-insensitive language identifier (to deterimine allowable identifier characters)
+        e.g. 'Python', 'Python2', 'Python3', 'Javascript', 'ECMA'
 
-    >>> make_name("PD / SZ")
-    'pd_sz'
+    Examples:
+      Generate Django model names out of file names
+      >>> make_name('women in IT.csv', camel=True)
+      'WomenInItCsv'
+      
+      Generate Django field names out of CSV header strings
+      >>> make_name('ID Number (9-digits)')
+      'id_number_9_digits'
+      >>> make_name("PD / SZ")
+      'pd_sz'
+
+      Generate Javscript object attribute names from CSV header strings
+      >>> make_name(u'pi (\u03C0)', space = '', language='javascript')
+      u'pi\u03c0'
+      >>> make_name(u'pi (\u03C0)', space = '', language='javascript')
+      u'pi\u03c0'
     """
     if camel is None and lower is None:
         lower = True
     if not s:
         return None
-    s = str(s)  # TODO: encode in ASCII, UTF-8, or the charset used for this file!
+    ecma_languages = ['ecma', 'javasc']
+    unicode_languages = ecma_languages
+    language = language or 'python'
+    language = language.lower().strip()[:6]
+    string_type = string_type or str
+    if language in unicode_languages:
+        string_type = unicode
+    s = string_type(s)  # TODO: encode in ASCII, UTF-8, or the charset used for this file!
     if remove_prefix and s.startswith(remove_prefix):
         s = s[len(remove_prefix):]
     if camel:
@@ -1047,11 +1079,19 @@ def make_name(s, camel=None, lower=None, space='_', remove_prefix=None):
             s = s.title()
     elif lower:
         s = s.lower()
+    # TODO: add language Regexes to filter characters appropriately for python or javascript
+    space_escape = '\\' if space and space not in ' _' else ''
+    if not language in ecma_languages:
+        invalid_char_regex = re.compile('[^a-zA-Z0-9' + space_escape + space +']+')
+    else:
+        # FIXME: Unicode categories and properties only works in Perl Regexes!
+        invalid_char_regex = re.compile('[\W' + space_escape + space +']+', re.UNICODE)
     if space is not None:
-        escape = '\\' if space and space not in ' _' else ''
-        s = re.sub('[^a-zA-Z0-9' + escape + space +']+', space, s)
+        # get rid of all invalid characters, substitting the space-filler for them all
+        s = invalid_char_regex.sub(space, s)
+        # get rid of duplicate space-filler characters
         if space:
-            s = re.sub('[' + escape + space + ']{2,}', space, s)
+            s = re.sub('[' + space_escape + space + ']{2,}', space, s)
     return s
 make_name.DJANGO_FIELD = {'camel': False, 'lower': True, 'space': '_'}
 make_name.DJANGO_MODEL = {'camel': True, 'lower': False, 'space': '', 'remove_prefix': 'models'}
@@ -1198,6 +1238,85 @@ def read_csv(path, ext='.csv', verbose=False, format=None, delete_empty_keys=Fal
     if not unique_names:
         return recs, norm_names
     return recs
+
+
+# date and datetime separators
+COLUMN_SEP = re.compile(r'[,/;]')
+
+
+def make_dataframe(prices, num_prices=1, columns=('portfolio',)):
+    """Convert a file, list of strings, or list of tuples into a Pandas DataFrame
+
+    Arguments:
+      num_prices (int): if not null, the number of columns (from right) that contain numeric values
+    """
+    if isinstance(prices, (pd.DataFrame, pd.Series)):
+        return prices
+    if isinstance(prices, basestring) and os.path.isfile(prices):
+        prices = open(prices, 'rU')
+    if isinstance(prices, file):
+        values = []
+        # FIXME: what if it's not a CSV but a TSV or PSV
+        csvreader = csv.reader(prices, dialect='excel', quoting=csv.QUOTE_MINIMAL)
+        for row in csvreader:
+            # print row
+            values += [row]
+        prices.close()
+        prices = values
+    if isinstance(prices[0], basestring):
+        prices = [COLUMN_SEP.split(row) for row in prices]
+    # print prices
+    index = []
+    if isinstance(prices[0][0], (datetime.date, datetime.datetime, datetime.time)):
+        index = [prices[0] for row in prices]
+        for i, row in prices:
+            prices[i] = row[1:]
+    # try to convert all strings to something numerical:
+    elif any(any(isinstance(value, basestring) for value in row) for row in prices):
+        #print '-'*80
+        for i, row in enumerate(prices):
+            #print i, row
+            for j, value in enumerate(row):
+                s = unicode(value).strip().strip('"').strip("'")
+                #print i, j, s
+                try:
+                    prices[i][j] = int(s)
+                    # print prices[i][j]
+                except:
+                    try:
+                        prices[i][j] = float(s)
+                    except:
+                        # print 'FAIL'
+                        try:
+                            # this is a probably a bit too forceful
+                            prices[i][j] = parse_date(s)
+                        except:
+                            pass
+    # print prices
+    width = max(len(row) for row in prices)
+    datetime_width = width - num_prices
+    if not index and isinstance(prices[0], (tuple, list)) and num_prices:
+        # print '~'*80
+        new_prices = []
+        try:
+            for i, row in enumerate(prices):
+                # print i, row
+                index += [datetime.datetime(*[int(i) for i in row[:datetime_width]])
+                          + datetime.timedelta(hours=16)]
+                new_prices += [row[datetime_width:]]
+                # print prices[-1]
+        except:
+            for i, row in enumerate(prices):
+                index += [row[0]]
+                new_prices += [row[1:]]
+        prices = new_prices or prices
+    # print index
+    # TODO: label the columns somehow (if first row is a bunch of strings/header)
+    if len(index) == len(prices):
+        df = pd.DataFrame(prices, index=index, columns=columns)
+    else:
+        df = pd.DataFrame(prices)
+    return df
 
 
 def column_name_to_date(name):
@@ -1413,6 +1532,14 @@ def normalize_scientific_notation(s, ignore_commas=True, verbosity=1):
     return None
 
 
+def normalize_names(names):
+    """Coerce a string or nested list of strings into a flat list of strings."""
+    if isinstance(names, basestring):
+        names = names.split(',')
+    names = listify(names)
+    return [str(name).strip() for name in names]
+
+
 def string_stats(strs, valid_chars='012346789', left_pad='0', right_pad='', strip=True):
     """Count the occurrence of a category of valid characters within an iterable of serial numbers, model numbers, or other strings"""
     if left_pad == None:
@@ -1619,19 +1746,115 @@ def make_real(list_of_lists):
 
 
 def imported_modules():
-    for name, val in globals().items():
+    for name, val in globals().iteritems():
         if isinstance(val, types.ModuleType):
             yield val
 
 
-def make_tz_aware(dt, tz='UTC'):
-    """Add timezone information to a datetime object, only if it is naive."""
+def make_tz_aware(dt, tz='UTC', is_dst=None):
+    """Add timezone information to a datetime object, only if it is naive.
+
+    >>> make_tz_aware(datetime.datetime(2001,9,1,1))
+    datetime.datetime(2001, 9, 1, 1, tzinfo=<UTC>)
+    """
     tz = dt.tzinfo or tz
     try:
         tz = pytz.timezone(tz)
     except AttributeError:
         pass
-    return tz.localize(dt)
+    return tz.localize(dt, is_dst=is_dst) 
+
+
+def normalize_datetime(t, time=datetime.timedelta(hours=16)):
+    if isinstance(t, datetime.datetime):
+        if not t.hours + t.seconds:
+            if time:
+                t += time
+        return t
+    if isinstance(t, datetime.date):
+        return normalize_datetime(datetime.datetime(t), time=time)
+    if isinstance(t, basestring):
+        return normalize_datetime(parse_date(t))
+    return normalize_datetime(datetime.datetime(*[int(i) for i in t]))
+
+
+def normalize_date(d):
+    if isinstance(d, datetime.date):
+        return d
+    if isinstance(d, datetime.datetime):
+        return datetime.date(d.year, d.month, d.day)
+    if isinstance(d, basestring):
+        return normalize_date(parse_date(d))
+    return normalize_date(datetime.datetime(*[int(i) for i in d]))
+
+
+def get_symbols_from_list(list_name):
+    """Retrieve a named (symbol list name) list of strings (symbols)
+
+    Example:
+      # If you installed the QSTK Quantitative analysis toolkit 
+      # you'd get a list of the symbols that were members of the S&P 500 in 2012.
+      >>> get_symbols_from_list('sp5002012')
+      []
+    """
+    try:
+        # quant software toolkit has a method for retrieving lists of symbols like S&P500 for 2012 with 'sp5002012'
+        import QSTK.qstkutil.DataAccess as da
+        dataobj = da.DataAccess('Yahoo')
+    except:
+        return []
+    try:
+        return dataobj.get_symbols_from_list(list_name)
+    except:
+        raise
+
+
+def normalize_symbols(symbols, *args, **kwargs):
+    """Coerce into a list of uppercase strings like "GOOG", "$SPX, "XOM"
+
+    Flattens nested lists in `symbols` and converts all list elements to strings
+
+    Arguments:
+      symbols (str or list of str): list of market ticker symbols to normalize
+        If `symbols` is a str a get_symbols_from_list() call is used to retrieve the list of symbols
+      postrprocess (func): function to apply to strings after they've been stripped
+        default = str.upper
+
+    FIXME:
+      - list(set(list(symbols))) and `args` separately so symbols may be duplicated in symbols and args
+      - `postprocess` should be a method to facilitate monkey-patching
+
+    Returns:
+      list of str: list of cananical ticker symbol strings (typically after .upper().strip())
+
+    Examples:
+      >>> normalize_symbols("Goog")
+      ["GOOG"]
+      >>> normalize_symbols("  $SPX   ", " aaPL ")
+      ["$SPX", "AAPL"]
+      >>> normalize_symbols("  $SPX   ", " aaPL ", postprocess=str)
+      ["$SPX", "aaPL"]
+      >>> normalize_symbols(["$SPX", ["GOOG", "AAPL"]])
+      ["$SPX", "GOOG", "AAPL"]
+      >>> normalize_symbols("$spy", ["GOOGL", "Apple"], postprocess=str)
+      ['$spy', 'GOOGL', 'Apple']
+    """
+    postprocess = kwargs.get('postprocess', None) or str.upper
+    if (      (hasattr(symbols, '__iter__') and not any(symbols))
+        or (isinstance(symbols, (list, tuple, collections.Mapping)) and not symbols)):
+        return []
+    args = normalize_symbols(args, postprocess=postprocess)
+    if isinstance(symbols, basestring):
+        # get_symbols_from_list seems robust to string normalizaiton like .upper()
+        try:
+            return list(set(get_symbols_from_list(symbols))) + args
+        except:
+            return [postprocess(s.strip()) for s in symbols.split(',')] + args
+    else:
+        ans = []
+        for sym in list(symbols):
+            ans += normalize_symbols(sym, postprocess=postprocess)
+        return list(set(ans))
 
 
 def clean_wiki_datetime(dt, squelch=True):

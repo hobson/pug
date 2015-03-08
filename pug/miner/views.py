@@ -6,6 +6,10 @@ import math
 import collections
 import re
 import string
+import json
+import copy
+
+import pandas as pd
 import codecs
 
 from django.shortcuts import render_to_response
@@ -313,7 +317,91 @@ def context_from_request(request, context=None, Form=GetLagForm, delim=',', verb
 
 
 re_model_instance_dot = re.compile('__|[.]+')
+
+
+def d3_plot_context(context, table=((0, 0),), title='Line Chart', xlabel='Time', ylabel='Value', header=None, limit=10001):
+    """
+
+    Arguments:
+      table (list of lists of values): A CSV/Excel style table with an optional header row as the first list
+      title (str): String to display atop the plot
+      xlabel (str): Text to display along the bottom axis
+      ylabel (str): Text to display along the vertical axis
+      limit (int): Maximum number of points to include in context variable `data.d3data`
+    """
+    if isinstance(table, pd.Series):
+        table = pd.DataFrame(table, columns=header or [ylabel])
+    if isinstance(table, pd.DataFrame):
+        df = table.sort_index()
+        table = list(df.to_records())
+        for i, row in enumerate(table):
+            d = row[0]
+            first_row = []
+            if isinstance(d, datetime.datetime):
+                # ISO 8601 date-time format is ECMA/javascript-friendly: 
+                #    YYYY-MM-DDTHH:mm:ss.sssZ  
+                #    `T` and `Z` are literal characters, alternatively `Z` (means UTC) can be replaced with timezone info like +/-HH:mm
+                table[i][0] = d.isoformat()
+                if not first_row:
+                    first_row += ['Date-Time']
+            elif isinstance(d, datetime.date):
+                table[i][0] = "{0:02d}-{1:02d}-{2:02d}".format(d.year, d.month, d.day)
+                if not first_row:
+                    first_row += ['Date']
+            else:
+                if not first_row:
+                    first_row += ['Sample']
+        first_row += list(str(c).strip() for c in df.columns)
+        header = None
+    else:
+        first_row = list(table[0])
+    N, M = len(table), max(len(row) for row in table)
+    identifiers = header
+    descriptions = header
+    if not header and not all(isinstance(col, basestring) and col.strip() for col in first_row):
+        print first_row
+        if isinstance(header, bool):
+            header = []
+        else:
+            header = [('y{0}'.format(i-1) if i else 'x') for i in range(M)]
+    else:
+        header = first_row
+        table = table[1:]
+
+    # header should now be a list of one list of strings or an empty list,
+    # So now just need to make sure the names of the columns are valid javascript identifiers
+    if header:
+        identifiers = [util.make_name(h, language='javascript', space='') for h in header]
+        table = [header] + table
+        descriptions = [unicode(h) for h in header]
     
+    # print header, identifiers
+    if len(table) > limit:
+        new_table = [table[0]]
+        step = int(float(len(table))/limit)
+        print "step = {0}".format(step)
+        for i in range(1+limit, len(table), step):
+            new_table += [table[i]]
+        table = new_table
+
+    context['data'] = context.get('data', {})
+    context['data'].update({
+        #'lags_dict': {hist_type: lags},
+        'title': title,
+        'header': json.dumps(identifiers),
+        'descriptions': json.dumps(descriptions),
+        'xlabel': xlabel,
+        'ylabel': ylabel,
+        'd3data': json.dumps(util.transposed_lists(table)), 
+        'form': {},
+    })
+    # print context['data']
+    return context
+    # print context['data']
+
+
+re_model_instance_dot = re.compile('__|[.]+')
+
 
 def follow_double_underscores(obj, field_name=None, excel_dialect=True, eval_python=False, index_error_value=None):
     '''Like getattr(obj, field_name) only follows model relationships through "__" or "." as link separators
@@ -414,13 +502,21 @@ class DashboardView(TemplateView):
     def get_context_data(self, context, **kwargs):
         # Call the base implementation first to get a context
         context = super(DashboardView, self).get_context_data(**kwargs)
-        print "context"
-        context['data'] = {} 
-        context['data']['d3data'] = [["x"] + list('abcdef') + list('xyz'),["y", 99,51,72,43,54,65,76,67,98],["y0", 1,91,62,73,64,65,76,67,98]]
-        context['data']['d3data'] = [["x"] + [907,901,855,902,903,904,905,906,900],["y", 99,51,72,43,54,65,76,67,98],["z", 1,91,62,73,64,65,76,67,98]]
-        context['data']['xlabel'] = 'X-Label'
-        context['data']['ylabel'] = 'Y-Label'
-        print context['data']
+        context = d3_plot_context(context, 
+            table=util.transposed_lists([["DATE"] + ["2014-1-{0}".format(day) for day in range(1, 10)], 
+                                         ["y value (units)", 99, 51, 72, 43, 54, 65, 76, 67, 98],
+                                         ["z-value (units)", 1, 91, 62, 73, 64, 65, 76, 67, 98],
+                                         ["abc's", 10, 20, 30, 40, 50, 60, 70, 80, 90]]),
+            title='Line Chart', xlabel='DATE', ylabel='Value', 
+            header=None)
+        context['data_with_dates'] = copy.deepcopy(context['data'])
+        context = d3_plot_context(context, 
+            table=util.transposed_lists([["x index"] + [907, 901, 855, 902, 903, 904, 905, 906, 900], 
+                                         ["y value (units)", 99, 51, 72, 43, 54, 65, 76, 67, 98],
+                                         ["z-value (units)", 1, 91, 62, 73, 64, 65, 76, 67, 98],
+                                         ["abc's", 10, 20, 30, 40, 50, 60, 70, 80, 90]]),
+            title='Line Chart', xlabel='ID Number', ylabel='Value', 
+            header=None)
         return context
 
 
@@ -469,7 +565,6 @@ def csv_response_from_context(context=None, filename=None, field_names=None, nul
     try:
         if len(data) < len(data[0]):
             data = util.transposed_lists(data)  # list(list(row) for row in data)
-
     except TypeError:
         # no need to transpose if a generator was provided instead of a list or tuple (anything with a len attribute)
         pass

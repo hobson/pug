@@ -30,9 +30,10 @@ g.focus text {
 
 rect.tooltip-box {
   fill: white;
-  opacity: 0.8;
-  rx: "10";
-  ry: "10";
+  opacity: 0.9;
+  pointer-events: none;
+  rx: 4;
+  ry: 4;
 }
 
 .axis path,

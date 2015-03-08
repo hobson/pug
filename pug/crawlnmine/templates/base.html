@@ -28,10 +28,19 @@
         {% endblock %}
 
         {% block script_head %}
-            <script src="//ajax.googleapis.com/ajax/libs/jquery/1.9.0/jquery.min.js"></script>
-            <script src="//d3js.org/d3.v3.min.js"></script>
-            <script src="//cdnjs.cloudflare.com/ajax/libs/json5/0.3.0/json5.js"></script>
             {# <script src="//raw.github.com/novus/nvd3/master/nv.d3.js"></script> #}
+
+            {# <script type="text/javascript" src="http://code.jquery.com/jquery-latest.min.js"></script> #}
+            <script type="text/javascript" src="//cdnjs.cloudflare.com/ajax/libs/jquery/1.11.1/jquery.min.js"></script>
+            <script type="text/javascript" src="//cdnjs.cloudflare.com/ajax/libs/d3/3.4.13/d3.min.js"></script>
+            <script type="text/javascript" src="//cdnjs.cloudflare.com/ajax/libs/json5/0.3.0/json5.min.js"></script>
+            {# <script src="//d3js.org/d3.v3.min.js"></script> #}
+            <script>
+            {# fall back to local versions of CDN files #}
+            window.jQuery || document.write('<script type="text/javascript" src="{% static "lib/jquery.js" %}">\x3C/script>')
+            window.d3 || document.write('<script type="text/javascript" src="{% static "miner/lib/d3.js" %}">\x3C/script>')
+            window.d3 || document.write('<script type="text/javascript" src="{% static "miner/lib/json5.js" %}">\x3C/script>')
+            </script>
             {% bootstrap_javascript_tag %}
         {% endblock %}
 
@@ -76,7 +85,29 @@
                     {% endblock %}
                 </div> <!-- footer -->
                 {% block script_footer %}
-                {% endblock %}
+
+        {% comment %}  FIXME
+            {# <script type="text/javascript" src="http://code.jquery.com/jquery-latest.min.js"></script> #}
+            <script type="text/javascript" src="//cdnjs.cloudflare.com/ajax/libs/jquery/1.11.1/jquery.min.js"></script>
+            <script type="text/javascript" src="//cdnjs.cloudflare.com/ajax/libs/d3/3.4.13/d3.min.js"></script>
+            <script type="text/javascript" src="//cdnjs.cloudflare.com/ajax/libs/json5/0.3.0/json5.min.js"></script>
+            {# <script src="//d3js.org/d3.v3.min.js"></script> #}
+            <script>
+            {# fall back to local versions of CDN files #}
+            window.jQuery || document.write('<script type="text/javascript" src="{% static "lib/jquery.js" %}">\x3C/script>')
+            window.d3 || document.write('<script type="text/javascript" src="{% static "miner/lib/d3.js" %}">\x3C/script>')
+            window.d3 || document.write('<script type="text/javascript" src="{% static "miner/lib/json5.js" %}">\x3C/script>')
+            </script>
+
+                <link rel="stylesheet" href="{% static "bootstrap/dist/css/bootstrap.min.css" %}">
+                <link rel="stylesheet" href="{% static "bootstrap/dist/css/bootstrap-theme.min.css" %}">
+                <link rel="stylesheet" href="{% static "case/form.css" %}">
+                <link rel="stylesheet" href="{% static "call_center/bigdata.css" %}">
+
+                {# <link rel="stylesheet" href="{% static "bootstrap/dist/css/bootstrap-rtl.min.css" %}"> #}
+                <script src="//cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.1.1/js/bootstrap.min.js"></script>
+        {% endcomment %}
+                {% endblock script_footer%}
             </div> <!-- container -->
         </div> <!-- body-wrapper -->
 

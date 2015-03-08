@@ -20,19 +20,36 @@
         <H1>Default Dashboard Plots</H1>
         <div id="plot_container" class="graph"></div>
         <div id="plot_container_1" class="graph"></div>
+        <div id="plot_container_2" class="graph"></div>
     </div> 
     {# a div with a plot_div attribute ID must be created before this line-plot.js globals are created #}
 
     {% block plot %}
-        <pre>{{ data|safe|escape }}</pre>
         <script src="{% static "miner/js/plot-util.d3.js" %}"></script>
         <script src="{% static "miner/js/line-plot.d3.js" %}"></script>
         <script src="{% static "miner/js/bar-plot.d3.js" %}"></script>
-        <script> line_plot({{ data.d3data|safe }}, {"xlabel": "{{ data.xlabel|escapejs }}", "ylabel": "{{ data.ylabel|escapejs }}", "plot_container_id": "plot_container"}); </script>
-        <script>
-            bar_plot({{ data.d3data|safe }}, 
-                {"plot_container_id": "plot_container_1", "xlabel": "{{ data.xlabel|escapejs }}", "ylabel": "{{ data.ylabel|default_if_none:"[]"|escapejs }}", "header": {{ data.header|default:"[]"|default_if_none:"[]"|safe }}});
+        <script> line_plot({{ data.d3data|safe }}, 
+                            {"xlabel": "{{ data.xlabel|escapejs }}", 
+                             "ylabel": "{{ data.ylabel|escapejs }}", 
+                             "plot_container_id": "plot_container"});
         </script>
+        <script> line_plot({{ data_with_dates.d3data|safe }},
+                            {"xlabel": "{{ data_with_dates.xlabel|escapejs }}", 
+                             "ylabel": "{{ data_with_dates.ylabel|escapejs }}", 
+                             "plot_container_id": "plot_container_1"});
+        </script>
+        <script>
+            bar_plot({{ data_with_dates.d3data|safe }}, 
+                {"plot_container_id": "plot_container_2",
+                 "xlabel": "{{ data_with_dates.xlabel|escapejs }}", 
+                 "ylabel": "{{ data_with_dates.ylabel|default_if_none:"[]"|escapejs }}", 
+                 "header": {{ data_with_dates.header|default:"[]"|default_if_none:"[]"|safe }}});
+        </script>
+
+        {# <H3>Plot Configuration</H3> #}
+        {# <pre>{{ data|safe|escape }}</pre> #}
+        <H3>Statistics</H3>
+        <pre>{{ data_with_dates|safe|escape }}</pre>
 
     {% endblock plot %}
 

@@ -1,18 +1,35 @@
 """
 Django settings for crawlnmine project.
-
-For more information on this file, see
-https://docs.djangoproject.com/en/1.6/topics/settings/
-
-For the full list of settings and their values, see
-https://docs.djangoproject.com/en/1.6/ref/settings/
 """
 
-
+import os
 import sys
+import string
+import random
+# import pug.nlp.django_settings
+
+def env(var_name, default=False):
+    """ Get the environment variable or assume a default, but let the user know about the error."""
+    try:
+        value = os.environ[var_name]
+        if str(value).strip().lower() in ['false', 'no', 'off' '0', 'none', 'null']:
+            return None
+        return value
+    except:
+        from traceback import format_exc
+        msg = "Unable to find the %s environment variable.\nUsing the value %s (the default) instead.\n" % (var_name, default)
+        sys.stderr.write(format_exc())
+        sys.stderr.write(msg)
+        return default
+
 
 # Build paths inside the project like this: os.path.join(BASE_DIR, ...)
-import os
+BASE_DIR = os.path.realpath(os.path.join(os.path.dirname(os.path.abspath(__file__)), '..'))
+
+# Quick-start development settings - unsuitable for production
+# See https://docs.djangoproject.com/en/1.7/howto/deployment/checklist/
+
+SECRET_KEY = env("DJANGO_SECRET_KEY", default=''.join(random.choice(string.printable) for _ in range(32)))  # os.urandom(32) isn't terminal printable
 
 # Heroku: Honor the 'X-Forwarded-Proto' header for request.is_secure()
 SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
@@ -25,16 +42,10 @@ ROOT_PROJECT_PATH = os.path.realpath(os.path.join(PROJECT_SETTINGS_PATH,'..','..
 if ROOT_PROJECT_PATH not in sys.path:
     sys.path.insert(1, ROOT_PROJECT_PATH)
 
-# Quick-start development settings - unsuitable for production
-# See https://docs.djangoproject.com/en/1.6/howto/deployment/checklist/
-
-# SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = '5s3an_jk9pd5hc229r1icz1l(_3zt6rhaqr=#(+@b5@&79wzqc'
-
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = bool(env("DJANGO_DEBUG", default=False))
 
-TEMPLATE_DEBUG = True
+TEMPLATE_DEBUG = DEBUG
 
 
 # ALLOWED_HOSTS = []
@@ -57,6 +68,7 @@ INSTALLED_APPS = (
 
     # 'pug.crawler',
     'pug.miner',
+    'pug.invest',
     # 'pug.agile',
 )
 
@@ -79,17 +91,18 @@ WSGI_APPLICATION = 'crawlnmine.wsgi.application'
 
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.', # Add 'postgresql_psycopg2', 'mysql', 'sqlite3' or 'oracle'.
+        #'ENGINE': 'django.db.backends.', # Add 'postgresql_psycopg2', 'mysql', 'sqlite3' or 'oracle'.
         #'NAME': ''
         'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': os.path.join(ROOT_PROJECT_PATH, 'db.sqlite3'),
+        'NAME': 'djangodb',  #os.path.join(ROOT_PROJECT_PATH, 'db.sqlite3'),
     }
 }
 
 
 if DEBUG or 'test' in sys.argv or 'test_coverage' in sys.argv: #Covers regular testing and django-coverage
-    DATABASES['default']['ENGINE'] = 'django.db.backends.sqlite3'
-    DATABASES['default']['NAME'] = os.path.join(ROOT_PROJECT_PATH, 'db.sqlite3'),
+    pass
+    # DATABASES['default']['ENGINE'] = 'django.db.backends.sqlite3'
+    # DATABASES['default']['NAME'] = os.path.join(ROOT_PROJECT_PATH, 'db.sqlite3'),
 else:
     # Heroku: Parse database configuration from $DATABASE_URL for heroku
     import dj_database_url
