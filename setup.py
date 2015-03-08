@@ -1,13 +1,22 @@
 # setup.py for PUG (PDX Python User Group) package
-from setuptools import find_packages, setup
+from setuptools import find_packages
+from distutils import setup
 import io
 from os.path import dirname, join
 
-#from distutils.core import setup
-#from setuptest import test
+# # If you want tests to work with django settings.py you need django-setuptest
+# from setuptest import test
+# # If you want to use setuptest.test instead of the python test,
+# #    you need to say so in your setup(kwargs) below, like this:
+# # setup(cmdclass={'test': test},...
+
+# Handy for debugging setup.py
+# def setup(*args, **kwargs):
+#     print('setup()   args = {0}'.format(args))
+#     print('setup() kwargs = {0}'.format(kwargs))
 
 
-def get_version(relpath, keyword='__version__'):
+def get_variable(relpath, keyword='__version__'):
     """Read __version__ or other properties from a python file without importing it 
     
     from gist.github.com/technonik/406623 but with added keyward kwarg """
@@ -21,9 +30,9 @@ def get_version(relpath, keyword='__version__'):
 
 package_name = 'pug'
 init_path = join(package_name, '__init__.py')
-version = get_version(init_path)
-description = get_version(init_path, '__doc__')
-__github_url__  = get_version(init_path, '__github_url__ ')
+version = get_variable(init_path)
+description = get_variable(init_path, '__doc__')
+__github_url__  = get_variable(init_path, '__github_url__ ')
 
 # get_version won't parse this:
 # DRY this up between here and __init__.py
@@ -52,10 +61,6 @@ try:
     long_description = pypandoc.convert('README.md', 'rst')
 except (IOError, ImportError, OSError):
     long_description = "Python packages implementing various natural language processing, web scraping, and predictive analytics tools developed by and for the PDX Python User Group."
-
-
-
-
 
 
 EXCLUDE_FROM_PACKAGES = []

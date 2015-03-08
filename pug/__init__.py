@@ -20,6 +20,8 @@
 """pug -- Package of Utilities written by and for the PDX Python User's Group"""
 
 __version__ = '0.1.1'
+__name__ = 'pug'
+__doc__ = 'Python Utilities by and for the PDX Python User Group'
 __authors__ = [
     'Hobson <hobson@totalgood.com>'
     'Steve  <walkers@sharplabs.com>'
