@@ -13,15 +13,16 @@ except ImportError:
 import copy
 
 import pandas as pd
+import codecs
 
 from django.shortcuts import render_to_response
 from django.views.generic import View, TemplateView
 from django.template import RequestContext
-from django.template.response import TemplateResponse #, HttpResponse
+from django.template.response import TemplateResponse, HttpResponse
 from django.template.loader import get_template
 from django.http import Http404, HttpResponse
 from django import http
-
+from django.utils import simplejson as json
 # from django.shortcuts import render
 # from django.conf import settings
 
@@ -32,6 +33,8 @@ from pug.nlp import db
 # from sec_sharp_refurb.models import Refrefurb as SECRef
 #import call_center.models as SLAmodels
 from forms import GetLagForm
+
+from django.utils import timezone
 
 # format options for lag histograms:
 #   hist = ff = fd = Frequency Distribution/Function (histogram of counts)
@@ -316,6 +319,9 @@ def context_from_request(request, context=None, Form=GetLagForm, delim=',', verb
     return context
 
 
+re_model_instance_dot = re.compile('__|[.]+')
+
+
 def d3_plot_context(context, table=((0, 0),), title='Line Chart', xlabel='Time', ylabel='Value', header=None, limit=10001):
     """
 
@@ -572,7 +578,14 @@ def csv_response_from_context(context=None, filename=None, field_names=None, nul
 
     writer = csv.writer(response)
     for row in data:
-        writer.writerow([unicode(s if not s == None else null_string).encode('UTF-8') for s in row])
-
+        newrow = []
+        for s in row:
+            try:
+                newrow.append(s.encode('utf-8')) #handles strings, unicodes, utf-8s
+            except AttributeError:  #will happen when we try to encode a class object or number
+                newrow.append(s)
+            except: #not sure it ever will be touched.
+                newrow.append(unicode(s))
+        writer.writerow(newrow)
     return response
 

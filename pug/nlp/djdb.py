@@ -1741,7 +1741,7 @@ def walk_level(path, level=1):
       http://stackoverflow.com/a/234329/623735
 
     Args:
-      path (str):  Root path to begin file tree traversal (walk)
+     path (str):  Root path to begin file tree traversal (walk)
       level (int, optional): Depth of file tree to halt recursion at. 
         None = full recursion to as deep as it goes
         0 = nonrecursive, just provide a list of files at the root level of the tree
@@ -1873,6 +1873,69 @@ def dataframe_from_excel(path, sheetname=0, header=0, skiprows=None):  # , parse
     return pd.io.excel.read_excel(wb, sheetname=sheetname, header=header, skiprows=skiprows, engine='xlrd')
 
 
+def make_date(dt, date_parser=parse_date):
+    """Coerce a datetime or string into datetime.date object
+
+    Arguments:
+      dt (str or datetime.datetime or atetime.time or numpy.Timestamp): time or date 
+        to be coerced into a `datetime.time` object
+
+    Returns:
+      datetime.time: Time of day portion of a `datetime` string or object
+
+    >>> make_date('')
+    datetime.date(1970, 1, 1)
+    >>> make_date(None)
+    datetime.date(1970, 1, 1)
+    >>> make_date("11:59 PM") == datetime.date.today()
+    True
+    >>> make_date(datetime.datetime(1999, 12, 31, 23, 59, 59))
+    datetime.date(1999, 12, 31)
+    """
+    if not dt:
+        return datetime.date(1970, 1, 1)
+    if isinstance(dt, basestring):
+        dt = date_parser(dt)
+    try:
+        dt = dt.timetuple()[:3]
+    except:
+        dt = tuple(dt)[:3]
+    return datetime.date(*dt)
+
+
+def make_time(dt, date_parser=parse_date):
+    """Ignore date information in a datetime string or object
+
+    Arguments:
+      dt (str or datetime.datetime or atetime.time or numpy.Timestamp): time or date 
+        to be coerced into a `datetime.time` object
+
+    Returns:
+      datetime.time: Time of day portion of a `datetime` string or object
+
+    >>> make_time(None)
+    datetime.time(0, 0)
+    >>> make_time("11:59 PM")
+    datetime.time(23, 59)
+    >>> make_time(datetime.datetime(1999, 12, 31, 23, 59, 59)))
+    datetime.time(23, 59, 59)
+    """
+    if not dt:
+        return datetime.time(0, 0)
+    if isinstance(dt, basestring):
+        try:
+            dt = date_parser(dt)
+        except:
+            print 'Unable to parse {0}'.format(repr(dt))
+            print_exc()
+            return datetime.time(0, 0)
+    try:
+        dt = dt.timetuple()[3:6]
+    except:
+        dt = tuple(dt)[3:6]
+    return datetime.time(*dt)
+
+
 def flatten_dataframe(df, date_parser=parse_date, verbosity=0):
     """Creates 1-D timeseries (pandas.Series) coercing column labels into datetime.time objects
 
@@ -1889,30 +1952,25 @@ def flatten_dataframe(df, date_parser=parse_date, verbosity=0):
     if all(isinstance(i, int) for i in df.index):
         for label in df.columns:
             if 'date' in str(label).lower():
-                df.index = [util.make_date(d) for d in df[label]]
+                df.index = [make_date(d) for d in df[label]]
                 del df[label]
                 break
     if not all(isinstance(i, pd.Timestamp) for i in df.index):
         date_index = []
         for i in df.index:
             try:
-                date_index += [util.make_date(str(i))]
+                date_index += [make_date(str(i))]
             except:
                 date_index += [i]
         df.index = date_index
-    column_names, columns_to_del = [], []
-    for c in df.columns:
-        if str(c)[:9].lower() == 'unnamed: ':
-            column_names += [c]
-            columns_to_del += [c]
-        else:
-            column_names += [util.make_time(str(c))]
-    df.columns = column_names
-    for c in columns_to_del:
-        del df[c]
+    df.columns = [make_time(str(c)) if (c and str(c) and str(c)[0] in '0123456789') else str(c) for c in df.columns]
+    if verbosity > 2:
+        print 'Columns: {0}'.format(df.columns)
 
     # flatten it
     df = df.transpose().unstack()
+
+    df = df.drop(df.index[[(isinstance(d[1], (basestring, NoneType))) for d in df.index]])
 
     # df.index is now a compound key (tuple) of the column labels (df.columns) and the row labels (df.index) 
     # so lets combine them to be datetime values (pandas.Timestamp)

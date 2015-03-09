@@ -4,6 +4,7 @@ MANIFEST
 *.pyc
 *.sql*
 pug/nlp/pca.pickled
+.idea
 nohup.out
 pug/crawlnmine/djangodb
 pug/crawlnmine/fabfile/project_conf.py
