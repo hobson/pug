@@ -7,7 +7,7 @@ import pandas as pd
 
 DATA_PATH = os.path.dirname(os.path.realpath(__file__))
 
-fresno = pd.DataFrame.from_csv(os.path.join(DATA_PATH, 'weather_fresno.csv'))
+# fresno = pd.DataFrame.from_csv(os.path.join(DATA_PATH, 'weather_fresno.csv'))
 
 def airport(location='Fresno, CA', date='2012/1/1', verbosity=1):
     suffix = '/CustomHistory.html?dayend=1&monthend=1&yearend=2015&req_city=&req_state=&req_statename=&reqdb.zip=&reqdb.magic=&reqdb.wmo=&MR=1&format=1'

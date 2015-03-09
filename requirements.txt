@@ -49,3 +49,7 @@ sqlparse==0.1.14
 tabulate==0.7.1
 w3lib==1.11.0
 zope.interface==4.1.2
+
+numpy==1.9.2
+pandas==0.15.2
+ConcurrentPandas==0.1.1
