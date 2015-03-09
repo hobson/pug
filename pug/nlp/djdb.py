@@ -1883,7 +1883,12 @@ def make_time(dt, date_parser=parse_date):
     if not dt:
         return datetime.time(0, 0)
     if isinstance(dt, basestring):
-        dt = date_parser(dt)
+        try:
+            dt = date_parser(dt)
+        except:
+            print 'Unable to parse {0}'.format(repr(dt))
+            print_exc()
+            return datetime.time(0, 0)
     try:
         dt = dt.timetuple()[3:6]
     except:
@@ -1918,10 +1923,14 @@ def flatten_dataframe(df, date_parser=parse_date, verbosity=0):
             except:
                 date_index += [i]
         df.index = date_index
-    df.columns = [make_time(str(c)) for c in df.columns]
+    df.columns = [make_time(str(c)) if (c and str(c) and str(c)[0] in '0123456789') else str(c) for c in df.columns]
+    if verbosity > 2:
+        print 'Columns: {0}'.format(df.columns)
 
     # flatten it
     df = df.transpose().unstack()
+
+    df = df.drop(df.index[[(isinstance(d[1], (basestring, NoneType))) for d in df.index]])
 
     # df.index is now a compound key (tuple) of the column labels (df.columns) and the row labels (df.index) 
     # so lets combine them to be datetime values (pandas.Timestamp)
