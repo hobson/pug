@@ -10,8 +10,9 @@
     {% endcomment %}
     <H3>Tools</H3>
     <table>
-        <tr><td>Admin Interface</td><td><a href="{% url "admin:index" as url %}">{{ url }}</a>
-        <tr><td>Explore and Visualize &nbsp</td><td><a href="{% url 'miner:explorer' as url  %}">{{ url }}</a></td>
+        <tr><td>Admin Interface</td><td><a href="/admin/">/admin/</a>
+        {# <tr><td>Explore and Visualize &nbsp</td><td><a href="{% url 'miner:explorer' as url  %}">{{ url }}</a></td> #}
+        <tr><td>invest<a href="/invest/">/invest/</a></td>
         <tr><td>Bar Plot + Line Plot -- <a href="/dashboard/">/dashboard/</a></td>
         <tr><td>Bar Plot -- <a href="/bar/">/bar/</a></td>
         <tr><td>Line Plot -- <a href="/line/">/line/</a></td>

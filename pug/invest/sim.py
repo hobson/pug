@@ -27,7 +27,7 @@ import itertools
 import os
 import json
 import copy
-from collections import Mapping
+# from collections import Mapping
 
 import numpy as np
 import matplotlib.pyplot as plt
@@ -39,10 +39,10 @@ import QSTK.qstkutil.DataAccess as da
 import QSTK.qstkutil.qsdateutil as du
 import QSTK.qstkstudy.EventProfiler as ep
 
-from pug import debug
-from pug.nlp import util
+# from pug import debug
+from pug.nlp import util, clean_dataframe, clean_dataframes, series_bollinger, frame_bollinger
+from pug.invest.util import normalize_symbols
 # from pug.decorators import memoize
-
 
 
 #t = qstk.dateutil.getNYSEdays(datetime.datetime(2010,1,1), datetime.datetime(2010,2,1), datetime.timedelta(hours=16))
@@ -184,38 +184,6 @@ def chart_series(series, market_sym='$SPX', price='actual_close', normalize=True
 
 
 
-
-
-
-
-def clean_dataframe(df):
-    """Fill NaNs with the previous value, the next value or if all are NaN then 1.0"""
-    df = df.fillna(method='ffill')
-    df = df.fillna(method='bfill')
-    df = df.fillna(1.0)
-    return df
-
-
-def clean_dataframes(dfs):
-    """Fill NaNs with the previous value, the next value or if all are NaN then 1.0
-
-    TODO: 
-      Linear interpolation and extrapolation
-
-    Arguments:
-      dfs (list of dataframes): list of dataframes that contain NaNs to be removed
-
-    Returns:
-      list of dataframes: list of dataframes with NaNs replaced by interpolated values
-    """
-    if isinstance(dfs, (list)):
-        for df in dfs:
-            df = clean_dataframe(df)
-        return dfs
-    else:
-        return [clean_dataframe(dfs)]
-
-
 def price_dataframe(symbols='sp5002012',
     start=datetime.datetime(2008, 1, 1),
     end=datetime.datetime(2009, 12, 31),  
@@ -289,24 +257,6 @@ def portfolio_prices(
 
 ################################################
 # Bolinger band charts and indicator values
-
-def series_bollinger(series, window=20, sigma=1., plot=False):
-    mean = pd.rolling_mean(series, window=window)
-    std = pd.rolling_std(series, window=window)
-    df = pd.DataFrame({'value': series, 'mean': mean, 'upper': mean + sigma * std, 'lower': mean - sigma * std})
-    bollinger_values = (series - pd.rolling_mean(series, window=window)) / (pd.rolling_std(series, window=window))
-    if plot:
-        df.plot()
-        pd.DataFrame({'bollinger': bollinger_values}).plot()
-        plt.show()
-    return bollinger_values
-
-
-def frame_bollinger(df, window=20, sigma=1., plot=False):
-    bol = pd.DataFrame()
-    for col in df.columns:
-        bol[col] = series_bollinger(df[col], plot=False)
-    return bol
 
 
 def symbol_bollinger(symbol='GOOG',
@@ -724,7 +674,7 @@ def integrated_change(ts, integrator=integrate.trapz, clip_floor=None, clip_ceil
     return integrator(clipped_values, ts.index.astype(np.int64) / 10**9)
 
 
-def clipping_start_end(ts, capacity=100):
+def clipping_params(ts, capacity=100):
     """Start and end index that clips the price/value of a time series the most
 
     Assumes that the integrated maximum includes the peak (instantaneous maximum).

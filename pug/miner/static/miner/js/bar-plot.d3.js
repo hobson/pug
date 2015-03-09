@@ -41,7 +41,15 @@ function mouseout(d) {
 
 
 function bar_plot(d3data, conf) {
+    console.log('==================== BAR PLOT =======================');
     conf = normalize_conf(d3data, conf);
+
+    // THIS IS TO ALLOW PLOT TO BE CLICAKBLE and SEND USER to a TABLE VIEW OF THE REGION CLICKED
+    // // retrieve the GET query from the URI of this page:
+    // conf.query = query2obj();
+    // // Change the query to request a table view instead of the plot view that got us to this page/plot
+    // delete conf.query.plot;
+    // conf.query.table = "fast";
 
     // TODO: standardize on the "series" data structure below which is also used in the line-plot
     var layers = split_d3_series(d3data);

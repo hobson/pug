@@ -25,6 +25,11 @@ yum install -y open-ssl openssl-libs openssl-devel
 yum install -y patch byacc textinfo bison autoconf gettext ncurses-devel
 yum install -y libffi-devel  kernel-devel kernel-headers dkms make bzip2 perl ruby ruby-devel rubygems rubygem-execjs
 
+# disable screensaver for all users
+sudo dbus-launch gsettings set org.gnome.desktop.session idle-delay 0
+# enable the gnome extension that disables the mobile swipe security screen (curtain) during login
+firefox https://extensions.gnome.org/extension/672/disable-screen-shield/
+
 ########## Heroku and development webserver
 gem install foreman
 
@@ -198,3 +203,7 @@ for repo in "sasbd/ssp.git" "sasbd/ssg.git" "bootstrap.git" "sasbd/ansible-djang
 done
 
 
+# for animation and video composing
+sudo yum -y localinstall --nogpgcheck http://download1.rpmfusion.org/free/fedora/rpmfusion-free-release-$(rpm -E %fedora).noarch.rpm http://download1.rpmfusion.org/nonfree/fedora/rpmfusion-nonfree-release-$(rpm -E %fedora).noarch.rpm
+sudo rpm -Uvh http://rpm.livna.org/livna-release.rpm
+sudo yum -y install gstreamer-plugins-bad gstreamer1-libav gstreamer-plugins-bad-free-extras gstreamer-plugins-bad-nonfree gstreamer-plugins-ugly gstreamer-ffmpeg ffmpeg mencoder mplayer libdvdcss

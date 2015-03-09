@@ -1,23 +1,14 @@
 
 function line_plot(d3data, conf) {
     console.log('==================== LINE PLOT =======================');
-
     conf = normalize_conf(d3data, conf);
 
-    console.log('line plot ylabels and xfield');
-    console.log(conf.ylabels);
-    console.log(conf.xfield);
-    console.log(conf.xlabel);
-
-    // retrieve the GET query from the URI of this page:
-    conf.query = query2obj();
-
-    // Change the query to request a table view instead of the plot view that got us to this page/plot
-    delete conf.query.plot;
-    conf.query.table = "fast";
-
-    console.log("conf");
-    console.log(conf);
+    // THIS IS TO ALLOW PLOT TO BE CLICAKBLE and SEND USER to a TABLE VIEW OF THE REGION CLICKED
+    // // retrieve the GET query from the URI of this page:
+    // conf.query = query2obj();
+    // // Change the query to request a table view instead of the plot view that got us to this page/plot
+    // delete conf.query.plot;
+    // conf.query.table = "fast";
 
 
     conf.xscale = d3.scale.linear().range([0, conf.width]);
@@ -40,11 +31,10 @@ function line_plot(d3data, conf) {
       tt = (conf.xlabel.length ? conf.xlabel : "bin") + ": " + d.x + "\u00A0\u00A0\u00A0\u00A0" + series_name + ": " + d.y;
       focus.select("text").text(tt);
 
-      // conf.query is a global dictionary of the query parameters for this page, previously obtained using plot-util.query2obj();
-      // Need to set the Lag window for the table query to a range likely to capture the points near where the user clicked:
-      conf.query.min_lag = d.x-5;
-      conf.query.max_lag = d.x+5;
-
+      // // conf.query is a global dictionary of the query parameters for this page, previously obtained using plot-util.query2obj();
+      // // Need to set the Lag window for the table query to a range likely to capture the points near where the user clicked:
+      // conf.query.min_lag = d.x-5;
+      // conf.query.max_lag = d.x+5;
 
       // This generates the right link, but the SVG doesn't respond to clicks on the circle or anywhere nearby
       focus.select("a").attr("xlink:href", "?"+obj2query(conf.query));
@@ -74,9 +64,6 @@ function line_plot(d3data, conf) {
         d3data = arrays_as_d3_series(d3data).data;
         console.log("line plot d3data after conversion to d3_series ...");
         console.log(d3data);
-        d3data.sort(function(a, b) { return a.x - b.x; });
-        console.log("after sorting...");
-        console.log(d3data);
 
         if (conf.x_is_date) {
           // FIXME: Check that ALL the elements of the array are valid datetimes before replacing the data
@@ -103,6 +90,12 @@ function line_plot(d3data, conf) {
             .domain(d3data.map(function(d) { return d.x; }))
             .rangePoints([0, conf.width]);
         } // if conf.x_is_date
+        
+        // don't sort until after date-time strings have been parsed
+        d3data.sort(function(a, b) { return a.x - b.x; });
+        console.log("after sorting...");
+        console.log(d3data);
+
 
         conf.d3data = d3data;
         // console.log('line plot all_series');
@@ -135,12 +128,12 @@ function line_plot(d3data, conf) {
         // TODO: use the element ID (conf.plot_container_id) to select it locally within the mouseover and mouseout functions
         var svg = create_svg_element(conf);
 
-        var xAxis = create_xaxis(conf);
-        // console.log(xAxis);
-
         // FIXME: use autoscale function to find domain/ranges that are approximately 0-100 or 0-1 or 0 to -1 or 0 to -100 and make percentages of them
         var yAxis = create_yaxis(conf);  //.ticks(10, "%");
         // console.log(yAxis);
+
+        var xAxis = create_xaxis(conf);
+        // console.log(xAxis(new Date('2014-01-01T01:02:03Z')));
 
         var voronoi = d3.geom.voronoi()
             .x(function(d) {
@@ -160,11 +153,9 @@ function line_plot(d3data, conf) {
               return conf.yscale(d.y); });
 
         console.log('drawing x axis');
-        var dt = new Date('2014-01-01T01:02:03Z');
-        console.log(xAxis(dt));
 
         svg.append("g")
-            .attr("class", "x axis")
+            .attr("class", "y axis")
             .attr("transform", "translate(0," + conf.height + ")")
             .call(xAxis)
           .append("text")
@@ -174,9 +165,8 @@ function line_plot(d3data, conf) {
             .attr("dy", "-.3em")
             .text(conf.xlabel);
 
-        console.log('drawing y axis');
         svg.append("g")
-            .attr("class", "y axis")
+            .attr("class", "x axis")
             .call(yAxis)
           .append("text")
             .attr("transform", "rotate(-90)")
