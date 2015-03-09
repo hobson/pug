@@ -32,10 +32,9 @@ class AggregatedResults(DateMixin):
     DateMixin adds the fields 'updated' and 'created'.
 
     """
-    name           = models.CharField(max_length=256, default='', blank=False)
-    slug           = models.CharField(max_length=256, default='', blank=False)
-    uri            = models.URLField(
-        help_text='Base service URI without the GET API query')
+    name           = models.CharField(max_length=2000, default='', blank=False)
+    slug           = models.CharField(max_length=2000, default='', blank=False)
+    uri            = models.URLField(max_length=2000, help_text='Base service URI without the GET API query')
     get_dict       = JSONField(
         help_text='Complete GET Request URI')
     filter_dict    = JSONField(

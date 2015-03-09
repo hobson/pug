@@ -4,4 +4,5 @@ MANIFEST
 *.pyc
 *.sql*
 pug/nlp/pca.pickled
+.idea
 nohup.out
