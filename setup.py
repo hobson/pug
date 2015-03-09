@@ -1,6 +1,6 @@
 # setup.py for PUG (PDX Python User Group) package
 from setuptools import find_packages
-from distutils import setup
+from distutils.core import setup
 import io
 from os.path import dirname, join
 
