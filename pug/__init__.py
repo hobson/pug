@@ -1,7 +1,12 @@
 """pug -- Package of Utilities written by and for the PDX Python User's Group"""
 
 
-from package_info import __license__, __version__, __name__, __doc__, __author__, __authors__
+from package_info import __license__, __version__, __doc__, __author__, __authors__
+
+from pkgutil import extend_path
+__path__ = extend_path(__path__, __package__)
+
+
 # __authors__ = (
 #     "Hobson <hobson@totalgood.com>",
 #     "Steve <walkers@sharplabs.com>",

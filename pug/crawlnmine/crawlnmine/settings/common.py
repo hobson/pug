@@ -6,6 +6,7 @@ import os
 import sys
 import string
 import random
+import warnings
 # import pug.nlp.django_settings
 
 SHELL_PLUS_PRE_IMPORTS = (
@@ -25,9 +26,8 @@ def env(var_name, default=False):
         return value
     except:
         from traceback import format_exc
-        msg = "Unable to find the %s environment variable.\nUsing the value %s (the default) instead.\n" % (var_name, default)
-        sys.stderr.write(format_exc())
-        sys.stderr.write(msg)
+        msg = format_exc() + '\n' + "Unable to find the %s environment variable.\nUsing the value %s (the default) instead.\n" % (var_name, default)
+        warnings.warn(msg)
         return default
 
 # path to the folder containing this file (settings)
