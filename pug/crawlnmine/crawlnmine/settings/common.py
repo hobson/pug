@@ -92,6 +92,7 @@ INSTALLED_APPS = (
     'gunicorn',  # adds run_gunicorn command
 
     PROJECT_NAME, # to provide access to crawlnmine/static and crawlnmine/templates
+    'pug.miner',
     'pug',
     'pug.invest',     # draws line plots of financial data and predicts futures finance statists
     'pug.nlp',
@@ -130,9 +131,11 @@ DATABASES = {
 }
 
 
-if DEBUG or 'test' in sys.argv or 'test_coverage' in sys.argv: #Covers regular testing and django-coverage
-    DATABASES['default']['ENGINE'] = 'django.db.backends.sqlite3'
-    DATABASES['default']['NAME'] = os.path.join(ROOT_PROJECT_PATH, 'db.sqlite3'),
+if DEBUG or 'test' in sys.argv or 'test_coverage' in sys.argv:  #C overs regular testing and django-coverage
+    DATABASES['default'] = {
+        'ENGINE': 'django.db.backends.sqlite3', 
+        'NAME': os.path.join(ROOT_PROJECT_PATH, 'djangodb.sqlite3'),
+        }
 # else:
 #     # Heroku: Parse database configuration from $DATABASE_URL for heroku
 #     import dj_database_url
