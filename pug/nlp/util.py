@@ -205,7 +205,7 @@ def sort_strings(strings, sort_order=None, reverse=False, case_sensitive=False, 
     """Sort a list of strings according to the provided sorted list of string prefixes
 
     TODO:
-        - Provide an option to use `.startswith()` rather than a fixes prefix length (will be much slower)
+        - Provide an option to use `.startswith()` rather than a fixed prefix length (will be much slower)
 
     Arguments:
         sort_order_first (bool): Whether strings in sort_order should always preceed "unknown" strings
@@ -240,9 +240,9 @@ def sort_strings(strings, sort_order=None, reverse=False, case_sensitive=False, 
                         return comparison * (-2 * reverse + 1)
                 elif sort_order_first:
                     return -1
-            # b may be in sort_order list, so reverse the order and find out
-            elif sort_order_first:
-                return - compare(b, a, prefix_len)
+            # b may be in sort_order list, so it should be first
+            elif sort_order_first and b[:prefix_len] in sort_order:
+                return +1
         return (-1 * (a < b) + 1 * (a > b)) * (-2 * reverse + 1)
 
     return sorted(strings, cmp=compare)

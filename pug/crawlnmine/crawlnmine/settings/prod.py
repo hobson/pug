@@ -16,3 +16,6 @@ from crawlnmine.settings.common import *
 #         'PORT' : '5432',
 #     }
 # }
+
+print('{} DATABASES:'.format(__file__))
+print(DATABASES)
