@@ -92,7 +92,8 @@ INSTALLED_APPS = (
     'gunicorn',  # adds run_gunicorn command
 
     PROJECT_NAME, # to provide access to crawlnmine/static and crawlnmine/templates
-    'invest',     # draws line plots of financial data and predicts futures finance statists
+    'pug.invest',     # draws line plots of financial data and predicts futures finance statists
+    'pug.nlp',
 
     # 'crawler',  # crawls wikipedia using Scrapy
     # 'miner',    # mines databases with NLP and draws line/bar plots
