@@ -1,7 +1,7 @@
-from django.test.simple import DjangoTestSuiteRunner
+#from django.test.simple import DjangoTestSuiteRunner
 
 
-class NullTestRunner(DjangoTestSuiteRunner):
+class NullTestRunner(object):
     """ A test runner to test without database creation or automatic test*.py discovery"""
 
     def run_tests(self, *args, **kwargs):

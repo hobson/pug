@@ -3,6 +3,7 @@ Uses the unittest module to test this app with `manage.py test`.
 """
 
 from django.test import TestCase
+import doctest
 
 
 # class PuffinTest(TestCase):
@@ -29,6 +30,7 @@ from django.test import TestCase
 
 from doctest import testmod
 import nlp
+import nlp.util
 
 
 # from collections import OrderedDict as OD
@@ -60,3 +62,13 @@ class NLPTest(TestCase):
             self.assertEqual(failure_count, 0, msg='doctest.testmod(%s) had %s/%s failures' % (module, failure_count, test_count))
             self.assertGreater(test_count, 1, msg='doctest.testmod(%s) had %s/%s failures (too few tests)' % (module, failure_count, test_count))
 
+
+class NLPDocTest(TestCase):
+
+    def test_module_doctests(self, module=nlp.util):
+        failure_count, test_count = doctest.testmod(module, raise_on_error=False, verbose=True)
+        msg = "Ran {0} tests in {3} and {1} passed ({2} failed)".format(test_count, test_count-failure_count, failure_count, module.__file__)
+        print msg
+        if failure_count:
+            # print "Ignoring {0} doctest failures...".format(__file__)
+            self.fail(msg)

@@ -15,7 +15,7 @@ from scipy import integrate
 from matplotlib import pyplot as plt
 from scipy.optimize import minimize
 
-from nlp.util import listify
+from pug.nlp.util import listify
 
 
 def dropna(x):

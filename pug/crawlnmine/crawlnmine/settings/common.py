@@ -99,7 +99,7 @@ INSTALLED_APPS = (
     # 'agile',    # jira command-line tool to create tickets?
 )
 
-TEST_RUNNER = 'pug.test.runner.NullTestRunner'  # 'django.test.runner.DiscoverRunner'
+# TEST_RUNNER = 'pug.test.runner.NullTestRunner'  # 'django.test.runner.DiscoverRunner'
 
 MIDDLEWARE_CLASSES = (
     'django.contrib.sessions.middleware.SessionMiddleware',
