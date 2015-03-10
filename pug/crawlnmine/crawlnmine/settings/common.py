@@ -130,13 +130,12 @@ DATABASES = {
 
 
 if DEBUG or 'test' in sys.argv or 'test_coverage' in sys.argv: #Covers regular testing and django-coverage
-    pass
-    # DATABASES['default']['ENGINE'] = 'django.db.backends.sqlite3'
-    # DATABASES['default']['NAME'] = os.path.join(ROOT_PROJECT_PATH, 'db.sqlite3'),
-else:
-    # Heroku: Parse database configuration from $DATABASE_URL for heroku
-    import dj_database_url
-    DATABASES['default'] =  dj_database_url.config()
+    DATABASES['default']['ENGINE'] = 'django.db.backends.sqlite3'
+    DATABASES['default']['NAME'] = os.path.join(ROOT_PROJECT_PATH, 'db.sqlite3'),
+# else:
+#     # Heroku: Parse database configuration from $DATABASE_URL for heroku
+#     import dj_database_url
+#     DATABASES['default'] =  dj_database_url.config()
 
 
 # Internationalization
