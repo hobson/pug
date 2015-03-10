@@ -151,31 +151,39 @@ def qs_to_table(qs, excluded_fields=['id']):
 
 
 def force_hashable(obj, recursive=True):
-    """Force frozenset() command to freeze the order and contents of multables and iterables like lists, dicts, generators
+    """Force frozenset() command to freeze the order and contents of mutables and iterables like lists, dicts, generators
 
     Useful for memoization and constructing dicts or hashtables where keys must be immutable.
 
-    >>> force_hashable([1,2.,['3']])
-    (1, 2.0, ('3',))    
+    FIXME: Rename function because "hashable" is misleading. 
+           A better name might be `force_immutable`.
+           because some hashable objects (generators) are tuplized  by this function
+           `tuplized` is probably a better name, but strings are left alone, so not quite right
+
+    >>> force_hashable([1,2.,['3','four'],'five', {'s': 'ix'}])
+    (1, 2.0, ('3', 'four'), 'five', (('s', 'ix'),))
     >>> force_hashable(i for i in range(3))
     (1, 2, 3)
     >>> from collections import Counter
     >>> force_hashable(Counter('abbccc')) ==  (('a', 1), ('c', 3), ('b', 2))
     True
     """
-    try:
-        hash(obj)
-        return obj
-    except:
-        if hasattr(obj, '__iter__'):
-            # looks like a Mapping if it has .get() and .items(), so should treat it like one
-            if hasattr(obj, 'get') and hasattr(obj, 'items'):
-                # FIXME: prevent infinite recursion:
-                #        tuples don't have 'items' method so this will recurse forever if elements within new tuple aren't hashable and recurse has not been set!
-                return force_hashable(tuple(obj.items()))
-            if recursive:
-                return tuple(force_hashable(item) for item in obj)
-            return tuple(obj)
+    # if it's already hashable, and isn't a generator (which are also hashable, but not mutable)
+    if hasattr(obj, '__hash__') and not hasattr(obj, 'next'):
+        try:
+            hash(obj)
+            return obj
+        except:
+            pass
+    if hasattr(obj, '__iter__'):
+        # looks like a Mapping if it has .get() and .items(), so should treat it like one
+        if hasattr(obj, 'get') and hasattr(obj, 'items'):
+            # FIXME: prevent infinite recursion:
+            #        tuples don't have 'items' method so this will recurse forever if elements within new tuple aren't hashable and recurse has not been set!
+            return force_hashable(tuple(obj.items()))
+        if recursive:
+            return tuple(force_hashable(item) for item in obj)
+        return tuple(obj)
     # strings are hashable so this ends the recursion for any object without an __iter__ method (strings do not)
     return unicode(obj)
 
@@ -183,7 +191,8 @@ def force_hashable(obj, recursive=True):
 def inverted_dict(d):
     """Return a dict with swapped keys and values
 
-    >>> inverted_dict({0: ('a', 'b'), 1: 'cd'}) == {'a': 0, 'b': 0, 'cd': 1}
+    >>> inverted_dict({0: ('a', 'b'), 1: 'cd'}) == {'cd': 1, ('a', 'b'): 0}
+    True
     """
     return dict((force_hashable(v), k) for (k, v) in dict(d).iteritems())
 
@@ -216,14 +225,19 @@ def sort_strings(strings, sort_order=None, reverse=False, case_sensitive=False, 
          and whether the prefixes  in sort_order are checked in a case-sensitive way 
 
     Examples:
-        >>> sort_strings(['morn32', 'morning', 'unknown', 'less unknown', 'lucy', 'date', 'dow', 'doy', 'moy'], ('dat', 'dow', 'moy', 'dom', 'moy', 'mor'), reverse=True)
-        ['unknown', 'morning', 'morn32', 'moy', 'lucy', 'less unkown', 'doy', 'dow', 'date']
-        >>> sort_strings(['morn32', 'morning', 'unknown', 'date', 'dow', 'doy', 'moy'], ('dat', 'dow', 'moy', 'dom', 'moy', 'mor'))
-        ['date', 'dow', 'doy', 'moy', 'morn32', 'morning', 'unknown']
+        >>> sort_strings(['morn32', 'morning', 'unknown', 'date', 'dow', 'doy', 'moy'], 
+        ...              ('dat', 'dow', 'moy', 'dom', 'doy', 'mor'))  # doctest: +NORMALIZE_WHITESPACE
+        ['date', 'dow', 'moy', 'doy', 'morn32', 'morning', 'unknown']
+        >>> sort_strings(['morn32', 'morning', 'unknown', 'less unknown', 'lucy', 'date', 'dow', 'doy', 'moy'], 
+        ...              ('dat', 'dow', 'moy', 'dom', 'doy', 'mor'), reverse=True)  # doctest: +NORMALIZE_WHITESPACE
+        ['unknown', 'lucy', 'less unknown', 'morning', 'morn32', 'doy', 'moy', 'dow', 'date']
 
-        By default, strings whose prefixes don't exist in sort_order are interleaved into the sorted list in alphabetic order
-        >>> sort_strings(['morn32', 'morning', 'unknown', 'lucy', 'less unknown', 'date', 'dow', 'doy', 'moy'], ('dat', 'dow', 'moy', 'dom', 'moy', 'mor'))
-        ['date', 'dow', 'doy', 'less unknown', 'moy', 'morn32', 'morning', 'unknown']
+        Strings whose prefixes don't exist in `sort_order` sequence can be interleaved into the
+        sorted list in lexical order by setting `sort_order_first=False`
+        >>> sort_strings(['morn32', 'morning', 'unknown', 'lucy', 'less unknown', 'date', 'dow', 'doy', 'moy'],
+        ...              ('dat', 'dow', 'moy', 'dom', 'moy', 'mor'),
+        ...              sort_order_first=False)  # doctest: +NORMALIZE_WHITESPACE
+        ['date', 'dow', 'doy', 'less unknown', 'lucy', 'moy', 'morn32', 'morning', 'unknown']
     """
     if not case_sensitive:
         sort_order = tuple(s.lower() for s in sort_order)
@@ -239,10 +253,10 @@ def sort_strings(strings, sort_order=None, reverse=False, case_sensitive=False, 
                     if comparison:
                         return comparison * (-2 * reverse + 1)
                 elif sort_order_first:
-                    return -1
+                    return -1 * (-2 * reverse + 1)
             # b may be in sort_order list, so it should be first
             elif sort_order_first and b[:prefix_len] in sort_order:
-                return +1
+                return -2 * reverse + 1
         return (-1 * (a < b) + 1 * (a > b)) * (-2 * reverse + 1)
 
     return sorted(strings, cmp=compare)
@@ -501,12 +515,12 @@ def generate_slices(sliceable_set, batch_len=1, length=None, start_batch=0):
       http://stackoverflow.com/a/761125/623735
 
     Examples:
-      >>> [batch for batch in generate_slices(range(7), 3)]
+      >>  [batch for batch in generate_slices(range(7), 3)]
       [(0, 1, 2), (3, 4, 5), (6,)]
-      >>> from django.contrib.auth.models import User, Permission
-      >>> len(list(generate_slices(User.objects.all(), 2)))       == max(math.ceil(User.objects.count() / 2.), 1)
+      >>  from django.contrib.auth.models import User, Permission
+      >>  len(list(generate_slices(User.objects.all(), 2)))       == max(math.ceil(User.objects.count() / 2.), 1)
       True
-      >>> len(list(generate_slices(Permission.objects.all(), 2))) == max(math.ceil(Permission.objects.count() / 2.), 1)
+      >>  len(list(generate_slices(Permission.objects.all(), 2))) == max(math.ceil(Permission.objects.count() / 2.), 1)
       True
     """
     if length is None:

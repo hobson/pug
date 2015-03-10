@@ -13,16 +13,15 @@ except ImportError:
 import copy
 
 import pandas as pd
-import codecs
+# import codecs
 
 from django.shortcuts import render_to_response
 from django.views.generic import View, TemplateView
 from django.template import RequestContext
 from django.template.response import TemplateResponse, HttpResponse
 from django.template.loader import get_template
-from django.http import Http404, HttpResponse
+from django.http import Http404
 from django import http
-from django.utils import simplejson as json
 # from django.shortcuts import render
 # from django.conf import settings
 
@@ -34,7 +33,7 @@ from pug.nlp import db
 #import call_center.models as SLAmodels
 from forms import GetLagForm
 
-from django.utils import timezone
+# from django.utils import timezone
 
 # format options for lag histograms:
 #   hist = ff = fd = Frequency Distribution/Function (histogram of counts)
