@@ -24,4 +24,6 @@ import nlp.util
 import invest
 import invest.util
 import db
-__all__ = ['ann', 'data', 'data.weather', 'nlp', 'nlp.util', 'invest', 'invest.util', 'db']
+import test
+import test.runner
+__all__ = ['ann', 'ann.util', 'data', 'data.weather', 'nlp', 'nlp.util', 'invest', 'invest.util', 'db', 'test', 'test.runner']
