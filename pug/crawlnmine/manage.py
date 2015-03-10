@@ -4,7 +4,9 @@ import sys
 
 
 if __name__ == "__main__":
-    #os.environ['PYTHONPATH'] = os.path.realpath(os.path.join(os.path.dirname(__file__),'..','..'))
+    # print(os.environ.get('PYTHONPATH'))
+    # os.environ['PYTHONPATH'] = os.path.join(os.path.dirname(os.path.realpath(__file__)), '..', '..')
+    # print(os.environ['PYTHONPATH'])
 
     os.environ.setdefault("DJANGO_SETTINGS_MODULE", "crawlnmine.settings.prod")
 
