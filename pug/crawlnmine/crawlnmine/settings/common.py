@@ -92,6 +92,7 @@ INSTALLED_APPS = (
     'gunicorn',  # adds run_gunicorn command
 
     PROJECT_NAME, # to provide access to crawlnmine/static and crawlnmine/templates
+    'pug',
     'pug.invest',     # draws line plots of financial data and predicts futures finance statists
     'pug.nlp',
 
@@ -138,7 +139,8 @@ else:
     import dj_database_url
     DATABASES['default'] =  dj_database_url.config()
 
-
+print('{} DATABASES:'.format(__file__))
+print(DATABASES)
 # Internationalization
 # https://docs.djangoproject.com/en/1.6/topics/i18n/
 
