@@ -35,32 +35,32 @@ import nlp.util
 
 # from collections import OrderedDict as OD
 
-class NLPTest(TestCase):
+# class NLPTest(TestCase):
 
-    def setUp(self):
-        self.tobes_data = nlp.examples.tobes_data
-        self.dt = nlp.decision_tree
-        self.field = 'comments'
-        self.uniques = [sorted(self.dt.count_unique(self.tobes_data, i).values()) for i in range(len(self.tobes_data[0]))]
-        self.expected_uniques = [[2, 3, 3, 3, 5], [2, 4, 4, 6], [8, 8], [2, 2, 2, 3, 3, 4], [3, 6, 7]]
+#     def setUp(self):
+#         self.tobes_data = nlp.examples.tobes_data
+#         self.dt = nlp.decision_tree
+#         self.field = 'comments'
+#         self.uniques = [sorted(self.dt.count_unique(self.tobes_data, i).values()) for i in range(len(self.tobes_data[0]))]
+#         self.expected_uniques = [[2, 3, 3, 3, 5], [2, 4, 4, 6], [8, 8], [2, 2, 2, 3, 3, 4], [3, 6, 7]]
 
-    def test_tobes_data(self):
-        """
-        Tests that puffin LSA algorithm works on the set of example titles they gave.
-        """
-        T, F = self.dt.divide(self.tobes_data, 2, 'yes')
+#     def test_tobes_data(self):
+#         """
+#         Tests that puffin LSA algorithm works on the set of example titles they gave.
+#         """
+#         T, F = self.dt.divide(self.tobes_data, 2, 'yes')
 
-        self.assertEqual(len(tuple(T)), 8)
-        self.assertEqual(len(tuple(F)), 8)
+#         self.assertEqual(len(tuple(T)), 8)
+#         self.assertEqual(len(tuple(F)), 8)
 
-        for i in range(5):
-            self.assertEqual(self.uniques[i], self.expected_uniques[i])
-            self.assertEqual(sum(self.uniques[i]), 16)
+#         for i in range(5):
+#             self.assertEqual(self.uniques[i], self.expected_uniques[i])
+#             self.assertEqual(sum(self.uniques[i]), 16)
 
-        for module in nlp.modules:
-            failure_count, test_count = testmod(module)
-            self.assertEqual(failure_count, 0, msg='doctest.testmod(%s) had %s/%s failures' % (module, failure_count, test_count))
-            self.assertGreater(test_count, 1, msg='doctest.testmod(%s) had %s/%s failures (too few tests)' % (module, failure_count, test_count))
+#         for module in nlp.modules:
+#             failure_count, test_count = testmod(module)
+#             self.assertEqual(failure_count, 0, msg='doctest.testmod(%s) had %s/%s failures' % (module, failure_count, test_count))
+#             self.assertGreater(test_count, 1, msg='doctest.testmod(%s) had %s/%s failures (too few tests)' % (module, failure_count, test_count))
 
 
 class NLPDocTest(TestCase):

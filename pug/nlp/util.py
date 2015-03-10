@@ -162,8 +162,8 @@ def force_hashable(obj, recursive=True):
 
     >>> force_hashable([1,2.,['3','four'],'five', {'s': 'ix'}])
     (1, 2.0, ('3', 'four'), 'five', (('s', 'ix'),))
-    >>> force_hashable(i for i in range(3))
-    (1, 2, 3)
+    >>> force_hashable(i for i in range(4))
+    (0, 1, 2, 3)
     >>> from collections import Counter
     >>> force_hashable(Counter('abbccc')) ==  (('a', 1), ('c', 3), ('b', 2))
     True
