@@ -241,9 +241,11 @@ def context_from_request(request, context=None, Form=GetLagForm, delim=',', verb
     context['aggregate_ids'] = [int(s.strip()) for s in context['aggregate_ids'].split(',') if s and s.strip()] or [-1]
 
     # whether the FK join queries should be short-circuited
-    print 'aggregate_ids: ', context['aggregate_ids']
+    if verbosity:
+        print('aggregate_ids: ', context['aggregate_ids'])
     context['quick'] = context.get('quick') or (context['table'].startswith('agg') and context['aggregate_ids'] and not (context['aggregate_ids'][-1] == -1) and not context['table'] == 'fast')
-    print context['quick']
+    if verbosity:
+        print(context['quick'])
 
     # lag values can't be used directly in a django filter so don't put them in context['filter']
     lag = request.GET.get('lag', '') or request.GET.get('l', '')
@@ -296,7 +298,8 @@ def context_from_request(request, context=None, Form=GetLagForm, delim=',', verb
         context['form'] = Form(request.POST)
     elif request.method == 'GET':
         context['form'] = Form(data=initial, initial=initial)
-    print Form
+    if verbosity:
+        print Form
 
     context['form_is_valid'] = context['form'].is_valid()
     if not context['form_is_valid']:
