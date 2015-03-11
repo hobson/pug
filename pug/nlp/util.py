@@ -31,7 +31,6 @@ import csv
 import warnings
 from collections import OrderedDict
 from traceback import print_exc
-import ascii
 import decimal
 import random
 from decimal import Decimal
@@ -54,6 +53,8 @@ import regex_patterns as RE
 import logging
 logger = logging.getLogger('pug.nlp.util')
 
+
+import char_subset as ascii
 
 #from django.core.exceptions import ImproperlyConfigured
 # try:
@@ -1790,7 +1791,7 @@ def normalize_serial_number(sn,
         normalize_serial_number.na = na
 
     if invalid_chars is None:
-        invalid_chars = (c for c in ascii.all_ if c not in valid_chars)
+        invalid_chars = (c for c in ascii.ascii if c not in valid_chars)
     invalid_chars = ''.join(invalid_chars)
     sn = str(sn).strip(invalid_chars)
     if strip_whitespace:
