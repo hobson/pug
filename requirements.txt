@@ -2,6 +2,9 @@ pip==1.5.6
 pypandoc==0.8.2
 wsgiref==0.1.2
 future==0.14.3
+six==1.9.0
+
+# ipython needs ZeroMQ
 Django==1.7
 django-extensions==1.4.9
 pyzmq==14.5.0
@@ -27,7 +30,6 @@ Fabric==1.10.1
 # storages module for accessing AWS S3 storage:
 django-storages==1.1.8
 
-fuzzywuzzy==0.3.2
 gunicorn==19.1.1
 
 Scrapy==0.22.2
@@ -43,13 +45,22 @@ python-dateutil==2.4.0
 
 PyBrain==0.3
 
-six==1.9.0
 
 sqlparse==0.1.14
 tabulate==0.7.1
 w3lib==1.11.0
 zope.interface==4.1.2
+xlrd==0.9.3
 
 numpy==1.9.2
 pandas==0.15.2
+
 ConcurrentPandas==0.1.1
+#$ sudo yum install libjpeg-devel openjpeg-devel
+Pillow==2.7
+matplotlib==1.4.3
+fuzzywuzzy==0.5.0
+python-Levenshtein==0.12.0
+progressbar==2.3
+
+-e git://github.com/hobson/pug-nlp.git#egg=pug-nlp-master

@@ -75,7 +75,7 @@ def rmse(target, prediction, relative=False, percent=False):
         denom = target
         # Avoid ZeroDivisionError: divide by prediction rather than target where target==0
         denom[denom==0] = prediction[denom==0]
-        # If the prediciton and target are both 0, then the error is 0 and should be included in the RMSE
+        # If the prediction and target are both 0, then the error is 0 and should be included in the RMSE
         # Otherwise, the np.isinf() below would remove all these zero-error predictions from the array.
         denom[(denom==0) & (target==0)] = 1
         print(denom)
