@@ -1,4 +1,5 @@
 pip==1.5.6
+#$ sudo yum install pandoc
 pypandoc==0.8.2
 wsgiref==0.1.2
 future==0.14.3
@@ -36,7 +37,7 @@ gunicorn==19.1.1
 Scrapy==0.22.2
 jsonfield==1.0.0
 
-progressbar-latest==2.4
+progressbar2==2.7.3
 # psycopg2==2.5.4
 
 pyOpenSSL==0.14
@@ -63,3 +64,5 @@ matplotlib==1.4.3
 fuzzywuzzy==0.5.0
 python-Levenshtein==0.12.0
 progressbar==2.3
+
+pug-nlp==0.0.4

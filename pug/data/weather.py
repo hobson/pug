@@ -31,12 +31,11 @@ def airport(location='Fresno, CA', date='2012/1/1', verbosity=1):
         df.columns = [str(label) for label in df.iloc[0].values]
         df = df.iloc[1:]
     df.columns = [label.strip() for label in df.columns]
-    print df.columns
-    print type(df.columns)
+
+    if verbosity:
+        print(df.describe())
     columns = df.columns.values
-    print columns
-    columns = re.sub(r'<br\s*[/]?>','', columns[-1])
-    print columns
+    columns[-1] = re.sub(r'<br\s*[/]?>','', columns[-1])
     df.columns = columns
 
     for i, obj in enumerate(df[df.columns[-1]]):
@@ -55,3 +54,5 @@ def airport(location='Fresno, CA', date='2012/1/1', verbosity=1):
         print(df)
     return df
 airport.locations = dict([(str(city) + ', ' + str(region)[-2:], str(ident)) for city, region, ident in pd.DataFrame.from_csv(os.path.join(DATA_PATH, 'airports.csv')).sort(ascending=False)[['municipality', 'iso_region', 'ident']].values])
+
+city = airport

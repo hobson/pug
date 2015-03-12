@@ -5,6 +5,7 @@ from pug.invest import util
 y = util.simulate(poly=100, sinusoids=(10, 100, -20)).values
 
 hr = np.arange(365*96)*.25
+t = hr * 3600
 sinusoids = [
     np.random.normal(0.0, 0.1, 365*96)+10 + 3*np.sin(hr*2*np.pi/96/.25),
     np.random.normal(0.0, 0.1, 365*96)+15 + 3*np.sin(hr*2*np.pi/96/.25) + 3*np.cos(t*2*np.pi/96./.25/365.),
@@ -25,10 +26,6 @@ plt.plot(arma30.resid/y)
 plt.show()
 plt.plot(arma30.resid/y)
 plt.show()
-arima_model.ARMA??
-arima_model.ARMA?
-arma30.predict??
-arma30.predict?
 arma30 = arima_model.ARMA(y[:-96*30], (2,0)).fit()
 y1 = y[-32*96:]
 y2 = arma30.predict(start=N-32*96, end=N-28*96)
@@ -77,20 +74,12 @@ arma296 = arima_model.ARMA(y_train[-96*14:], (1,96)).fit(meth='css')
 arma296 = arima_model.ARMA(np.diff(y_train[-96*14:]).dropna(), (1,96)).fit(meth='css')
 arma296 = arima_model.ARMA(np.diff(y_train[-96*14:])[1:], (2,96)).fit(meth='css')
 arma296 = arima_model.ARMA(np.diff(y_train[-96*14:])[1:], (2,96)).fit(meth='mle')
-arma296 = arima_model.ARMA(np.diff(y_train[-96*14:])[1:], (2,96)).fit?
 arma296 = arima_model.ARMA(np.diff(y_train[-96*14:])[1:], (2,96))
-arma296.fit?
 arma296.fit(trend='c',solver='bfgs')
-arma296.fit?
 arma296.fit(trend='c',solver='bfgs',transparams=True)
-arma296.fit?
 arma296.fit(trend='c',solver='bfgs',transparams=False)
-arma296.fit?
 arma296._fit_start_params
 arma296._fit_start_params()
-arma296.fit?
-arma296._fit_start_params?
-arma296._fit_start_params??
 arma296.fit(meth='css-mle',trend='c',solver='bfgs',transparams=False)
 arma296.fit(meth='css-mle',trend='c',solver='bfgs',transparams=True)
 q = np.zeros(96)
@@ -101,8 +90,6 @@ q[0] = .1
 q[-1]=.9
 p=[10, 1.2, -.2]
 arma296.fit(meth='css-mle',trend='c',solver='bfgs',transparams=True,startparams=[p,q])
-arma296.fit?
-arma296.fit?
 arma296.fit(meth='css-mle',trend='c',solver='bfgs',transparams=True,start_params=[p,q])
 np.log
 arma296.fit(meth='css-mle',trend='c',solver='bfgs',transparams=False,start_params=[p,q])
