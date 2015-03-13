@@ -9,3 +9,5 @@ nohup.out
 pug/crawlnmine/djangodb
 pug/crawlnmine/fabfile/project_conf.py
 .ipynb_checkpoints/
+*.old
+*.orig
