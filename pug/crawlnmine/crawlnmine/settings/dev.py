@@ -1,1 +1,0 @@
-from crawlnmine.settings.common import *
