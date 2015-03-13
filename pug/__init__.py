@@ -16,14 +16,14 @@ declare_namespace(__name__)
 #     )
 # __github_url__ = "https://github.com/hobson/{0}".format(__name__)
 
-import ann
-import ann.util
-import data
-import data.weather
-import nlp
-import nlp.util
-import invest
-import invest.util
+# import ann
+# import ann.util
+# import data
+# import data.weather
+# import nlp
+# import nlp.util
+# import invest
+# import invest.util
 # import db
 # import test
 # import test.runner

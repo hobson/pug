@@ -1,5 +1,5 @@
 future==0.14.3
-Django==1.8a1
+Django==1.8b2
 
 # shell_plus --notebook
 django-extensions==1.4.9
@@ -39,7 +39,7 @@ Fabric==1.10.1
 # storages module for accessing AWS S3 storage:
 django-storages==1.1.8
 
-fuzzywuzzy==0.3.2
+fuzzywuzzy==0.5.0
 gunicorn==19.1.1
 
 Scrapy==0.22.2

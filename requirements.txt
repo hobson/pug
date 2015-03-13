@@ -5,9 +5,9 @@ wsgiref==0.1.2
 future==0.14.3
 six==1.9.0
 
-# ipython needs ZeroMQ
-Django==1.7
+Django==1.8b2
 django-extensions==1.4.9
+# ipython needs ZeroMQ
 pyzmq==14.5.0
 Unidecode==0.04.16
 cffi==0.8.6
@@ -31,7 +31,7 @@ Fabric==1.10.1
 # storages module for accessing AWS S3 storage:
 django-storages==1.1.8
 
-fuzzywuzzy==0.3.2
+fuzzywuzzy==0.5.0
 gunicorn==19.1.1
 
 Scrapy==0.22.2
@@ -45,8 +45,7 @@ python-slugify==0.0.9
 pytz==2014.10
 python-dateutil==2.4.0
 
-PyBrain==0.3
-
+-e git+git@github.com:pybrain/pybrain.git@master#egg=pybrain-master
 
 sqlparse==0.1.14
 tabulate==0.7.1
@@ -63,7 +62,7 @@ Pillow==2.7
 matplotlib==1.4.3
 fuzzywuzzy==0.5.0
 python-Levenshtein==0.12.0
-progressbar==2.3
+progressbar2==2.7.3
 
 -e /usr/src/projects/pug-nlp
 -e /usr/src/projects/pug-ann

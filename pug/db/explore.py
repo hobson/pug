@@ -16,7 +16,7 @@ from django.core.exceptions import FieldError
 from django.db.models import FieldDoesNotExist
 from django.db.models import Model
 
-from pug.nlp import djdb  # FIXME: confusing name (too similar to common `import as` for django.db)
+from pug.dj import db as djdb # FIXME: confusing name (too similar to common `import as` for django.db)
 from pug.nlp import db  # FIXME: too similar to pug.db
 from pug.nlp import util
 

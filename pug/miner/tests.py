@@ -1,11 +1,11 @@
-import time
+# import time
 # import unittest
 import doctest
 from django.test import LiveServerTestCase  #, TestCase
 from selenium import webdriver
 import pug.nlp.util
-import pug.nlp.djdb
-from traceback import print_exc
+# from pug.dj import db as djdb
+# from traceback import print_exc
 
 
 class HomeTest(LiveServerTestCase):
