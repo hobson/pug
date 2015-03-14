@@ -24,7 +24,7 @@ __authors__  = env.get('__authors__', ('Hobson <hobson@totalgood.com>',))
 try:
     import pypandoc
     long_description = pypandoc.convert('README.md', 'rst')
-except (IOError, ImportError, OSError):
+except:  # (IOError, ImportError, OSError, RuntimeError):
     pass
 
 print('Installing package named {} pointed at url {}. . .'.format(project_name, __url__))
