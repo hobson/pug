@@ -53,18 +53,9 @@ w3lib==1.11.0
 zope.interface==4.1.2
 xlrd==0.9.3
 
-numpy==1.9.2
 pandas==0.15.2
 
-ConcurrentPandas==0.1.1
-#$ sudo yum install libjpeg-devel openjpeg-devel
-Pillow==2.7
-matplotlib==1.4.3
-fuzzywuzzy==0.5.0
-python-Levenshtein==0.12.0
-progressbar2==2.7.3
-
--e /usr/src/projects/pug-nlp
--e /usr/src/projects/pug-ann
-# -e /usr/src/projects/pug-invest
-# -e /usr/src/projects/pug-dj
+pug-nlp==0.0.5
+pug-ann==0.0.5
+pug-invest==0.0.5
+pug-dj==0.0.5
