@@ -7,7 +7,7 @@ from jsonfield import JSONField
 
 from pug.nlp.db import representation
 # FIXME: simplify circular import/dependencies with miner app 
-#from pug.miner import explore
+#from pug.dj.miner import explore
 from model_mixin import DateMixin
 
 
