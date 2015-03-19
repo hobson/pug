@@ -10,7 +10,8 @@ pyzmq==14.5.0
 Unidecode==0.04.16
 # # heroku uses pip 1.3.1
 # # pip==1.3.1
-# # pip==1.5.6
+# # pip==6.0.8
+
 # # --editable=git://github.com/mdp-toolkit/mdp-toolkit#egg=mdp
 # # --editable=git://github.com/mdp-toolkit/mdp-toolkit#egg=mdp --exists-action=w
 # # setuptools==5.7
@@ -71,7 +72,8 @@ psycopg2==2.5.4
 
 
 pyOpenSSL==0.14
-python-slugify==0.0.9
+python-slugify==0.1.0
+
 pytz==2014.10
 python-dateutil==2.4.0
 # # queuelib==1.1.1

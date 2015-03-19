@@ -3,7 +3,7 @@ python:
   - "2.7"
 # install dependencies
 # FIXME: What about yum (rpm) or apt (deb) binaries and C code like BLAS and lapack?
-pip install -r requirements.txt
+install: pip install -r requirements.txt
 # run tests
-python pug/crawlnmine/manage.py test
+script: python pug/crawlnmine/manage.py test
 #python setup.py test

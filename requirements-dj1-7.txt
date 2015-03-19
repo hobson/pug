@@ -45,7 +45,8 @@ pyenchant==1.6.6
 pyparsing==2.0.3
 python-dateutil==1.5
 python-nvd3==0.13.3
-python-slugify==0.0.9
+python-slugify==0.1.0
+
 pytz==2014.3
 pyzmq==14.4.1
 queuelib==1.1.1
