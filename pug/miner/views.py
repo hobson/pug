@@ -241,10 +241,10 @@ def context_from_request(request, context=None, Form=GetLagForm, delim=',', verb
     context['aggregate_ids'] = [int(s.strip()) for s in context['aggregate_ids'].split(',') if s and s.strip()] or [-1]
 
     # whether the FK join queries should be short-circuited
-    if verbosity:
+    if verbosity > 0:
         print('aggregate_ids: ', context['aggregate_ids'])
     context['quick'] = context.get('quick') or (context['table'].startswith('agg') and context['aggregate_ids'] and not (context['aggregate_ids'][-1] == -1) and not context['table'] == 'fast')
-    if verbosity:
+    if verbosity > 0:
         print(context['quick'])
 
     # lag values can't be used directly in a django filter so don't put them in context['filter']
@@ -288,7 +288,7 @@ def context_from_request(request, context=None, Form=GetLagForm, delim=',', verb
 
     context['name'] = request.GET.get('s') or request.GET.get('n') or request.GET.get('series') or request.GET.get('name') or util.slug_from_dict(initial)
 
-    if verbosity:
+    if verbosity > 0:
         print 'initial: {0}'.format(initial)
         print 'normalized GET query parameters: %r' % initial
         print 'Form before validation {0}'.format(Form)
@@ -298,13 +298,13 @@ def context_from_request(request, context=None, Form=GetLagForm, delim=',', verb
         context['form'] = Form(request.POST)
     elif request.method == 'GET':
         context['form'] = Form(data=initial, initial=initial)
-    if verbosity:
+    if verbosity > 0:
         print Form
 
     context['form_is_valid'] = context['form'].is_valid()
     if not context['form_is_valid']:
         context['form_errors'] = context['form'].errors
-        if verbosity:
+        if verbosity > 0:
             print 'ERRORS in FORM !!!!!!!!!!!!!'
             print context['form_errors']
         #import ipdb
