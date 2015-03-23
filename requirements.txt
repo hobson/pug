@@ -57,7 +57,7 @@ xlrd==0.9.3
 
 pandas==0.15.2
 
-pug-nlp==0.0.5
-pug-ann==0.0.5
+pug-nlp==0.0.8
+pug-ann==0.0.8
 pug-invest==0.0.5
 pug-dj==0.0.5
