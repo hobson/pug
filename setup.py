@@ -49,9 +49,11 @@ setup(
     include_package_data = True,  # install non-.py files listed in MANIFEST.in (.js, .html, .txt, .md, etc)
     install_requires = install_requires,
     dependency_links = dependency_links,
-    scripts=['pug/bin/jira.py'],
+    # enable the command-line script `push.py 'message'`
+    scripts=['bin/push.py'],
+    # enable the command-line script `push 'message'`
     entry_points={'console_scripts': [
-        'jira = pug.crawlnmine.management:execute_from_command_line',
+         'push=bin.push:main',
     ]},
     version = version,
     description = description,
