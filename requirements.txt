@@ -1,7 +1,7 @@
 pip==6.0.8
 
 #$ sudo yum install pandoc
-pypandoc==0.8.2
+pypandoc>=0.9.6
 wsgiref==0.1.2
 future==0.14.3
 six==1.9.0
@@ -57,7 +57,7 @@ xlrd==0.9.3
 
 pandas==0.15.2
 
-pug-nlp==0.0.8
-pug-ann==0.0.8
-pug-invest==0.0.5
-pug-dj==0.0.5
+pug-nlp>=0.0.12
+pug-ann>=0.0.12
+pug-invest>=0.0.12
+pug-dj>=0.0.12
