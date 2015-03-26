@@ -7,7 +7,7 @@ __subpackage__ = ''
 project_name = '{}'.format(__namespace_package__) + ('-' + __subpackage__ if __subpackage__ else '')
 package_name = '{}'.format(__namespace_package__) + ('.' + __subpackage__ if __subpackage__ else '')
 
-from setuptools import find_packages
+# from setuptools import find_packages
 from distutils.core import setup
 import os
 
@@ -65,7 +65,7 @@ EXCLUDE_FROM_PACKAGES = []
 
 setup(
     name = project_name,
-    packages=find_packages(exclude=EXCLUDE_FROM_PACKAGES),   #[project_name],  
+    packages = [package_name],  # [find_packages(exclude=EXCLUDE_FROM_PACKAGES)],     
     include_package_data = True,  # install non-.py files listed in MANIFEST.in (.js, .html, .txt, .md, etc)
     install_requires = install_requires,
     dependency_links = dependency_links,
