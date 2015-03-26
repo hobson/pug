@@ -4,9 +4,17 @@ python:
 # install dependencies
 # FIXME: What about yum (rpm) or apt (deb) binaries and C code like BLAS and lapack?
 install:
-    - "sudo apt-get install libatlas-base-dev gfortran python-scipy scipy"
+    - "sudo apt-get install libatlas-base-dev gfortran python-scipy"
     - pip install --upgrade -r requirements.txt
     - pip install --upgrade .
 # run tests
-script: python pug/crawlnmine/manage.py test
+script: 
+    - "python pug/test.py"
 #python setup.py test
+# shell command run tests
+script: 
+    - "python pug/nlp/tests.py"
+# build notifications
+notifications:
+  email:
+    - admin@totalgood.com

@@ -64,7 +64,10 @@ setup(
     install_requires = install_requires,
     dependency_links = dependency_links,
     # enable the command-line script `push.py 'message'`
-    scripts=['pug/bin/push.py'],
+    scripts=[
+        'pug/bin/push.py',
+        'pug/bin/install_requirements',
+        ],
     # enable the command-line script `push 'message'`
     entry_points={'console_scripts': [
          'push=pug.bin.push:main',
