@@ -1,4 +1,4 @@
-# `pug`
+# `pug` ![alt text](https://travis-ci.org/hobson/pug.svg?branch=master "Travis Build & Test Status")
 
 ## PDX-Python User Group utilities
 

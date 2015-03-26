@@ -31,13 +31,7 @@ __authors__  = env.get('__authors__', ('Hobson <hobson@totalgood.com>',))
 try:
     long_description = open('README.rst', 'r').read()
 except:  # (IOError, ImportError, OSError, RuntimeError):
-    try:
-        import pypandoc
-        long_description = pypandoc.convert('README.md', 'rst', 'md')
-        # from traceback import print_exc
-        # print_exc()
-    except:
-        print('WARNING: Unable to find README.rst or use pypandoc to reformat the README.md file into RST.')
+    print('WARNING: Unable to find README.rst.')
 
 print('Installing package named {} pointed at url {}. . .'.format(project_name, __url__))
 
