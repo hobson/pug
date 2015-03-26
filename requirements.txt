@@ -16,6 +16,8 @@ chardet==2.3.0
 # handy Django settings.py tool by heroku
 dj-database-url==0.3.0
 
+gitapi>=1.0.1
+
 # run_gunicorn locally needs dj_static.Cling (Heroku reocommends as well)
 static3==0.5.1
 dj-static==0.0.6
@@ -47,7 +49,7 @@ python-slugify==0.1.0
 pytz==2014.10
 python-dateutil==2.4.0
 
--e git+git@github.com:pybrain/pybrain.git@master#egg=pybrain-master
+-e git+git@github.com:hobson/pybrain.git@master#egg=pybrain-master
 
 sqlparse==0.1.14
 tabulate==0.7.1
