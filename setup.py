@@ -14,18 +14,21 @@ import os
 global_env, env = {}, {}
 execfile(os.path.join(project_name, 'package_info.py'), global_env, env)
 
+print('Found package info: {}'.format(env))
+
 version = env.get('__version__', '0.0.1')
-long_description = env.get('__doc__', '0.0.1')
 package_docstring = env.get('__doc__', '`{}` python package'.format(project_name))
-description = package_docstring.split(',')[0]
+description = package_docstring.split('\n')[0]
 long_description = package_docstring
 __url__  = env.get('__url__', 'http://github.com/hobson/')
 __authors__  = env.get('__authors__', ('Hobson <hobson@totalgood.com>',))
 try:
     import pypandoc
-    long_description = pypandoc.convert('README.md', 'rst')
+    long_description = pypandoc.convert('README.md', 'rst', 'md')
 except:  # (IOError, ImportError, OSError, RuntimeError):
-    pass
+    # from traceback import print_exc
+    # print_exc()
+    print('Unable to use pypandoc to reformat the README.md file into RST format')
 
 print('Installing package named {} pointed at url {}. . .'.format(project_name, __url__))
 
