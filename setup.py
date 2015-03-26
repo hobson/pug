@@ -1,5 +1,11 @@
 # setup.py for PUG (PDX Python User Group) package
-project_name = 'pug'
+# the parent name (perhaps a namespace package) you'd import
+__namespace_package__ = 'pug'
+# the subpackage that this installer is providing that you'd import like __import__(__namespace_package__ + '.' + '__subpackage__')
+__subpackage__ = ''
+# the name as it will appear in the pypi cheeseshop repositor, not the name you'd use to import it
+project_name = '{}'.format(__namespace_package__) + ('-' + __subpackage__ if __subpackage__ else '')
+package_name = '{}'.format(__namespace_package__) + ('.' + __subpackage__ if __subpackage__ else '')
 
 from setuptools import find_packages
 from distutils.core import setup
@@ -23,25 +29,36 @@ long_description = package_docstring
 __url__  = env.get('__url__', 'http://github.com/hobson/')
 __authors__  = env.get('__authors__', ('Hobson <hobson@totalgood.com>',))
 try:
-    import pypandoc
-    long_description = pypandoc.convert('README.md', 'rst', 'md')
+    long_description = open('README.rst', 'r').read()
 except:  # (IOError, ImportError, OSError, RuntimeError):
-    # from traceback import print_exc
-    # print_exc()
-    print('Unable to use pypandoc to reformat the README.md file into RST format')
+    try:
+        import pypandoc
+        long_description = pypandoc.convert('README.md', 'rst', 'md')
+        # from traceback import print_exc
+        # print_exc()
+    except:
+        print('WARNING: Unable to find README.rst or use pypandoc to reformat the README.md file into RST.')
 
 print('Installing package named {} pointed at url {}. . .'.format(project_name, __url__))
 
-try:
-    from pip.req import parse_requirements
-    requirements = list(parse_requirements('requirements.txt'))
-except:
-    requirements = []
-install_requires=[str(req.req).split(' ')[0].strip() for req in requirements if req.req and not req.url]
+# try:
+#     from pip.req import parse_requirements
+#     requirements = list(parse_requirements('requirements.txt'))
+# except:
+#     requirements = []
+# install_requires=[str(req.req).split(' ')[0].strip() for req in requirements if req.req and not req.url]
 
-print('Install requires: {}'.format(install_requires))
-dependency_links=[req.url for req in requirements if req.url]
-print('Dependency links: {}'.format(dependency_links))
+install_requires = [
+    'wsgiref==0.1.2', 'six==1.9.0', 
+    # 'pypandoc==0.8.2', 'future==0.14.3',
+    'pyzmq==14.5.0', 'Unidecode==0.04.16', 'cffi==0.8.6', 'chardet==2.3.0', 'pyOpenSSL==0.14',
+    'pytz==2014.10', 'python-dateutil==2.4.0',
+    'pandas==0.15.2', 'xlrd==0.9.3', 'matplotlib==1.4.3',  'Pillow==2.7', 
+    'fuzzywuzzy==0.5.0', 'python-Levenshtein==0.12.0', 'progressbar2==2.7.3', 'python-slugify==0.1.0',
+    ]
+dependency_links = []
+
+print('install_requires: {}'.format(install_requires))
 
 
 EXCLUDE_FROM_PACKAGES = []
