@@ -57,9 +57,9 @@ w3lib==1.11.0
 zope.interface==4.1.2
 xlrd==0.9.3
 
-pandas==0.15.2
+pandas>=0.15.2
 
-pug-nlp>=0.0.14
-pug-ann>=0.0.13
-pug-invest>=0.0.12
-pug-dj>=0.0.12
+pug-nlp>=0.0.17
+pug-ann>=0.0.17
+pug-invest>=0.0.17
+# pug-dj>=0.0.12
