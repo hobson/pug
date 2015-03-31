@@ -63,7 +63,7 @@ setup(
     # ]},
     #install_requires = install_requires,
     #dependency_links = dependency_links,
-    requires = [
+    install_requires = [
         'pug-nlp',
         'pug-ann',
         # 'pug-invest',
