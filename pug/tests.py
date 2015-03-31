@@ -7,7 +7,7 @@ Uses the unittest module to test this app with `manage.py test`.
 from unittest import TestCase, main
 import doctest
 import pug.nlp.util
-import pug.invest.util
+# import pug.invest.util
 
 # class PuffinTest(TestCase):
 #     from puffin_lsa import PuffinLSA
@@ -79,8 +79,8 @@ class NLPDocTest(TestCase):
     def test_nlp_util(self):
         self.test_util(pug.nlp.util)
 
-    def test_invest_util(self):
-        self.test_util(pug.invest.util)
+    # def test_invest_util(self):
+    #     self.test_util(pug.invest.util)
 
 if __name__ == '__main__':
     main()
