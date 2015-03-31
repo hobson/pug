@@ -1,0 +1,2 @@
+# FIXME: Launch shell-plus programaticaly using a python `import pug.dj.crawlnmine` statement
+python ../crawlnmine/manage.py shell
