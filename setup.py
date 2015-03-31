@@ -45,8 +45,8 @@ print('Installing package named {} pointed at url {}. . .'.format(project_name, 
 install_requires = [
     'wsgiref==0.1.2', 'six==1.9.0', 
     # 'pypandoc==0.8.2', 'future==0.14.3',
-    'pyzmq==14.5.0', 'Unidecode==0.04.16', 'cffi==0.8.6', 'chardet==2.3.0', 'pyOpenSSL==0.14',
-    'pytz==2014.10', 'python-dateutil==2.4.0',
+    'pyzmq==14.5.0', 'Unidecode==0.4.16', 'cffi==0.8.6', 'chardet==2.3.0', 'pyOpenSSL==0.14',
+    'pytz==2014.10', 'python-dateutil==2.4.1',
     'pandas==0.15.2', 'xlrd==0.9.3', 'matplotlib==1.4.3',  'Pillow==2.7', 
     'fuzzywuzzy==0.5.0', 'python-Levenshtein==0.12.0', 'progressbar2==2.7.3', 'python-slugify==0.1.0',
     ]
