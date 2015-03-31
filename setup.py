@@ -44,7 +44,7 @@ print('Installing package named {} pointed at url {}. . .'.format(project_name, 
 setup(
     name = project_name,
     version = version,
-    url = __url__,
+#    url = __url__,
     description = 'Meta package to install the PDX Python User Group utilities.',
     long_description = long_description,
     author = 'Hobson Lane',
@@ -78,7 +78,6 @@ setup(
         "Programming Language :: Python :: 2.7",
         "Development Status :: 2 - Pre-Alpha",
         "Environment :: Other Environment",
-        # "Environment :: Console",
         "Intended Audience :: Developers",
         "License :: OSI Approved :: MIT License",
         "Operating System :: OS Independent",
@@ -86,5 +85,5 @@ setup(
         "Topic :: Scientific/Engineering :: Artificial Intelligence",
         "Topic :: Scientific/Engineering :: Mathematics",
         "Topic :: Internet :: WWW/HTTP :: Indexing/Search",
-        ],
+        ]
 )
