@@ -10,7 +10,7 @@ Django==1.8b2
 django-extensions==1.4.9
 # ipython needs ZeroMQ
 pyzmq==14.5.0
-Unidecode==0.04.16
+Unidecode==0.4.16
 cffi==0.8.6
 chardet==2.3.0
 # handy Django settings.py tool by heroku
@@ -47,7 +47,7 @@ pyOpenSSL==0.14
 python-slugify==0.1.0
 
 pytz==2014.10
-python-dateutil==2.4.0
+python-dateutil>=2.4.1
 
 -e git+git@github.com:hobson/pybrain.git@master#egg=pybrain-master
 
@@ -59,7 +59,7 @@ xlrd==0.9.3
 
 pandas==0.15.2
 
-pug-nlp>=0.0.12
-pug-ann>=0.0.12
+pug-nlp>=0.0.14
+pug-ann>=0.0.13
 pug-invest>=0.0.12
 pug-dj>=0.0.12
