@@ -1,4 +1,4 @@
-pip==6.0.8
+pip==6.0.7
 
 #$ sudo yum install pandoc
 pypandoc>=0.9.6
