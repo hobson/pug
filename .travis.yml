@@ -1,21 +1,28 @@
 language: python
 python:
-  - "2.7"
-# install dependencies
-# FIXME: What about yum (rpm) or apt (deb) binaries and C code like BLAS and lapack?
+    - 2.7
+    # - 3.3
 before_install:
-    - sudo apt-get install -qq libatlas-base-dev gfortran python-numpy python-scipy
+  # - sudo -H apt-get install gfortran-4.6
+  # - sudo -H pip install --upgrade pip
+  # - sudo -H pip install --upgrade setuptools
+  # - sudo -H pip install --upgrade virtualenv
+  - wget http://repo.continuum.io/miniconda/Miniconda-latest-Linux-x86_64.sh -O miniconda.sh
+  - chmod +x miniconda.sh
+  - ./miniconda.sh -b
+  - export PATH=/home/travis/miniconda/bin:$PATH
+  - conda update --yes conda
+  - conda install --yes python=$TRAVIS_PYTHON_VERSION pyparsing atlas numpy scipy matplotlib dateutil Pillow statsmodels
 install:
-    - pip install --upgrade -r requirements.txt
-    - pip install --upgrade .
-# run tests
-script:
-    - "python pug/tests/test.py"
-#python setup.py test
-# shell command run tests
+  # # Coverage packages are on Dan's binstar channel
+  # - conda install --yes -c dan_blanchard python-coveralls nose-cov
+  - pip install git+https://github.com/hobson/pug-nlp.git@master#egg=pug-nlp-master
+  - pip install git+https://github.com/hobson/pybrain.git@master#egg=pybrain-master
+  - python setup.py install
+  - pip install .
+  - pip freeze
 script: 
-    - "python pug/nlp/tests.py"
-# build notifications
+    - "python pug/tests.py"
 notifications:
   email:
     - admin@totalgood.com
