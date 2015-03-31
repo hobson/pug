@@ -71,7 +71,9 @@ install_requires = [
     'scipy>=0.15.1',
     'pybrain>=0.3.3',
 
-    'pug-nlp>=0.0.15',
+    'pug-nlp>=0.0.17',
+    'pug-ann>=0.0.17',
+    'pug-invest>=0.0.17',
     ]
 print('install_requires: {}'.format(install_requires))
 
