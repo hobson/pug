@@ -2,6 +2,7 @@
 =======
 
 |Build Status| |Coverage Status| |Version Status| |Downloads|
+`[License](https://pypip.in/license/pug/badge.svg?style=flat <https://github.com/hobson/pug/>`__
 
 Python User Group utilities
 ---------------------------
