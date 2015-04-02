@@ -53,6 +53,7 @@ install_requires = [
     'pug-nlp>=0.0.17',
     'pug-ann>=0.0.17',
     'pug-invest>=0.0.17',
+    'pug-dj>=0.0.17',
     ]
 print('install_requires: {}'.format(install_requires))
 
