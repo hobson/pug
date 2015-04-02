@@ -50,10 +50,10 @@ print('Packages being installed: {}'.format(packages))
 
 # sudo yum install libjpeg-devel openjpeg-devel
 install_requires = [
-    'pug-nlp>=0.0.17',
-    'pug-ann>=0.0.17',
-    'pug-invest>=0.0.17',
-    'pug-dj>=0.0.17',
+    'pug-nlp>=0.0.18',
+    'pug-ann>=0.0.18',
+    'pug-invest>=0.0.18',
+    'pug-dj>=0.0.18',
     ]
 print('install_requires: {}'.format(install_requires))
 
@@ -67,10 +67,12 @@ setup(
     include_package_data = True,
     install_requires = install_requires,
     dependency_links = dependency_links,
-    # enable the command-line script `push.py 'message'`
+    # put these command-line scripts in the system "bin" $PATH
     scripts=[
-        'pug/bin/push.py',
+        'pug/bin/push.sh',
+        'pug/bin/register.sh',
         'pug/bin/install_requirements',
+        'pug/bin/push.py',
         ],
     # enable the command-line script `push 'message'`
     entry_points={'console_scripts': [
