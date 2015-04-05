@@ -29,7 +29,7 @@ You really want to contribute, right?
 
     git clone
 
-If your a user and not a developer, and have an up-to-date posix OS with the postgres, xml2, and xlst development packages installed, then use `pip`.
+If you're a user and not a developer, and have an up-to-date posix OS with the postgres, xml2, and xlst development packages installed, then use `pip`.
 
     pip install pug
 
