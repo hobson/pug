@@ -57,12 +57,10 @@ print('Installing package named {} pointed at url {}. . .'.format(project_name, 
 dependency_links = [] #  ['http://github.com/hobson/pug-nlp/tarball/master#egg=pug-nlp-master'] 
 EXCLUDE_FROM_PACKAGES = []
 
-
 print('Installing package named {} from the {} project. . .'.format(package_name, project_name))
 from setuptools import find_packages
 packages = list(set([package_name] + list(find_packages(exclude=EXCLUDE_FROM_PACKAGES))))
 print('Packages being installed: {}'.format(packages))
-
 
 # sudo yum install libjpeg-devel openjpeg-devel
 install_requires = [
@@ -71,6 +69,7 @@ install_requires = [
     'pug-invest>=0.0.18',
     'pug-dj>=0.0.18',
     ]
+
 print('install_requires: {}'.format(install_requires))
 
 
@@ -97,17 +96,8 @@ setup(
     # entry_points={'console_scripts': [
     #      'push=pug.bin.push:main',
     # ]},
-    #install_requires = install_requires,
-    #dependency_links = dependency_links,
-    install_requires = [
-        'pug-nlp',
-        'pug-ann',
-        # 'pug-invest',
-        # 'pug-djdb',
-        # 'pub-bin',
-    ],
-    #     # Force setup.py to use the latest github master source files rather than the cheeseshop tarball: 
-    # download_url = "{}/tarball/master".format(__url__),
+    dependency_links = dependency_links,
+    install_requires=install_requires,
     keywords = ["natural language processing", "text processing", "neural net", "science", "data science", "math", "machine-learning", "statistics", "database"],
     classifiers = [
         "Programming Language :: Python",
