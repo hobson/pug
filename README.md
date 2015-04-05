@@ -1,4 +1,4 @@
-# `pug`
+# `pug` ![alt text](https://travis-ci.org/hobson/pug.svg?branch=master "Travis Build & Test Status")
 
 [![Build Status](https://travis-ci.org/hobson/pug.svg?branch=master "Travis Build & Test Status")](https://travis-ci.org/hobson/pug)
 [![Coverage Status](https://coveralls.io/repos/hobson/pug/badge.png)](https://coveralls.io/r/hobson/pug)

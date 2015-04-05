@@ -1,10 +1,25 @@
+#!/usr/bin/env python
+''' The PUG namespace package (meta package) depends on all the pug-* packages
+    collection. As a result, installing it vith `pip` or `easy_install` also installs:
+    + pug-nlp    Natural Language and Text-Processing utilities
+    + pug-ann    Artificial Neural Network utilities for the pybrain package
+    - pug-djdb   Django utilities and webapps for crawling and mining for data
+    - pug-invest Utilities for predictivie analytics on time series data (including financial data)
+    - pug-bin    Dev-Ops scripts (some shell/bash, but mostly python)
+'''
+# from setuptools import find_packages
+from distutils.core import setup
+import os
+
 # setup.py for PUG (PDX Python User Group) package
+
 # the parent name (perhaps a namespace package) you'd import
 __namespace_package__ = 'pug'
 # the subpackage that this installer is providing that you'd import like __import__(__namespace_package__ + '.' + '__subpackage__')
 __subpackage__ = ''
 # the name as it will appear in the pypi cheeseshop repositor, not the name you'd use to import it
 project_name = '{}'.format(__namespace_package__) + ('-' + __subpackage__ if __subpackage__ else '')
+# the full import name
 package_name = '{}'.format(__namespace_package__) + ('.' + __subpackage__ if __subpackage__ else '')
 
 from setuptools import find_packages
@@ -38,6 +53,7 @@ try:
 except:  # (IOError, ImportError, OSError, RuntimeError):
     print('WARNING: Unable to find or read README.rst.')
 
+print('Installing package named {} pointed at url {}. . .'.format(project_name, __url__))
 
 dependency_links = [] #  ['http://github.com/hobson/pug-nlp/tarball/master#egg=pug-nlp-master'] 
 EXCLUDE_FROM_PACKAGES = []
@@ -58,41 +74,41 @@ install_requires = [
 print('install_requires: {}'.format(install_requires))
 
 
-setup(
-    name=project_name,
-    packages=packages,
-    namespace_packages=[__namespace_package__],
 
-    # install non-.py files listed in MANIFEST.in (.js, .html, .txt, .md, etc)
-    include_package_data = True,
-    install_requires = install_requires,
-    dependency_links = dependency_links,
-    # put these command-line scripts in the system "bin" $PATH
+setup(
+    name = project_name,
+    version = version,
+#    url = __url__,
+    description = 'Meta package to install the PDX Python User Group utilities.',
+    long_description = long_description,
+    author = 'Hobson Lane',
+    author_email = 'admin@totalgood.com',
+    include_package_data = True,  # install non-.py files listed in MANIFEST.in (.js, .html, .txt, .md, etc)
+    license = 'MIT',
+    platforms = '',
+    # enable the command-line script `push.py 'message'`
     scripts=[
         'pug/bin/push.sh',
         'pug/bin/register.sh',
         'pug/bin/install_requirements',
         'pug/bin/push.py',
         ],
-    # enable the command-line script `push 'message'`
-    entry_points={'console_scripts': [
-         'push=pug.bin.push:main',
-    ]},
-    version = version,
-    description = description,
-    long_description = long_description,
-    author = ', '.join(__authors__),
-    author_email = __authors__[0].split('<')[1].strip().strip('>'),
-
-    #tests_require = ['django-setuptest', 'south'],
-    #test_suite = 'setuptest.setuptest.SetupTestSuite',
-    #cmdclass = {'test': test},
-    # this would install the master branch from github
-    # url = __url__,
-
-    # Force setup.py to use the latest github master source files rather than the cheeseshop tarball: 
-    download_url = "{}/tarball/master".format(__url__),
-    keywords = ["nlp", "natural language processing", "text", "text processing", "bot", "ai", "agent", "data", "science", "data science", "math", "machine-learning", "statistics", "database"],
+    # # enable the command-line script `push 'message'`
+    # entry_points={'console_scripts': [
+    #      'push=pug.bin.push:main',
+    # ]},
+    #install_requires = install_requires,
+    #dependency_links = dependency_links,
+    install_requires = [
+        'pug-nlp',
+        'pug-ann',
+        # 'pug-invest',
+        # 'pug-djdb',
+        # 'pub-bin',
+    ],
+    #     # Force setup.py to use the latest github master source files rather than the cheeseshop tarball: 
+    # download_url = "{}/tarball/master".format(__url__),
+    keywords = ["natural language processing", "text processing", "neural net", "science", "data science", "math", "machine-learning", "statistics", "database"],
     classifiers = [
         "Programming Language :: Python",
         "Programming Language :: Python :: 2.7",
