@@ -5,6 +5,8 @@ from __future__ import print_function
 import datetime
 import argparse
 import sys
+import os
+import re
 
 import gitapi
 
@@ -36,6 +38,18 @@ def main():
     print("pug git repo = {}".format(repo))
     print("pug git refspec = {}".format(refspec))
 
+    home = os.path.expanduser('~')
+    base = (os.path.join(home, 'src'), home)
+    for package in ('pug', 'pug-nlp', 'pug-ann', 'pug-invest'):
+        path = os.path.join(base[0], package)
+        if not os.path.isdir(path):
+            path = os.path.join(base[1], package)
+        try:
+            namespace, subpackage = package.split('-')
+        except:
+            namespace, subpackage = package, ''
+
+        re_ver = re_pk = re.compile(r'^[ ]*"pk"\:\ .*,[ ]*$', re.MULTILINE)
     # cd $HOME/src/pug/
     # git commit -am "$COMMIT_MSG"
     # git pull
