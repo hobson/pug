@@ -54,7 +54,10 @@ except:  # (IOError, ImportError, OSError, RuntimeError):
 
 print('Installing package named {} pointed at url {}. . .'.format(project_name, __url__))
 
-dependency_links = [] #  ['http://github.com/hobson/pug-nlp/tarball/master#egg=pug-nlp-master'] 
+dependency_links = [
+    #'http://github.com/hobson/pug-nlp/tarball/master#egg=pug-nlp-master',
+    'http://github.com/hobson/pybrain/tarball/master#egg=pybrain-0.3.3',
+    ] 
 EXCLUDE_FROM_PACKAGES = []
 
 print('Installing package named {} from the {} project. . .'.format(package_name, project_name))
@@ -71,8 +74,6 @@ install_requires = [
     ]
 
 print('install_requires: {}'.format(install_requires))
-
-
 
 setup(
     name = project_name,
