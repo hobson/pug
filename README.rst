@@ -1,5 +1,5 @@
-``pug``
-=======
+``pug`` |alt text|
+==================
 
 |Build Status| |Coverage Status| |Version Status| |Downloads|
 `[License](https://pypip.in/license/pug/badge.svg?style=flat <https://github.com/hobson/pug/>`__
@@ -9,12 +9,10 @@ Python User Group utilities
 
 Collection of utilities by and for the PDX Python User Group.
 
--  nlp -- natural language processing
--  db -- database importing, etc
--  dj -- some Django management commands
--  wikiscrapy -- wikipedia crawler using
-   `Scrapy <https://github.com/scrapy/scrapy>`__
--  docs -- some tips, examples, and yes, documentation
+-  nlp -- Natural Language (and text) Processing utilities
+-  ann -- Artificial Neural Network utilities
+-  invest -- Time Series Processing utilities (including predictive
+   analytics on financial time series)
 
 See `the
 docs <https://github.com/hobsonlane/pug/tree/master/pug/docs>`__ for the
@@ -32,11 +30,11 @@ You really want to contribute, right?
 
 ::
 
-    git clone
+    git clone https://github.com/hobson/pug.git
 
 If your a user and not a developer, and have an up-to-date posix OS with
-the postgres, xml2, and xlst development packages installed, then use
-``pip``.
+the postgres, xml2, and xlst development packages installed, then just
+use ``pip``.
 
 ::
 
@@ -73,14 +71,18 @@ This software is in alpha testing. Install at your own risk.
 Development
 -----------
 
-Help me, please:
+I love merging PRs and adding contributors to the ``__authors__`` list:
 
 ::
 
-    git clone git@github.com:hobsonlane/pug.git
-
-I'll rubber stamp your pull requests on github within a day.
+    git clone https://github.com/hobson/pug.git
 
 .. |alt text| image:: https://travis-ci.org/hobson/pug.svg?branch=master
-.. |Codeship Status for hobson/pug| image:: https://codeship.io/projects/2d004b30-3312-0132-4537-5696ea0452a8/status
-   :target: https://codeship.io/projects/40551
+.. |Build Status| image:: https://travis-ci.org/hobson/pug.svg?branch=master
+   :target: https://travis-ci.org/hobson/pug
+.. |Coverage Status| image:: https://coveralls.io/repos/hobson/pug/badge.png
+   :target: https://coveralls.io/r/hobson/pug
+.. |Version Status| image:: https://pypip.in/v/pug/badge.png
+   :target: https://pypi.python.org/pypi/pug/
+.. |Downloads| image:: https://pypip.in/d/pug/badge.png
+   :target: https://pypi.python.org/pypi/pug/
