@@ -22,9 +22,7 @@ project_name = '{}'.format(__namespace_package__) + ('-' + __subpackage__ if __s
 # the full import name
 package_name = '{}'.format(__namespace_package__) + ('.' + __subpackage__ if __subpackage__ else '')
 
-from setuptools import find_packages
-from distutils.core import setup
-import os
+
 
 # # If you want tests to work with django settings.py you need django-setuptest
 # from setuptest import test
@@ -33,6 +31,7 @@ import os
 # # setup(cmdclass={'test': test},...
 
 print('Installing package named {} from the {} project, a sub-package/project of the namespace package {}. . .'.format(package_name, project_name, package_name))
+
 
 global_env, env = {}, {}
 package_info_path = os.path.join(__subpackage__, 'package_info.py')
@@ -60,6 +59,7 @@ EXCLUDE_FROM_PACKAGES = []
 
 
 print('Installing package named {} from the {} project. . .'.format(package_name, project_name))
+from setuptools import find_packages
 packages = list(set([package_name] + list(find_packages(exclude=EXCLUDE_FROM_PACKAGES))))
 print('Packages being installed: {}'.format(packages))
 
