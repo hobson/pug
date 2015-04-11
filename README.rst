@@ -15,7 +15,7 @@ Collection of utilities by and for the PDX Python User Group.
    analytics on financial time series)
 
 See `the
-docs <https://github.com/hobsonlane/pug/tree/master/pug/docs>`__ for the
+docs <https://github.com/hobsonlane/pug/tree/master/docs>`__ for the
 latest.
 
 --------------

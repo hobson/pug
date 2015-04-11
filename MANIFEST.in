@@ -8,7 +8,7 @@ include *.rst
 # recursive-include pug/miner/static *
 # recursive-include pug/miner/templates *
 # recursive-include pug/miner/tests *
-recursive-include docs *
+recursive-include docs/source *
 # recursive-include pug/crawler/static *
 # recursive-include pug/crawler/templates *
 # recursive-include pug/crawler/tests *
