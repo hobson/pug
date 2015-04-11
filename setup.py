@@ -45,8 +45,8 @@ version = env.get('__version__', '0.0.1')
 package_docstring = env.get('__doc__', '`{}` python package'.format(project_name))
 description = package_docstring.split('\n')[0]
 long_description = package_docstring
-__url__  = env.get('__url__', 'http://github.com/hobson/')
-__authors__  = env.get('__authors__', ('Hobson <hobson@totalgood.com>',))
+__url__ = env.get('__url__', 'http://github.com/hobson/')
+__authors__ = env.get('__authors__', ('Hobson <hobson@totalgood.com>',))
 try:
     long_description = open('README.rst', 'r').read()
 except:  # (IOError, ImportError, OSError, RuntimeError):
@@ -57,7 +57,7 @@ print('Installing package named {} pointed at url {}. . .'.format(project_name, 
 dependency_links = [
     #'http://github.com/hobson/pug-nlp/tarball/master#egg=pug-nlp-master',
     'http://github.com/hobson/pybrain/tarball/master#egg=pybrain-0.3.3',
-    ] 
+    ]
 EXCLUDE_FROM_PACKAGES = []
 
 print('Installing package named {} from the {} project. . .'.format(package_name, project_name))
@@ -67,8 +67,8 @@ print('Packages being installed: {}'.format(packages))
 
 # sudo yum install libjpeg-devel openjpeg-devel
 install_requires = [
-    'pug-nlp>=0.0.18',
-    'pug-ann>=0.0.18',
+    'pug-nlp>=0.0.19',
+    'pug-ann>=0.0.21',
     'pug-invest>=0.0.18',
     'pug-dj>=0.0.18',
     ]
@@ -76,16 +76,16 @@ install_requires = [
 print('install_requires: {}'.format(install_requires))
 
 setup(
-    name = project_name,
-    version = version,
-#    url = __url__,
-    description = 'Meta package to install the PDX Python User Group utilities.',
-    long_description = long_description,
-    author = 'Hobson Lane',
-    author_email = 'admin@totalgood.com',
-    include_package_data = True,  # install non-.py files listed in MANIFEST.in (.js, .html, .txt, .md, etc)
-    license = 'MIT',
-    platforms = '',
+    name=project_name,
+    version=version,
+    # url = __url__,
+    description='Meta package to install the PDX Python User Group utilities.',
+    long_description=long_description,
+    author='Hobson Lane',
+    author_email='admin@totalgood.com',
+    include_package_data=True,  # install non-.py files listed in MANIFEST.in (.js, .html, .txt, .md, etc)
+    license='MIT',
+    platforms='',
     # enable the command-line script `push.py 'message'`
     scripts=[
         'pug/bin/push.sh',
@@ -97,10 +97,10 @@ setup(
     # entry_points={'console_scripts': [
     #      'push=pug.bin.push:main',
     # ]},
-    dependency_links = dependency_links,
+    dependency_links=dependency_links,
     install_requires=install_requires,
-    keywords = ["natural language processing", "text processing", "neural net", "science", "data science", "math", "machine-learning", "statistics", "database"],
-    classifiers = [
+    keywords=["natural language processing", "text processing", "neural net", "science", "data science", "math", "machine-learning", "statistics", "database"],
+    classifiers=[
         "Programming Language :: Python",
         "Programming Language :: Python :: 2.7",
         "Development Status :: 2 - Pre-Alpha",
