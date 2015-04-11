@@ -7,6 +7,7 @@ import os
 __package__ = 'pug'
 __package_path__ = os.path.abspath('.')
 
+
 def try_read(filename, path=__package_path__):
     try:
         return open(os.path.join(path, '..', filename), 'r').read()
@@ -17,7 +18,7 @@ def try_read(filename, path=__package_path__):
             return None
 
 
-__version__ = '0.1.19'
+__version__ = '0.1.21'
 # __name__ = __package__
 __license__ = try_read('LICENSE.txt', __package_path__)
 __doc__ = try_read('README.md', __package_path__)
@@ -29,4 +30,3 @@ __authors__ = (
     "Low <kianseong@gmail.com>",
     )
 __url__ = "https://github.com/hobson/{0}".format(__package__)
-
