@@ -1,18 +1,5 @@
 # list of non-python files that should be included with every distribution (pip install)
 include *.txt
-# recursive-include . *.txt
 include *.md
-# recursive-include . *.md
 include *.rst
-# recursive-include . *.rst
-# recursive-include pug/miner/static *
-# recursive-include pug/miner/templates *
-# recursive-include pug/miner/tests *
 recursive-include docs/source *
-# recursive-include pug/crawler/static *
-# recursive-include pug/crawler/templates *
-# recursive-include pug/crawler/tests *
-# recursive-include pug/crawlnmine/static *
-# recursive-include pug/crawlnmine/templates *
-# recursive-include pug/crawlnmine/tests *
-# recursive-include pug/data *
