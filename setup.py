@@ -67,7 +67,7 @@ print('Packages being installed: {}'.format(packages))
 # sudo yum install libjpeg-devel openjpeg-devel
 install_requires = [
     'pug-nlp>=0.0.19',
-    'pug-ann>=0.0.21',
+    'pug-ann>=0.0.22',
     'pug-invest>=0.0.18',
     'pug-dj>=0.0.18',
     ]
