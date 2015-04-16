@@ -1,5 +1,4 @@
-# `pug` ![alt text](https://travis-ci.org/hobson/pug.svg?branch=master "Travis Build & Test Status")
-
+# `pug`
 [![Build Status](https://travis-ci.org/hobson/pug.svg?branch=master "Travis Build & Test Status")](https://travis-ci.org/hobson/pug)
 [![Coverage Status](https://coveralls.io/repos/hobson/pug/badge.png)](https://coveralls.io/r/hobson/pug)
 [![Version Status](https://pypip.in/v/pug/badge.png)](https://pypi.python.org/pypi/pug/)
@@ -28,7 +27,7 @@ You really want to contribute, right?
 
     git clone https://github.com/hobson/pug.git
 
-If your a user and not a developer, and have an up-to-date posix OS with the postgres, xml2, and xlst development packages installed, then just use `pip`.
+If you're a user and not a developer, and have an up-to-date posix OS with the postgres, xml2, and xlst development packages installed, then just use `pip`.
 
     pip install pug
 
