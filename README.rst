@@ -13,10 +13,10 @@ Collection of utilities by and for the PDX Python User Group.
 -  ann -- Artificial Neural Network utilities
 -  invest -- Time Series Processing utilities (including predictive
    analytics on financial time series)
+-  dj -- Django utilities and apps (not yet working)
 
-See `the
-docs <https://github.com/hobsonlane/pug/tree/master/docs>`__ for the
-latest.
+See `the docs <https://github.com/hobsonlane/pug/tree/master/docs>`__
+for the latest.
 
 --------------
 
