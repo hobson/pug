@@ -1,7 +1,7 @@
 ``pug`` |alt text|
 ==================
 
-|Build Status| |Coverage Status| |Version Status| |Downloads| |License|
+|Build Status| |Coverage Status| |Version| |Downloads| |License|
 
 Python User Group utilities
 ---------------------------
@@ -81,9 +81,11 @@ I love merging PRs and adding contributors to the ``__authors__`` list:
    :target: https://travis-ci.org/hobson/pug
 .. |Coverage Status| image:: https://coveralls.io/repos/hobson/pug/badge.png
    :target: https://coveralls.io/r/hobson/pug
-.. |Version Status| image:: https://pypip.in/v/pug/badge.png
+.. |Version| image:: https://pypip.in/version/pug/badge.png
    :target: https://pypi.python.org/pypi/pug/
-.. |Downloads| image:: https://pypip.in/d/pug/badge.png
+.. |Version| image:: https://badge.fury.io/gh/hobson%2Fpug.svg
+   :target: https://github.com/hobson/pug/
+.. |Downloads| image:: https://pypip.in/download/pug/badge.png
    :target: https://pypi.python.org/pypi/pug/
 .. |License| image:: https://pypip.in/license/pug/badge.svg?style=flat
    :target: https://github.com/hobson/pug/

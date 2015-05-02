@@ -1,8 +1,8 @@
 # `pug`
 [![Build Status](https://travis-ci.org/hobson/pug.svg?branch=master "Travis Build & Test Status")](https://travis-ci.org/hobson/pug)
 [![Coverage Status](https://coveralls.io/repos/hobson/pug/badge.png)](https://coveralls.io/r/hobson/pug)
-[![Version Status](https://pypip.in/v/pug/badge.png)](https://pypi.python.org/pypi/pug/)
-[![Downloads](https://pypip.in/d/pug/badge.png)](https://pypi.python.org/pypi/pug/)
+[![Version](https://badge.fury.io/gh/hobson%2Fpug.svg)](https://pypi.python.org/pypi/pug/)
+[![Downloads](https://pypip.in/download/pug/badge.png)](https://pypi.python.org/pypi/pug/)
 [![License](https://pypip.in/license/pug/badge.svg?style=flat](https://github.com/hobson/pug/)
 
 ## Python User Group utilities
