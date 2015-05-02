@@ -1,6 +1,6 @@
 language: python
 python:
-  - 2.7
+  - "2.7"
   # - 3.3
 before_install:
   - wget http://repo.continuum.io/miniconda/Miniconda-latest-Linux-x86_64.sh -O miniconda.sh
@@ -10,9 +10,11 @@ before_install:
   - conda update --yes conda
   - conda install --yes python=$TRAVIS_PYTHON_VERSION pyparsing atlas numpy scipy matplotlib dateutil Pillow statsmodels
 install:
-  - "pip install git+https://github.com/hobson/pybrain.git@master#egg=pybrain-0.3.3"
-  - "pip install git+https://github.com/hobson/pug-nlp.git@master#egg=pug-nlp-master"
+  - pip install git+https://github.com/cslu-nlp/nlup.git@master#egg=nlup-master
+  - pip install git+https://github.com/hobson/pug-nlp.git@master#egg=pug-nlp-master
+  - pip install git+https://github.com/hobson/pybrain.git@master#egg=pybrain-master
   - pip install .
+  - pip freeze
 script: 
   - "python pug/tests.py"
 notifications:
