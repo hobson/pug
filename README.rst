@@ -1,7 +1,8 @@
-``pug`` |alt text|
-==================
+``pug``
+=======
 
-|Build Status| |Coverage Status| |Version| |Downloads| |License|
+|Build Status| |Coverage Status| |Version| |Downloads|
+`[License](https://pypip.in/license/pug/badge.svg?style=flat <https://github.com/hobson/pug/>`__
 
 Python User Group utilities
 ---------------------------
@@ -31,9 +32,9 @@ You really want to contribute, right?
 
     git clone https://github.com/hobson/pug.git
 
-If your a user and not a developer, and have an up-to-date posix OS with
-the postgres, xml2, and xlst development packages installed, then just
-use ``pip``.
+If you're a user and not a developer, and have an up-to-date posix OS
+with the postgres, xml2, and xlst development packages installed, then
+just use ``pip``.
 
 ::
 
@@ -76,16 +77,11 @@ I love merging PRs and adding contributors to the ``__authors__`` list:
 
     git clone https://github.com/hobson/pug.git
 
-
 .. |Build Status| image:: https://travis-ci.org/hobson/pug.svg?branch=master
    :target: https://travis-ci.org/hobson/pug
 .. |Coverage Status| image:: https://coveralls.io/repos/hobson/pug/badge.png
    :target: https://coveralls.io/r/hobson/pug
-.. |Version| image:: https://pypip.in/version/pug/badge.png
-   :target: https://pypi.python.org/pypi/pug/
 .. |Version| image:: https://badge.fury.io/gh/hobson%2Fpug.svg
-   :target: https://github.com/hobson/pug/
+   :target: https://pypi.python.org/pypi/pug/
 .. |Downloads| image:: https://pypip.in/download/pug/badge.png
    :target: https://pypi.python.org/pypi/pug/
-.. |License| image:: https://pypip.in/license/pug/badge.svg?style=flat
-   :target: https://github.com/hobson/pug/
