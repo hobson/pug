@@ -18,7 +18,7 @@ def try_read(filename, path=__package_path__):
             return None
 
 
-__version__ = '0.1.22'
+__version__ = '0.1.23'
 # __name__ = __package__
 __license__ = try_read('LICENSE.txt', __package_path__)
 __doc__ = try_read('README.md', __package_path__)
