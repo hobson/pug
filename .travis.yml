@@ -10,8 +10,6 @@ before_install:
   - conda update --yes conda
   - conda install --yes python=$TRAVIS_PYTHON_VERSION pyparsing atlas numpy scipy matplotlib dateutil Pillow statsmodels
 install:
-  - pip install git+https://github.com/cslu-nlp/nlup.git@master#egg=nlup-master
-  - pip install git+https://github.com/hobson/pug-nlp.git@master#egg=pug-nlp-master
   - pip install git+https://github.com/hobson/pybrain.git@master#egg=pybrain-master
   - pip install .
   - pip freeze
