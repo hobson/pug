@@ -3,8 +3,8 @@
     collection. As a result, installing it vith `pip` or `easy_install` also installs:
     + pug-nlp    Natural Language and Text-Processing utilities
     + pug-ann    Artificial Neural Network utilities for the pybrain package
-    - pug-djdb   Django utilities and webapps for crawling and mining for data
-    - pug-invest Utilities for predictivie analytics on time series data (including financial data)
+    + pug-djdb   Django utilities and webapps for crawling and mining for data
+    + pug-invest Utilities for predictivie analytics on time series data (including financial data)
     - pug-bin    Dev-Ops scripts (some shell/bash, but mostly python)
 '''
 # from setuptools import find_packages
@@ -22,8 +22,6 @@ project_name = '{}'.format(__namespace_package__) + ('-' + __subpackage__ if __s
 # the full import name
 package_name = '{}'.format(__namespace_package__) + ('.' + __subpackage__ if __subpackage__ else '')
 
-
-
 # # If you want tests to work with django settings.py you need django-setuptest
 # from setuptest import test
 # # If you want to use setuptest.test instead of the python test,
@@ -31,7 +29,6 @@ package_name = '{}'.format(__namespace_package__) + ('.' + __subpackage__ if __s
 # # setup(cmdclass={'test': test},...
 
 print('Installing package named {} from the {} project, a sub-package/project of the namespace package {}. . .'.format(package_name, project_name, package_name))
-
 
 global_env, env = {}, {}
 package_info_path = os.path.join(__subpackage__, 'package_info.py')
@@ -66,6 +63,7 @@ print('Packages being installed: {}'.format(packages))
 
 # sudo yum install libjpeg-devel openjpeg-devel
 install_requires = [
+    'nlup>=0.5',
     'pug-nlp>=0.0.20',
     'pug-ann>=0.0.22',
     'pug-invest>=0.0.18',
