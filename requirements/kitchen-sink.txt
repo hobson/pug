@@ -45,7 +45,7 @@ gunicorn==19.1.1
 
 Scrapy==0.22.2
 jsonfield==1.0.0
-numpy==1.9.1
+numpy>=1.9.1
 # pandas 0.15.0 needs numpy>=1.9.1 which isn't in heroku buildpack
 # ConcurrentPandas needs pandas>=0.14.0, both 0.14.0 and 0.14.1 are in the heroku buildpack
 pandas>=0.15.2  
@@ -87,11 +87,11 @@ w3lib==1.11.0
 zope.interface==4.1.2
 
 wsgiref==0.1.2
-# matplotlib==1.4.2
+# matplotlib>=1.4.2
 --editable=git://github.com/matplotlib/matplotlib#egg=matplotlib --exists-action=i
 # --editable=git://github.com/scipy#scipy=scipy --exists-action=w
 scipy==0.15.1
-# matplotlib==1.4.2
+# matplotlib>=1.4.2
 --editable=git://github.com/matplotlib/matplotlib#egg=matplotlib --exists-action=i
 
 # # nltk==3.0.1
