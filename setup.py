@@ -8,16 +8,18 @@
     - pug-bin    Dev-Ops scripts (some shell/bash, but mostly python)
 '''
 # from setuptools import find_packages
-from distutils.core import setup
+from setuptools import setup
 import os
 
 # setup.py for PUG (PDX Python User Group) package
 
 # the parent name (perhaps a namespace package) you'd import
 __namespace_package__ = 'pug'
-# the subpackage that this installer is providing that you'd import like __import__(__namespace_package__ + '.' + '__subpackage__')
+# the subpackage that this installer is providing that you'd import like
+#  __import__(__namespace_package__ + '.' + '__subpackage__')
 __subpackage__ = ''
-# the name as it will appear in the pypi cheeseshop repositor, not the name you'd use to import it
+# The name as it will appear in the pypi cheeseshop repositor, not the name
+# you'd use to import it
 project_name = '{}'.format(__namespace_package__) + ('-' + __subpackage__ if __subpackage__ else '')
 # the full import name
 package_name = '{}'.format(__namespace_package__) + ('.' + __subpackage__ if __subpackage__ else '')
@@ -28,7 +30,8 @@ package_name = '{}'.format(__namespace_package__) + ('.' + __subpackage__ if __s
 # #    you need to say so in your setup(kwargs) below, like this:
 # # setup(cmdclass={'test': test},...
 
-print('Installing package named {} from the {} project, a sub-package/project of the namespace package {}. . .'.format(package_name, project_name, package_name))
+print('Installing package named {} from the {} project, a sub-package/project of the namespace package {}. . .'.format(
+      package_name, project_name, package_name))
 
 global_env, env = {}, {}
 package_info_path = os.path.join(__subpackage__, 'package_info.py')
@@ -96,7 +99,8 @@ setup(
     # ]},
     dependency_links=dependency_links,
     install_requires=install_requires,
-    keywords=["natural language processing", "text processing", "neural net", "science", "data science", "math", "machine-learning", "statistics", "database"],
+    keywords=["natural language processing", "text processing", "neural net", "science",
+              "data science", "math", "machine-learning", "statistics", "database"],
     classifiers=[
         "Programming Language :: Python",
         "Programming Language :: Python :: 2.7",
