@@ -1,0 +1,2516 @@
+{
+ "nodes": [
+  {
+   "group": 0, 
+   "name": "The Good Government Council"
+  }, 
+  {
+   "group": 0, 
+   "name": "Friends of Matt Wingard"
+  }, 
+  {
+   "group": 0, 
+   "name": "John Kroger for Attorney General"
+  }, 
+  {
+   "group": 0, 
+   "name": "Tonkon Torp State PAC"
+  }, 
+  {
+   "group": 0, 
+   "name": "Elect Deborah Kafoury"
+  }, 
+  {
+   "group": 0, 
+   "name": "Committee to Elect Bernice Barnett"
+  }, 
+  {
+   "group": 0, 
+   "name": "Citizens for Jim Weidner"
+  }, 
+  {
+   "group": 0, 
+   "name": "electwes2014.com"
+  }, 
+  {
+   "group": 0, 
+   "name": "Forward with Jefferson Smith"
+  }, 
+  {
+   "group": 0, 
+   "name": "Friends of Teddy Keizer"
+  }, 
+  {
+   "group": 0, 
+   "name": "Committee to Elect Harry Mackin"
+  }, 
+  {
+   "group": 0, 
+   "name": "Vote VanOrman"
+  }, 
+  {
+   "group": 0, 
+   "name": "Friends of Jessica Adamson"
+  }, 
+  {
+   "group": 0, 
+   "name": "The Committee to Elect Diana Dickey"
+  }, 
+  {
+   "group": 0, 
+   "name": "Friends of Charlotte Lehan"
+  }, 
+  {
+   "group": 0, 
+   "name": "Friends of Butterfield"
+  }, 
+  {
+   "group": 0, 
+   "name": "Oregon Human Life Amendment Committee 13427"
+  }, 
+  {
+   "group": 0, 
+   "name": "Friends of Trent Tidwell"
+  }, 
+  {
+   "group": 0, 
+   "name": "Committee to elect Robert Bob Main Coos County Commissioner"
+  }, 
+  {
+   "group": 0, 
+   "name": "Loma Wharton for County of Douglas Clerk Recorder"
+  }, 
+  {
+   "group": 0, 
+   "name": "Re-Elect Carlotta Collette to Metro"
+  }, 
+  {
+   "group": 0, 
+   "name": "Hold Criminals Accountable Committee"
+  }, 
+  {
+   "group": 0, 
+   "name": "Unger for Deschutes"
+  }, 
+  {
+   "group": 0, 
+   "name": "Friends of Doug Breidenthal"
+  }, 
+  {
+   "group": 0, 
+   "name": "Committee to Elect Seth Crawford"
+  }, 
+  {
+   "group": 0, 
+   "name": "Citizens Against Automatic Tax Increases"
+  }, 
+  {
+   "group": 0, 
+   "name": "Oregon Beverage PAC"
+  }, 
+  {
+   "group": 0, 
+   "name": "Frank4Senate"
+  }, 
+  {
+   "group": 0, 
+   "name": "Union County Republican Central Committee"
+  }, 
+  {
+   "group": 0, 
+   "name": "Jason M Ridge for Beaverton City Council, Position 3"
+  }, 
+  {
+   "group": 0, 
+   "name": "Colleen Roberts for County Clerk"
+  }, 
+  {
+   "group": 0, 
+   "name": "Arleen Curths For County Commissioner"
+  }, 
+  {
+   "group": 0, 
+   "name": "Re-Elect Chris Walker Jackson County Clerk"
+  }, 
+  {
+   "group": 0, 
+   "name": "Kambak for Crook County Judge"
+  }, 
+  {
+   "group": 0, 
+   "name": "Citizens for Elections not Recall"
+  }, 
+  {
+   "group": 0, 
+   "name": "Committee to Elect Jim Olney"
+  }, 
+  {
+   "group": 0, 
+   "name": "Committee to Elect Patricia Roberts"
+  }, 
+  {
+   "group": 0, 
+   "name": "Oregon Climate PAC"
+  }, 
+  {
+   "group": 0, 
+   "name": "Building Trades PAC"
+  }, 
+  {
+   "group": 0, 
+   "name": "Douglas County Physicians PAC"
+  }, 
+  {
+   "group": 0, 
+   "name": "Ken Fahlgren for Crook County Commissioner"
+  }, 
+  {
+   "group": 0, 
+   "name": "Charter for Circuit Court Committee"
+  }, 
+  {
+   "group": 0, 
+   "name": "Committee to Re-Elect Everett Dial"
+  }, 
+  {
+   "group": 0, 
+   "name": "Friends of Greg Matthews"
+  }, 
+  {
+   "group": 0, 
+   "name": "Jack Brown PAC"
+  }, 
+  {
+   "group": 0, 
+   "name": "Friends of John Coopersmith"
+  }, 
+  {
+   "group": 0, 
+   "name": "Committee to Elect Ben Talley"
+  }, 
+  {
+   "group": 0, 
+   "name": "Committee to Elect Sean VanGordon"
+  }, 
+  {
+   "group": 0, 
+   "name": "Thomas M. Chereck Jr."
+  }, 
+  {
+   "group": 0, 
+   "name": "The Committee to Elect Andy Erwin For Judge"
+  }, 
+  {
+   "group": 0, 
+   "name": "Oregon Nurses Political Action Committee"
+  }, 
+  {
+   "group": 0, 
+   "name": "Committee to Elect Maren Lundgren"
+  }, 
+  {
+   "group": 0, 
+   "name": "Committee to Elect Mike McCabe Crook County Judge"
+  }, 
+  {
+   "group": 0, 
+   "name": "Supporters of Murray for County Commissioner"
+  }, 
+  {
+   "group": 0, 
+   "name": "Kathie Eckman for Bend City Council"
+  }, 
+  {
+   "group": 0, 
+   "name": "Seth Woolley for Secretary of State"
+  }, 
+  {
+   "group": 0, 
+   "name": "John Simpson for EWEB Committee"
+  }, 
+  {
+   "group": 0, 
+   "name": "Oregon Certified Public Accountants Legislative Action Committee"
+  }, 
+  {
+   "group": 0, 
+   "name": "Oregon Contractor's Association Political Action Committee"
+  }, 
+  {
+   "group": 0, 
+   "name": "Defend Oregon"
+  }, 
+  {
+   "group": 0, 
+   "name": "unbiased city council"
+  }, 
+  {
+   "group": 0, 
+   "name": "land use final city decision"
+  }, 
+  {
+   "group": 0, 
+   "name": "Friends of Jack Hoffman"
+  }, 
+  {
+   "group": 0, 
+   "name": "The Roseburg Area Chamber Political Action Committee"
+  }, 
+  {
+   "group": 0, 
+   "name": "Friends of Chris Harker"
+  }, 
+  {
+   "group": 0, 
+   "name": "Stop the Dump Expansion Committee"
+  }, 
+  {
+   "group": 0, 
+   "name": "Re-Elect Glenn E. Palmer for Grant County Sheriff"
+  }, 
+  {
+   "group": 0, 
+   "name": "Intrepid Allies of Eldon Rollins"
+  }, 
+  {
+   "group": 0, 
+   "name": "IAFF #1431 Medford Fire Fighters PAC"
+  }, 
+  {
+   "group": 0, 
+   "name": "Voter Privacy Protection Committee"
+  }, 
+  {
+   "group": 0, 
+   "name": "Murphy for Mayor"
+  }, 
+  {
+   "group": 0, 
+   "name": "Committee to Elect Roy Lindsay"
+  }, 
+  {
+   "group": 0, 
+   "name": "Kramer4Mayor"
+  }, 
+  {
+   "group": 0, 
+   "name": "Bill Tierney for City Council"
+  }, 
+  {
+   "group": 0, 
+   "name": "Grants Pass Citizens for Accountable City Government"
+  }, 
+  {
+   "group": 0, 
+   "name": "Citizens for a Safer Gresham"
+  }, 
+  {
+   "group": 0, 
+   "name": "Committee to Elect Tom Greene"
+  }, 
+  {
+   "group": 0, 
+   "name": "STROMBERG4MAYOR"
+  }, 
+  {
+   "group": 0, 
+   "name": "San Soucie For Beaverton"
+  }, 
+  {
+   "group": 0, 
+   "name": "Stan Primozich for Mayor"
+  }, 
+  {
+   "group": 0, 
+   "name": "Committee to Elect James J. Nicita"
+  }, 
+  {
+   "group": 0, 
+   "name": "Corvallis Community Activities, PAC"
+  }, 
+  {
+   "group": 0, 
+   "name": "Give Seniors A Break PAC"
+  }, 
+  {
+   "group": 0, 
+   "name": "Elect Marland Henderson Tigard City Council"
+  }, 
+  {
+   "group": 0, 
+   "name": "Coalition for Patients' Rights 2010"
+  }, 
+  {
+   "group": 0, 
+   "name": "Friends of Bob Hooker"
+  }, 
+  {
+   "group": 0, 
+   "name": "Pure Water for Newport Political Action Committee"
+  }, 
+  {
+   "group": 0, 
+   "name": "Committee to Elect Monique Beikman"
+  }, 
+  {
+   "group": 0, 
+   "name": "Re-Elect Lemhouse Campaign"
+  }, 
+  {
+   "group": 0, 
+   "name": "Ward Warren for Council"
+  }, 
+  {
+   "group": 0, 
+   "name": "Elect Aaron Falotico"
+  }, 
+  {
+   "group": 0, 
+   "name": "Think Clean! Water Committee"
+  }, 
+  {
+   "group": 0, 
+   "name": "CommonSense For Oregon PAC (COPAC)"
+  }, 
+  {
+   "group": 0, 
+   "name": "Estacada Firefighters PAC"
+  }, 
+  {
+   "group": 0, 
+   "name": "Gladstone Political Action Committee"
+  }, 
+  {
+   "group": 0, 
+   "name": "Sex Crimes and Drunk Driving Sentencing Act"
+  }, 
+  {
+   "group": 0, 
+   "name": "Family Safety Committee"
+  }, 
+  {
+   "group": 0, 
+   "name": "Library Yes Campaign Fund"
+  }, 
+  {
+   "group": 0, 
+   "name": "Dallas for Deschutes"
+  }, 
+  {
+   "group": 0, 
+   "name": "If you absolutely, positively, one hundred percent want to put felons in prison its mandatory that you vote yes on 61..."
+  }, 
+  {
+   "group": 0, 
+   "name": "Oregon Ambulatory Surgery Center Association"
+  }, 
+  {
+   "group": 0, 
+   "name": "Larry Rich for Mayor"
+  }, 
+  {
+   "group": 0, 
+   "name": "Oregon Council of NECA Chapters"
+  }, 
+  {
+   "group": 0, 
+   "name": "Oregon Aging & Disability Services Political Action Committee"
+  }, 
+  {
+   "group": 0, 
+   "name": "Alliance 4 Kids"
+  }, 
+  {
+   "group": 0, 
+   "name": "Committee to Elect Mike McLane"
+  }, 
+  {
+   "group": 0, 
+   "name": "Against One Sided Measures"
+  }, 
+  {
+   "group": 0, 
+   "name": "American College of Cardiology - Oregon Chapter PAC"
+  }, 
+  {
+   "group": 0, 
+   "name": "Protect Our Society PAC #2"
+  }, 
+  {
+   "group": 0, 
+   "name": "Committee to Elect Jackson for Commissioner"
+  }, 
+  {
+   "group": 0, 
+   "name": "Steve Shields 2010"
+  }, 
+  {
+   "group": 0, 
+   "name": "Family Physicians of Oregon PAC"
+  }, 
+  {
+   "group": 0, 
+   "name": "Twelve Visions Party of Oregon"
+  }, 
+  {
+   "group": 0, 
+   "name": "Laurance for Commissioner"
+  }, 
+  {
+   "group": 0, 
+   "name": "Chief Petitioners' Committee Extension Service District"
+  }, 
+  {
+   "group": 0, 
+   "name": "Oregon Film & Television Political Action Committee"
+  }, 
+  {
+   "group": 0, 
+   "name": "Oregonians Against Job-Killing Taxes"
+  }, 
+  {
+   "group": 0, 
+   "name": "HB 2649 Chief Petitioner Committee"
+  }, 
+  {
+   "group": 0, 
+   "name": "HB 3405 Chief Petitioner Committee"
+  }, 
+  {
+   "group": 0, 
+   "name": "Friends of Bob Austin"
+  }, 
+  {
+   "group": 0, 
+   "name": "Citizens for Local Land-Use Control"
+  }, 
+  {
+   "group": 0, 
+   "name": "Citizens for Private Property Preservation"
+  }, 
+  {
+   "group": 0, 
+   "name": "Peachey for Judge"
+  }, 
+  {
+   "group": 0, 
+   "name": "Friends of Sandy Webb"
+  }, 
+  {
+   "group": 0, 
+   "name": "Coastal Conservation Oregon PAC"
+  }, 
+  {
+   "group": 0, 
+   "name": "Oregonians Against Highway Robbery"
+  }, 
+  {
+   "group": 0, 
+   "name": "Friends of Katie Riley"
+  }, 
+  {
+   "group": 0, 
+   "name": "Oregon Criminal Defense Lawyers Assn PAC"
+  }, 
+  {
+   "group": 0, 
+   "name": "Friends of Margaret Doherty"
+  }, 
+  {
+   "group": 0, 
+   "name": "Martinis for Monmouth"
+  }, 
+  {
+   "group": 0, 
+   "name": "Kitzhaber for Governor"
+  }, 
+  {
+   "group": 0, 
+   "name": "OAASIS"
+  }, 
+  {
+   "group": 0, 
+   "name": "Committee to Elect Jason Conger"
+  }, 
+  {
+   "group": 0, 
+   "name": "Spencer Burton for Portland"
+  }, 
+  {
+   "group": 0, 
+   "name": "Keep Judge Lopez"
+  }, 
+  {
+   "group": 0, 
+   "name": "Retain Judge Simmons"
+  }, 
+  {
+   "group": 0, 
+   "name": "Immergut for Judge"
+  }, 
+  {
+   "group": 0, 
+   "name": "Friends of Cheryl Myers"
+  }, 
+  {
+   "group": 0, 
+   "name": "Friends of Kathy LeCompte"
+  }, 
+  {
+   "group": 0, 
+   "name": "Henry Heimuller for Columbia County Commissioner Committee"
+  }, 
+  {
+   "group": 0, 
+   "name": "Marion Weatherford for Gilliam County District Attorney"
+  }, 
+  {
+   "group": 0, 
+   "name": "Anna Peterson for Mayor"
+  }, 
+  {
+   "group": 0, 
+   "name": "Vote Yes For Oregon"
+  }, 
+  {
+   "group": 0, 
+   "name": "Friends of Sheriff Jason Myers"
+  }, 
+  {
+   "group": 0, 
+   "name": "Friends of Dr. Scott Roberts"
+  }, 
+  {
+   "group": 0, 
+   "name": "Friends of John Swanson (HD51)"
+  }, 
+  {
+   "group": 0, 
+   "name": "Cynthia Mitchell for District of Cascade Locks Justice of the Peace"
+  }, 
+  {
+   "group": 0, 
+   "name": "Umpqua Valley Republican Women's PAC"
+  }, 
+  {
+   "group": 0, 
+   "name": "Friends of Will Rasmussen"
+  }, 
+  {
+   "group": 0, 
+   "name": "Friends of Lew Frederick"
+  }, 
+  {
+   "group": 0, 
+   "name": "Friends of Chris Dudley"
+  }, 
+  {
+   "group": 0, 
+   "name": "Jerry Wilson for Governor"
+  }, 
+  {
+   "group": 0, 
+   "name": "Oregonians for Water, Parks and Wildlife, a project of The Conservation Campaign"
+  }, 
+  {
+   "group": 0, 
+   "name": "Three Rivers State PAC"
+  }, 
+  {
+   "group": 0, 
+   "name": "Matt Wand for East County"
+  }, 
+  {
+   "group": 0, 
+   "name": "West Linn Citizens for Recall"
+  }, 
+  {
+   "group": 0, 
+   "name": "West Linn Citizens for Recall"
+  }, 
+  {
+   "group": 0, 
+   "name": "West Linn Citizens for Recall"
+  }, 
+  {
+   "group": 0, 
+   "name": "WorkTogetherWestLinn"
+  }, 
+  {
+   "group": 0, 
+   "name": "Committee to Elect Tony Page Douglas County Assessor"
+  }, 
+  {
+   "group": 0, 
+   "name": "Friends of Mary Starrett"
+  }, 
+  {
+   "group": 0, 
+   "name": "Friends of Joelle Davis"
+  }, 
+  {
+   "group": 0, 
+   "name": "Committee to Elect Marvin Sannes"
+  }, 
+  {
+   "group": 0, 
+   "name": "Multifamily NW PAC"
+  }, 
+  {
+   "group": 0, 
+   "name": "Jason for Portland"
+  }, 
+  {
+   "group": 0, 
+   "name": "Alan Olsen for Oregon Senate Committee"
+  }, 
+  {
+   "group": 0, 
+   "name": "Committee to Elect Wally Hicks"
+  }, 
+  {
+   "group": 0, 
+   "name": "Friends of Dan Rayfield"
+  }, 
+  {
+   "group": 0, 
+   "name": "Friends of Patrick Sheehan"
+  }, 
+  {
+   "group": 0, 
+   "name": "Stayton Citizens for the Right to Vote"
+  }, 
+  {
+   "group": 0, 
+   "name": "Mary Volm For Portland"
+  }, 
+  {
+   "group": 0, 
+   "name": "Concerned Tigard Business & Home Owners"
+  }, 
+  {
+   "group": 0, 
+   "name": "Committee to Retain Judge Easterday"
+  }, 
+  {
+   "group": 0, 
+   "name": "Friends of Mike Niehuser"
+  }, 
+  {
+   "group": 0, 
+   "name": "Friends of Rob Wheeler"
+  }, 
+  {
+   "group": 0, 
+   "name": "Re-elect Bob Terry County Commissioner"
+  }, 
+  {
+   "group": 0, 
+   "name": "Committee to Elect Alex Hamalian"
+  }, 
+  {
+   "group": 0, 
+   "name": "Committee to End Highway Robbery"
+  }, 
+  {
+   "group": 0, 
+   "name": "Have A Voice Everyone"
+  }, 
+  {
+   "group": 0, 
+   "name": "Oregonians for Cannabis Reform"
+  }, 
+  {
+   "group": 0, 
+   "name": "Committee to Elect Kris Woodburn"
+  }, 
+  {
+   "group": 0, 
+   "name": "The Oregon1st Committee to Elect Doak Schulte"
+  }, 
+  {
+   "group": 0, 
+   "name": "Make My Signature Count Committee"
+  }, 
+  {
+   "group": 0, 
+   "name": "Defend Your Home Committee"
+  }, 
+  {
+   "group": 0, 
+   "name": "Protect Your Right to a Fair Trial Committee"
+  }, 
+  {
+   "group": 0, 
+   "name": "Balanced and Fair Representation Committee"
+  }, 
+  {
+   "group": 0, 
+   "name": "Campaign to elect Don Skundrick"
+  }, 
+  {
+   "group": 0, 
+   "name": "Re-Elect Jack Walker County Commissioner"
+  }, 
+  {
+   "group": 0, 
+   "name": "Portland Future PAC"
+  }, 
+  {
+   "group": 0, 
+   "name": "Friends of Richard Goddard"
+  }, 
+  {
+   "group": 0, 
+   "name": "Committee to Elect Justin Nelson"
+  }, 
+  {
+   "group": 0, 
+   "name": "Defend Your Castle Committee"
+  }, 
+  {
+   "group": 0, 
+   "name": "Mike Schmidt for Bend Council"
+  }, 
+  {
+   "group": 0, 
+   "name": "Friends of Lew Barnes"
+  }, 
+  {
+   "group": 0, 
+   "name": "Friends of Mary Kremer"
+  }, 
+  {
+   "group": 0, 
+   "name": "Friends of Bill Berg"
+  }, 
+  {
+   "group": 0, 
+   "name": "Committee to Elect David Itzen Commissioner"
+  }, 
+  {
+   "group": 0, 
+   "name": "Manning for Mayor"
+  }, 
+  {
+   "group": 0, 
+   "name": "Jack Greenberg"
+  }, 
+  {
+   "group": 0, 
+   "name": "Committee to Retain Judge Rebecca Duncan"
+  }, 
+  {
+   "group": 0, 
+   "name": "Greg Mecklem for County Commission"
+  }, 
+  {
+   "group": 0, 
+   "name": "Oregonians for Affordable Coverage"
+  }, 
+  {
+   "group": 0, 
+   "name": "Friends of Bill Hansell"
+  }, 
+  {
+   "group": 0, 
+   "name": "Simone Gordon for State Representative"
+  }, 
+  {
+   "group": 0, 
+   "name": "Friends of Rose Cook"
+  }, 
+  {
+   "group": 0, 
+   "name": "Friends of Ian King"
+  }, 
+  {
+   "group": 0, 
+   "name": "Committee to Elect Kelly Lovelace"
+  }, 
+  {
+   "group": 0, 
+   "name": "Friends of Jeff"
+  }, 
+  {
+   "group": 0, 
+   "name": "Friends of Hugo Schulz"
+  }, 
+  {
+   "group": 0, 
+   "name": "Rex Watkins for Governor of Oregon"
+  }, 
+  {
+   "group": 0, 
+   "name": "Friends of D Flowers"
+  }, 
+  {
+   "group": 0, 
+   "name": "Friends of Chuck Thomsen"
+  }, 
+  {
+   "group": 0, 
+   "name": "Committee to re-elect Larry Givens"
+  }, 
+  {
+   "group": 0, 
+   "name": "Friends of Jeff Caton"
+  }, 
+  {
+   "group": 0, 
+   "name": "Richard Esterman"
+  }, 
+  {
+   "group": 0, 
+   "name": "Milligan for Monmouth"
+  }, 
+  {
+   "group": 0, 
+   "name": "Citizens for Dave Dotterrer"
+  }, 
+  {
+   "group": 0, 
+   "name": "Flaherty For D.A."
+  }, 
+  {
+   "group": 0, 
+   "name": "Committee to Elect Dr. Rodney E. Orr"
+  }, 
+  {
+   "group": 0, 
+   "name": "Friends for Malinowski"
+  }, 
+  {
+   "group": 0, 
+   "name": "Committee to Elect Marc W. Stauffer"
+  }, 
+  {
+   "group": 0, 
+   "name": "Friends of Pat Farr"
+  }, 
+  {
+   "group": 0, 
+   "name": "Committee to Elect Mark Wisnovsky"
+  }, 
+  {
+   "group": 0, 
+   "name": "Friends of Dick Anderson"
+  }, 
+  {
+   "group": 0, 
+   "name": "Acree for Assessor"
+  }, 
+  {
+   "group": 0, 
+   "name": "Friends of John Rachor"
+  }, 
+  {
+   "group": 0, 
+   "name": "Scott Lee for county commission"
+  }, 
+  {
+   "group": 0, 
+   "name": "Friends of Jason Yurgel"
+  }, 
+  {
+   "group": 0, 
+   "name": "Oregon Education Association - People for Improvement of Education"
+  }, 
+  {
+   "group": 0, 
+   "name": "Sims for Commissioner"
+  }, 
+  {
+   "group": 0, 
+   "name": "Friends For Dennis Linthicum"
+  }, 
+  {
+   "group": 0, 
+   "name": "We Needham"
+  }, 
+  {
+   "group": 0, 
+   "name": "La Pine Partnership for a Bright Future"
+  }, 
+  {
+   "group": 0, 
+   "name": "Friends of Claudia Kyle"
+  }, 
+  {
+   "group": 0, 
+   "name": "Ed Barbeau for Bend City Council"
+  }, 
+  {
+   "group": 0, 
+   "name": "Protect Oregon Homes 2012"
+  }, 
+  {
+   "group": 0, 
+   "name": "Protect Oregon Homes"
+  }, 
+  {
+   "group": 0, 
+   "name": "Committee to elect Geri Hauser"
+  }, 
+  {
+   "group": 0, 
+   "name": "Hilda's Hope for Harney County"
+  }, 
+  {
+   "group": 0, 
+   "name": "Oregon Truth In Sentencing Act Committee"
+  }, 
+  {
+   "group": 0, 
+   "name": "Friends of John Huddle"
+  }, 
+  {
+   "group": 0, 
+   "name": "Citizens for Dan Ericksen"
+  }, 
+  {
+   "group": 0, 
+   "name": "John Gist For Commissioner"
+  }, 
+  {
+   "group": 0, 
+   "name": "Friends of Paul Savas"
+  }, 
+  {
+   "group": 0, 
+   "name": "Committee to Elect Karl Scronce"
+  }, 
+  {
+   "group": 0, 
+   "name": "Friends of Tom Markgraf"
+  }, 
+  {
+   "group": 0, 
+   "name": "Friends of Sherry Hall"
+  }, 
+  {
+   "group": 0, 
+   "name": "Committee to Elect Loretta Smith"
+  }, 
+  {
+   "group": 0, 
+   "name": "Traber for Mayor"
+  }, 
+  {
+   "group": 0, 
+   "name": "Committee To Elect Jerome Grant"
+  }, 
+  {
+   "group": 0, 
+   "name": "Bernie Meyer for Sheriff"
+  }, 
+  {
+   "group": 0, 
+   "name": "Friends of Roberta Phillip"
+  }, 
+  {
+   "group": 0, 
+   "name": "Citizens to Update City Charter"
+  }, 
+  {
+   "group": 0, 
+   "name": "Concerned Citizens & Volunteers for the recall of Dave May"
+  }, 
+  {
+   "group": 0, 
+   "name": "Concerned Citizens & Volunteers for the recall of Ruth Daughterty"
+  }, 
+  {
+   "group": 0, 
+   "name": "CITIZENS FOR A SAFER LINN COUNTY"
+  }, 
+  {
+   "group": 0, 
+   "name": "Scott Hege for Wasco County Commission"
+  }, 
+  {
+   "group": 0, 
+   "name": "Unemployment Eligibility Fairness Campaign"
+  }, 
+  {
+   "group": 0, 
+   "name": "General Lafayette Reform for Water"
+  }, 
+  {
+   "group": 0, 
+   "name": "Wells For House Dist 58"
+  }, 
+  {
+   "group": 0, 
+   "name": "Don Allaire for Sheriff"
+  }, 
+  {
+   "group": 0, 
+   "name": "General Lafayette Reform for Recall of Rhodes"
+  }, 
+  {
+   "group": 0, 
+   "name": "General Lafayette Reform for Recall of Cullen"
+  }, 
+  {
+   "group": 0, 
+   "name": "Klamath Conservative Voters PAC"
+  }, 
+  {
+   "group": 0, 
+   "name": "Committee to Elect Kirk Oakes Klamath County Commissioner"
+  }, 
+  {
+   "group": 0, 
+   "name": "Good for Oregon 3"
+  }, 
+  {
+   "group": 0, 
+   "name": "Heceta Recall Committee"
+  }, 
+  {
+   "group": 0, 
+   "name": "Heceta Recall Committee B"
+  }, 
+  {
+   "group": 0, 
+   "name": "Heceta Recall Committee C"
+  }, 
+  {
+   "group": 0, 
+   "name": "friends of mosier fire volunteers"
+  }, 
+  {
+   "group": 0, 
+   "name": "Mark Capell for Bend City Council"
+  }, 
+  {
+   "group": 0, 
+   "name": "Oregon Technology PAC"
+  }, 
+  {
+   "group": 0, 
+   "name": "Portlanders for Public Safety"
+  }, 
+  {
+   "group": 0, 
+   "name": "Committee to Elect Jo Rae Perkins"
+  }, 
+  {
+   "group": 0, 
+   "name": "Good for Oregon 1"
+  }, 
+  {
+   "group": 0, 
+   "name": "John DiLorenzo Exploratory Committee"
+  }, 
+  {
+   "group": 0, 
+   "name": "Friends of Mark Moseley"
+  }, 
+  {
+   "group": 0, 
+   "name": "Friends of Scott Starr"
+  }, 
+  {
+   "group": 0, 
+   "name": "The Mother PAC"
+  }, 
+  {
+   "group": 0, 
+   "name": "Portland Greens"
+  }, 
+  {
+   "group": 0, 
+   "name": "Committee to Elect Sally Avera Circuit Court Judge"
+  }, 
+  {
+   "group": 0, 
+   "name": "Committee to Reelect George Endicott Redmond Mayor"
+  }, 
+  {
+   "group": 0, 
+   "name": "John Kovash for Mayor"
+  }, 
+  {
+   "group": 0, 
+   "name": "Committee to Elect Rich Harisay"
+  }, 
+  {
+   "group": 0, 
+   "name": "Committee to Elect Dana M. Brooks"
+  }, 
+  {
+   "group": 0, 
+   "name": "Chester Scott for Circuit Judge"
+  }, 
+  {
+   "group": 0, 
+   "name": "ChiroPAC"
+  }, 
+  {
+   "group": 0, 
+   "name": "Friends of Doug Ainge"
+  }, 
+  {
+   "group": 0, 
+   "name": "Gudman for Lake Oswego City Council"
+  }, 
+  {
+   "group": 0, 
+   "name": "Barbara Gonzalez PAC"
+  }, 
+  {
+   "group": 0, 
+   "name": "Committee to recall Assessor Adam Colby"
+  }, 
+  {
+   "group": 0, 
+   "name": "Keep Keizer Livable"
+  }, 
+  {
+   "group": 0, 
+   "name": "Friends of Imbler School"
+  }, 
+  {
+   "group": 0, 
+   "name": "Jackie Pierce for Senate District 10"
+  }, 
+  {
+   "group": 0, 
+   "name": "Oregonians for Water, Parks and Wildlife - A Project of the Conservation Campaign"
+  }, 
+  {
+   "group": 0, 
+   "name": "Jody Carson for City Council"
+  }, 
+  {
+   "group": 0, 
+   "name": "Good for Oregon"
+  }, 
+  {
+   "group": 0, 
+   "name": "Vote No on 75 - It's A Bad Idea Committee"
+  }, 
+  {
+   "group": 0, 
+   "name": "Paul Meadowbrook for Linn Co. Circuit Court"
+  }, 
+  {
+   "group": 0, 
+   "name": "Portlanders Against Taxpayer Funded Political Campaigns"
+  }
+ ], 
+ "links": [
+  {
+   "source": 38, 
+   "target": 2, 
+   "value": 0.589991149009789
+  }, 
+  {
+   "source": 38, 
+   "target": 4, 
+   "value": 0.52653562029233292
+  }, 
+  {
+   "source": 39, 
+   "target": 2, 
+   "value": 0.589991149009789
+  }, 
+  {
+   "source": 39, 
+   "target": 4, 
+   "value": 0.52653562029233292
+  }, 
+  {
+   "source": 39, 
+   "target": 38, 
+   "value": 2.0
+  }, 
+  {
+   "source": 59, 
+   "target": 2, 
+   "value": 0.56593200099189089
+  }, 
+  {
+   "source": 59, 
+   "target": 4, 
+   "value": 0.50506411441199839
+  }, 
+  {
+   "source": 59, 
+   "target": 38, 
+   "value": 1.6767155960624576
+  }, 
+  {
+   "source": 59, 
+   "target": 39, 
+   "value": 1.6767155960624576
+  }, 
+  {
+   "source": 61, 
+   "target": 60, 
+   "value": 1.9999999999999996
+  }, 
+  {
+   "source": 77, 
+   "target": 53, 
+   "value": 0.992688913147031
+  }, 
+  {
+   "source": 89, 
+   "target": 70, 
+   "value": 0.57678931334452999
+  }, 
+  {
+   "source": 91, 
+   "target": 65, 
+   "value": 1.9759449975846528
+  }, 
+  {
+   "source": 92, 
+   "target": 69, 
+   "value": 0.93882785149756665
+  }, 
+  {
+   "source": 95, 
+   "target": 21, 
+   "value": 1.0348681976397964
+  }, 
+  {
+   "source": 95, 
+   "target": 92, 
+   "value": 0.83236799532069938
+  }, 
+  {
+   "source": 100, 
+   "target": 38, 
+   "value": 1.4583687056817396
+  }, 
+  {
+   "source": 100, 
+   "target": 39, 
+   "value": 1.4583687056817396
+  }, 
+  {
+   "source": 100, 
+   "target": 59, 
+   "value": 1.2226347768129964
+  }, 
+  {
+   "source": 106, 
+   "target": 38, 
+   "value": 0.95558931734323582
+  }, 
+  {
+   "source": 106, 
+   "target": 39, 
+   "value": 0.95558931734323582
+  }, 
+  {
+   "source": 106, 
+   "target": 59, 
+   "value": 0.73738290442569787
+  }, 
+  {
+   "source": 106, 
+   "target": 100, 
+   "value": 0.69680077794857587
+  }, 
+  {
+   "source": 107, 
+   "target": 38, 
+   "value": 1.4077258985458345
+  }, 
+  {
+   "source": 107, 
+   "target": 39, 
+   "value": 1.4077258985458345
+  }, 
+  {
+   "source": 107, 
+   "target": 59, 
+   "value": 1.1842238611658655
+  }, 
+  {
+   "source": 107, 
+   "target": 100, 
+   "value": 1.0264916983084764
+  }, 
+  {
+   "source": 107, 
+   "target": 106, 
+   "value": 0.68143115054024073
+  }, 
+  {
+   "source": 111, 
+   "target": 2, 
+   "value": 0.589991149009789
+  }, 
+  {
+   "source": 111, 
+   "target": 4, 
+   "value": 0.52653562029233292
+  }, 
+  {
+   "source": 111, 
+   "target": 38, 
+   "value": 2.0
+  }, 
+  {
+   "source": 111, 
+   "target": 39, 
+   "value": 2.0
+  }, 
+  {
+   "source": 111, 
+   "target": 59, 
+   "value": 1.6767155960624576
+  }, 
+  {
+   "source": 111, 
+   "target": 100, 
+   "value": 1.4583687056817396
+  }, 
+  {
+   "source": 111, 
+   "target": 106, 
+   "value": 0.95558931734323582
+  }, 
+  {
+   "source": 111, 
+   "target": 107, 
+   "value": 1.4077258985458345
+  }, 
+  {
+   "source": 116, 
+   "target": 25, 
+   "value": 0.7749151928101059
+  }, 
+  {
+   "source": 117, 
+   "target": 69, 
+   "value": 0.56713941795370282
+  }, 
+  {
+   "source": 118, 
+   "target": 69, 
+   "value": 0.56713941795370282
+  }, 
+  {
+   "source": 118, 
+   "target": 117, 
+   "value": 2.0
+  }, 
+  {
+   "source": 121, 
+   "target": 120, 
+   "value": 2.0000000000000004
+  }, 
+  {
+   "source": 125, 
+   "target": 6, 
+   "value": 0.76903870108854311
+  }, 
+  {
+   "source": 125, 
+   "target": 21, 
+   "value": 0.51823005283974555
+  }, 
+  {
+   "source": 125, 
+   "target": 95, 
+   "value": 0.57537211178289704
+  }, 
+  {
+   "source": 127, 
+   "target": 38, 
+   "value": 1.046029209945883
+  }, 
+  {
+   "source": 127, 
+   "target": 39, 
+   "value": 1.046029209945883
+  }, 
+  {
+   "source": 127, 
+   "target": 59, 
+   "value": 0.84781092156884952
+  }, 
+  {
+   "source": 127, 
+   "target": 100, 
+   "value": 0.76274813250703499
+  }, 
+  {
+   "source": 127, 
+   "target": 107, 
+   "value": 0.90706344771386682
+  }, 
+  {
+   "source": 127, 
+   "target": 111, 
+   "value": 1.046029209945883
+  }, 
+  {
+   "source": 130, 
+   "target": 38, 
+   "value": 0.67509004571521214
+  }, 
+  {
+   "source": 130, 
+   "target": 39, 
+   "value": 0.67509004571521214
+  }, 
+  {
+   "source": 130, 
+   "target": 59, 
+   "value": 0.64756066436342097
+  }, 
+  {
+   "source": 130, 
+   "target": 111, 
+   "value": 0.67509004571521214
+  }, 
+  {
+   "source": 135, 
+   "target": 134, 
+   "value": 0.55270550625018589
+  }, 
+  {
+   "source": 139, 
+   "target": 18, 
+   "value": 0.6198974013565568
+  }, 
+  {
+   "source": 142, 
+   "target": 9, 
+   "value": 0.5653600586682862
+  }, 
+  {
+   "source": 142, 
+   "target": 38, 
+   "value": 0.61045405970036182
+  }, 
+  {
+   "source": 142, 
+   "target": 39, 
+   "value": 0.61045405970036182
+  }, 
+  {
+   "source": 142, 
+   "target": 59, 
+   "value": 0.70878808109362912
+  }, 
+  {
+   "source": 142, 
+   "target": 111, 
+   "value": 0.61045405970036182
+  }, 
+  {
+   "source": 142, 
+   "target": 134, 
+   "value": 0.71796846884760901
+  }, 
+  {
+   "source": 142, 
+   "target": 137, 
+   "value": 0.74805053759633877
+  }, 
+  {
+   "source": 147, 
+   "target": 124, 
+   "value": 0.85587601030827865
+  }, 
+  {
+   "source": 147, 
+   "target": 135, 
+   "value": 0.5906645114971304
+  }, 
+  {
+   "source": 147, 
+   "target": 138, 
+   "value": 0.80904535760949547
+  }, 
+  {
+   "source": 152, 
+   "target": 9, 
+   "value": 0.60168979751562057
+  }, 
+  {
+   "source": 152, 
+   "target": 38, 
+   "value": 0.64968151524338169
+  }, 
+  {
+   "source": 152, 
+   "target": 39, 
+   "value": 0.64968151524338169
+  }, 
+  {
+   "source": 152, 
+   "target": 59, 
+   "value": 0.62318826400399141
+  }, 
+  {
+   "source": 152, 
+   "target": 111, 
+   "value": 0.64968151524338169
+  }, 
+  {
+   "source": 152, 
+   "target": 134, 
+   "value": 0.76410474355243085
+  }, 
+  {
+   "source": 152, 
+   "target": 137, 
+   "value": 0.79611987015495211
+  }, 
+  {
+   "source": 152, 
+   "target": 142, 
+   "value": 1.8792409676968431
+  }, 
+  {
+   "source": 153, 
+   "target": 2, 
+   "value": 0.589991149009789
+  }, 
+  {
+   "source": 153, 
+   "target": 4, 
+   "value": 0.52653562029233292
+  }, 
+  {
+   "source": 153, 
+   "target": 38, 
+   "value": 2.0
+  }, 
+  {
+   "source": 153, 
+   "target": 39, 
+   "value": 2.0
+  }, 
+  {
+   "source": 153, 
+   "target": 59, 
+   "value": 1.6767155960624576
+  }, 
+  {
+   "source": 153, 
+   "target": 100, 
+   "value": 1.4583687056817396
+  }, 
+  {
+   "source": 153, 
+   "target": 106, 
+   "value": 0.95558931734323582
+  }, 
+  {
+   "source": 153, 
+   "target": 107, 
+   "value": 1.4077258985458345
+  }, 
+  {
+   "source": 153, 
+   "target": 111, 
+   "value": 2.0
+  }, 
+  {
+   "source": 153, 
+   "target": 127, 
+   "value": 1.046029209945883
+  }, 
+  {
+   "source": 153, 
+   "target": 130, 
+   "value": 0.67509004571521214
+  }, 
+  {
+   "source": 153, 
+   "target": 142, 
+   "value": 0.61045405970036182
+  }, 
+  {
+   "source": 153, 
+   "target": 152, 
+   "value": 0.64968151524338169
+  }, 
+  {
+   "source": 154, 
+   "target": 138, 
+   "value": 0.5007436731449032
+  }, 
+  {
+   "source": 156, 
+   "target": 155, 
+   "value": 2.0000000000000004
+  }, 
+  {
+   "source": 157, 
+   "target": 155, 
+   "value": 2.0000000000000004
+  }, 
+  {
+   "source": 157, 
+   "target": 156, 
+   "value": 2.0000000000000004
+  }, 
+  {
+   "source": 161, 
+   "target": 134, 
+   "value": 0.55585952180344289
+  }, 
+  {
+   "source": 161, 
+   "target": 152, 
+   "value": 0.51977825528730692
+  }, 
+  {
+   "source": 162, 
+   "target": 138, 
+   "value": 0.56699059792446893
+  }, 
+  {
+   "source": 166, 
+   "target": 147, 
+   "value": 0.89678590956255455
+  }, 
+  {
+   "source": 172, 
+   "target": 134, 
+   "value": 1.2495349325827054
+  }, 
+  {
+   "source": 172, 
+   "target": 135, 
+   "value": 0.53944431639863744
+  }, 
+  {
+   "source": 172, 
+   "target": 142, 
+   "value": 0.67910794717216927
+  }, 
+  {
+   "source": 172, 
+   "target": 152, 
+   "value": 0.72274706527334731
+  }, 
+  {
+   "source": 173, 
+   "target": 86, 
+   "value": 0.61562814187499548
+  }, 
+  {
+   "source": 177, 
+   "target": 21, 
+   "value": 0.58906429512557879
+  }, 
+  {
+   "source": 177, 
+   "target": 95, 
+   "value": 0.65401681281327984
+  }, 
+  {
+   "source": 177, 
+   "target": 125, 
+   "value": 1.2169014454693832
+  }, 
+  {
+   "source": 179, 
+   "target": 142, 
+   "value": 0.50059463230469126
+  }, 
+  {
+   "source": 179, 
+   "target": 152, 
+   "value": 0.53276257905148716
+  }, 
+  {
+   "source": 182, 
+   "target": 69, 
+   "value": 2.0
+  }, 
+  {
+   "source": 182, 
+   "target": 92, 
+   "value": 0.93882785149756665
+  }, 
+  {
+   "source": 182, 
+   "target": 117, 
+   "value": 0.56713941795370282
+  }, 
+  {
+   "source": 182, 
+   "target": 118, 
+   "value": 0.56713941795370282
+  }, 
+  {
+   "source": 183, 
+   "target": 69, 
+   "value": 2.0
+  }, 
+  {
+   "source": 183, 
+   "target": 92, 
+   "value": 0.93882785149756665
+  }, 
+  {
+   "source": 183, 
+   "target": 117, 
+   "value": 0.56713941795370282
+  }, 
+  {
+   "source": 183, 
+   "target": 118, 
+   "value": 0.56713941795370282
+  }, 
+  {
+   "source": 183, 
+   "target": 182, 
+   "value": 2.0
+  }, 
+  {
+   "source": 184, 
+   "target": 69, 
+   "value": 2.0
+  }, 
+  {
+   "source": 184, 
+   "target": 92, 
+   "value": 0.93882785149756665
+  }, 
+  {
+   "source": 184, 
+   "target": 117, 
+   "value": 0.56713941795370282
+  }, 
+  {
+   "source": 184, 
+   "target": 118, 
+   "value": 0.56713941795370282
+  }, 
+  {
+   "source": 184, 
+   "target": 182, 
+   "value": 2.0
+  }, 
+  {
+   "source": 184, 
+   "target": 183, 
+   "value": 2.0
+  }, 
+  {
+   "source": 185, 
+   "target": 69, 
+   "value": 1.0890929135043497
+  }, 
+  {
+   "source": 185, 
+   "target": 92, 
+   "value": 1.7240546510888983
+  }, 
+  {
+   "source": 185, 
+   "target": 95, 
+   "value": 0.96559351502573665
+  }, 
+  {
+   "source": 185, 
+   "target": 182, 
+   "value": 1.0890929135043497
+  }, 
+  {
+   "source": 185, 
+   "target": 183, 
+   "value": 1.0890929135043497
+  }, 
+  {
+   "source": 185, 
+   "target": 184, 
+   "value": 1.0890929135043497
+  }, 
+  {
+   "source": 191, 
+   "target": 69, 
+   "value": 2.0
+  }, 
+  {
+   "source": 191, 
+   "target": 92, 
+   "value": 0.93882785149756665
+  }, 
+  {
+   "source": 191, 
+   "target": 117, 
+   "value": 0.56713941795370282
+  }, 
+  {
+   "source": 191, 
+   "target": 118, 
+   "value": 0.56713941795370282
+  }, 
+  {
+   "source": 191, 
+   "target": 182, 
+   "value": 2.0
+  }, 
+  {
+   "source": 191, 
+   "target": 183, 
+   "value": 2.0
+  }, 
+  {
+   "source": 191, 
+   "target": 184, 
+   "value": 2.0
+  }, 
+  {
+   "source": 191, 
+   "target": 185, 
+   "value": 1.0890929135043497
+  }, 
+  {
+   "source": 198, 
+   "target": 70, 
+   "value": 0.67896645225436358
+  }, 
+  {
+   "source": 198, 
+   "target": 89, 
+   "value": 0.65260891620034289
+  }, 
+  {
+   "source": 199, 
+   "target": 134, 
+   "value": 0.69507876858046747
+  }, 
+  {
+   "source": 199, 
+   "target": 142, 
+   "value": 0.54792549407807223
+  }, 
+  {
+   "source": 199, 
+   "target": 152, 
+   "value": 0.58313489701067756
+  }, 
+  {
+   "source": 199, 
+   "target": 172, 
+   "value": 0.64857678068704028
+  }, 
+  {
+   "source": 201, 
+   "target": 25, 
+   "value": 0.7749151928101059
+  }, 
+  {
+   "source": 201, 
+   "target": 116, 
+   "value": 2.0
+  }, 
+  {
+   "source": 202, 
+   "target": 22, 
+   "value": 0.50004226441179533
+  }, 
+  {
+   "source": 208, 
+   "target": 202, 
+   "value": 0.5822874322907019
+  }, 
+  {
+   "source": 217, 
+   "target": 22, 
+   "value": 0.51739934087121053
+  }, 
+  {
+   "source": 224, 
+   "target": 144, 
+   "value": 0.54164558535598528
+  }, 
+  {
+   "source": 236, 
+   "target": 235, 
+   "value": 1.9999999999999998
+  }, 
+  {
+   "source": 239, 
+   "target": 69, 
+   "value": 1.0890929135043497
+  }, 
+  {
+   "source": 239, 
+   "target": 92, 
+   "value": 1.7240546510888983
+  }, 
+  {
+   "source": 239, 
+   "target": 95, 
+   "value": 0.96559351502573665
+  }, 
+  {
+   "source": 239, 
+   "target": 182, 
+   "value": 1.0890929135043497
+  }, 
+  {
+   "source": 239, 
+   "target": 183, 
+   "value": 1.0890929135043497
+  }, 
+  {
+   "source": 239, 
+   "target": 184, 
+   "value": 1.0890929135043497
+  }, 
+  {
+   "source": 239, 
+   "target": 185, 
+   "value": 2.0
+  }, 
+  {
+   "source": 239, 
+   "target": 191, 
+   "value": 1.0890929135043497
+  }, 
+  {
+   "source": 243, 
+   "target": 119, 
+   "value": 0.53542099616078032
+  }, 
+  {
+   "source": 243, 
+   "target": 147, 
+   "value": 0.78763098707997714
+  }, 
+  {
+   "source": 245, 
+   "target": 9, 
+   "value": 0.55406310965269367
+  }, 
+  {
+   "source": 246, 
+   "target": 243, 
+   "value": 0.51179282496838674
+  }, 
+  {
+   "source": 247, 
+   "target": 4, 
+   "value": 0.71841151880350462
+  }, 
+  {
+   "source": 248, 
+   "target": 197, 
+   "value": 0.80591372465060929
+  }, 
+  {
+   "source": 251, 
+   "target": 55, 
+   "value": 1.0612540973597275
+  }, 
+  {
+   "source": 254, 
+   "target": 253, 
+   "value": 1.9999999999999998
+  }, 
+  {
+   "source": 261, 
+   "target": 258, 
+   "value": 1.417077027490242
+  }, 
+  {
+   "source": 262, 
+   "target": 258, 
+   "value": 1.417077027490242
+  }, 
+  {
+   "source": 262, 
+   "target": 261, 
+   "value": 2.0000000000000004
+  }, 
+  {
+   "source": 263, 
+   "target": 230, 
+   "value": 0.65684468139455543
+  }, 
+  {
+   "source": 267, 
+   "target": 266, 
+   "value": 2.0
+  }, 
+  {
+   "source": 268, 
+   "target": 266, 
+   "value": 2.0
+  }, 
+  {
+   "source": 268, 
+   "target": 267, 
+   "value": 2.0
+  }, 
+  {
+   "source": 271, 
+   "target": 2, 
+   "value": 0.589991149009789
+  }, 
+  {
+   "source": 271, 
+   "target": 4, 
+   "value": 0.52653562029233292
+  }, 
+  {
+   "source": 271, 
+   "target": 38, 
+   "value": 2.0
+  }, 
+  {
+   "source": 271, 
+   "target": 39, 
+   "value": 2.0
+  }, 
+  {
+   "source": 271, 
+   "target": 59, 
+   "value": 1.6767155960624576
+  }, 
+  {
+   "source": 271, 
+   "target": 100, 
+   "value": 1.4583687056817396
+  }, 
+  {
+   "source": 271, 
+   "target": 106, 
+   "value": 0.95558931734323582
+  }, 
+  {
+   "source": 271, 
+   "target": 107, 
+   "value": 1.4077258985458345
+  }, 
+  {
+   "source": 271, 
+   "target": 111, 
+   "value": 2.0
+  }, 
+  {
+   "source": 271, 
+   "target": 127, 
+   "value": 1.046029209945883
+  }, 
+  {
+   "source": 271, 
+   "target": 130, 
+   "value": 0.67509004571521214
+  }, 
+  {
+   "source": 271, 
+   "target": 142, 
+   "value": 0.61045405970036182
+  }, 
+  {
+   "source": 271, 
+   "target": 152, 
+   "value": 0.64968151524338169
+  }, 
+  {
+   "source": 271, 
+   "target": 153, 
+   "value": 2.0
+  }, 
+  {
+   "source": 272, 
+   "target": 38, 
+   "value": 1.3501745336274702
+  }, 
+  {
+   "source": 272, 
+   "target": 39, 
+   "value": 1.3501745336274702
+  }, 
+  {
+   "source": 272, 
+   "target": 59, 
+   "value": 1.4605678687924795
+  }, 
+  {
+   "source": 272, 
+   "target": 100, 
+   "value": 0.98452614352537005
+  }, 
+  {
+   "source": 272, 
+   "target": 107, 
+   "value": 0.96010532669361504
+  }, 
+  {
+   "source": 272, 
+   "target": 111, 
+   "value": 1.3501745336274702
+  }, 
+  {
+   "source": 272, 
+   "target": 127, 
+   "value": 0.75692953662436879
+  }, 
+  {
+   "source": 272, 
+   "target": 130, 
+   "value": 0.52325817542579345
+  }, 
+  {
+   "source": 272, 
+   "target": 134, 
+   "value": 0.56863814490471376
+  }, 
+  {
+   "source": 272, 
+   "target": 142, 
+   "value": 1.1075301380840079
+  }, 
+  {
+   "source": 272, 
+   "target": 152, 
+   "value": 0.84400575161491975
+  }, 
+  {
+   "source": 272, 
+   "target": 153, 
+   "value": 1.3501745336274702
+  }, 
+  {
+   "source": 272, 
+   "target": 161, 
+   "value": 0.52667717575131612
+  }, 
+  {
+   "source": 272, 
+   "target": 172, 
+   "value": 0.52594754869498073
+  }, 
+  {
+   "source": 272, 
+   "target": 199, 
+   "value": 0.57660019641602533
+  }, 
+  {
+   "source": 272, 
+   "target": 271, 
+   "value": 1.3501745336274702
+  }, 
+  {
+   "source": 274, 
+   "target": 265, 
+   "value": 1.684509132708129
+  }, 
+  {
+   "source": 275, 
+   "target": 115, 
+   "value": 0.66059109065289501
+  }, 
+  {
+   "source": 284, 
+   "target": 66, 
+   "value": 0.50084929847579762
+  }, 
+  {
+   "source": 285, 
+   "target": 171, 
+   "value": 0.7472041146391124
+  }, 
+  {
+   "source": 286, 
+   "target": 26, 
+   "value": 0.85518826175517626
+  }, 
+  {
+   "source": 286, 
+   "target": 38, 
+   "value": 1.0044794828756483
+  }, 
+  {
+   "source": 286, 
+   "target": 39, 
+   "value": 1.0044794828756483
+  }, 
+  {
+   "source": 286, 
+   "target": 59, 
+   "value": 0.81213167413122112
+  }, 
+  {
+   "source": 286, 
+   "target": 100, 
+   "value": 0.73245072166261105
+  }, 
+  {
+   "source": 286, 
+   "target": 107, 
+   "value": 0.71116779295223231
+  }, 
+  {
+   "source": 286, 
+   "target": 111, 
+   "value": 1.0044794828756483
+  }, 
+  {
+   "source": 286, 
+   "target": 127, 
+   "value": 0.55124714675263264
+  }, 
+  {
+   "source": 286, 
+   "target": 153, 
+   "value": 1.0044794828756483
+  }, 
+  {
+   "source": 286, 
+   "target": 271, 
+   "value": 1.0044794828756483
+  }, 
+  {
+   "source": 286, 
+   "target": 272, 
+   "value": 0.60573032031120022
+  }, 
+  {
+   "source": 289, 
+   "target": 10, 
+   "value": 0.60535995662285569
+  }, 
+  {
+   "source": 294, 
+   "target": 38, 
+   "value": 1.3501745336274702
+  }, 
+  {
+   "source": 294, 
+   "target": 39, 
+   "value": 1.3501745336274702
+  }, 
+  {
+   "source": 294, 
+   "target": 59, 
+   "value": 1.4605678687924795
+  }, 
+  {
+   "source": 294, 
+   "target": 100, 
+   "value": 0.98452614352537005
+  }, 
+  {
+   "source": 294, 
+   "target": 107, 
+   "value": 0.96010532669361504
+  }, 
+  {
+   "source": 294, 
+   "target": 111, 
+   "value": 1.3501745336274702
+  }, 
+  {
+   "source": 294, 
+   "target": 127, 
+   "value": 0.75692953662436879
+  }, 
+  {
+   "source": 294, 
+   "target": 130, 
+   "value": 0.52325817542579345
+  }, 
+  {
+   "source": 294, 
+   "target": 134, 
+   "value": 0.56863814490471376
+  }, 
+  {
+   "source": 294, 
+   "target": 142, 
+   "value": 1.1075301380840079
+  }, 
+  {
+   "source": 294, 
+   "target": 152, 
+   "value": 0.84400575161491975
+  }, 
+  {
+   "source": 294, 
+   "target": 153, 
+   "value": 1.3501745336274702
+  }, 
+  {
+   "source": 294, 
+   "target": 161, 
+   "value": 0.52667717575131612
+  }, 
+  {
+   "source": 294, 
+   "target": 172, 
+   "value": 0.52594754869498073
+  }, 
+  {
+   "source": 294, 
+   "target": 199, 
+   "value": 0.57660019641602533
+  }, 
+  {
+   "source": 294, 
+   "target": 271, 
+   "value": 1.3501745336274702
+  }, 
+  {
+   "source": 294, 
+   "target": 272, 
+   "value": 1.9999999999999991
+  }, 
+  {
+   "source": 294, 
+   "target": 286, 
+   "value": 0.60573032031120022
+  }, 
+  {
+   "source": 295, 
+   "target": 282, 
+   "value": 0.54103262769484672
+  }, 
+  {
+   "source": 296, 
+   "target": 265, 
+   "value": 1.6323453022799745
+  }, 
+  {
+   "source": 296, 
+   "target": 272, 
+   "value": 0.55636404090453417
+  }, 
+  {
+   "source": 296, 
+   "target": 274, 
+   "value": 1.9380664320361471
+  }, 
+  {
+   "source": 296, 
+   "target": 294, 
+   "value": 0.55636404090453417
+  }, 
+  {
+   "source": 297, 
+   "target": 272, 
+   "value": 0.53066192790000855
+  }, 
+  {
+   "source": 297, 
+   "target": 294, 
+   "value": 0.53066192790000855
+  }, 
+  {
+   "source": 299, 
+   "target": 38, 
+   "value": 1.3501745336274702
+  }, 
+  {
+   "source": 299, 
+   "target": 39, 
+   "value": 1.3501745336274702
+  }, 
+  {
+   "source": 299, 
+   "target": 59, 
+   "value": 1.4605678687924795
+  }, 
+  {
+   "source": 299, 
+   "target": 100, 
+   "value": 0.98452614352537005
+  }, 
+  {
+   "source": 299, 
+   "target": 107, 
+   "value": 0.96010532669361504
+  }, 
+  {
+   "source": 299, 
+   "target": 111, 
+   "value": 1.3501745336274702
+  }, 
+  {
+   "source": 299, 
+   "target": 127, 
+   "value": 0.75692953662436879
+  }, 
+  {
+   "source": 299, 
+   "target": 130, 
+   "value": 0.52325817542579345
+  }, 
+  {
+   "source": 299, 
+   "target": 134, 
+   "value": 0.56863814490471376
+  }, 
+  {
+   "source": 299, 
+   "target": 142, 
+   "value": 1.1075301380840079
+  }, 
+  {
+   "source": 299, 
+   "target": 152, 
+   "value": 0.84400575161491975
+  }, 
+  {
+   "source": 299, 
+   "target": 153, 
+   "value": 1.3501745336274702
+  }, 
+  {
+   "source": 299, 
+   "target": 161, 
+   "value": 0.52667717575131612
+  }, 
+  {
+   "source": 299, 
+   "target": 172, 
+   "value": 0.52594754869498073
+  }, 
+  {
+   "source": 299, 
+   "target": 199, 
+   "value": 0.57660019641602533
+  }, 
+  {
+   "source": 299, 
+   "target": 271, 
+   "value": 1.3501745336274702
+  }, 
+  {
+   "source": 299, 
+   "target": 272, 
+   "value": 1.9999999999999991
+  }, 
+  {
+   "source": 299, 
+   "target": 286, 
+   "value": 0.60573032031120022
+  }, 
+  {
+   "source": 299, 
+   "target": 294, 
+   "value": 1.9999999999999991
+  }, 
+  {
+   "source": 299, 
+   "target": 296, 
+   "value": 0.55636404090453417
+  }, 
+  {
+   "source": 299, 
+   "target": 297, 
+   "value": 0.53066192790000855
+  }
+ ]
+}
